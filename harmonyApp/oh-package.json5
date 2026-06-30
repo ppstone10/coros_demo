@@ -1,0 +1,11 @@
+{
+  "modelVersion": "5.0.0",
+  "name": "demo-harmony-app",
+  "version": "1.0.0",
+  "description": "HarmonyOS ArkTS native shell aligned with the KMP shared login contract.",
+  "main": "",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {},
+  "devDependencies": {}
+}

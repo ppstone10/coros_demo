@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "app_name",
+      "value": "Demo"
+    },
+    {
+      "name": "module_desc",
+      "value": "HarmonyOS login sample"
+    },
+    {
+      "name": "entryability_desc",
+      "value": "Entry ability"
+    }
+  ]
+}

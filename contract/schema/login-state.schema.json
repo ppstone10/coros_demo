@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/login-state.schema.json",
+  "title": "LoginState",
+  "type": "object",
+  "required": [
+    "username",
+    "password",
+    "isLoading",
+    "isLoggedIn"
+  ],
+  "properties": {
+    "username": {
+      "type": "string"
+    },
+    "password": {
+      "type": "string"
+    },
+    "isLoading": {
+      "type": "boolean"
+    },
+    "isLoggedIn": {
+      "type": "boolean"
+    },
+    "errorMessage": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

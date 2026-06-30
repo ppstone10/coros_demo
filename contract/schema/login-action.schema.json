@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/login-action.schema.json",
+  "title": "LoginAction",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "type",
+        "username"
+      ],
+      "properties": {
+        "type": {
+          "const": "UsernameChanged"
+        },
+        "username": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "type",
+        "password"
+      ],
+      "properties": {
+        "type": {
+          "const": "PasswordChanged"
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "SubmitClicked"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "EffectConsumed"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

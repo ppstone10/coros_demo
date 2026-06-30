@@ -1,15 +1,56 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+# macOS
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+
+# IDE
+.idea/
+*.iml
+
+# Kotlin / Gradle
+.kotlin/
+.gradle/
+.gradle-user/
 local.properties
+/local.properties
+
+# Build outputs
+/build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android signing / secrets
+*.keystore
+*.jks
+
+# iOS / Xcode
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.mode1v3
+*.mode2v3
+*.pbxuser
+*.perspectivev3
+
+# CocoaPods
+Pods/
+
+# iOS certificates / provisioning
+*.p12
+*.mobileprovision
+*.provisionprofile
+
+# HarmonyOS / DevEco Studio
+.hvigor/
+oh_modules/
+
+# Node / frontend / tools
+node_modules/
+dist/
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
