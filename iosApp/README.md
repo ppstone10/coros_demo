@@ -4,10 +4,10 @@
 
 正式接入路径：
 
-1. 从 `common` 构建 KMP 框架。
-2. 将 `Shared.xcframework` 或 `Shared.framework` 加入 Xcode 编译目标。
+1. Xcode 构建时会先执行 `Build Shared KMP Framework` phase。
+2. 该 phase 调用 `./gradlew :common:embedAndSignAppleFrameworkForXcode` 生成当前 SDK/架构对应的 `Shared.framework`。
 3. SwiftUI 视图和 iOS 平台服务保留在本目录。
-4. 通过 `SharedLoginAdapter` 这类轻量适配器调用共享业务逻辑。
+4. `SharedLoginAdapter` 强制 `import Shared` 并通过 KMP `LoginFacade` 调用共享业务逻辑。
 
 本目录会刻意将 iOS UI 代码与 `common/commonMain` 隔离。
 

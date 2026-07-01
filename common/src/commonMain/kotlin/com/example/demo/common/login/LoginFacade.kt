@@ -1,6 +1,6 @@
 package com.example.demo.common.login
 
-@Suppress("unused")
+@Suppress("unused") // Exported to Swift through Shared.framework; Kotlin callers do not reference it directly.
 class LoginFacade(
     private val store: LoginStore
 ) {

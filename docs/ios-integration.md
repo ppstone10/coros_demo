@@ -2,26 +2,30 @@
 
 iOS 使用 SwiftUI 原生 UI，通过 KMP 产物接入共享业务逻辑。
 
-## 当前示例
+## 当前接入
 
 - `iosApp/iosApp/Login/LoginView.swift`：SwiftUI 登录页。
 - `iosApp/iosApp/Login/LoginViewModel.swift`：iOS ViewModel。
 - `iosApp/iosApp/Login/SharedLoginAdapter.swift`：桥接 KMP `LoginFacade`。
 
-`SharedLoginAdapter` 使用 `#if canImport(Shared)`：
+`SharedLoginAdapter` 强制 `import Shared`，不再提供 Swift 本地兜底实现。iOS 登录、注册、验证码和登出流程必须通过 KMP `LoginFacade` 调用 `common` 业务逻辑。
 
-- 能导入 `Shared.framework` 时，调用 KMP `LoginFacade`。
-- 尚未接入框架时，使用 Swift 本地兜底实现，方便 UI 先运行。
+## Xcode 构建方式
 
-## 构建 KMP 框架
+`iosApp.xcodeproj` 已配置 `Build Shared KMP Framework` Run Script phase：
 
-从仓库根目录执行：
+```bash
+cd "$SRCROOT/.."
+./gradlew :common:embedAndSignAppleFrameworkForXcode
+```
+
+这个 phase 在 Swift 编译前运行，并根据 Xcode 当前 SDK/架构生成对应的 `Shared.framework`。工程的 `FRAMEWORK_SEARCH_PATHS` 已指向 `common/build/bin/.../debugFramework` 和 `releaseFramework` 输出目录。
+
+如需独立生成 XCFramework，仍可从仓库根目录执行：
 
 ```bash
 ./tools/build-shared-xcframework.sh
 ```
-
-产物通常位于 `common/build/XCFrameworks`。把 `Shared.xcframework` 加入 Xcode 编译目标，并确保框架名称为 `Shared`。
 
 ## 推荐接入原则
 

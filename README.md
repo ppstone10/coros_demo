@@ -30,13 +30,15 @@ demo/
 
 - `common`：`LoginState`、`LoginAction`、`LoginEffect`、`LoginUseCase`、`AuthRepository`、`FakeAuthRepository`、`LoginStore`、`LoginFacade`。
 - `androidApp`：`LoginScreen` 和 `LoginViewModel` 调用共享模块。
-- `iosApp`：`LoginView`、`LoginViewModel`、`SharedLoginAdapter` 示例。
+- `iosApp`：`LoginView`、`LoginViewModel`、`SharedLoginAdapter`，通过 `Shared.framework` 调用 KMP `LoginFacade`。
 - `harmonyApp`：`LoginPage.ets`、`LoginState.ets`、`LoginViewModel.ets`、`LoginService.ets` 原生实现同一流程。
 
 测试账号：
 
-- 用户名：`demo`
-- 密码：`demo123`
+- 用户名：`13107012029`
+- 密码：`123456`
+
+手机号注册验证码：`1234`
 
 ## 日常开发
 
