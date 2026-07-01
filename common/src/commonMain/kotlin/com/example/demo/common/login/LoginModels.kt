@@ -1,36 +1,137 @@
 package com.example.demo.common.login
 
 data class LoginRequestDto(
-    val username: String,
+    val account: String,
     val password: String
 )
 
+data class RegisterRequestDto(
+    val account: String,
+    val password: String,
+    val verifyCode: String,
+    val region: String,
+    val displayName: String?
+)
+
+data class AuthSession(
+    val userId: String,
+    val account: String,
+    val displayName: String?,
+    val region: String,
+    val isValid: Boolean
+) {
+    val resolvedDisplayName: String
+        get() = displayName?.takeIf { it.isNotBlank() } ?: account
+}
+
+data class AuthRegion(
+    val region: String,
+    val displayName: String,
+    val isDefault: Boolean = false
+)
+
+data class MockAccount(
+    val userId: String,
+    val account: String,
+    val passwordHash: String,
+    val displayName: String,
+    val region: String
+)
+
+data class MockAuthSession(
+    val userId: String = "",
+    val account: String = "",
+    val displayName: String = "",
+    val region: String = "",
+    val isValid: Boolean = false
+)
+
+data class MockVerifyCodeState(
+    val account: String,
+    val code: String,
+    val expireAtEpochMs: Long
+)
+
+data class MockAuthStore(
+    val accounts: List<MockAccount> = emptyList(),
+    val currentSession: MockAuthSession? = null,
+    val verifyCodes: List<MockVerifyCodeState> = emptyList()
+)
+
+sealed interface MockResult<out T> {
+    data class Success<T>(val data: T) : MockResult<T>
+    data class Failure(val error: MockError) : MockResult<Nothing>
+}
+
+enum class MockError(val code: String, val message: String) {
+    AuthRequired("AUTH_REQUIRED", "请先登录"),
+    InvalidParam("AUTH_INVALID_PARAM", "请输入完整且有效的信息"),
+    AccountExists("AUTH_ACCOUNT_EXISTS", "账号已存在"),
+    AccountNotFound("AUTH_ACCOUNT_NOT_FOUND", "账号不存在"),
+    PasswordIncorrect("AUTH_PASSWORD_INCORRECT", "密码不正确"),
+    VerifyCodeInvalid("AUTH_VERIFY_CODE_INVALID", "验证码不正确"),
+    EmptyData("AUTH_EMPTY_DATA", "暂无本地账号数据"),
+    CorruptedData("AUTH_CORRUPTED_DATA", "本地登录数据损坏"),
+    PersistFailed("AUTH_PERSIST_FAILED", "本地登录状态保存失败")
+}
+
+enum class AuthMode {
+    Login,
+    Register
+}
+
 data class UserDto(
     val id: String,
+    val account: String,
     val displayName: String,
-    val accessToken: String
+    val region: String,
+    val isValid: Boolean
 )
 
 data class LoginState(
+    val mode: AuthMode = AuthMode.Login,
     val username: String = "",
     val password: String = "",
+    val verifyCode: String = "",
+    val displayName: String = "",
+    val selectedRegion: String = "",
+    val regions: List<AuthRegion> = emptyList(),
+    val currentSession: AuthSession? = null,
     val isLoading: Boolean = false,
-    val isLoggedIn: Boolean = false,
+    val isLoggedIn: Boolean = currentSession?.isValid == true,
     val errorMessage: String? = null
 ) {
+    val account: String
+        get() = username
+
     val canSubmit: Boolean
-        get() = username.isNotBlank() && password.isNotBlank() && !isLoading
+        get() {
+            if (isLoading) return false
+            if (username.isBlank() || password.isBlank()) return false
+            return mode == AuthMode.Login ||
+                (verifyCode.isNotBlank() && selectedRegion.isNotBlank())
+        }
 }
 
 sealed interface LoginAction {
+    data class ModeChanged(val mode: AuthMode) : LoginAction
     data class UsernameChanged(val username: String) : LoginAction
     data class PasswordChanged(val password: String) : LoginAction
+    data class VerifyCodeChanged(val verifyCode: String) : LoginAction
+    data class DisplayNameChanged(val displayName: String) : LoginAction
+    data class RegionChanged(val region: String) : LoginAction
     data object SubmitClicked : LoginAction
+    data object LogoutClicked : LoginAction
+    data object ExpireSessionClicked : LoginAction
+    data object RestoreSession : LoginAction
     data object EffectConsumed : LoginAction
 }
 
 sealed interface LoginEffect {
     data class NavigateHome(val user: UserDto) : LoginEffect
+    data class AuthSucceeded(val session: AuthSession, val mode: AuthMode) : LoginEffect
+    data object LoggedOut : LoginEffect
+    data object SessionExpired : LoginEffect
     data class ShowMessage(val message: String) : LoginEffect
 }
 
@@ -42,6 +143,37 @@ data class LoginEffectPayload(
 )
 
 sealed interface LoginResult {
-    data class Success(val user: UserDto) : LoginResult
+    data class Success(val session: AuthSession) : LoginResult
     data class Failure(val code: String, val message: String) : LoginResult
+}
+
+fun AuthSession.toUserDto(): UserDto {
+    return UserDto(
+        id = userId,
+        account = account,
+        displayName = resolvedDisplayName,
+        region = region,
+        isValid = isValid
+    )
+}
+
+fun MockAuthSession.toDomainOrNull(): AuthSession? {
+    if (userId.isBlank() || account.isBlank()) return null
+    return AuthSession(
+        userId = userId,
+        account = account,
+        displayName = displayName.takeIf { it.isNotBlank() },
+        region = region,
+        isValid = isValid
+    )
+}
+
+fun AuthSession.toMockSession(): MockAuthSession {
+    return MockAuthSession(
+        userId = userId,
+        account = account,
+        displayName = displayName.orEmpty(),
+        region = region,
+        isValid = isValid
+    )
 }

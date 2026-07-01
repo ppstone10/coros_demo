@@ -3,27 +3,49 @@ package com.example.demo.common.login
 class LoginUseCase(
     private val authRepository: AuthRepository
 ) {
-    fun execute(username: String, password: String): LoginResult {
-        val normalizedUsername = username.trim()
+    fun execute(account: String, password: String): LoginResult {
+        val normalizedAccount = account.trim()
 
-        if (normalizedUsername.isBlank()) {
+        if (normalizedAccount.isBlank()) {
             return LoginResult.Failure(
-                code = "AUTH_USERNAME_REQUIRED",
-                message = "请输入用户名"
+                code = MockError.InvalidParam.code,
+                message = "请输入账号"
             )
         }
 
         if (password.isBlank()) {
             return LoginResult.Failure(
-                code = "AUTH_PASSWORD_REQUIRED",
+                code = MockError.InvalidParam.code,
                 message = "请输入密码"
             )
         }
 
         return authRepository.login(
             LoginRequestDto(
-                username = normalizedUsername,
+                account = normalizedAccount,
                 password = password
+            )
+        )
+    }
+}
+
+class RegisterUseCase(
+    private val authRepository: AuthRepository
+) {
+    fun execute(
+        account: String,
+        password: String,
+        verifyCode: String,
+        region: String,
+        displayName: String?
+    ): LoginResult {
+        return authRepository.register(
+            RegisterRequestDto(
+                account = account.trim(),
+                password = password,
+                verifyCode = verifyCode.trim(),
+                region = region.trim(),
+                displayName = displayName
             )
         )
     }

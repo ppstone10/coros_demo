@@ -1,15 +1,24 @@
 package com.example.demo.common.login
 
 class LoginStore(
-    private val loginUseCase: LoginUseCase
+    private val authRepository: AuthRepository,
+    private val loginUseCase: LoginUseCase = LoginUseCase(authRepository),
+    private val registerUseCase: RegisterUseCase = RegisterUseCase(authRepository)
 ) {
-    var state: LoginState = LoginState()
+    var state: LoginState = createInitialState(authRepository)
         private set
 
     private var pendingEffect: LoginEffect? = null
 
     fun dispatch(action: LoginAction) {
         when (action) {
+            is LoginAction.ModeChanged -> {
+                state = state.copy(
+                    mode = action.mode,
+                    errorMessage = null
+                )
+            }
+
             is LoginAction.UsernameChanged -> {
                 state = state.copy(
                     username = action.username,
@@ -24,7 +33,31 @@ class LoginStore(
                 )
             }
 
+            is LoginAction.VerifyCodeChanged -> {
+                state = state.copy(
+                    verifyCode = action.verifyCode,
+                    errorMessage = null
+                )
+            }
+
+            is LoginAction.DisplayNameChanged -> {
+                state = state.copy(
+                    displayName = action.displayName,
+                    errorMessage = null
+                )
+            }
+
+            is LoginAction.RegionChanged -> {
+                state = state.copy(
+                    selectedRegion = action.region,
+                    errorMessage = null
+                )
+            }
+
             LoginAction.SubmitClicked -> submit()
+            LoginAction.LogoutClicked -> logout()
+            LoginAction.ExpireSessionClicked -> expireSession()
+            LoginAction.RestoreSession -> restoreSession()
             LoginAction.EffectConsumed -> pendingEffect = null
         }
     }
@@ -37,10 +70,26 @@ class LoginStore(
 
     fun consumeEffectPayload(): LoginEffectPayload? {
         return when (val effect = consumeEffect()) {
+            is LoginEffect.AuthSucceeded -> LoginEffectPayload(
+                type = "AuthSucceeded",
+                userId = effect.session.userId,
+                displayName = effect.session.resolvedDisplayName
+            )
+
             is LoginEffect.NavigateHome -> LoginEffectPayload(
                 type = "NavigateHome",
                 userId = effect.user.id,
                 displayName = effect.user.displayName
+            )
+
+            LoginEffect.LoggedOut -> LoginEffectPayload(
+                type = "LoggedOut",
+                message = "已退出登录"
+            )
+
+            LoginEffect.SessionExpired -> LoginEffectPayload(
+                type = "SessionExpired",
+                message = "会话已失效，请重新登录"
             )
 
             is LoginEffect.ShowMessage -> LoginEffectPayload(
@@ -52,9 +101,36 @@ class LoginStore(
         }
     }
 
+    fun hasAccount(account: String): Boolean {
+        return authRepository.hasAccount(account)
+    }
+
+    fun requestVerifyCode(account: String): MockResult<MockVerifyCodeState> {
+        return authRepository.requestVerifyCode(account)
+    }
+
+    fun verifyCode(account: String, code: String): MockResult<Unit> {
+        return authRepository.verifyCode(account, code)
+    }
+
+    fun clearSessionSilently() {
+        authRepository.clearSession()
+        state = state.copy(
+            isLoggedIn = false,
+            currentSession = null,
+            password = "",
+            verifyCode = "",
+            errorMessage = null
+        )
+    }
+
     private fun submit() {
         if (!state.canSubmit) {
-            val message = "请输入用户名和密码"
+            val message = if (state.mode == AuthMode.Register) {
+                "请输入账号、密码、区域和验证码"
+            } else {
+                "请输入账号和密码"
+            }
             state = state.copy(errorMessage = message)
             pendingEffect = LoginEffect.ShowMessage(message)
             return
@@ -62,20 +138,36 @@ class LoginStore(
 
         state = state.copy(isLoading = true, errorMessage = null)
 
-        when (val result = loginUseCase.execute(state.username, state.password)) {
+        val result = if (state.mode == AuthMode.Register) {
+            registerUseCase.execute(
+                account = state.username,
+                password = state.password,
+                verifyCode = state.verifyCode,
+                region = state.selectedRegion,
+                displayName = state.displayName
+            )
+        } else {
+            loginUseCase.execute(state.username, state.password)
+        }
+
+        when (result) {
             is LoginResult.Success -> {
                 state = state.copy(
                     isLoading = false,
                     isLoggedIn = true,
-                    errorMessage = null
+                    currentSession = result.session,
+                    errorMessage = null,
+                    password = "",
+                    verifyCode = ""
                 )
-                pendingEffect = LoginEffect.NavigateHome(result.user)
+                pendingEffect = LoginEffect.AuthSucceeded(result.session, state.mode)
             }
 
             is LoginResult.Failure -> {
                 state = state.copy(
                     isLoading = false,
                     isLoggedIn = false,
+                    currentSession = null,
                     errorMessage = result.message
                 )
                 pendingEffect = LoginEffect.ShowMessage(result.message)
@@ -83,9 +175,74 @@ class LoginStore(
         }
     }
 
+    private fun logout() {
+        when (val result = authRepository.clearSession()) {
+            is MockResult.Success -> {
+                state = state.copy(
+                    isLoggedIn = false,
+                    currentSession = null,
+                    password = "",
+                    verifyCode = "",
+                    errorMessage = null
+                )
+                pendingEffect = LoginEffect.LoggedOut
+            }
+
+            is MockResult.Failure -> {
+                state = state.copy(errorMessage = result.error.message)
+                pendingEffect = LoginEffect.ShowMessage(result.error.message)
+            }
+        }
+    }
+
+    private fun expireSession() {
+        when (val result = authRepository.markSessionExpired()) {
+            is MockResult.Success -> {
+                state = state.copy(
+                    isLoggedIn = false,
+                    currentSession = null,
+                    password = "",
+                    verifyCode = "",
+                    errorMessage = MockError.AuthRequired.message
+                )
+                pendingEffect = LoginEffect.SessionExpired
+            }
+
+            is MockResult.Failure -> {
+                state = state.copy(errorMessage = result.error.message)
+                pendingEffect = LoginEffect.ShowMessage(result.error.message)
+            }
+        }
+    }
+
+    private fun restoreSession() {
+        val session = authRepository.currentSession()
+        state = state.copy(
+            currentSession = session,
+            isLoggedIn = session?.isValid == true,
+            errorMessage = null
+        )
+    }
+
     companion object {
         fun createFake(): LoginStore {
-            return LoginStore(LoginUseCase(FakeAuthRepository()))
+            return create(LocalMockAuthRepository(InMemoryAuthStoreDataSource()))
+        }
+
+        fun create(authRepository: AuthRepository): LoginStore {
+            return LoginStore(authRepository)
+        }
+
+        private fun createInitialState(authRepository: AuthRepository): LoginState {
+            val regions = authRepository.availableRegions()
+            val session = authRepository.currentSession()
+            return LoginState(
+                selectedRegion = regions.firstOrNull { it.isDefault }?.region
+                    ?: regions.firstOrNull()?.region.orEmpty(),
+                regions = regions,
+                currentSession = session,
+                isLoggedIn = session?.isValid == true
+            )
         }
     }
 }

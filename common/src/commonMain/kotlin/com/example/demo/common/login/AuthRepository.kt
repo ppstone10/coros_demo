@@ -1,27 +1,277 @@
 package com.example.demo.common.login
 
-interface AuthRepository {
-    fun login(request: LoginRequestDto): LoginResult
+interface AuthStoreDataSource {
+    fun load(): MockAuthStore
+    fun save(store: MockAuthStore): Boolean
 }
 
-class FakeAuthRepository : AuthRepository {
-    override fun login(request: LoginRequestDto): LoginResult {
-        val username = request.username.trim()
-        val password = request.password
+class InMemoryAuthStoreDataSource(
+    initialStore: MockAuthStore = MockAuthStore()
+) : AuthStoreDataSource {
+    private var store: MockAuthStore = initialStore
 
-        return if (username == "demo" && password == "demo123") {
-            LoginResult.Success(
-                UserDto(
-                    id = "user-demo",
-                    displayName = "Demo User",
-                    accessToken = "fake-token-demo"
-                )
-            )
-        } else {
-            LoginResult.Failure(
-                code = "AUTH_INVALID_CREDENTIALS",
-                message = "用户名或密码不正确"
-            )
-        }
+    override fun load(): MockAuthStore = store
+
+    override fun save(store: MockAuthStore): Boolean {
+        this.store = store
+        return true
     }
 }
+
+interface AuthRepository {
+    fun availableRegions(): List<AuthRegion>
+    fun hasAccount(account: String): Boolean
+    fun requestVerifyCode(account: String): MockResult<MockVerifyCodeState>
+    fun verifyCode(account: String, code: String): MockResult<Unit>
+    fun currentSession(): AuthSession?
+    fun requireSession(): AuthSession
+    fun saveSession(session: AuthSession): MockResult<AuthSession>
+    fun clearSession(): MockResult<Unit>
+    fun markSessionExpired(): MockResult<Unit>
+    fun register(request: RegisterRequestDto): LoginResult
+    fun login(request: LoginRequestDto): LoginResult
+    fun verifyBusinessAccess(): MockResult<AuthSession>
+}
+
+class LocalMockAuthRepository(
+    private val dataSource: AuthStoreDataSource,
+    private val nowEpochMs: () -> Long = { 0L }
+) : AuthRepository {
+    override fun availableRegions(): List<AuthRegion> = DefaultRegions
+
+    override fun hasAccount(account: String): Boolean {
+        val normalizedAccount = account.trim()
+        if (normalizedAccount.isBlank()) return false
+        return loadStore().accounts.any {
+            it.account.equals(normalizedAccount, ignoreCase = true)
+        }
+    }
+
+    override fun requestVerifyCode(account: String): MockResult<MockVerifyCodeState> {
+        val normalizedAccount = account.trim()
+        if (normalizedAccount.isBlank() || !isMockAccountFormatValid(normalizedAccount)) {
+            return MockResult.Failure(MockError.InvalidParam)
+        }
+
+        val store = loadStore()
+        val codeState = MockVerifyCodeState(
+            account = normalizedAccount,
+            code = DefaultVerifyCode,
+            expireAtEpochMs = nowEpochMs() + VerifyCodeTtlMs
+        )
+        val nextStore = store.copy(
+            verifyCodes = store.verifyCodes.filterNot {
+                it.account.equals(normalizedAccount, ignoreCase = true)
+            } + codeState
+        )
+
+        return if (dataSource.save(nextStore)) {
+            MockResult.Success(codeState)
+        } else {
+            MockResult.Failure(MockError.PersistFailed)
+        }
+    }
+
+    override fun verifyCode(account: String, code: String): MockResult<Unit> {
+        val normalizedAccount = account.trim()
+        val verifyCode = code.trim()
+        val savedCode = loadStore().verifyCodes.lastOrNull {
+            it.account.equals(normalizedAccount, ignoreCase = true)
+        }
+
+        return if (savedCode?.code == verifyCode) {
+            MockResult.Success(Unit)
+        } else {
+            MockResult.Failure(MockError.VerifyCodeInvalid)
+        }
+    }
+
+    override fun currentSession(): AuthSession? {
+        return loadStore().currentSession
+            ?.toDomainOrNull()
+            ?.takeIf { it.isValid }
+    }
+
+    override fun requireSession(): AuthSession {
+        return currentSession() ?: throw IllegalStateException(MockError.AuthRequired.code)
+    }
+
+    override fun saveSession(session: AuthSession): MockResult<AuthSession> {
+        val store = loadStore()
+        return if (dataSource.save(store.copy(currentSession = session.toMockSession()))) {
+            MockResult.Success(session)
+        } else {
+            MockResult.Failure(MockError.PersistFailed)
+        }
+    }
+
+    override fun clearSession(): MockResult<Unit> {
+        val store = loadStore()
+        return if (dataSource.save(store.copy(currentSession = null))) {
+            MockResult.Success(Unit)
+        } else {
+            MockResult.Failure(MockError.PersistFailed)
+        }
+    }
+
+    override fun markSessionExpired(): MockResult<Unit> {
+        val store = loadStore()
+        val expiredSession = store.currentSession?.copy(isValid = false)
+        return if (dataSource.save(store.copy(currentSession = expiredSession))) {
+            MockResult.Success(Unit)
+        } else {
+            MockResult.Failure(MockError.PersistFailed)
+        }
+    }
+
+    override fun register(request: RegisterRequestDto): LoginResult {
+        val account = request.account.trim()
+        val password = request.password
+        val region = request.region.trim()
+        val displayName = request.displayName?.trim().orEmpty()
+
+        val validationError = validateRegister(account, password, request.verifyCode, region)
+        if (validationError != null) return validationError.toLoginFailure()
+
+        val store = loadStore()
+        if (store.accounts.any { it.account.equals(account, ignoreCase = true) }) {
+            return MockError.AccountExists.toLoginFailure()
+        }
+
+        val accountModel = MockAccount(
+            userId = buildUserId(account),
+            account = account,
+            passwordHash = hashMockPassword(password),
+            displayName = displayName.ifBlank { account },
+            region = region
+        )
+        val session = AuthSession(
+            userId = accountModel.userId,
+            account = accountModel.account,
+            displayName = accountModel.displayName,
+            region = accountModel.region,
+            isValid = true
+        )
+        val nextStore = store.copy(
+            accounts = store.accounts + accountModel,
+            currentSession = session.toMockSession(),
+            verifyCodes = store.verifyCodes.filterNot { it.account == account }
+        )
+
+        return if (dataSource.save(nextStore)) {
+            LoginResult.Success(session)
+        } else {
+            MockError.PersistFailed.toLoginFailure()
+        }
+    }
+
+    override fun login(request: LoginRequestDto): LoginResult {
+        val account = request.account.trim()
+        val password = request.password
+
+        if (account.isBlank() || !isMockAccountFormatValid(account)) {
+            return MockError.InvalidParam.toLoginFailure()
+        }
+
+        if (password.isBlank()) {
+            return MockError.InvalidParam.toLoginFailure()
+        }
+
+        val store = loadStore()
+        val localAccount = store.accounts.firstOrNull {
+            it.account.equals(account, ignoreCase = true)
+        } ?: return MockError.AccountNotFound.toLoginFailure()
+
+        if (localAccount.passwordHash != hashMockPassword(password)) {
+            return MockError.PasswordIncorrect.toLoginFailure()
+        }
+
+        val session = AuthSession(
+            userId = localAccount.userId,
+            account = localAccount.account,
+            displayName = localAccount.displayName,
+            region = localAccount.region,
+            isValid = true
+        )
+
+        return when (val result = saveSession(session)) {
+            is MockResult.Success -> LoginResult.Success(result.data)
+            is MockResult.Failure -> result.error.toLoginFailure()
+        }
+    }
+
+    override fun verifyBusinessAccess(): MockResult<AuthSession> {
+        return currentSession()?.let { MockResult.Success(it) }
+            ?: MockResult.Failure(MockError.AuthRequired)
+    }
+
+    private fun loadStore(): MockAuthStore {
+        val store = dataSource.load()
+        return if (store.accounts.isEmpty()) {
+            store.copy(accounts = DefaultAccounts)
+        } else {
+            store
+        }
+    }
+
+    private fun validateRegister(
+        account: String,
+        password: String,
+        verifyCode: String,
+        region: String
+    ): MockError? {
+        if (account.isBlank() || !isMockAccountFormatValid(account)) return MockError.InvalidParam
+        if (password.length < MinPasswordLength) return MockError.InvalidParam
+        if (verifyCode.length != VerifyCodeLength || verifyCode != DefaultVerifyCode) {
+            return MockError.VerifyCodeInvalid
+        }
+        if (availableRegions().none { it.region == region }) return MockError.InvalidParam
+        return null
+    }
+
+    private fun isMockAccountFormatValid(account: String): Boolean {
+        val isEmailLike = account.contains("@") && account.substringAfter("@").contains(".")
+        val isPhoneLike = account.length in 5..20 && account.all { it.isDigit() || it == '+' || it == '-' }
+        return isEmailLike || isPhoneLike
+    }
+
+    private fun hashMockPassword(password: String): String {
+        return "mock:${password.reversed()}:${password.length}"
+    }
+
+    private fun buildUserId(account: String): String {
+        val hash = account.fold(17) { acc, char -> acc * 31 + char.code }
+            .let { if (it < 0) -it else it }
+        return "mock-user-$hash"
+    }
+
+    private fun MockError.toLoginFailure(): LoginResult.Failure {
+        return LoginResult.Failure(code = code, message = message)
+    }
+
+    companion object {
+        const val DefaultVerifyCode = "1234"
+        private const val VerifyCodeLength = 4
+        private const val MinPasswordLength = 6
+        private const val VerifyCodeTtlMs = 5 * 60 * 1000L
+        const val DefaultAccount = "13107012029"
+        const val DefaultPassword = "123456"
+
+        val DefaultRegions = listOf(
+            AuthRegion(region = "CN", displayName = "China", isDefault = true),
+            AuthRegion(region = "US", displayName = "United States")
+        )
+
+        private val DefaultAccounts = listOf(
+            MockAccount(
+                userId = "mock-user-default",
+                account = DefaultAccount,
+                passwordHash = "mock:${DefaultPassword.reversed()}:${DefaultPassword.length}",
+                displayName = "COROS User",
+                region = "CN"
+            )
+        )
+    }
+}
+
+class FakeAuthRepository : AuthRepository by LocalMockAuthRepository(InMemoryAuthStoreDataSource())
