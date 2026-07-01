@@ -3,6 +3,7 @@ package com.example.demo.login
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
@@ -45,7 +46,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -54,10 +57,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.demo.R
 import com.example.demo.common.login.AuthMode
 import com.example.demo.common.login.LoginEffect
 import com.example.demo.common.login.LoginState
@@ -649,14 +652,13 @@ private fun CorosLogo(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = "⬡", color = CorosWhite, fontSize = 42.sp, fontWeight = FontWeight.Light)
-        Spacer(modifier = Modifier.width(14.dp))
-        Text(
-            text = "COROS",
-            color = CorosWhite,
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 5.sp
+        Image(
+            painter = painterResource(id = R.drawable.logo_coros),
+            contentDescription = "COROS Logo",
+            modifier = Modifier
+                .width(260.dp)
+                .height(48.dp),
+            contentScale = ContentScale.Fit
         )
     }
 }

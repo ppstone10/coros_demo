@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Demo.Starting" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowSplashScreenBackground">@color/bg1</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/logo_splash</item>
+    </style>
+
+</resources>

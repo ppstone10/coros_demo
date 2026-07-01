@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <!-- App 正常进入后的主题 -->
     <style name="Theme.Demo" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- 启动页主题，Android 12 以下主要作为兜底 -->
+    <style name="Theme.Demo.Starting" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/bg1</item>
+    </style>
+
 </resources>

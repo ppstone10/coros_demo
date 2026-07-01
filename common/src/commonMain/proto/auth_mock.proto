@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package training.auth;
+
+message MockAccount {
+  string user_id = 1;
+  string account = 2;
+  string password_hash = 3;
+  string display_name = 4;
+  string region = 5;
+}
+
+message MockAuthSession {
+  string user_id = 1;
+  string account = 2;
+  string display_name = 3;
+  string region = 4;
+  bool is_valid = 5;
+}
+
+message MockVerifyCodeState {
+  string account = 1;
+  string code = 2;
+  int64 expire_at_epoch_ms = 3;
+}
+
+message MockAuthStore {
+  repeated MockAccount accounts = 1;
+  MockAuthSession current_session = 2;
+  repeated MockVerifyCodeState verify_codes = 3;
+}
