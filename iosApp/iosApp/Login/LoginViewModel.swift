@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import Shared
 
 enum CorosAuthPage {
     case entrance
@@ -26,7 +27,7 @@ enum TermsPromptAction {
 
 @MainActor
 final class LoginViewModel: ObservableObject {
-    @Published private(set) var state: IOSLoginState
+    @Published private(set) var state: LoginState
     @Published var page: CorosAuthPage
     @Published var acceptedTerms: Bool = false
     @Published var localError: String?
@@ -63,26 +64,27 @@ final class LoginViewModel: ObservableObject {
     }
 
     var canSubmitLogin: Bool {
-        !state.account.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            state.password.count >= 6 &&
-            !state.isLoading
+        adapter.isLoginReady(
+            account: state.account,
+            password: state.password,
+            isLoading: state.isLoading
+        )
     }
 
     var canRequestPhoneCode: Bool {
-        state.account.count == 11 && !state.isLoading
+        adapter.isPhoneAccountValid(state.account) && !state.isLoading
     }
 
     var canRequestEmailCode: Bool {
-        isEmailValid(emailInput) && !state.isLoading
+        adapter.isEmailAccountValid(emailInput) && !state.isLoading
     }
 
     var canRegisterWithPassword: Bool {
-        setupPassword.count >= 6 &&
-            setupPassword.count <= 20 &&
-            setupPassword.contains(where: \.isLetter) &&
-            setupPassword.contains(where: \.isNumber) &&
-            confirmPassword == setupPassword &&
-            !state.isLoading
+        adapter.isRegisterPasswordReady(
+            password: setupPassword,
+            confirmPassword: confirmPassword,
+            isLoading: state.isLoading
+        )
     }
 
     func showLogin() {
@@ -187,14 +189,13 @@ final class LoginViewModel: ObservableObject {
     }
 
     func updatePhone(_ value: String) {
-        let filtered = String(value.filter(\.isNumber).prefix(11))
-        adapter.setUsername(filtered)
+        adapter.setUsername(adapter.normalizePhoneInput(value))
         localError = nil
         refresh()
     }
 
     func updateEmail(_ value: String) {
-        emailInput = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        emailInput = adapter.normalizeEmailInput(value)
         localError = nil
     }
 
@@ -205,17 +206,17 @@ final class LoginViewModel: ObservableObject {
     }
 
     func updateCode(_ value: String) {
-        codeInput = String(value.filter(\.isNumber).prefix(4))
+        codeInput = adapter.normalizeVerifyCodeInput(value)
         localError = nil
     }
 
     func updateSetupPassword(_ value: String) {
-        setupPassword = String(value.prefix(20))
+        setupPassword = adapter.normalizePasswordInput(value)
         localError = nil
     }
 
     func updateConfirmPassword(_ value: String) {
-        confirmPassword = String(value.prefix(20))
+        confirmPassword = adapter.normalizePasswordInput(value)
         localError = nil
     }
 
@@ -225,8 +226,8 @@ final class LoginViewModel: ObservableObject {
     }
 
     func requestPhoneVerifyCode(skipTerms: Bool = false) {
-        guard state.account.count == 11 else {
-            localError = "请输入11位手机号"
+        if let message = adapter.validatePhoneAccount(state.account) {
+            localError = message
             return
         }
         guard skipTerms || acceptedTerms else {
@@ -243,9 +244,9 @@ final class LoginViewModel: ObservableObject {
     }
 
     func requestEmailVerifyCode(skipTerms: Bool = false) {
-        let email = emailInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard isEmailValid(email) else {
-            localError = "请输入有效邮箱"
+        let email = adapter.normalizeEmailInput(emailInput)
+        if let message = adapter.validateEmailAccount(email) {
+            localError = message
             return
         }
         guard skipTerms || acceptedTerms else {
@@ -262,7 +263,7 @@ final class LoginViewModel: ObservableObject {
     }
 
     func resendVerifyCode() -> Bool {
-        if let message = adapter.requestVerifyCode(account: state.account) {
+        if let message = adapter.requestResentVerifyCode(account: state.account) {
             localError = message
             return false
         }
@@ -280,8 +281,8 @@ final class LoginViewModel: ObservableObject {
     }
 
     func submitCode() {
-        guard codeInput.count == 4 else {
-            localError = "请输入验证码"
+        if let message = adapter.validateVerifyCode(codeInput) {
+            localError = message
             return
         }
 
@@ -307,20 +308,15 @@ final class LoginViewModel: ObservableObject {
         adapter.setLoginMode()
         adapter.submit()
         refresh()
-        handleEffect(adapter.consumeEffect(), submitContext: .login)
+        handleEffect(adapter.consumeEffect())
     }
 
     func register() {
-        guard setupPassword.count >= 6, setupPassword.count <= 20 else {
-            localError = "密码需要为6-20位"
-            return
-        }
-        guard setupPassword.contains(where: \.isLetter), setupPassword.contains(where: \.isNumber) else {
-            localError = "密码需要包含字母和数字"
-            return
-        }
-        guard setupPassword == confirmPassword else {
-            localError = "两次输入的密码不一致"
+        if let message = adapter.validateRegisterPassword(
+            password: setupPassword,
+            confirmPassword: confirmPassword
+        ) {
+            localError = message
             return
         }
 
@@ -329,18 +325,13 @@ final class LoginViewModel: ObservableObject {
         adapter.setVerifyCode(codeInput)
         adapter.submit()
         refresh()
-        handleEffect(adapter.consumeEffect(), submitContext: .register)
+        handleEffect(adapter.consumeEffect())
     }
 
     func logout() {
         adapter.logout()
         refresh()
-        handleEffect(adapter.consumeEffect(), submitContext: nil)
-    }
-
-    private enum SubmitContext {
-        case login
-        case register
+        handleEffect(adapter.consumeEffect())
     }
 
     private func openVerifyPage(account: String, targetKind: VerifyTargetKind) {
@@ -358,10 +349,10 @@ final class LoginViewModel: ObservableObject {
         state = adapter.snapshot()
     }
 
-    private func handleEffect(_ effect: IOSLoginEffect?, submitContext: SubmitContext?) {
+    private func handleEffect(_ effect: LoginEffect?) {
         switch effect {
-        case .authSucceeded:
-            if submitContext == .register {
+        case let effect as LoginEffectAuthSucceeded:
+            if effect.mode == AuthMode.register_ {
                 adapter.clearSessionSilently()
                 acceptedTerms = false
                 setupPassword = ""
@@ -375,25 +366,29 @@ final class LoginViewModel: ObservableObject {
                 localError = nil
                 toastMessage = "登录成功"
             }
-        case .loggedOut:
+
+        case _ as LoginEffectNavigateHome:
+            page = .signedIn
+            localError = nil
+            toastMessage = "登录成功"
+
+        case _ as LoginEffectLoggedOut:
             acceptedTerms = false
             page = .entrance
             toastMessage = "已退出登录"
-        case .showMessage(let message):
-            toastMessage = message
+
+        case _ as LoginEffectSessionExpired:
+            page = .login
+            toastMessage = "会话已失效，请重新登录"
+
+        case let effect as LoginEffectShowMessage:
+            toastMessage = effect.message
+
         case nil:
+            break
+
+        default:
             break
         }
     }
-}
-
-private func isEmailValid(_ email: String) -> Bool {
-    let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard let atIndex = trimmed.firstIndex(of: "@") else {
-        return false
-    }
-
-    let localPart = trimmed[..<atIndex]
-    let domainPart = trimmed[trimmed.index(after: atIndex)...]
-    return !localPart.isEmpty && domainPart.contains(".")
 }

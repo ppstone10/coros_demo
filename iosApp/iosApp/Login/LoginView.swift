@@ -645,12 +645,6 @@ private struct PhoneInput: View {
                 .fill(corosLine)
                 .frame(height: 1)
         }
-        .onChange(of: text) { _, newValue in
-            let filtered = String(newValue.filter(\.isNumber).prefix(11))
-            if filtered != newValue {
-                text = filtered
-            }
-        }
         .onAppear {
             if autoFocus {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {

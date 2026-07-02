@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		A10000000000000000000001 /* IOSDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* IOSDemoApp.swift */; };
 		A10000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* ContentView.swift */; };
-		A10000000000000000000003 /* LoginState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* LoginState.swift */; };
 		A10000000000000000000004 /* SharedLoginAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* SharedLoginAdapter.swift */; };
 		A10000000000000000000005 /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* LoginViewModel.swift */; };
 		A10000000000000000000006 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* LoginView.swift */; };
@@ -20,7 +19,6 @@
 /* Begin PBXFileReference section */
 		A20000000000000000000001 /* IOSDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSDemoApp.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		A20000000000000000000003 /* LoginState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginState.swift; sourceTree = "<group>"; };
 		A20000000000000000000004 /* SharedLoginAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLoginAdapter.swift; sourceTree = "<group>"; };
 		A20000000000000000000005 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
 		A20000000000000000000006 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
@@ -63,7 +61,6 @@
 		A40000000000000000000003 /* Login */ = {
 			isa = PBXGroup;
 			children = (
-				A20000000000000000000003 /* LoginState.swift */,
 				A20000000000000000000004 /* SharedLoginAdapter.swift */,
 				A20000000000000000000005 /* LoginViewModel.swift */,
 				A20000000000000000000006 /* LoginView.swift */,
@@ -181,7 +178,6 @@
 			files = (
 				A10000000000000000000001 /* IOSDemoApp.swift in Sources */,
 				A10000000000000000000002 /* ContentView.swift in Sources */,
-				A10000000000000000000003 /* LoginState.swift in Sources */,
 				A10000000000000000000004 /* SharedLoginAdapter.swift in Sources */,
 				A10000000000000000000005 /* LoginViewModel.swift in Sources */,
 				A10000000000000000000006 /* LoginView.swift in Sources */,

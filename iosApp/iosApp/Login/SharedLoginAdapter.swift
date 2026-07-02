@@ -2,7 +2,7 @@ import Foundation
 import Shared
 
 protocol SharedLoginAdapterProtocol {
-    func snapshot() -> IOSLoginState
+    func snapshot() -> LoginState
     func setLoginMode()
     func setRegisterMode()
     func setUsername(_ value: String)
@@ -10,33 +10,32 @@ protocol SharedLoginAdapterProtocol {
     func setVerifyCode(_ value: String)
     func setDisplayName(_ value: String)
     func setRegion(_ value: String)
+    func normalizePhoneInput(_ value: String) -> String
+    func normalizeEmailInput(_ value: String) -> String
+    func normalizeVerifyCodeInput(_ value: String) -> String
+    func normalizePasswordInput(_ value: String) -> String
+    func isLoginReady(account: String, password: String, isLoading: Bool) -> Bool
+    func isPhoneAccountValid(_ account: String) -> Bool
+    func isEmailAccountValid(_ email: String) -> Bool
+    func isRegisterPasswordReady(password: String, confirmPassword: String, isLoading: Bool) -> Bool
+    func validatePhoneAccount(_ account: String) -> String?
+    func validateEmailAccount(_ email: String) -> String?
+    func validateVerifyCode(_ code: String) -> String?
+    func validateRegisterPassword(password: String, confirmPassword: String) -> String?
     func requestVerifyCode(account: String) -> String?
+    func requestResentVerifyCode(account: String) -> String?
     func verifyCode(account: String, code: String) -> String?
     func submit()
     func logout()
     func clearSessionSilently()
-    func consumeEffect() -> IOSLoginEffect?
+    func consumeEffect() -> LoginEffect?
 }
 
 final class SharedLoginAdapter: SharedLoginAdapterProtocol {
     private let facade = LoginFacade()
 
-    func snapshot() -> IOSLoginState {
-        let sharedState = facade.state
-        return IOSLoginState(
-            mode: sharedState.mode == AuthMode.register_ ? .register : .login,
-            username: sharedState.username,
-            password: sharedState.password,
-            verifyCode: sharedState.verifyCode,
-            displayName: sharedState.displayName,
-            selectedRegion: sharedState.selectedRegion,
-            currentSession: sharedState.currentSession.map {
-                IOSAuthSession(account: $0.account, displayName: $0.resolvedDisplayName)
-            },
-            isLoading: sharedState.isLoading,
-            isLoggedIn: sharedState.isLoggedIn,
-            errorMessage: sharedState.errorMessage
-        )
+    func snapshot() -> LoginState {
+        facade.state
     }
 
     func setLoginMode() {
@@ -67,8 +66,64 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
         facade.setRegion(value: value)
     }
 
+    func normalizePhoneInput(_ value: String) -> String {
+        facade.normalizePhoneInput(value: value)
+    }
+
+    func normalizeEmailInput(_ value: String) -> String {
+        facade.normalizeEmailInput(value: value)
+    }
+
+    func normalizeVerifyCodeInput(_ value: String) -> String {
+        facade.normalizeVerifyCodeInput(value: value)
+    }
+
+    func normalizePasswordInput(_ value: String) -> String {
+        facade.normalizePasswordInput(value: value)
+    }
+
+    func isLoginReady(account: String, password: String, isLoading: Bool) -> Bool {
+        facade.isLoginReady(account: account, password: password, isLoading: isLoading)
+    }
+
+    func isPhoneAccountValid(_ account: String) -> Bool {
+        facade.isPhoneAccountValid(account: account)
+    }
+
+    func isEmailAccountValid(_ email: String) -> Bool {
+        facade.isEmailAccountValid(email: email)
+    }
+
+    func isRegisterPasswordReady(password: String, confirmPassword: String, isLoading: Bool) -> Bool {
+        facade.isRegisterPasswordReady(
+            password: password,
+            confirmPassword: confirmPassword,
+            isLoading: isLoading
+        )
+    }
+
+    func validatePhoneAccount(_ account: String) -> String? {
+        facade.validatePhoneAccount(account: account)
+    }
+
+    func validateEmailAccount(_ email: String) -> String? {
+        facade.validateEmailAccount(email: email)
+    }
+
+    func validateVerifyCode(_ code: String) -> String? {
+        facade.validateVerifyCode(code: code)
+    }
+
+    func validateRegisterPassword(password: String, confirmPassword: String) -> String? {
+        facade.validateRegisterPassword(password: password, confirmPassword: confirmPassword)
+    }
+
     func requestVerifyCode(account: String) -> String? {
         facade.requestVerifyCode(account: account)
+    }
+
+    func requestResentVerifyCode(account: String) -> String? {
+        facade.requestResentVerifyCode(account: account)
     }
 
     func verifyCode(account: String, code: String) -> String? {
@@ -87,20 +142,7 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
         facade.clearSessionSilently()
     }
 
-    func consumeEffect() -> IOSLoginEffect? {
-        guard let payload = facade.consumeEffectPayload() else {
-            return nil
-        }
-
-        switch payload.type {
-        case "AuthSucceeded", "NavigateHome":
-            return .authSucceeded(displayName: payload.displayName ?? "")
-        case "LoggedOut":
-            return .loggedOut
-        case "ShowMessage", "SessionExpired":
-            return .showMessage(payload.message ?? "")
-        default:
-            return nil
-        }
+    func consumeEffect() -> LoginEffect? {
+        facade.consumeEffect()
     }
 }

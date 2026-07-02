@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import com.example.demo.common.login.AuthMode
 import com.example.demo.common.login.LoginAction
 import com.example.demo.common.login.LoginEffect
+import com.example.demo.common.login.LoginRules
 import com.example.demo.common.login.LoginState
 import com.example.demo.common.login.LoginStore
 import com.example.demo.common.login.LocalMockAuthRepository
@@ -58,6 +59,54 @@ class LoginViewModel(
         dispatch(LoginAction.ExpireSessionClicked)
     }
 
+    fun normalizePhoneInput(value: String): String {
+        return LoginRules.normalizePhoneInput(value)
+    }
+
+    fun normalizeEmailInput(value: String): String {
+        return LoginRules.normalizeEmailInput(value)
+    }
+
+    fun normalizeVerifyCodeInput(value: String): String {
+        return LoginRules.normalizeVerifyCodeInput(value)
+    }
+
+    fun normalizePasswordInput(value: String): String {
+        return LoginRules.normalizePasswordInput(value)
+    }
+
+    fun canSubmitLogin(): Boolean {
+        return LoginRules.isLoginReady(state.account, state.password, state.isLoading)
+    }
+
+    fun canRequestPhoneCode(): Boolean {
+        return LoginRules.isPhoneAccountValid(state.account) && !state.isLoading
+    }
+
+    fun canRequestEmailCode(email: String): Boolean {
+        return LoginRules.isEmailAccountValid(email) && !state.isLoading
+    }
+
+    fun canRegisterWithPassword(password: String, confirmPassword: String): Boolean {
+        return LoginRules.isRegisterPasswordReady(password, confirmPassword, state.isLoading)
+    }
+
+    fun validatePhoneAccount(account: String): String? {
+        return LoginRules.validatePhoneAccount(account).message
+    }
+
+    fun validateEmailAccount(email: String): String? {
+        return LoginRules.validateEmailAccount(email).message
+    }
+
+    fun validateVerifyCode(code: String): String? {
+        return LoginRules.validateVerifyCode(code).message
+    }
+
+    fun validateRegisterPassword(password: String, confirmPassword: String): String? {
+        return LoginRules.validateRegisterPassword(password, confirmPassword).message
+    }
+
     fun hasAccount(account: String): Boolean {
         return store.hasAccount(account)
     }
@@ -69,8 +118,34 @@ class LoginViewModel(
         return store.requestVerifyCode(account, code)
     }
 
+    fun requestVerifyCodeMessage(account: String): String? {
+        return when (val result = requestVerifyCode(account)) {
+            is MockResult.Success -> null
+            is MockResult.Failure -> result.error.message
+        }
+    }
+
+    fun requestResentVerifyCodeMessage(account: String): String? {
+        return when (
+            val result = requestVerifyCode(
+                account,
+                LocalMockAuthRepository.ResentVerifyCode
+            )
+        ) {
+            is MockResult.Success -> null
+            is MockResult.Failure -> result.error.message
+        }
+    }
+
     fun verifyCode(account: String, code: String): MockResult<Unit> {
         return store.verifyCode(account, code)
+    }
+
+    fun verifyCodeMessage(account: String, code: String): String? {
+        return when (val result = verifyCode(account, code)) {
+            is MockResult.Success -> null
+            is MockResult.Failure -> result.error.message
+        }
     }
 
     fun clearSessionSilently() {

@@ -68,39 +68,6 @@ class LoginStore(
         return effect
     }
 
-    fun consumeEffectPayload(): LoginEffectPayload? {
-        return when (val effect = consumeEffect()) {
-            is LoginEffect.AuthSucceeded -> LoginEffectPayload(
-                type = "AuthSucceeded",
-                userId = effect.session.userId,
-                displayName = effect.session.resolvedDisplayName
-            )
-
-            is LoginEffect.NavigateHome -> LoginEffectPayload(
-                type = "NavigateHome",
-                userId = effect.user.id,
-                displayName = effect.user.displayName
-            )
-
-            LoginEffect.LoggedOut -> LoginEffectPayload(
-                type = "LoggedOut",
-                message = "已退出登录"
-            )
-
-            LoginEffect.SessionExpired -> LoginEffectPayload(
-                type = "SessionExpired",
-                message = "会话已失效，请重新登录"
-            )
-
-            is LoginEffect.ShowMessage -> LoginEffectPayload(
-                type = "ShowMessage",
-                message = effect.message
-            )
-
-            null -> null
-        }
-    }
-
     fun hasAccount(account: String): Boolean {
         return authRepository.hasAccount(account)
     }

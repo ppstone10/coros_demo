@@ -233,7 +233,7 @@ class LocalMockAuthRepository(
         region: String
     ): MockError? {
         if (account.isBlank() || !isMockAccountFormatValid(account)) return MockError.InvalidParam
-        if (password.length < MinPasswordLength) return MockError.InvalidParam
+        if (!LoginRules.isRegisterPasswordValid(password)) return MockError.InvalidParam
         val savedCode = loadStore().verifyCodes.lastOrNull {
             it.account.equals(account, ignoreCase = true)
         } ?: return MockError.VerifyCodeInvalid
@@ -268,8 +268,7 @@ class LocalMockAuthRepository(
     companion object {
         const val DefaultVerifyCode = "1234"
         const val ResentVerifyCode = "4321"
-        private const val VerifyCodeLength = 4
-        private const val MinPasswordLength = 6
+        private const val VerifyCodeLength = LoginRules.VerifyCodeLength
         private const val VerifyCodeTtlMs = 60 * 1000L
         const val DefaultAccount = "13107012029"
         const val DefaultEmailAccount = "2232591785@qq.com"

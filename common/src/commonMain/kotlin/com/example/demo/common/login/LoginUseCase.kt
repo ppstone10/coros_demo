@@ -20,6 +20,13 @@ class LoginUseCase(
             )
         }
 
+        if (password.length < LoginRules.PasswordMinLength) {
+            return LoginResult.Failure(
+                code = MockError.InvalidParam.code,
+                message = "密码需要为6-20位"
+            )
+        }
+
         return authRepository.login(
             LoginRequestDto(
                 account = normalizedAccount,

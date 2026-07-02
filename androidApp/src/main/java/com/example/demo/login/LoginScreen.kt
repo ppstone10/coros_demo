@@ -97,8 +97,6 @@ import com.example.demo.R
 import com.example.demo.common.login.AuthMode
 import com.example.demo.common.login.LoginEffect
 import com.example.demo.common.login.LoginState
-import com.example.demo.common.login.LocalMockAuthRepository
-import com.example.demo.common.login.MockResult
 import com.example.demo.ui.theme.DemoTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -199,27 +197,33 @@ fun LoginScreen(
     }
 
     fun requestPhoneVerifyCode(skipTerms: Boolean = false) {
+        val validationMessage = viewModel.validatePhoneAccount(state.account)
         when {
-            state.account.length != 11 -> localError = "请输入11位手机号"
+            validationMessage != null -> localError = validationMessage
             !skipTerms && !acceptedTerms -> termsPromptAction = TermsPromptAction.PhoneCode
             else -> {
-                when (val result = viewModel.requestVerifyCode(state.account)) {
-                    is MockResult.Success -> openVerifyPage(state.account, VerifyTargetKind.Phone)
-                    is MockResult.Failure -> localError = result.error.message
+                val message = viewModel.requestVerifyCodeMessage(state.account)
+                if (message == null) {
+                    openVerifyPage(state.account, VerifyTargetKind.Phone)
+                } else {
+                    localError = message
                 }
             }
         }
     }
 
     fun requestEmailVerifyCode(skipTerms: Boolean = false) {
-        val email = emailInput.trim()
+        val email = viewModel.normalizeEmailInput(emailInput)
+        val validationMessage = viewModel.validateEmailAccount(email)
         when {
-            !isEmailValid(email) -> localError = "请输入有效邮箱"
+            validationMessage != null -> localError = validationMessage
             !skipTerms && !acceptedTerms -> termsPromptAction = TermsPromptAction.EmailCode
             else -> {
-                when (val result = viewModel.requestVerifyCode(email)) {
-                    is MockResult.Success -> openVerifyPage(email, VerifyTargetKind.Email)
-                    is MockResult.Failure -> localError = result.error.message
+                val message = viewModel.requestVerifyCodeMessage(email)
+                if (message == null) {
+                    openVerifyPage(email, VerifyTargetKind.Email)
+                } else {
+                    localError = message
                 }
             }
         }
@@ -235,17 +239,16 @@ fun LoginScreen(
     }
 
     fun verifyCurrentCode() {
-        if (codeInput.length < 4) return
-        when (val result = viewModel.verifyCode(state.account, codeInput)) {
-            is MockResult.Success -> {
-                viewModel.onVerifyCodeChanged(codeInput)
-                setupPassword = ""
-                confirmPassword = ""
-                localError = null
-                page = CorosAuthPage.PasswordSetup
-            }
-
-            is MockResult.Failure -> localError = result.error.message
+        if (viewModel.validateVerifyCode(codeInput) != null) return
+        val message = viewModel.verifyCodeMessage(state.account, codeInput)
+        if (message == null) {
+            viewModel.onVerifyCodeChanged(codeInput)
+            setupPassword = ""
+            confirmPassword = ""
+            localError = null
+            page = CorosAuthPage.PasswordSetup
+        } else {
+            localError = message
         }
     }
 
@@ -332,6 +335,7 @@ fun LoginScreen(
 
                 CorosAuthPage.Login -> LoginPage(
                     state = state,
+                    canLogin = viewModel.canSubmitLogin(),
                     acceptedTerms = acceptedTerms,
                     error = localError ?: state.errorMessage,
                     onUnavailableClick = ::showUnavailableFeature,
@@ -358,6 +362,7 @@ fun LoginScreen(
 
                 CorosAuthPage.PhoneRegister -> PhoneRegisterPage(
                     state = state,
+                    canSendCode = viewModel.canRequestPhoneCode(),
                     acceptedTerms = acceptedTerms,
                     error = localError ?: state.errorMessage,
                     onUnavailableClick = ::showUnavailableFeature,
@@ -366,7 +371,7 @@ fun LoginScreen(
                         page = CorosAuthPage.Entrance
                     },
                     onPhoneChanged = {
-                        viewModel.onUsernameChanged(it)
+                        viewModel.onUsernameChanged(viewModel.normalizePhoneInput(it))
                         localError = null
                     },
                     onTermsClick = {
@@ -386,6 +391,7 @@ fun LoginScreen(
 
                 CorosAuthPage.EmailRegister -> EmailRegisterPage(
                     email = emailInput,
+                    canSendCode = viewModel.canRequestEmailCode(emailInput),
                     acceptedTerms = acceptedTerms,
                     error = localError ?: state.errorMessage,
                     onUnavailableClick = ::showUnavailableFeature,
@@ -394,7 +400,7 @@ fun LoginScreen(
                         page = CorosAuthPage.Entrance
                     },
                     onEmailChanged = {
-                        emailInput = it
+                        emailInput = viewModel.normalizeEmailInput(it)
                         localError = null
                     },
                     onTermsClick = {
@@ -425,27 +431,19 @@ fun LoginScreen(
                         }
                     },
                     onCodeChanged = {
-                        codeInput = it.filter(Char::isDigit).take(4)
+                        codeInput = viewModel.normalizeVerifyCodeInput(it)
                         localError = null
                     },
                     onCodeComplete = ::verifyCurrentCode,
                     onResend = {
-                        when (
-                            val result = viewModel.requestVerifyCode(
-                                state.account,
-                                LocalMockAuthRepository.ResentVerifyCode
-                            )
-                        ) {
-                            is MockResult.Success -> {
-                                codeInput = ""
-                                localError = null
-                                true
-                            }
-
-                            is MockResult.Failure -> {
-                                localError = result.error.message
-                                false
-                            }
+                        val message = viewModel.requestResentVerifyCodeMessage(state.account)
+                        if (message == null) {
+                            codeInput = ""
+                            localError = null
+                            true
+                        } else {
+                            localError = message
+                            false
                         }
                     },
                     onUnavailableClick = ::showUnavailableFeature
@@ -454,6 +452,7 @@ fun LoginScreen(
                 CorosAuthPage.PasswordSetup -> PasswordSetupPage(
                     password = setupPassword,
                     confirmPassword = confirmPassword,
+                    canRegister = viewModel.canRegisterWithPassword(setupPassword, confirmPassword),
                     error = localError ?: state.errorMessage,
                     isLoading = state.isLoading,
                     onBack = {
@@ -463,23 +462,22 @@ fun LoginScreen(
                         page = CorosAuthPage.VerifyCode
                     },
                     onPasswordChanged = {
-                        setupPassword = it
+                        setupPassword = viewModel.normalizePasswordInput(it)
                         localError = null
                     },
                     onConfirmPasswordChanged = {
-                        confirmPassword = it
+                        confirmPassword = viewModel.normalizePasswordInput(it)
                         localError = null
                     },
                     onRegister = {
-                        when {
-                            setupPassword.length !in 6..20 -> localError = "密码需要为6-20位"
-                            setupPassword != confirmPassword -> localError = "两次输入的密码不一致"
-                            else -> {
-                                viewModel.onModeChanged(AuthMode.Register)
-                                viewModel.onPasswordChanged(setupPassword)
-                                viewModel.onVerifyCodeChanged(codeInput)
-                                viewModel.onSubmit()
-                            }
+                        val message = viewModel.validateRegisterPassword(setupPassword, confirmPassword)
+                        if (message != null) {
+                            localError = message
+                        } else {
+                            viewModel.onModeChanged(AuthMode.Register)
+                            viewModel.onPasswordChanged(setupPassword)
+                            viewModel.onVerifyCodeChanged(codeInput)
+                            viewModel.onSubmit()
                         }
                     }
                 )
@@ -546,13 +544,6 @@ private tailrec fun Context.findActivity(): Activity? {
         is ContextWrapper -> baseContext.findActivity()
         else -> null
     }
-}
-
-private fun isEmailValid(email: String): Boolean {
-    val trimmed = email.trim()
-    return trimmed.contains("@") &&
-        trimmed.substringAfter("@").contains(".") &&
-        trimmed.substringBefore("@").isNotBlank()
 }
 
 private fun verifyCodeMessage(
@@ -918,6 +909,7 @@ private fun VerticalScrollbar(
 @Composable
 private fun LoginPage(
     state: LoginState,
+    canLogin: Boolean,
     acceptedTerms: Boolean,
     error: String?,
     onUnavailableClick: () -> Unit,
@@ -929,10 +921,6 @@ private fun LoginPage(
     onServiceTermsClick: () -> Unit,
     onSubmit: () -> Unit
 ) {
-    val canLogin = state.account.isNotBlank() &&
-        state.password.length >= 6 &&
-        !state.isLoading
-
     AuthBlackPage(
         onBack = onBack,
         showFeedback = true,
@@ -1001,6 +989,7 @@ private fun LoginPage(
 @Composable
 private fun PhoneRegisterPage(
     state: LoginState,
+    canSendCode: Boolean,
     acceptedTerms: Boolean,
     error: String?,
     onUnavailableClick: () -> Unit,
@@ -1012,9 +1001,6 @@ private fun PhoneRegisterPage(
     onSendCode: () -> Unit,
     onEmailRegister: () -> Unit
 ) {
-    val canSendCode = state.account.length == 11 &&
-        !state.isLoading
-
     AuthBlackPage(
         onBack = onBack,
         showFeedback = true,
@@ -1062,6 +1048,7 @@ private fun PhoneRegisterPage(
 @Composable
 private fun EmailRegisterPage(
     email: String,
+    canSendCode: Boolean,
     acceptedTerms: Boolean,
     error: String?,
     onUnavailableClick: () -> Unit,
@@ -1073,8 +1060,6 @@ private fun EmailRegisterPage(
     onSendCode: () -> Unit,
     onPhoneRegister: () -> Unit
 ) {
-    val canSendCode = isEmailValid(email)
-
     AuthBlackPage(
         onBack = onBack,
         showFeedback = true,
@@ -1222,6 +1207,7 @@ private fun VerifyCodePage(
 private fun PasswordSetupPage(
     password: String,
     confirmPassword: String,
+    canRegister: Boolean,
     error: String?,
     isLoading: Boolean,
     onBack: () -> Unit,
@@ -1229,14 +1215,6 @@ private fun PasswordSetupPage(
     onConfirmPasswordChanged: (String) -> Unit,
     onRegister: () -> Unit
 ) {
-    val hasLetter = password.any { it.isLetter() }
-    val hasDigit = password.any { it.isDigit() }
-    val canRegister = password.length in 6..20 &&
-        hasLetter &&
-        hasDigit &&
-        confirmPassword == password &&
-        !isLoading
-
     AuthBlackPage(onBack = onBack, showFeedback = false) {
         Text(
             text = "设置登录密码",
@@ -1252,7 +1230,7 @@ private fun PasswordSetupPage(
             keyboardType = KeyboardType.Password,
             isPassword = true,
             autoFocus = true,
-            onValueChange = { onPasswordChanged(it.take(20)) }
+            onValueChange = onPasswordChanged
         )
         Spacer(modifier = Modifier.height(48.dp))
         UnderlineInput(
@@ -1260,7 +1238,7 @@ private fun PasswordSetupPage(
             placeholder = "再次输入密码",
             keyboardType = KeyboardType.Password,
             isPassword = true,
-            onValueChange = { onConfirmPasswordChanged(it.take(20)) }
+            onValueChange = onConfirmPasswordChanged
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = "6-20位必须包含字母和数字", color = Color(0xFFD8D8DD), fontSize = 14.sp)
@@ -1552,7 +1530,7 @@ private fun PhoneInput(
         Spacer(modifier = Modifier.width(24.dp))
         BasicTextField(
             value = value,
-            onValueChange = { onValueChange(it.filter(Char::isDigit).take(11)) },
+            onValueChange = onValueChange,
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
             textStyle = TextStyle(color = CorosWhite, fontSize = 17.sp),

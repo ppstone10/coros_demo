@@ -136,13 +136,6 @@ sealed interface LoginEffect {
     data class ShowMessage(val message: String) : LoginEffect
 }
 
-data class LoginEffectPayload(
-    val type: String,
-    val message: String? = null,
-    val userId: String? = null,
-    val displayName: String? = null
-)
-
 sealed interface LoginResult {
     data class Success(val session: AuthSession) : LoginResult
     data class Failure(val code: String, val message: String) : LoginResult
