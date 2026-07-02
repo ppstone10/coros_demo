@@ -31,6 +31,7 @@ class LoginUseCaseTest {
     @Test
     fun invalidVerifyCodeFails() {
         val repository = repository()
+        repository.requestVerifyCode("code@example.com")
 
         val result = repository.register(
             RegisterRequestDto(
@@ -44,6 +45,35 @@ class LoginUseCaseTest {
 
         val failure = assertIs<LoginResult.Failure>(result)
         assertEquals(MockError.VerifyCodeInvalid.code, failure.code)
+    }
+
+    @Test
+    fun resentVerifyCodeReplacesOriginalCode() {
+        val repository = repository()
+        repository.requestVerifyCode("resent@example.com")
+        repository.requestVerifyCode("resent@example.com", LocalMockAuthRepository.ResentVerifyCode)
+
+        val oldCodeResult = repository.verifyCode("resent@example.com", LocalMockAuthRepository.DefaultVerifyCode)
+        val newCodeResult = repository.verifyCode("resent@example.com", LocalMockAuthRepository.ResentVerifyCode)
+
+        assertIs<MockResult.Failure>(oldCodeResult)
+        assertIs<MockResult.Success<Unit>>(newCodeResult)
+    }
+
+    @Test
+    fun verifyCodeExpiresAfterTtl() {
+        var now = 1000L
+        val repository = LocalMockAuthRepository(
+            InMemoryAuthStoreDataSource(),
+            nowEpochMs = { now }
+        )
+        repository.requestVerifyCode("expired-code@example.com")
+        now += 121_000L
+
+        val result = repository.verifyCode("expired-code@example.com", LocalMockAuthRepository.DefaultVerifyCode)
+
+        val failure = assertIs<MockResult.Failure>(result)
+        assertEquals(MockError.VerifyCodeExpired, failure.error)
     }
 
     @Test
@@ -157,10 +187,11 @@ class LoginUseCaseTest {
         repository: AuthRepository,
         account: String
     ): LoginResult {
+        repository.requestVerifyCode(account)
         return RegisterUseCase(repository).execute(
             account = account,
             password = "password1",
-            verifyCode = "1234",
+            verifyCode = LocalMockAuthRepository.DefaultVerifyCode,
             region = "CN",
             displayName = "Mock User"
         )

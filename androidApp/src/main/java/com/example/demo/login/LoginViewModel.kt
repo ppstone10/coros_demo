@@ -62,8 +62,11 @@ class LoginViewModel(
         return store.hasAccount(account)
     }
 
-    fun requestVerifyCode(account: String): MockResult<MockVerifyCodeState> {
-        return store.requestVerifyCode(account)
+    fun requestVerifyCode(
+        account: String,
+        code: String = LocalMockAuthRepository.DefaultVerifyCode
+    ): MockResult<MockVerifyCodeState> {
+        return store.requestVerifyCode(account, code)
     }
 
     fun verifyCode(account: String, code: String): MockResult<Unit> {

@@ -54,3 +54,6 @@ dist/
 # Environment files
 .env
 .env.*
+
+# Resources files
+/login_register_resources/

@@ -70,6 +70,7 @@ enum class MockError(val code: String, val message: String) {
     AccountNotFound("AUTH_ACCOUNT_NOT_FOUND", "账号不存在"),
     PasswordIncorrect("AUTH_PASSWORD_INCORRECT", "密码不正确"),
     VerifyCodeInvalid("AUTH_VERIFY_CODE_INVALID", "验证码不正确"),
+    VerifyCodeExpired("AUTH_VERIFY_CODE_EXPIRED", "验证码已过期，请重新获取"),
     EmptyData("AUTH_EMPTY_DATA", "暂无本地账号数据"),
     CorruptedData("AUTH_CORRUPTED_DATA", "本地登录数据损坏"),
     PersistFailed("AUTH_PERSIST_FAILED", "本地登录状态保存失败")
@@ -145,16 +146,6 @@ data class LoginEffectPayload(
 sealed interface LoginResult {
     data class Success(val session: AuthSession) : LoginResult
     data class Failure(val code: String, val message: String) : LoginResult
-}
-
-fun AuthSession.toUserDto(): UserDto {
-    return UserDto(
-        id = userId,
-        account = account,
-        displayName = resolvedDisplayName,
-        region = region,
-        isValid = isValid
-    )
 }
 
 fun MockAuthSession.toDomainOrNull(): AuthSession? {

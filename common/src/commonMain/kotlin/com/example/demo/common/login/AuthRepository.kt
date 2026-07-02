@@ -21,7 +21,10 @@ class InMemoryAuthStoreDataSource(
 interface AuthRepository {
     fun availableRegions(): List<AuthRegion>
     fun hasAccount(account: String): Boolean
-    fun requestVerifyCode(account: String): MockResult<MockVerifyCodeState>
+    fun requestVerifyCode(
+        account: String,
+        code: String = LocalMockAuthRepository.DefaultVerifyCode
+    ): MockResult<MockVerifyCodeState>
     fun verifyCode(account: String, code: String): MockResult<Unit>
     fun currentSession(): AuthSession?
     fun requireSession(): AuthSession
@@ -47,16 +50,25 @@ class LocalMockAuthRepository(
         }
     }
 
-    override fun requestVerifyCode(account: String): MockResult<MockVerifyCodeState> {
+    override fun requestVerifyCode(
+        account: String,
+        code: String
+    ): MockResult<MockVerifyCodeState> {
         val normalizedAccount = account.trim()
-        if (normalizedAccount.isBlank() || !isMockAccountFormatValid(normalizedAccount)) {
+        val normalizedCode = code.trim()
+        if (
+            normalizedAccount.isBlank() ||
+            !isMockAccountFormatValid(normalizedAccount) ||
+            normalizedCode.length != VerifyCodeLength ||
+            !normalizedCode.all { it.isDigit() }
+        ) {
             return MockResult.Failure(MockError.InvalidParam)
         }
 
         val store = loadStore()
         val codeState = MockVerifyCodeState(
             account = normalizedAccount,
-            code = DefaultVerifyCode,
+            code = normalizedCode,
             expireAtEpochMs = nowEpochMs() + VerifyCodeTtlMs
         )
         val nextStore = store.copy(
@@ -77,12 +89,12 @@ class LocalMockAuthRepository(
         val verifyCode = code.trim()
         val savedCode = loadStore().verifyCodes.lastOrNull {
             it.account.equals(normalizedAccount, ignoreCase = true)
-        }
+        } ?: return MockResult.Failure(MockError.VerifyCodeInvalid)
 
-        return if (savedCode?.code == verifyCode) {
-            MockResult.Success(Unit)
-        } else {
-            MockResult.Failure(MockError.VerifyCodeInvalid)
+        return when {
+            savedCode.expireAtEpochMs <= nowEpochMs() -> MockResult.Failure(MockError.VerifyCodeExpired)
+            savedCode.code == verifyCode -> MockResult.Success(Unit)
+            else -> MockResult.Failure(MockError.VerifyCodeInvalid)
         }
     }
 
@@ -222,7 +234,11 @@ class LocalMockAuthRepository(
     ): MockError? {
         if (account.isBlank() || !isMockAccountFormatValid(account)) return MockError.InvalidParam
         if (password.length < MinPasswordLength) return MockError.InvalidParam
-        if (verifyCode.length != VerifyCodeLength || verifyCode != DefaultVerifyCode) {
+        val savedCode = loadStore().verifyCodes.lastOrNull {
+            it.account.equals(account, ignoreCase = true)
+        } ?: return MockError.VerifyCodeInvalid
+        if (savedCode.expireAtEpochMs <= nowEpochMs()) return MockError.VerifyCodeExpired
+        if (verifyCode.length != VerifyCodeLength || verifyCode != savedCode.code) {
             return MockError.VerifyCodeInvalid
         }
         if (availableRegions().none { it.region == region }) return MockError.InvalidParam
@@ -251,10 +267,12 @@ class LocalMockAuthRepository(
 
     companion object {
         const val DefaultVerifyCode = "1234"
+        const val ResentVerifyCode = "4321"
         private const val VerifyCodeLength = 4
         private const val MinPasswordLength = 6
-        private const val VerifyCodeTtlMs = 5 * 60 * 1000L
+        private const val VerifyCodeTtlMs = 60 * 1000L
         const val DefaultAccount = "13107012029"
+        const val DefaultEmailAccount = "2232591785@qq.com"
         const val DefaultPassword = "123456"
 
         val DefaultRegions = listOf(
@@ -268,6 +286,13 @@ class LocalMockAuthRepository(
                 account = DefaultAccount,
                 passwordHash = "mock:${DefaultPassword.reversed()}:${DefaultPassword.length}",
                 displayName = "COROS User",
+                region = "CN"
+            ),
+            MockAccount(
+                userId = "mock-user-default-email",
+                account = DefaultEmailAccount,
+                passwordHash = "mock:${DefaultPassword.reversed()}:${DefaultPassword.length}",
+                displayName = "COROS Email User",
                 region = "CN"
             )
         )
