@@ -14,6 +14,7 @@
 		A10000000000000000000005 /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* LoginViewModel.swift */; };
 		A10000000000000000000006 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* LoginView.swift */; };
 		A10000000000000000000008 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* Assets.xcassets */; };
+		A10000000000000000000009 /* home.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* home.mp4 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +26,7 @@
 		A20000000000000000000006 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		A20000000000000000000007 /* IOSDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = IOSDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000000000000000000008 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A20000000000000000000009 /* home.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = home.mp4; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +54,7 @@
 				A20000000000000000000001 /* IOSDemoApp.swift */,
 				A20000000000000000000002 /* ContentView.swift */,
 				A20000000000000000000008 /* Assets.xcassets */,
+				A40000000000000000000005 /* Resources */,
 				A40000000000000000000003 /* Login */,
 			);
 			path = iosApp;
@@ -74,6 +77,14 @@
 				A20000000000000000000007 /* IOSDemo.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000005 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000009 /* home.mp4 */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -136,6 +147,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000008 /* Assets.xcassets in Resources */,
+				A10000000000000000000009 /* home.mp4 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
