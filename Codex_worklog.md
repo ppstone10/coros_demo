@@ -427,3 +427,63 @@
 3. 如后续需要自定义返回行为：
    - Android：`popBackStack()` / `navigate(route) { popUpTo(...) }`。
    - iOS：`path.removeLast()` / `path = NavigationPath()` + `path.append(...)`。
+
+---
+
+2026-07-03 鸿蒙端注册登录可用性修正补充
+
+## 采纳内容
+- 采纳鸿蒙端登录/注册页可用性修正：修复输入后“登录”“发送验证码”“注册”等确认按钮不亮的问题，按钮可用性改为读取页面当前输入状态，并在提交前同步到 `LoginViewModel`。
+- 采纳鸿蒙端手机号输入限制：手机号输入框增加 11 位长度限制，并继续执行数字过滤与截断，避免输入超长或非数字内容。
+- 采纳鸿蒙端返回行为修正：左上角返回按钮改为固定点击区域，并补充 `onBackPress()`，验证码页、设密页、协议页、登录/注册页可按当前页面来源回退。
+- 采纳鸿蒙端初始页面沉浸式配置：在 `EntryAbility.ets` 中设置全屏布局、透明状态栏/导航栏、黑色窗口背景和亮色系统栏图标。
+- 采纳鸿蒙端本地 mock 逻辑补齐：默认手机号账号、默认邮箱账号、默认验证码 `1234`、重发验证码 `4321`、验证码 60 秒过期、注册密码复杂度校验与 Android/iOS 当前 mock 行为保持一致。
+
+## 人工审查点
+- 需人工审查鸿蒙端 UI：当前鸿蒙端 UI 虽按 Android/iOS 的页面流程和主要尺寸做了对齐，但实现方式、控件默认行为、系统栏表现、输入框交互和整体视觉仍与 Android/iOS 端存在较大差异，需要设计/产品逐页验收。
+- 需人工审查鸿蒙端业务架构：暂时未实现鸿蒙端的 KMP 业务逻辑复用，当前仍是 ArkTS 本地 `LoginService` / `LoginViewModel` 模拟共享规则；后续若要求三端真正同源，需要单独设计 HarmonyOS 接入 KMP 或等价共享层方案。
+- 需人工审查验证码和 mock 账号策略：当前验证码、默认账号、过期时间均为本地 mock 行为，只用于 demo 侧一致性验证，真实业务接入前需确认接口契约、安全策略和错误码映射。
+- 需人工审查沉浸式兼容性：已通过编译，但不同鸿蒙设备、系统版本、虚拟导航栏/手势导航下的状态栏和导航栏显示仍需真机或模拟器人工确认。
+
+## 验证结果
+- 构建验证通过：执行 `DEVECO_SDK_HOME=/Applications/DevEco-Studio.app/Contents/sdk NODE_HOME=/Applications/DevEco-Studio.app/Contents/tools/node PATH=/Applications/DevEco-Studio.app/Contents/tools/node/bin:$PATH /Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw assembleHap --mode module -p module=entry@default -p product=default --node-home /Applications/DevEco-Studio.app/Contents/tools/node --no-daemon --no-parallel`，结果 `BUILD SUCCESSFUL`。
+- 静态检查通过：确认本轮修改集中在鸿蒙端 `EntryAbility.ets`、`LoginPage.ets`、`LoginService.ets`、`LoginState.ets`、`LoginViewModel.ets` 以及鸿蒙资源补充，未修改 Android/iOS 端代码。
+- 验证中仍存在非阻塞 warning：`EntryAbility.ets` 中函数可能抛异常、`promptAction.showToast` deprecated、未配置签名；构建通过但后续可按项目规范清理。
+
+## 人工修正点
+- 暂时未实现鸿蒙端 KMP 业务逻辑复用：后续需要人工确定 HarmonyOS 与 KMP shared module 的集成方案，避免长期维护 ArkTS 与 Kotlin 两套业务规则。
+- 当前鸿蒙 UI 与 Android/iOS 端仍有较大差异：需要人工基于三端截图或真机录屏逐项校准布局、系统栏、按钮、输入框、验证码框、弹窗和页面切换体验。
+- 需要人工真机/模拟器验收完整路径：入口页 → 手机号注册 → 协议弹窗 → 验证码 → 设密 → 注册成功回登录；入口页 → 登录 → 已登录页；邮箱注册、验证码重发、返回键/手势返回、协议页返回均需实际点击确认。
+
+---
+
+2026-07-03 Android/iOS 注册登录流程、个人信息、找回密码和资源一致性补充
+
+## 采纳内容
+- 采纳 Android 端注册登录流程调整：注册成功后回到登录页；登录成功时根据账号是否已完成个人信息决定进入个人信息完善页或欢迎页；未完成个人信息的账号再次登录仍强制进入个人信息完善页。
+- 采纳个人信息完善逻辑：带 `*` 字段填写完整后才使能“完成”按钮；点击完成后保存整页个人信息，并用个人信息中的用户名更新欢迎页展示。
+- 采纳 Android 端注册、验证码、设密和登录细节修正：重复账号在手机号/邮箱注册输入阶段检测；验证码页返回跳回手机号/邮箱注册页；密码输入最后一位明文显示限制为 3 秒；设密页注册按钮只依赖两次密码一致，复杂度错误改为点击注册后提示。
+- 采纳找回密码流程：新增找回密码账号验证页和新密码设置页；账号必须完整匹配已注册账号才允许进入新密码设置；找回密码不再要求输入旧密码；新密码更新后旧密码不可用。
+- 采纳账号注销能力：登录成功欢迎页保留退出登录按钮，并新增“注销账户”按钮；确认注销后删除当前账号。
+- 采纳 iOS 端按 Android 当前实现补齐对应流程：使用 SwiftUI native UI 接入 KMP shared 业务逻辑，补齐个人信息完善、找回密码、新密码设置、欢迎页退出/注销等页面，并移除 Android/iOS 欢迎页不需要的返回按钮。
+- 采纳 Android/iOS 资源一致性调整：iOS 个人信息页小图标从 SwiftUI/SF Symbols/文本替代改为复用与 Android 对齐的资源，包括相机、更多、男女、关闭、勾选等图标。
+- 采纳 iOS 资源修正：修正 iOS `ic_profile_check` 勾图方向；新增 iOS 标准 `AppIcon.appiconset`，使用 Android `mipmap-xxxhdpi/ic_launcher.png` 作为源图生成各尺寸 AppIcon，并在 Xcode 工程 Debug/Release 中配置 `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`。
+
+## 人工审查点
+- 需人工审查个人信息字段业务规则：当前按页面必填字段控制“完成”按钮，但字段枚举、选项文案、生日/身高/体重等边界值仍需要产品或业务确认。
+- 需人工审查账号注销影响范围：当前 demo 删除本地账号数据；真实业务接入时需确认是否还要清理 token、个人信息、云端账号、缓存和埋点身份。
+- 需人工审查找回密码安全策略：当前 demo 只做账号存在性验证后重设密码；真实业务应补短信/邮箱验证码、频控、风控和错误码策略。
+- 需人工审查 iOS/Android 资源显示效果：资源已对齐到同一套视觉来源，但不同平台启动器会有系统圆角、缩放、缓存和深浅色模式差异，需要在真机或模拟器桌面实际查看。
+- 需人工审查滚动选择器交互：已按需求调整可视数据和选中态差异，但模糊/清晰程度、默认值和可读性仍需结合设计稿或截图人工验收。
+
+## 验证结果
+- Gradle 单元测试验证通过：执行 `./gradlew :common:testAndroidHostTest`，结果通过。
+- KMP iOS 编译验证通过：执行 `./gradlew :common:compileKotlinIosSimulatorArm64` 和 `./gradlew :common:linkDebugFrameworkIosSimulatorArm64`，结果通过。
+- Android 编译/打包验证通过：执行 `./gradlew :androidApp:compileDebugKotlin` 和 `./gradlew :androidApp:assembleDebug`，结果通过。
+- iOS 构建验证通过：执行 `xcodebuild -project iosApp/iosApp.xcodeproj -scheme IOSDemo -destination 'generic/platform=iOS Simulator' build`，结果 `BUILD SUCCEEDED`。
+- iOS 资源静态检查通过：检查 `iosApp/iosApp/Assets.xcassets/AppIcon.appiconset`、`ic_profile_check.imageset` 等资源文件存在；使用图片预览确认勾图方向正常、`AppIcon-60@3x.png` 为黑底红色 logo；使用 `sips -g pixelWidth -g pixelHeight` 确认关键 PNG 尺寸可读。
+
+## 人工修正点
+- 如 iOS 模拟器桌面仍显示旧图标，需要人工卸载已安装 app、Clean Build Folder 或重启模拟器以清理系统图标缓存。
+- iOS 构建仍存在非阻塞 warning：`Build Shared KMP Framework` Run Script 未声明输出文件，会每次构建都运行；后续可按 Xcode 规范补 output dependency 或保持当前总是执行策略。
+- iOS 构建日志仍可见 `iosArm64/debugFramework` 搜索路径相关风险；如需真机运行，需要补齐 device framework 或改为 XCFramework 方案。

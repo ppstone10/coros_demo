@@ -58,6 +58,61 @@ final class LoginViewModel: ObservableObject {
         adapter.normalizeEmailInput(value)
     }
 
+    func normalizeVerifyCodeInput(_ value: String) -> String {
+        adapter.normalizeVerifyCodeInput(value)
+    }
+
+    func normalizePasswordInput(_ value: String) -> String {
+        adapter.normalizePasswordInput(value)
+    }
+
+    func hasAccount(_ account: String) -> Bool {
+        adapter.hasAccount(account)
+    }
+
+    func canSubmitLogin() -> Bool {
+        adapter.isLoginReady(account: state.account, password: state.password, isLoading: state.isLoading)
+    }
+
+    func canRegisterWithPassword(password: String, confirmPassword: String) -> Bool {
+        adapter.isRegisterPasswordReady(
+            password: password,
+            confirmPassword: confirmPassword,
+            isLoading: state.isLoading
+        )
+    }
+
+    func canSubmitResetPassword(newPassword: String, confirmPassword: String) -> Bool {
+        adapter.isResetPasswordReady(
+            newPassword: newPassword,
+            confirmPassword: confirmPassword,
+            isLoading: state.isLoading
+        )
+    }
+
+    func canSubmitProfile(_ profile: ProfileDraft) -> Bool {
+        adapter.isProfileRequiredComplete(
+            username: profile.username,
+            birthDate: profile.birthDate,
+            heightCm: Int32(profile.heightCm ?? 0),
+            weightKg: profile.weightKg ?? 0.0,
+            gender: profile.gender?.rawValue ?? "",
+            isLoading: state.isLoading
+        )
+    }
+
+    func validatePhoneAccount(_ account: String) -> String? {
+        adapter.validatePhoneAccount(account)
+    }
+
+    func validateEmailAccount(_ email: String) -> String? {
+        adapter.validateEmailAccount(email)
+    }
+
+    func validateRegisterPassword(password: String, confirmPassword: String) -> String? {
+        adapter.validateRegisterPassword(password: password, confirmPassword: confirmPassword)
+    }
+
     func requestPhoneVerifyCode() -> String? {
         if let message = adapter.validatePhoneAccount(state.account) {
             return message
@@ -86,6 +141,31 @@ final class LoginViewModel: ObservableObject {
             return message
         }
         return nil
+    }
+
+    func resetPasswordMessage(account: String, newPassword: String) -> String? {
+        adapter.resetPassword(account: account, newPassword: newPassword)
+    }
+
+    func submitProfile(_ profile: ProfileDraft) {
+        adapter.submitProfile(
+            avatarUri: profile.avatarUri,
+            username: profile.username,
+            birthDate: profile.birthDate,
+            heightCm: Int32(profile.heightCm ?? 0),
+            weightKg: profile.weightKg ?? 0.0,
+            measurementSystem: profile.measurementSystem.rawValue,
+            phone: profile.phone,
+            countryRegion: profile.countryRegion,
+            gender: profile.gender?.rawValue ?? ""
+        )
+        refresh()
+    }
+
+    func deleteCurrentAccountMessage() -> String? {
+        let message = adapter.deleteCurrentAccount()
+        refresh()
+        return message
     }
 
     func resendVerifyCode() -> String? {
@@ -123,4 +203,47 @@ final class LoginViewModel: ObservableObject {
             effectTrigger &+= 1
         }
     }
+}
+
+enum ProfileGender: String, CaseIterable, Hashable {
+    case female = "Female"
+    case male = "Male"
+
+    var title: String {
+        switch self {
+        case .female: return "女"
+        case .male: return "男"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .female: return "icon_female"
+        case .male: return "icon_male"
+        }
+    }
+}
+
+enum ProfileMeasurementSystem: String, CaseIterable, Hashable {
+    case metric = "Metric"
+    case imperial = "Imperial"
+
+    var title: String {
+        switch self {
+        case .metric: return "公制（km/m/cm/kg）"
+        case .imperial: return "英制（mi/ft/inch/lb）"
+        }
+    }
+}
+
+struct ProfileDraft: Equatable {
+    var avatarUri: String?
+    var username: String
+    var birthDate: String
+    var heightCm: Int?
+    var weightKg: Double?
+    var measurementSystem: ProfileMeasurementSystem
+    var phone: String
+    var countryRegion: String
+    var gender: ProfileGender?
 }

@@ -69,9 +69,13 @@ struct PhoneRegisterView: View {
             termsPromptAction = .phoneCode
             return
         }
+        let account = viewModel.normalizePhoneInput(viewModel.state.account)
+        if viewModel.hasAccount(account) {
+            localError = "账号已存在"
+            return
+        }
         let message = viewModel.requestPhoneVerifyCode()
         if message == nil || message?.isEmpty == true {
-            let account = viewModel.state.account
             viewModel.updateDisplayName(account)
             path.append(AuthRoute.verifyCode(account: account, targetKind: .phone))
         } else {

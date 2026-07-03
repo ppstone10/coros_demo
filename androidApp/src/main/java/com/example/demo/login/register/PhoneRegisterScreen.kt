@@ -60,6 +60,7 @@ fun PhoneRegisterScreen(
         val validationMessage = viewModel.validatePhoneAccount(state.account)
         when {
             validationMessage != null -> localError = validationMessage
+            viewModel.hasAccount(state.account) -> localError = "账号已存在"
             !skipTerms && !acceptedTerms -> termsPromptAction = TermsPromptAction.PhoneCode
             else -> {
                 val message = viewModel.requestVerifyCodeMessage(state.account)

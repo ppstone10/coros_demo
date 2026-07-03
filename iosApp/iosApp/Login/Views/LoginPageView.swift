@@ -42,7 +42,7 @@ struct LoginPageView: View {
                 action: { submitLogin() }
             )
             ErrorText(localError ?? viewModel.state.errorMessage)
-            Button(action: { showUnavailable = true }) {
+            Button(action: { path.append(AuthRoute.forgotPassword) }) {
                 Text("忘记密码?").foregroundStyle(corosMuted).font(.system(size: 14)).padding(.top, 16)
             }.buttonStyle(.plain)
             Spacer(minLength: 40)
@@ -68,8 +68,7 @@ struct LoginPageView: View {
     }
 
     private var canLogin: Bool {
-        return !viewModel.state.isLoading && !viewModel.state.account.trimmingCharacters(in: .whitespaces).isEmpty &&
-            viewModel.state.password.count >= 6
+        viewModel.canSubmitLogin()
     }
 
     private func submitLogin(skipTerms: Bool = false) {

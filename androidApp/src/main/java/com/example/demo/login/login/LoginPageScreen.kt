@@ -2,7 +2,6 @@ package com.example.demo.login.login
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -48,6 +47,7 @@ fun LoginPageScreen(
     viewModel: LoginViewModel,
     onBack: () -> Unit,
     onLoginSuccess: () -> Unit,
+    onForgotPasswordClick: () -> Unit,
     onPrivacyClick: () -> Unit,
     onServiceTermsClick: () -> Unit
 ) {
@@ -144,7 +144,7 @@ fun LoginPageScreen(
             text = "忘记密码?",
             color = CorosMuted,
             fontSize = 14.sp,
-            modifier = Modifier.clickable { unavailableDialogVisible = true }
+            modifier = Modifier.clickable { onForgotPasswordClick() }
         )
         Spacer(modifier = Modifier.weight(1f))
         ThirdPartyArea(onUnavailableClick = { unavailableDialogVisible = true })
@@ -183,6 +183,7 @@ private fun LoginPageScreenPreview() {
             viewModel = LoginViewModel(),
             onBack = {},
             onLoginSuccess = {},
+            onForgotPasswordClick = {},
             onPrivacyClick = {},
             onServiceTermsClick = {}
         )

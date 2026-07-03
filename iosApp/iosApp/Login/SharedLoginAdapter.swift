@@ -18,6 +18,16 @@ protocol SharedLoginAdapterProtocol {
     func isPhoneAccountValid(_ account: String) -> Bool
     func isEmailAccountValid(_ email: String) -> Bool
     func isRegisterPasswordReady(password: String, confirmPassword: String, isLoading: Bool) -> Bool
+    func isResetPasswordReady(newPassword: String, confirmPassword: String, isLoading: Bool) -> Bool
+    func hasAccount(_ account: String) -> Bool
+    func isProfileRequiredComplete(
+        username: String,
+        birthDate: String,
+        heightCm: Int32,
+        weightKg: Double,
+        gender: String,
+        isLoading: Bool
+    ) -> Bool
     func validatePhoneAccount(_ account: String) -> String?
     func validateEmailAccount(_ email: String) -> String?
     func validateVerifyCode(_ code: String) -> String?
@@ -25,6 +35,19 @@ protocol SharedLoginAdapterProtocol {
     func requestVerifyCode(account: String) -> String?
     func requestResentVerifyCode(account: String) -> String?
     func verifyCode(account: String, code: String) -> String?
+    func resetPassword(account: String, newPassword: String) -> String?
+    func submitProfile(
+        avatarUri: String?,
+        username: String,
+        birthDate: String,
+        heightCm: Int32,
+        weightKg: Double,
+        measurementSystem: String,
+        phone: String,
+        countryRegion: String,
+        gender: String
+    )
+    func deleteCurrentAccount() -> String?
     func submit()
     func logout()
     func clearSessionSilently()
@@ -102,6 +125,36 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
         )
     }
 
+    func isResetPasswordReady(newPassword: String, confirmPassword: String, isLoading: Bool) -> Bool {
+        facade.isResetPasswordReady(
+            newPassword: newPassword,
+            confirmPassword: confirmPassword,
+            isLoading: isLoading
+        )
+    }
+
+    func hasAccount(_ account: String) -> Bool {
+        facade.hasAccount(account: account)
+    }
+
+    func isProfileRequiredComplete(
+        username: String,
+        birthDate: String,
+        heightCm: Int32,
+        weightKg: Double,
+        gender: String,
+        isLoading: Bool
+    ) -> Bool {
+        facade.isProfileRequiredComplete(
+            username: username,
+            birthDate: birthDate,
+            heightCm: heightCm,
+            weightKg: weightKg,
+            gender: gender,
+            isLoading: isLoading
+        )
+    }
+
     func validatePhoneAccount(_ account: String) -> String? {
         facade.validatePhoneAccount(account: account)
     }
@@ -128,6 +181,38 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
 
     func verifyCode(account: String, code: String) -> String? {
         facade.verifyCode(account: account, code: code)
+    }
+
+    func resetPassword(account: String, newPassword: String) -> String? {
+        facade.resetPassword(account: account, newPassword: newPassword)
+    }
+
+    func submitProfile(
+        avatarUri: String?,
+        username: String,
+        birthDate: String,
+        heightCm: Int32,
+        weightKg: Double,
+        measurementSystem: String,
+        phone: String,
+        countryRegion: String,
+        gender: String
+    ) {
+        facade.submitProfile(
+            avatarUri: avatarUri,
+            username: username,
+            birthDate: birthDate,
+            heightCm: heightCm,
+            weightKg: weightKg,
+            measurementSystem: measurementSystem,
+            phone: phone,
+            countryRegion: countryRegion,
+            gender: gender
+        )
+    }
+
+    func deleteCurrentAccount() -> String? {
+        facade.deleteCurrentAccount()
     }
 
     func submit() {

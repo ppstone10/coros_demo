@@ -18,10 +18,16 @@ data class AuthSession(
     val account: String,
     val displayName: String?,
     val region: String,
-    val isValid: Boolean
+    val isValid: Boolean,
+    val profile: UserProfile? = null
 ) {
     val resolvedDisplayName: String
-        get() = displayName?.takeIf { it.isNotBlank() } ?: account
+        get() = profile?.username?.takeIf { it.isNotBlank() }
+            ?: displayName?.takeIf { it.isNotBlank() }
+            ?: account
+
+    val isProfileComplete: Boolean
+        get() = profile?.isRequiredComplete == true
 }
 
 data class AuthRegion(
@@ -35,7 +41,8 @@ data class MockAccount(
     val account: String,
     val passwordHash: String,
     val displayName: String,
-    val region: String
+    val region: String,
+    val profile: UserProfile? = null
 )
 
 data class MockAuthSession(
@@ -43,7 +50,8 @@ data class MockAuthSession(
     val account: String = "",
     val displayName: String = "",
     val region: String = "",
-    val isValid: Boolean = false
+    val isValid: Boolean = false,
+    val profile: UserProfile? = null
 )
 
 data class MockVerifyCodeState(
@@ -55,8 +63,38 @@ data class MockVerifyCodeState(
 data class MockAuthStore(
     val accounts: List<MockAccount> = emptyList(),
     val currentSession: MockAuthSession? = null,
-    val verifyCodes: List<MockVerifyCodeState> = emptyList()
+    val verifyCodes: List<MockVerifyCodeState> = emptyList(),
+    val defaultAccountsInitialized: Boolean = false
 )
+
+enum class UserGender {
+    Female,
+    Male
+}
+
+enum class MeasurementSystem {
+    Metric,
+    Imperial
+}
+
+data class UserProfile(
+    val avatarUri: String? = null,
+    val username: String = "",
+    val birthDate: String = "",
+    val heightCm: Int? = null,
+    val weightKg: Double? = null,
+    val measurementSystem: MeasurementSystem = MeasurementSystem.Metric,
+    val phone: String = "",
+    val countryRegion: String = "中国",
+    val gender: UserGender? = null
+) {
+    val isRequiredComplete: Boolean
+        get() = username.isNotBlank() &&
+            birthDate.isNotBlank() &&
+            heightCm != null &&
+            weightKg != null &&
+            gender != null
+}
 
 sealed interface MockResult<out T> {
     data class Success<T>(val data: T) : MockResult<T>
@@ -69,6 +107,7 @@ enum class MockError(val code: String, val message: String) {
     AccountExists("AUTH_ACCOUNT_EXISTS", "账号已存在"),
     AccountNotFound("AUTH_ACCOUNT_NOT_FOUND", "账号不存在"),
     PasswordIncorrect("AUTH_PASSWORD_INCORRECT", "密码不正确"),
+    NewPasswordSameAsOld("AUTH_NEW_PASSWORD_SAME_AS_OLD", "新密码不能与旧密码相同"),
     VerifyCodeInvalid("AUTH_VERIFY_CODE_INVALID", "验证码不正确"),
     VerifyCodeExpired("AUTH_VERIFY_CODE_EXPIRED", "验证码已过期，请重新获取"),
     EmptyData("AUTH_EMPTY_DATA", "暂无本地账号数据"),
@@ -121,6 +160,7 @@ sealed interface LoginAction {
     data class VerifyCodeChanged(val verifyCode: String) : LoginAction
     data class DisplayNameChanged(val displayName: String) : LoginAction
     data class RegionChanged(val region: String) : LoginAction
+    data class ProfileSubmitted(val profile: UserProfile) : LoginAction
     data object SubmitClicked : LoginAction
     data object LogoutClicked : LoginAction
     data object ExpireSessionClicked : LoginAction
@@ -131,6 +171,7 @@ sealed interface LoginAction {
 sealed interface LoginEffect {
     data class NavigateHome(val user: UserDto) : LoginEffect
     data class AuthSucceeded(val session: AuthSession, val mode: AuthMode) : LoginEffect
+    data class ProfileSaved(val session: AuthSession) : LoginEffect
     data object LoggedOut : LoginEffect
     data object SessionExpired : LoginEffect
     data class ShowMessage(val message: String) : LoginEffect
@@ -148,7 +189,8 @@ fun MockAuthSession.toDomainOrNull(): AuthSession? {
         account = account,
         displayName = displayName.takeIf { it.isNotBlank() },
         region = region,
-        isValid = isValid
+        isValid = isValid,
+        profile = profile
     )
 }
 
@@ -158,6 +200,7 @@ fun AuthSession.toMockSession(): MockAuthSession {
         account = account,
         displayName = displayName.orEmpty(),
         region = region,
-        isValid = isValid
+        isValid = isValid,
+        profile = profile
     )
 }

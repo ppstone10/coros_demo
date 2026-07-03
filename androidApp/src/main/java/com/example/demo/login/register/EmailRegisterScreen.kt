@@ -63,6 +63,7 @@ fun EmailRegisterScreen(
         val validationMessage = viewModel.validateEmailAccount(email)
         when {
             validationMessage != null -> localError = validationMessage
+            viewModel.hasAccount(email) -> localError = "账号已存在"
             !skipTerms && !acceptedTerms -> termsPromptAction = TermsPromptAction.EmailCode
             else -> {
                 val message = viewModel.requestVerifyCodeMessage(email)

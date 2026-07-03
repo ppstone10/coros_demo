@@ -72,9 +72,13 @@ struct EmailRegisterView: View {
             termsPromptAction = .emailCode
             return
         }
-        let message = viewModel.requestEmailVerifyCode(email: viewModel.normalizeEmailInput(emailInput))
+        let email = viewModel.normalizeEmailInput(emailInput)
+        if viewModel.hasAccount(email) {
+            localError = "账号已存在"
+            return
+        }
+        let message = viewModel.requestEmailVerifyCode(email: email)
         if message == nil || message?.isEmpty == true {
-            let email = viewModel.normalizeEmailInput(emailInput)
             viewModel.updateAccount(email)
             viewModel.updateDisplayName(email)
             path.append(AuthRoute.verifyCode(account: email, targetKind: .email))

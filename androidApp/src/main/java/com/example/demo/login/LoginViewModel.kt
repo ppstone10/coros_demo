@@ -13,6 +13,7 @@ import com.example.demo.common.login.LoginStore
 import com.example.demo.common.login.LocalMockAuthRepository
 import com.example.demo.common.login.MockResult
 import com.example.demo.common.login.MockVerifyCodeState
+import com.example.demo.common.login.UserProfile
 
 class LoginViewModel(
     private val store: LoginStore = LoginStore.createFake()
@@ -49,6 +50,10 @@ class LoginViewModel(
 
     fun onRegionChanged(value: String) {
         dispatch(LoginAction.RegionChanged(value))
+    }
+
+    fun onProfileSubmitted(profile: UserProfile) {
+        dispatch(LoginAction.ProfileSubmitted(profile))
     }
 
     fun onLogout() {
@@ -91,6 +96,19 @@ class LoginViewModel(
         return LoginRules.isRegisterPasswordReady(password, confirmPassword, state.isLoading)
     }
 
+    fun canSubmitResetPassword(
+        newPassword: String,
+        confirmPassword: String
+    ): Boolean {
+        return newPassword.isNotBlank() &&
+            newPassword == confirmPassword &&
+            !state.isLoading
+    }
+
+    fun canSubmitProfile(profile: UserProfile): Boolean {
+        return profile.isRequiredComplete && !state.isLoading
+    }
+
     fun validatePhoneAccount(account: String): String? {
         return LoginRules.validatePhoneAccount(account).message
     }
@@ -105,6 +123,36 @@ class LoginViewModel(
 
     fun validateRegisterPassword(password: String, confirmPassword: String): String? {
         return LoginRules.validateRegisterPassword(password, confirmPassword).message
+    }
+
+    fun changePasswordMessage(
+        account: String,
+        oldPassword: String,
+        newPassword: String
+    ): String? {
+        return when (val result = store.changePassword(account, oldPassword, newPassword)) {
+            is MockResult.Success -> null
+            is MockResult.Failure -> result.error.message
+        }
+    }
+
+    fun resetPasswordMessage(
+        account: String,
+        newPassword: String
+    ): String? {
+        return when (val result = store.resetPassword(account, newPassword)) {
+            is MockResult.Success -> null
+            is MockResult.Failure -> result.error.message
+        }
+    }
+
+    fun deleteCurrentAccountMessage(): String? {
+        val message = when (val result = store.deleteCurrentAccount()) {
+            is MockResult.Success -> null
+            is MockResult.Failure -> result.error.message
+        }
+        state = store.state
+        return message
     }
 
     fun hasAccount(account: String): Boolean {

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PasswordSetupView: View {
+    let targetKind: VerifyTargetKind
     @ObservedObject var viewModel: LoginViewModel
     @Binding var path: NavigationPath
 
@@ -9,18 +10,24 @@ struct PasswordSetupView: View {
     @State private var localError: String?
 
     var body: some View {
-        AuthBlackPage(onBack: { path.removeLast() }, showFeedback: false) {
+        AuthBlackPage(onBack: { backToRegisterPage() }, showFeedback: false) {
             AuthTitle("设置登录密码")
             Spacer().frame(height: 60)
             UnderlineInput(
-                text: $password,
+                text: Binding(
+                    get: { password },
+                    set: { password = viewModel.normalizePasswordInput($0); localError = nil }
+                ),
                 placeholder: "输入新的密码",
                 isPassword: true,
                 autoFocus: true
             )
             Spacer().frame(height: 48)
             UnderlineInput(
-                text: $confirmPassword,
+                text: Binding(
+                    get: { confirmPassword },
+                    set: { confirmPassword = viewModel.normalizePasswordInput($0); localError = nil }
+                ),
                 placeholder: "再次输入密码",
                 isPassword: true
             )
@@ -42,18 +49,13 @@ struct PasswordSetupView: View {
     }
 
     private var canRegister: Bool {
-        password.count >= 6 && password.count <= 20 &&
-        password.rangeOfCharacter(from: .letters) != nil &&
-        password.rangeOfCharacter(from: .decimalDigits) != nil &&
-        password == confirmPassword && !viewModel.state.isLoading
+        viewModel.canRegisterWithPassword(password: password, confirmPassword: confirmPassword)
     }
 
     private func register() {
-        if password.count < 6 || password.count > 20 {
-            localError = "密码需要为6-20位"; return
-        }
-        if password.rangeOfCharacter(from: .letters) == nil || password.rangeOfCharacter(from: .decimalDigits) == nil {
-            localError = "密码需要包含字母和数字"; return
+        if let message = viewModel.validateRegisterPassword(password: password, confirmPassword: confirmPassword) {
+            localError = message
+            return
         }
         if password != confirmPassword {
             localError = "两次输入的密码不一致"; return
@@ -61,5 +63,11 @@ struct PasswordSetupView: View {
         viewModel.requestRegisterMode()
         viewModel.updatePassword(password)
         viewModel.submit()
+    }
+
+    private func backToRegisterPage() {
+        viewModel.updateVerifyCode("")
+        path = NavigationPath()
+        path.append(targetKind == .email ? AuthRoute.emailRegister : AuthRoute.phoneRegister)
     }
 }

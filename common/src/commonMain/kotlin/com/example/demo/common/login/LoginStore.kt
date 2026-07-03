@@ -54,6 +54,7 @@ class LoginStore(
                 )
             }
 
+            is LoginAction.ProfileSubmitted -> saveProfile(action.profile)
             LoginAction.SubmitClicked -> submit()
             LoginAction.LogoutClicked -> logout()
             LoginAction.ExpireSessionClicked -> expireSession()
@@ -81,6 +82,35 @@ class LoginStore(
 
     fun verifyCode(account: String, code: String): MockResult<Unit> {
         return authRepository.verifyCode(account, code)
+    }
+
+    fun changePassword(
+        account: String,
+        oldPassword: String,
+        newPassword: String
+    ): MockResult<Unit> {
+        return authRepository.changePassword(account, oldPassword, newPassword)
+    }
+
+    fun resetPassword(
+        account: String,
+        newPassword: String
+    ): MockResult<Unit> {
+        return authRepository.resetPassword(account, newPassword)
+    }
+
+    fun deleteCurrentAccount(): MockResult<Unit> {
+        val result = authRepository.deleteCurrentAccount()
+        if (result is MockResult.Success) {
+            state = state.copy(
+                isLoggedIn = false,
+                currentSession = null,
+                password = "",
+                verifyCode = "",
+                errorMessage = null
+            )
+        }
+        return result
     }
 
     fun clearSessionSilently() {
@@ -160,6 +190,29 @@ class LoginStore(
 
             is MockResult.Failure -> {
                 state = state.copy(errorMessage = result.error.message)
+                pendingEffect = LoginEffect.ShowMessage(result.error.message)
+            }
+        }
+    }
+
+    private fun saveProfile(profile: UserProfile) {
+        state = state.copy(isLoading = true, errorMessage = null)
+        when (val result = authRepository.saveProfile(profile)) {
+            is MockResult.Success -> {
+                state = state.copy(
+                    isLoading = false,
+                    isLoggedIn = true,
+                    currentSession = result.data,
+                    errorMessage = null
+                )
+                pendingEffect = LoginEffect.ProfileSaved(result.data)
+            }
+
+            is MockResult.Failure -> {
+                state = state.copy(
+                    isLoading = false,
+                    errorMessage = result.error.message
+                )
                 pendingEffect = LoginEffect.ShowMessage(result.error.message)
             }
         }

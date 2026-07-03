@@ -51,6 +51,7 @@ object LoginRules {
 
     fun isRegisterPasswordValid(password: String): Boolean {
         return password.length in PasswordMinLength..PasswordMaxLength &&
+            password.all { it.isDigit() || it in 'A'..'Z' || it in 'a'..'z' } &&
             password.any { it.isLetter() } &&
             password.any { it.isDigit() }
     }
@@ -61,7 +62,7 @@ object LoginRules {
         isLoading: Boolean
     ): Boolean {
         return !isLoading &&
-            isRegisterPasswordValid(password) &&
+            password.isNotEmpty() &&
             confirmPassword == password
     }
 
@@ -93,6 +94,10 @@ object LoginRules {
         return when {
             password.length !in PasswordMinLength..PasswordMaxLength -> {
                 LoginRuleCheck(isValid = false, message = "密码需要为6-20位")
+            }
+
+            !password.all { it.isDigit() || it in 'A'..'Z' || it in 'a'..'z' } -> {
+                LoginRuleCheck(isValid = false, message = "密码只能包含字母和数字")
             }
 
             !password.any { it.isLetter() } || !password.any { it.isDigit() } -> {

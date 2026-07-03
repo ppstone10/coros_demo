@@ -73,6 +73,38 @@ class LoginFacade(
         return LoginRules.isRegisterPasswordReady(password, confirmPassword, isLoading)
     }
 
+    fun isResetPasswordReady(
+        newPassword: String,
+        confirmPassword: String,
+        isLoading: Boolean
+    ): Boolean {
+        return newPassword.isNotBlank() &&
+            newPassword == confirmPassword &&
+            !isLoading
+    }
+
+    fun hasAccount(account: String): Boolean {
+        return store.hasAccount(account)
+    }
+
+    fun isProfileRequiredComplete(
+        username: String,
+        birthDate: String,
+        heightCm: Int,
+        weightKg: Double,
+        gender: String,
+        isLoading: Boolean
+    ): Boolean {
+        if (isLoading) return false
+        return UserProfile(
+            username = username,
+            birthDate = birthDate,
+            heightCm = heightCm.takeIf { it > 0 },
+            weightKg = weightKg.takeIf { it > 0.0 },
+            gender = gender.toUserGenderOrNull()
+        ).isRequiredComplete
+    }
+
     fun validatePhoneAccount(account: String): String? {
         return LoginRules.validatePhoneAccount(account).message
     }
@@ -115,6 +147,48 @@ class LoginFacade(
         }
     }
 
+    fun resetPassword(account: String, newPassword: String): String? {
+        return when (val result = store.resetPassword(account, newPassword)) {
+            is MockResult.Success -> null
+            is MockResult.Failure -> result.error.message
+        }
+    }
+
+    fun submitProfile(
+        avatarUri: String?,
+        username: String,
+        birthDate: String,
+        heightCm: Int,
+        weightKg: Double,
+        measurementSystem: String,
+        phone: String,
+        countryRegion: String,
+        gender: String
+    ) {
+        store.dispatch(
+            LoginAction.ProfileSubmitted(
+                UserProfile(
+                    avatarUri = avatarUri?.takeIf { it.isNotBlank() },
+                    username = username,
+                    birthDate = birthDate,
+                    heightCm = heightCm.takeIf { it > 0 },
+                    weightKg = weightKg.takeIf { it > 0.0 },
+                    measurementSystem = measurementSystem.toMeasurementSystemOrDefault(),
+                    phone = phone,
+                    countryRegion = countryRegion,
+                    gender = gender.toUserGenderOrNull()
+                )
+            )
+        )
+    }
+
+    fun deleteCurrentAccount(): String? {
+        return when (val result = store.deleteCurrentAccount()) {
+            is MockResult.Success -> null
+            is MockResult.Failure -> result.error.message
+        }
+    }
+
     fun submit() {
         store.dispatch(LoginAction.SubmitClicked)
     }
@@ -131,4 +205,18 @@ class LoginFacade(
         return store.consumeEffect()
     }
 
+    private fun String.toMeasurementSystemOrDefault(): MeasurementSystem {
+        return when (this) {
+            MeasurementSystem.Imperial.name -> MeasurementSystem.Imperial
+            else -> MeasurementSystem.Metric
+        }
+    }
+
+    private fun String.toUserGenderOrNull(): UserGender? {
+        return when (this) {
+            UserGender.Female.name -> UserGender.Female
+            UserGender.Male.name -> UserGender.Male
+            else -> null
+        }
+    }
 }

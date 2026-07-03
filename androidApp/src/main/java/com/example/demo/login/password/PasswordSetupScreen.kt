@@ -1,5 +1,6 @@
 package com.example.demo.login.password
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -40,6 +41,8 @@ fun PasswordSetupScreen(
     var password by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }
     var localError by rememberSaveable { mutableStateOf<String?>(null) }
+
+    BackHandler(onBack = onBack)
 
     fun register() {
         val message = viewModel.validateRegisterPassword(password, confirmPassword)

@@ -43,7 +43,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -85,7 +85,6 @@ import androidx.core.net.toUri
 import com.example.demo.R
 import com.example.demo.login.LoginViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -165,6 +164,7 @@ class LatestVisiblePasswordTransformation(private val visibleIndex: Int?) : Visu
 fun AuthBlackPage(
     onBack: () -> Unit,
     showFeedback: Boolean,
+    showBack: Boolean = true,
     onUnavailableClick: () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -181,12 +181,14 @@ fun AuthBlackPage(
             modifier = Modifier.fillMaxWidth().height(52.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "‹",
-                color = CorosWhite,
-                fontSize = 44.sp,
-                modifier = Modifier.clickable(onClick = onBack)
-            )
+            if (showBack) {
+                Text(
+                    text = "‹",
+                    color = CorosWhite,
+                    fontSize = 44.sp,
+                    modifier = Modifier.clickable(onClick = onBack)
+                )
+            }
             Spacer(modifier = Modifier.weight(1f))
             if (showFeedback) {
                 Text(
@@ -265,13 +267,19 @@ fun UnderlineInput(
     autoFocus: Boolean = false
 ) {
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
-    var latestPasswordIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+    var latestPasswordIndex by remember { mutableStateOf<Int?>(null) }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val visualTransformation = when {
         !isPassword -> VisualTransformation.None
         passwordVisible -> VisualTransformation.None
         else -> LatestVisiblePasswordTransformation(latestPasswordIndex)
+    }
+    LaunchedEffect(isPassword, passwordVisible, latestPasswordIndex, value) {
+        if (isPassword && !passwordVisible && latestPasswordIndex != null) {
+            delay(3000.milliseconds)
+            latestPasswordIndex = null
+        }
     }
     LaunchedEffect(autoFocus) {
         if (autoFocus) {
@@ -283,7 +291,13 @@ fun UnderlineInput(
     BasicTextField(
         value = value,
         onValueChange = { newValue ->
-            if (isPassword) latestPasswordIndex = latestChangedIndex(value, newValue)
+            if (isPassword) {
+                latestPasswordIndex = if (passwordVisible) {
+                    null
+                } else {
+                    latestChangedIndex(value, newValue)
+                }
+            }
             onValueChange(newValue)
         },
         singleLine = true,
@@ -291,7 +305,13 @@ fun UnderlineInput(
         visualTransformation = visualTransformation,
         textStyle = TextStyle(color = CorosWhite, fontSize = 17.sp),
         cursorBrush = SolidColor(CorosRed),
-        modifier = Modifier.fillMaxWidth().height(48.dp).focusRequester(focusRequester),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .onFocusChanged { focusState ->
+                if (isPassword && !focusState.isFocused) latestPasswordIndex = null
+            }
+            .focusRequester(focusRequester),
         decorationBox = { innerTextField ->
             Box(modifier = Modifier.fillMaxSize().border(width = 0.dp, color = Color.Transparent)) {
                 Row(modifier = Modifier.fillMaxSize().padding(bottom = 1.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -306,9 +326,8 @@ fun UnderlineInput(
                     if (isPassword && value.isNotEmpty()) {
                         Spacer(modifier = Modifier.width(6.dp))
                         PasswordVisibilityButton(passwordVisible = passwordVisible, onClick = {
-                            val willShowPassword = !passwordVisible
-                            passwordVisible = willShowPassword
-                            if (!willShowPassword) latestPasswordIndex = null
+                            passwordVisible = !passwordVisible
+                            latestPasswordIndex = null
                         })
                     }
                 }
@@ -316,6 +335,46 @@ fun UnderlineInput(
             }
         }
     )
+}
+
+@Composable
+fun DisabledUnderlineValue(
+    value: String,
+    placeholder: String
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .alpha(0.62f)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 1.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Text(
+                    text = value.ifBlank { placeholder },
+                    color = if (value.isBlank()) CorosMuted else CorosWhite,
+                    fontSize = 17.sp
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(CorosLine)
+        )
+    }
 }
 
 @Composable

@@ -29,8 +29,12 @@ interface AuthRepository {
     fun currentSession(): AuthSession?
     fun requireSession(): AuthSession
     fun saveSession(session: AuthSession): MockResult<AuthSession>
+    fun saveProfile(profile: UserProfile): MockResult<AuthSession>
     fun clearSession(): MockResult<Unit>
     fun markSessionExpired(): MockResult<Unit>
+    fun changePassword(account: String, oldPassword: String, newPassword: String): MockResult<Unit>
+    fun resetPassword(account: String, newPassword: String): MockResult<Unit>
+    fun deleteCurrentAccount(): MockResult<Unit>
     fun register(request: RegisterRequestDto): LoginResult
     fun login(request: LoginRequestDto): LoginResult
     fun verifyBusinessAccess(): MockResult<AuthSession>
@@ -117,6 +121,45 @@ class LocalMockAuthRepository(
         }
     }
 
+    override fun saveProfile(profile: UserProfile): MockResult<AuthSession> {
+        val cleanProfile = profile.copy(
+            username = profile.username.trim(),
+            phone = profile.phone.trim(),
+            countryRegion = profile.countryRegion.trim().ifBlank { "中国" }
+        )
+        if (!cleanProfile.isRequiredComplete) {
+            return MockResult.Failure(MockError.InvalidParam)
+        }
+
+        val session = currentSession() ?: return MockResult.Failure(MockError.AuthRequired)
+        val store = loadStore()
+        val updatedAccounts = store.accounts.map { account ->
+            if (account.userId == session.userId) {
+                account.copy(
+                    displayName = cleanProfile.username,
+                    profile = cleanProfile
+                )
+            } else {
+                account
+            }
+        }
+        val updatedSession = session.copy(
+            displayName = cleanProfile.username,
+            profile = cleanProfile,
+            isValid = true
+        )
+        val nextStore = store.copy(
+            accounts = updatedAccounts,
+            currentSession = updatedSession.toMockSession()
+        )
+
+        return if (dataSource.save(nextStore)) {
+            MockResult.Success(updatedSession)
+        } else {
+            MockResult.Failure(MockError.PersistFailed)
+        }
+    }
+
     override fun clearSession(): MockResult<Unit> {
         val store = loadStore()
         return if (dataSource.save(store.copy(currentSession = null))) {
@@ -130,6 +173,94 @@ class LocalMockAuthRepository(
         val store = loadStore()
         val expiredSession = store.currentSession?.copy(isValid = false)
         return if (dataSource.save(store.copy(currentSession = expiredSession))) {
+            MockResult.Success(Unit)
+        } else {
+            MockResult.Failure(MockError.PersistFailed)
+        }
+    }
+
+    override fun changePassword(
+        account: String,
+        oldPassword: String,
+        newPassword: String
+    ): MockResult<Unit> {
+        val normalizedAccount = account.trim()
+        if (
+            normalizedAccount.isBlank() ||
+            !isMockAccountFormatValid(normalizedAccount) ||
+            oldPassword.isBlank() ||
+            !LoginRules.isRegisterPasswordValid(newPassword)
+        ) {
+            return MockResult.Failure(MockError.InvalidParam)
+        }
+
+        val store = loadStore()
+        val localAccount = store.accounts.firstOrNull {
+            it.account.equals(normalizedAccount, ignoreCase = true)
+        } ?: return MockResult.Failure(MockError.AccountNotFound)
+
+        val oldHash = hashMockPassword(oldPassword)
+        if (localAccount.passwordHash != oldHash) {
+            return MockResult.Failure(MockError.PasswordIncorrect)
+        }
+
+        val newHash = hashMockPassword(newPassword)
+        if (oldHash == newHash) {
+            return MockResult.Failure(MockError.NewPasswordSameAsOld)
+        }
+
+        val nextAccounts = store.accounts.map {
+            if (it.userId == localAccount.userId) it.copy(passwordHash = newHash) else it
+        }
+
+        return if (dataSource.save(store.copy(accounts = nextAccounts))) {
+            MockResult.Success(Unit)
+        } else {
+            MockResult.Failure(MockError.PersistFailed)
+        }
+    }
+
+    override fun resetPassword(account: String, newPassword: String): MockResult<Unit> {
+        val normalizedAccount = account.trim()
+        if (
+            normalizedAccount.isBlank() ||
+            !isMockAccountFormatValid(normalizedAccount) ||
+            !LoginRules.isRegisterPasswordValid(newPassword)
+        ) {
+            return MockResult.Failure(MockError.InvalidParam)
+        }
+
+        val store = loadStore()
+        val localAccount = store.accounts.firstOrNull {
+            it.account.equals(normalizedAccount, ignoreCase = true)
+        } ?: return MockResult.Failure(MockError.AccountNotFound)
+
+        val nextAccounts = store.accounts.map {
+            if (it.userId == localAccount.userId) {
+                it.copy(passwordHash = hashMockPassword(newPassword))
+            } else {
+                it
+            }
+        }
+
+        return if (dataSource.save(store.copy(accounts = nextAccounts))) {
+            MockResult.Success(Unit)
+        } else {
+            MockResult.Failure(MockError.PersistFailed)
+        }
+    }
+
+    override fun deleteCurrentAccount(): MockResult<Unit> {
+        val session = currentSession() ?: return MockResult.Failure(MockError.AuthRequired)
+        val store = loadStore()
+        val nextStore = store.copy(
+            accounts = store.accounts.filterNot { it.userId == session.userId },
+            currentSession = null,
+            verifyCodes = store.verifyCodes.filterNot {
+                it.account.equals(session.account, ignoreCase = true)
+            }
+        )
+        return if (dataSource.save(nextStore)) {
             MockResult.Success(Unit)
         } else {
             MockResult.Failure(MockError.PersistFailed)
@@ -155,14 +286,16 @@ class LocalMockAuthRepository(
             account = account,
             passwordHash = hashMockPassword(password),
             displayName = displayName.ifBlank { account },
-            region = region
+            region = region,
+            profile = null
         )
         val session = AuthSession(
             userId = accountModel.userId,
             account = accountModel.account,
             displayName = accountModel.displayName,
             region = accountModel.region,
-            isValid = true
+            isValid = true,
+            profile = accountModel.profile
         )
         val nextStore = store.copy(
             accounts = store.accounts + accountModel,
@@ -203,7 +336,8 @@ class LocalMockAuthRepository(
             account = localAccount.account,
             displayName = localAccount.displayName,
             region = localAccount.region,
-            isValid = true
+            isValid = true,
+            profile = localAccount.profile
         )
 
         return when (val result = saveSession(session)) {
@@ -219,8 +353,13 @@ class LocalMockAuthRepository(
 
     private fun loadStore(): MockAuthStore {
         val store = dataSource.load()
-        return if (store.accounts.isEmpty()) {
-            store.copy(accounts = DefaultAccounts)
+        return if (store.accounts.isEmpty() && !store.defaultAccountsInitialized) {
+            store.copy(
+                accounts = DefaultAccounts,
+                defaultAccountsInitialized = true
+            )
+        } else if (store.accounts.isNotEmpty() && !store.defaultAccountsInitialized) {
+            store.copy(defaultAccountsInitialized = true)
         } else {
             store
         }
@@ -285,14 +424,16 @@ class LocalMockAuthRepository(
                 account = DefaultAccount,
                 passwordHash = "mock:${DefaultPassword.reversed()}:${DefaultPassword.length}",
                 displayName = "COROS User",
-                region = "CN"
+                region = "CN",
+                profile = null
             ),
             MockAccount(
                 userId = "mock-user-default-email",
                 account = DefaultEmailAccount,
                 passwordHash = "mock:${DefaultPassword.reversed()}:${DefaultPassword.length}",
                 displayName = "COROS Email User",
-                region = "CN"
+                region = "CN",
+                profile = null
             )
         )
     }

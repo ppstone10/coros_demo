@@ -63,7 +63,7 @@ struct VerifyCodeView: View {
         let message = viewModel.verifyCodeMessage(account: account, code: code)
         if message == nil || message?.isEmpty == true {
             viewModel.updateVerifyCode(code)
-            path.append(AuthRoute.passwordSetup)
+            path.append(AuthRoute.passwordSetup(targetKind: targetKind))
         } else {
             localError = message
         }

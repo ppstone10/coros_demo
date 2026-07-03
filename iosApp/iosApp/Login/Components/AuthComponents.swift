@@ -28,6 +28,7 @@ enum TermsPromptAction: Hashable { case login, phoneCode, emailCode }
 struct AuthBlackPage<Content: View>: View {
     let onBack: () -> Void
     let showFeedback: Bool
+    var showBack: Bool = true
     var onUnavailableClick: () -> Void = {}
     @ViewBuilder let content: () -> Content
 
@@ -36,12 +37,14 @@ struct AuthBlackPage<Content: View>: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
-                        Button(action: onBack) {
-                            Text("‹")
-                                .foregroundStyle(.white)
-                                .font(.system(size: 44, weight: .light))
+                        if showBack {
+                            Button(action: onBack) {
+                                Text("‹")
+                                    .foregroundStyle(.white)
+                                    .font(.system(size: 44, weight: .light))
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                         Spacer()
                         if showFeedback {
                             Button(action: onUnavailableClick) {
@@ -169,6 +172,25 @@ struct PhoneInput: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { isFocused = true }
             }
         }
+    }
+}
+
+struct DisabledUnderlineValue: View {
+    let value: String
+    let placeholder: String
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                Text(value.isEmpty ? placeholder : value)
+                    .foregroundStyle(value.isEmpty ? corosMuted : Color.white.opacity(0.55))
+                    .font(.system(size: 17))
+                Spacer(minLength: 0)
+            }
+            .frame(height: 48)
+            Rectangle().fill(corosLine).frame(height: 1)
+        }
+        .contentShape(Rectangle())
     }
 }
 

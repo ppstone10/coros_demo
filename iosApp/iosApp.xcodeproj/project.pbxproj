@@ -25,6 +25,9 @@
 		A10000000000000000000019 /* PasswordSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* PasswordSetupView.swift */; };
 		A10000000000000000000020 /* SignedInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* SignedInView.swift */; };
 		A10000000000000000000021 /* LegalDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* LegalDocumentView.swift */; };
+		A10000000000000000000022 /* ForgotPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* ForgotPasswordView.swift */; };
+		A10000000000000000000023 /* ResetPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* ResetPasswordView.swift */; };
+		A10000000000000000000024 /* ProfileCompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* ProfileCompletionView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +50,9 @@
 		A20000000000000000000019 /* PasswordSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordSetupView.swift; sourceTree = "<group>"; };
 		A20000000000000000000020 /* SignedInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignedInView.swift; sourceTree = "<group>"; };
 		A20000000000000000000021 /* LegalDocumentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalDocumentView.swift; sourceTree = "<group>"; };
+		A20000000000000000000022 /* ForgotPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgotPasswordView.swift; sourceTree = "<group>"; };
+		A20000000000000000000023 /* ResetPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetPasswordView.swift; sourceTree = "<group>"; };
+		A20000000000000000000024 /* ProfileCompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileCompletionView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,6 +133,9 @@
 				A20000000000000000000017 /* EmailRegisterView.swift */,
 				A20000000000000000000018 /* VerifyCodeView.swift */,
 				A20000000000000000000019 /* PasswordSetupView.swift */,
+				A20000000000000000000022 /* ForgotPasswordView.swift */,
+				A20000000000000000000023 /* ResetPasswordView.swift */,
+				A20000000000000000000024 /* ProfileCompletionView.swift */,
 				A20000000000000000000020 /* SignedInView.swift */,
 				A20000000000000000000021 /* LegalDocumentView.swift */,
 			);
@@ -239,6 +248,9 @@
 				A10000000000000000000017 /* EmailRegisterView.swift in Sources */,
 				A10000000000000000000018 /* VerifyCodeView.swift in Sources */,
 				A10000000000000000000019 /* PasswordSetupView.swift in Sources */,
+				A10000000000000000000022 /* ForgotPasswordView.swift in Sources */,
+				A10000000000000000000023 /* ResetPasswordView.swift in Sources */,
+				A10000000000000000000024 /* ProfileCompletionView.swift in Sources */,
 				A10000000000000000000020 /* SignedInView.swift in Sources */,
 				A10000000000000000000021 /* LegalDocumentView.swift in Sources */,
 			);
@@ -367,6 +379,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -406,6 +419,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";

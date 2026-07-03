@@ -7,9 +7,12 @@ enum AuthRoute: Hashable {
     case phoneRegister
     case emailRegister
     case verifyCode(account: String, targetKind: VerifyTargetKind)
-    case passwordSetup
+    case passwordSetup(targetKind: VerifyTargetKind)
+    case forgotPassword
+    case resetPassword(account: String)
     case privacyPolicy
     case serviceTerms
+    case profileCompletion
     case signedIn
 }
 
@@ -19,9 +22,10 @@ struct AuthCoordinator: View {
 
     private var startRoute: AuthRoute {
         let state = viewModel.state
-        if state.isLoggedIn && state.currentSession != nil {
+        if state.isLoggedIn && state.currentSession?.isProfileComplete == true {
             return .signedIn
         }
+        if state.isLoggedIn && state.currentSession != nil { return .profileCompletion }
         return .entrance
     }
 
@@ -48,14 +52,23 @@ struct AuthCoordinator: View {
                         case let .verifyCode(account, targetKind):
                             VerifyCodeView(account: account, targetKind: targetKind, viewModel: viewModel, path: $path)
                                 .navigationBarBackButtonHidden(true)
-                        case .passwordSetup:
-                            PasswordSetupView(viewModel: viewModel, path: $path)
+                        case let .passwordSetup(targetKind):
+                            PasswordSetupView(targetKind: targetKind, viewModel: viewModel, path: $path)
+                                .navigationBarBackButtonHidden(true)
+                        case .forgotPassword:
+                            ForgotPasswordView(viewModel: viewModel, path: $path)
+                                .navigationBarBackButtonHidden(true)
+                        case let .resetPassword(account):
+                            ResetPasswordView(account: account, viewModel: viewModel, path: $path)
                                 .navigationBarBackButtonHidden(true)
                         case .privacyPolicy:
                             PrivacyPolicyView(path: $path)
                                 .navigationBarBackButtonHidden(true)
                         case .serviceTerms:
                             ServiceTermsView(path: $path)
+                                .navigationBarBackButtonHidden(true)
+                        case .profileCompletion:
+                            ProfileCompletionView(viewModel: viewModel, path: $path)
                                 .navigationBarBackButtonHidden(true)
                         case .signedIn:
                             SignedInView(viewModel: viewModel, path: $path)
@@ -76,11 +89,8 @@ struct AuthCoordinator: View {
             message: { Text(viewModel.toastMessage ?? "") }
         )
         .onAppear {
-            if startRoute != .entrance {
-                path.append(startRoute)
-            } else {
-                path.append(AuthRoute.entrance)
-            }
+            path = NavigationPath()
+            path.append(startRoute)
         }
         .onChange(of: viewModel.effectTrigger) { _ in
             guard let effect = viewModel.consumeEffect() else { return }
@@ -99,14 +109,19 @@ private func handleNavigation(_ effect: LoginEffect, viewModel: LoginViewModel, 
             path.wrappedValue.append(AuthRoute.login)
             viewModel.toastMessage = "注册成功"
         } else {
+            let destination: AuthRoute = effect.session.isProfileComplete ? .signedIn : .profileCompletion
             path.wrappedValue = NavigationPath()
-            path.wrappedValue.append(AuthRoute.signedIn)
+            path.wrappedValue.append(destination)
             viewModel.toastMessage = "登录成功"
         }
     case _ as LoginEffectNavigateHome:
         path.wrappedValue = NavigationPath()
         path.wrappedValue.append(AuthRoute.signedIn)
         viewModel.toastMessage = "登录成功"
+    case _ as LoginEffectProfileSaved:
+        path.wrappedValue = NavigationPath()
+        path.wrappedValue.append(AuthRoute.signedIn)
+        viewModel.toastMessage = "资料已保存"
     case _ as LoginEffectLoggedOut:
         path.wrappedValue = NavigationPath()
         path.wrappedValue.append(AuthRoute.entrance)

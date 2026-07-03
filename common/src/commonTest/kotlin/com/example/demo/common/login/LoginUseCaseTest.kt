@@ -90,6 +90,46 @@ class LoginUseCaseTest {
     }
 
     @Test
+    fun saveProfileMarksSessionCompleteAndPersistsForNextLogin() {
+        val dataSource = InMemoryAuthStoreDataSource()
+        val repository = repository(dataSource)
+        register(repository, account = "profile@example.com")
+
+        val saveResult = repository.saveProfile(
+            UserProfile(
+                username = "Runner Test",
+                birthDate = "2002年11月17日",
+                heightCm = 175,
+                weightKg = 60.0,
+                gender = UserGender.Male
+            )
+        )
+
+        val savedSession = assertIs<MockResult.Success<AuthSession>>(saveResult).data
+        assertEquals(true, savedSession.isProfileComplete)
+        assertEquals("Runner Test", savedSession.resolvedDisplayName)
+
+        repository.clearSession()
+        val loginRepository = repository(dataSource)
+        val loginResult = LoginUseCase(loginRepository).execute("profile@example.com", "password1")
+
+        val loginSession = assertIs<LoginResult.Success>(loginResult).session
+        assertEquals(true, loginSession.isProfileComplete)
+        assertEquals("Runner Test", loginSession.resolvedDisplayName)
+    }
+
+    @Test
+    fun incompleteProfileCannotBeSaved() {
+        val repository = repository()
+        register(repository, account = "incomplete-profile@example.com")
+
+        val result = repository.saveProfile(UserProfile(username = "Missing Fields"))
+
+        val failure = assertIs<MockResult.Failure>(result)
+        assertEquals(MockError.InvalidParam, failure.error)
+    }
+
+    @Test
     fun defaultMockAccountCanLogin() {
         val repository = repository()
 
@@ -128,6 +168,78 @@ class LoginUseCaseTest {
 
         val failure = assertIs<LoginResult.Failure>(result)
         assertEquals(MockError.PasswordIncorrect.code, failure.code)
+    }
+
+    @Test
+    fun changePasswordRequiresCorrectOldPassword() {
+        val dataSource = InMemoryAuthStoreDataSource()
+        val repository = repository(dataSource)
+        register(repository, account = "change-password@example.com")
+
+        val result = repository.changePassword(
+            account = "change-password@example.com",
+            oldPassword = "bad-pass",
+            newPassword = "newpass1"
+        )
+
+        val failure = assertIs<MockResult.Failure>(result)
+        assertEquals(MockError.PasswordIncorrect, failure.error)
+    }
+
+    @Test
+    fun changedPasswordReplacesOldPassword() {
+        val dataSource = InMemoryAuthStoreDataSource()
+        val repository = repository(dataSource)
+        register(repository, account = "changed-password@example.com")
+
+        val changeResult = repository.changePassword(
+            account = "changed-password@example.com",
+            oldPassword = "password1",
+            newPassword = "newpass1"
+        )
+        assertIs<MockResult.Success<Unit>>(changeResult)
+        repository.clearSession()
+
+        val oldLogin = LoginUseCase(repository(dataSource)).execute("changed-password@example.com", "password1")
+        val newLogin = LoginUseCase(repository(dataSource)).execute("changed-password@example.com", "newpass1")
+
+        assertIs<LoginResult.Failure>(oldLogin)
+        assertIs<LoginResult.Success>(newLogin)
+    }
+
+    @Test
+    fun resetPasswordDoesNotRequireOldPassword() {
+        val dataSource = InMemoryAuthStoreDataSource()
+        val repository = repository(dataSource)
+        register(repository, account = "reset-password@example.com")
+
+        val resetResult = repository.resetPassword(
+            account = "reset-password@example.com",
+            newPassword = "newpass1"
+        )
+        assertIs<MockResult.Success<Unit>>(resetResult)
+        repository.clearSession()
+
+        val oldLogin = LoginUseCase(repository(dataSource)).execute("reset-password@example.com", "password1")
+        val newLogin = LoginUseCase(repository(dataSource)).execute("reset-password@example.com", "newpass1")
+
+        assertIs<LoginResult.Failure>(oldLogin)
+        assertIs<LoginResult.Success>(newLogin)
+    }
+
+    @Test
+    fun deleteCurrentAccountRemovesAccountAndSession() {
+        val dataSource = InMemoryAuthStoreDataSource()
+        val repository = repository(dataSource)
+        register(repository, account = "delete-me@example.com")
+
+        val deleteResult = repository.deleteCurrentAccount()
+
+        assertIs<MockResult.Success<Unit>>(deleteResult)
+        assertEquals(null, repository.currentSession())
+        val loginResult = LoginUseCase(repository(dataSource)).execute("delete-me@example.com", "password1")
+        val failure = assertIs<LoginResult.Failure>(loginResult)
+        assertEquals(MockError.AccountNotFound.code, failure.code)
     }
 
     @Test
