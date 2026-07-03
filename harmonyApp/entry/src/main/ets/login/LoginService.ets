@@ -16,18 +16,25 @@ class MockAccount {
 class VerifyCodeState {
   account: string = '';
   code: string = '';
+  expireAtEpochMs: number = 0;
 }
 
 export class LoginService {
+  static readonly DefaultVerifyCode: string = '1234';
+  static readonly ResentVerifyCode: string = '4321';
+  private static readonly VerifyCodeTtlMs: number = 60 * 1000;
+
   private accounts: MockAccount[] = [
-    this.createAccount('13107012029', '123456', 'COROS User', 'CN')
+    this.createAccount('13107012029', '123456', 'COROS User', 'CN'),
+    this.createAccount('2232591785@qq.com', '123456', 'COROS Email User', 'CN')
   ];
   private verifyCodes: VerifyCodeState[] = [];
   private currentSession: AuthSession | null = null;
 
-  requestVerifyCode(account: string): string {
+  requestVerifyCode(account: string, code: string = LoginService.DefaultVerifyCode): string {
     let normalizedAccount: string = account.trim();
-    if (!this.isAccountFormatValid(normalizedAccount)) {
+    let normalizedCode: string = code.trim();
+    if (!this.isAccountFormatValid(normalizedAccount) || !/^[0-9]{4}$/.test(normalizedCode)) {
       return '请输入完整且有效的信息';
     }
 
@@ -37,7 +44,8 @@ export class LoginService {
 
     let codeState: VerifyCodeState = new VerifyCodeState();
     codeState.account = normalizedAccount;
-    codeState.code = '1234';
+    codeState.code = normalizedCode;
+    codeState.expireAtEpochMs = Date.now() + LoginService.VerifyCodeTtlMs;
     this.verifyCodes.push(codeState);
     return '';
   }
@@ -47,7 +55,13 @@ export class LoginService {
     let savedCode: VerifyCodeState | undefined = this.verifyCodes.find((item: VerifyCodeState) => {
       return item.account.toLowerCase() === normalizedAccount;
     });
-    return savedCode !== undefined && savedCode.code === code.trim() ? '' : '验证码不正确';
+    if (savedCode === undefined) {
+      return '验证码不正确';
+    }
+    if (savedCode.expireAtEpochMs <= Date.now()) {
+      return '验证码已过期，请重新获取';
+    }
+    return savedCode.code === code.trim() ? '' : '验证码不正确';
   }
 
   async login(request: LoginRequestDto): Promise<LoginResult> {
@@ -73,11 +87,22 @@ export class LoginService {
 
   async register(request: RegisterRequestDto): Promise<LoginResult> {
     let account: string = request.account.trim();
-    if (!this.isAccountFormatValid(account) || request.password.length < 6 || request.region.length === 0) {
+    if (!this.isAccountFormatValid(account) || !this.isRegisterPasswordValid(request.password) || request.region.length === 0) {
       return this.failure('AUTH_INVALID_PARAM', '请输入完整且有效的信息');
     }
 
-    if (request.verifyCode.trim() !== '1234') {
+    let verifyMessage: string = this.verifyCode(account, request.verifyCode);
+    if (verifyMessage.length > 0) {
+      let code: string = verifyMessage.indexOf('过期') >= 0 ? 'AUTH_VERIFY_CODE_EXPIRED' : 'AUTH_VERIFY_CODE_INVALID';
+      return this.failure(code, verifyMessage);
+    }
+
+    let isKnownRegion: boolean = request.region === 'CN' || request.region === 'US';
+    if (!isKnownRegion) {
+      return this.failure('AUTH_INVALID_PARAM', '请输入完整且有效的信息');
+    }
+
+    if (request.verifyCode.trim().length !== 4) {
       return this.failure('AUTH_VERIFY_CODE_INVALID', '验证码不正确');
     }
 
@@ -137,5 +162,12 @@ export class LoginService {
     let isEmailLike: boolean = account.indexOf('@') > 0 && account.substring(account.indexOf('@') + 1).indexOf('.') > 0;
     let isPhoneLike: boolean = account.length >= 5 && account.length <= 20 && /^[0-9+-]+$/.test(account);
     return isEmailLike || isPhoneLike;
+  }
+
+  private isRegisterPasswordValid(password: string): boolean {
+    return password.length >= 6
+      && password.length <= 20
+      && /[A-Za-z]/.test(password)
+      && /[0-9]/.test(password);
   }
 }

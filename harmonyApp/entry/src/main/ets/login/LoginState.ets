@@ -97,7 +97,7 @@ export function createInitialLoginState(): LoginState {
 }
 
 export function canSubmitLogin(state: LoginState): boolean {
-  if (state.isLoading || state.username.trim().length === 0 || state.password.length === 0) {
+  if (state.isLoading || state.username.trim().length === 0 || state.password.length < 6) {
     return false;
   }
 
@@ -105,5 +105,5 @@ export function canSubmitLogin(state: LoginState): boolean {
     return true;
   }
 
-  return state.verifyCode.length > 0 && state.selectedRegion.length > 0;
+  return state.verifyCode.length === 4 && state.selectedRegion.length > 0;
 }

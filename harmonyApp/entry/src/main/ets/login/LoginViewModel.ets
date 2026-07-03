@@ -61,8 +61,77 @@ export class LoginViewModel {
     return this.loginService.requestVerifyCode(account);
   }
 
+  requestResentVerifyCode(account: string): string {
+    return this.loginService.requestVerifyCode(account, LoginService.ResentVerifyCode);
+  }
+
   verifyCode(account: string, code: string): string {
     return this.loginService.verifyCode(account, code);
+  }
+
+  normalizePhoneInput(value: string): string {
+    return value.replace(/[^0-9]/g, '').substring(0, 11);
+  }
+
+  normalizeEmailInput(value: string): string {
+    return value.trim();
+  }
+
+  normalizeVerifyCodeInput(value: string): string {
+    return value.replace(/[^0-9]/g, '').substring(0, 4);
+  }
+
+  normalizePasswordInput(value: string): string {
+    return value.substring(0, 20);
+  }
+
+  canSubmitLogin(): boolean {
+    return !this.currentState.isLoading
+      && this.currentState.username.trim().length > 0
+      && this.currentState.password.length >= 6;
+  }
+
+  canRequestPhoneCode(): boolean {
+    return this.validatePhoneAccount(this.currentState.username).length === 0 && !this.currentState.isLoading;
+  }
+
+  canRequestEmailCode(email: string): boolean {
+    return this.validateEmailAccount(email).length === 0 && !this.currentState.isLoading;
+  }
+
+  canRegisterWithPassword(password: string, confirmPassword: string): boolean {
+    return this.validateRegisterPassword(password, confirmPassword).length === 0 && !this.currentState.isLoading;
+  }
+
+  validatePhoneAccount(account: string): string {
+    return /^[0-9]{11}$/.test(this.normalizePhoneInput(account)) ? '' : '请输入11位手机号';
+  }
+
+  validateEmailAccount(email: string): string {
+    let normalizedEmail: string = this.normalizeEmailInput(email);
+    let atIndex: number = normalizedEmail.indexOf('@');
+    if (atIndex <= 0) {
+      return '请输入有效邮箱';
+    }
+    let domain: string = normalizedEmail.substring(atIndex + 1);
+    return domain.indexOf('.') >= 0 && domain.substring(0, domain.indexOf('.')).length > 0 ? '' : '请输入有效邮箱';
+  }
+
+  validateVerifyCode(code: string): string {
+    return /^[0-9]{4}$/.test(code) ? '' : '请输入验证码';
+  }
+
+  validateRegisterPassword(password: string, confirmPassword: string): string {
+    if (password.length < 6 || password.length > 20) {
+      return '密码需要为6-20位';
+    }
+    if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+      return '密码需要包含字母和数字';
+    }
+    if (password !== confirmPassword) {
+      return '两次输入的密码不一致';
+    }
+    return '';
   }
 
   clearSessionSilently(): void {

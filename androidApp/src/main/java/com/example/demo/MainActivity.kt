@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.Surface
 import com.example.demo.ui.theme.DemoTheme
-import com.example.demo.login.LoginScreen
+import com.example.demo.navigation.AuthNavGraph
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -15,7 +15,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             DemoTheme {
                 Surface {
-                    LoginScreen()
+                    AuthNavGraph()
                 }
             }
         }

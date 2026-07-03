@@ -3,6 +3,24 @@ import window from '@ohos.window';
 
 export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage): void {
+    windowStage.getMainWindow()
+      .then((mainWindow: window.Window) => {
+        mainWindow.setWindowBackgroundColor('#000000');
+        return mainWindow.setWindowLayoutFullScreen(true)
+          .then(() => {
+            return mainWindow.setWindowSystemBarProperties({
+              statusBarColor: '#00000000',
+              navigationBarColor: '#00000000',
+              isStatusBarLightIcon: true,
+              isNavigationBarLightIcon: true,
+              statusBarContentColor: '#FFFFFF',
+              navigationBarContentColor: '#FFFFFF'
+            });
+          });
+      })
+      .catch(() => {
+        console.error('configure immersive window failed');
+      });
     windowStage.loadContent('pages/LoginPage');
   }
 }
