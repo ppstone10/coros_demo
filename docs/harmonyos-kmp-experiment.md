@@ -1,10 +1,32 @@
-# HarmonyOS KMP 实验路线
+# HarmonyOS KMP/KNOI 实验路线
 
-主线不直接依赖 HarmonyOS KMP 编译目标。所有实验放在 `experimental/harmony-kmp`，并且不能阻塞 Android/iOS 共享模块构建。
+主线不直接引入 HarmonyOS KMP 编译目标。工具链、产物和 DevEco/Hvigor 绑定实验放在 `experimental/harmony-kmp`，并且不能阻塞 Android/iOS 共享模块构建。
 
 ## 实验目标
 
-验证是否能把 `commonMain` 中的纯业务能力复用到 HarmonyOS，同时保持 ArkTS + ArkUI 原生 UI。
+验证是否能基于 KuiklyBase-Kotlin + KNOI，把 `commonMain` 中的纯业务能力复用到 HarmonyOS，同时保持 ArkTS + ArkUI 原生 UI。不采用 KuiklyUI 共享 UI 路线。
+
+## 当前落地点
+
+- `harmony-kmp-bridge`：独立 KuiklyBase-Kotlin/KNOI bridge 构建，不接入根 Gradle，并编译 `common/src/commonMain` 中的登录业务源码。
+- `harmony-kmp-bridge/src/ohosArm64Main/.../HarmonyLoginService.kt`：KNOI-facing service，包装 `LoginFacade`，暴露登录、注册、验证码、登出、校验和状态快照接口。
+- `harmonyApp/entry/src/main/ets/knoi/provider.ets`：由 KNOI 生成，包含 `getHarmonyLoginService()`。
+- `harmonyApp/entry/src/main/ets/login/KnoiLoginAdapter.ets`：ArkTS 登录状态壳，调用生成的 `getHarmonyLoginService()`，只负责状态/effect 映射，不再维护 ArkTS mock 账号、验证码或登录注册流程。
+- `harmonyApp/entry/src/main/ets/entryability/EntryAbility.ets`：显式执行 `setup('libkn.so', false)` 和 `init()`。
+- `harmonyApp/entry/src/main/libs/arm64-v8a/libkn.so`：用户约定的 POC 产物落点。
+- `harmonyApp/entry/libs/arm64-v8a/libkn.so`：Hvigor 实际打包使用的 POC 产物落点。
+
+## KuiklyBase-Kotlin + KNOI 方案
+
+思路：由独立 `harmony-kmp-bridge` 验证并承载 KuiklyBase-Kotlin/KNOI 插件链路，产出 `libkn.so` 和生成的 ArkTS API。bridge 编译 `common/src/commonMain` 登录业务源码，ArkTS 原生页面只通过 `LoginLogicAdapter` 访问业务，不感知 Kotlin 运行时。
+
+接入顺序：
+
+1. 使用 KuiklyBase-Kotlin `2.0.21-KBA-003`、KNOI plugin `0.0.4`、Gradle `8.5` 建立独立 bridge。
+2. 配置 `ohosArm64` 和 `binaries.sharedLib { baseName = "kn" }`，生成 `libkn.so`。
+3. 由 KNOI 生成 `provider.ets`，ArkTS 通过 `getHarmonyLoginService()` 调用 `HarmonyLoginService` 的完整登录服务接口。
+4. 使用现有 ArkUI 登录流程保持默认账号登录、手机号注册验证码、邮箱注册验证码、退出登录、错误提示。
+5. 在 DevEco/Hvigor 中验证 `harmonyApp` 构建和 HAP 打包，确认 HAP 内包含 `libkn.so`、`libknoi.so`、`libc++_shared.so`。
 
 ## 方案一：Kotlin/JS
 
@@ -37,7 +59,7 @@
 
 候选：
 
-- Kuikly。
+- KuiklyBase-Kotlin + KNOI。
 - 社区 Kotlin-OHOS。
 - 公司内部 Harmony KMP 编译目标、编译器或框架。
 
@@ -59,6 +81,6 @@
 - 能在本地和 CI 稳定产出 HarmonyOS 可加载产物。
 - ArkTS 调用路径清晰，有错误处理和版本兼容策略。
 - 对依赖生态、调试体验、包体积和性能有记录。
-- 有失败回退方案。
+- 有明确失败策略：缺少 KNOI native module 时鸿蒙构建或启动失败，不能悄悄回退到 ArkTS 业务复写。
 
 实验失败时，只保留记录，不改主线。

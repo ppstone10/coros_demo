@@ -20,6 +20,7 @@
 - ArkTS、ArkUI、HarmonyOS SDK。
 - 任意平台 SDK 或平台生命周期对象。
 - 非 Kotlin 官方标准编译目标的 HarmonyOS 配置。
+- KuiklyUI、ArkUI 组件或 KNOI runtime 对象。
 
 ## 平台能力接入方式
 
@@ -27,6 +28,7 @@
 
 - Android 实现在 `androidApp` 或 `common/src/androidMain`。
 - iOS 实现在 `iosApp` 或 `common/src/iosMain`。
-- HarmonyOS 第一阶段只在 `harmonyApp` 原生实现，不依赖 `common`。
+- HarmonyOS UI 实现在 `harmonyApp`，保持 ArkTS + ArkUI 原生。
+- HarmonyOS 业务复用通过 KuiklyBase-Kotlin + KNOI 调用 `commonMain` 中的纯 Kotlin bridge；bridge 只能暴露 primitive-friendly DTO 和方法，不能把 HarmonyOS SDK 类型带入 `commonMain`。
 
 需要跨平台共享时，先在 `commonMain` 定义接口，再由平台层注入实现。

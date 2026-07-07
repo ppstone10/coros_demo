@@ -8,26 +8,7 @@ export class AuthSession {
   displayName: string = '';
   region: string = 'CN';
   isValid: boolean = false;
-}
-
-export class LoginRequestDto {
-  account: string = '';
-  password: string = '';
-}
-
-export class RegisterRequestDto {
-  account: string = '';
-  password: string = '';
-  verifyCode: string = '';
-  region: string = 'CN';
-  displayName: string = '';
-}
-
-export class UserDto {
-  id: string = '';
-  account: string = '';
-  displayName: string = '';
-  region: string = 'CN';
+  isProfileComplete: boolean = false;
 }
 
 export class LoginState {
@@ -76,34 +57,4 @@ export class LoginEffect {
   mode: AuthMode = AuthMode.Login;
   session: AuthSession = new AuthSession();
   message: string = '';
-}
-
-export enum LoginResultType {
-  Success,
-  Failure
-}
-
-export class LoginResult {
-  type: LoginResultType = LoginResultType.Failure;
-  session: AuthSession = new AuthSession();
-  code: string = '';
-  message: string = '';
-}
-
-export function createInitialLoginState(): LoginState {
-  let state: LoginState = new LoginState();
-  state.selectedRegion = 'CN';
-  return state;
-}
-
-export function canSubmitLogin(state: LoginState): boolean {
-  if (state.isLoading || state.username.trim().length === 0 || state.password.length < 6) {
-    return false;
-  }
-
-  if (state.mode === AuthMode.Login) {
-    return true;
-  }
-
-  return state.verifyCode.length === 4 && state.selectedRegion.length > 0;
 }

@@ -182,6 +182,13 @@ class LoginFacade(
         )
     }
 
+    fun changePassword(account: String, oldPassword: String, newPassword: String): String? {
+        return when (val result = store.changePassword(account, oldPassword, newPassword)) {
+            is MockResult.Success -> null
+            is MockResult.Failure -> result.error.message
+        }
+    }
+
     fun deleteCurrentAccount(): String? {
         return when (val result = store.deleteCurrentAccount()) {
             is MockResult.Success -> null

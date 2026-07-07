@@ -4,10 +4,43 @@
 
 当前阶段：
 
-- 不直接依赖 KMP `common`。
-- DTO、状态、动作、一次性效果和业务流程与 `common` 保持一致。
-- UI、状态管理和模拟登录服务都使用 ArkTS 原生实现。
-- Kotlin/JS、Kotlin/Native + NAPI、第三方编译目标只在 `experimental/harmony-kmp` 下评估。
+- UI 使用 ArkTS + ArkUI 原生实现，不采用 KuiklyUI 共享 UI。
+- 登录页面通过 `LoginViewModel` -> `LoginLogicAdapter` 调用业务逻辑。
+- `KnoiLoginAdapter` 通过 KuiklyBase-Kotlin + KNOI 调用 `harmony-kmp-bridge` 中的 `HarmonyLoginService`；该 service 复用 `common/src/commonMain` 的 `LoginFacade`、验证码、注册、登录和登出逻辑。
+- `EntryAbility` 显式执行 `setup('libkn.so', false)` 和 `init()`；Harmony 登录业务不再走 `import libshared_login_bridge.so`。
+- KNOI 工具链、native module 产物和 DevEco/Hvigor 绑定验证记录在 `harmony-kmp-bridge`、`experimental/harmony-kmp` 与 `docs/harmonyos-kmp-experiment.md`。没有 `libkn.so` 时，鸿蒙端不应被视为已完成可运行构建。
+
+## shared native module
+
+KNOI 生成的 native module 需要命名为 `libkn.so`。源码目录按用户约定保留一份，同时 Hvigor 实际打包目录也需要一份：
+
+```text
+entry/src/main/libs/arm64-v8a/libkn.so
+entry/libs/arm64-v8a/libkn.so
+```
+
+`entry/hvigorfile.ts` 会在 `assembleApp`、`assembleHap` 等构建命令执行前检查该文件；缺失时构建直接失败，避免运行期才发现鸿蒙端没有切到 shared。
+
+推荐通过仓库脚本安装 KNOI 产物并验证：
+
+```bash
+../harmony-kmp-bridge/gradlew -p ../harmony-kmp-bridge ohosArm64Binaries
+```
+
+如果你的 KNOI 工具链提供 CLI 或 Gradle 命令，可以改用：
+
+```bash
+../tools/build-shared-harmony.sh
+```
+
+如果 DevEco Studio 内置工具未加入系统 PATH，可以临时这样运行：
+
+```bash
+env NODE_HOME=/Applications/DevEco-Studio.app/Contents/tools/node \
+  DEVECO_SDK_HOME=/Applications/DevEco-Studio.app/Contents/sdk \
+  PATH=/Applications/DevEco-Studio.app/Contents/tools/node/bin:/Applications/DevEco-Studio.app/Contents/tools/ohpm/bin:/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin:$PATH \
+  /Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw assembleApp --no-daemon
+```
 
 ## 在 DevEco Studio 中打开
 

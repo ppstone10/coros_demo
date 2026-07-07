@@ -59,3 +59,8 @@ dist/
 /login_register_resources/
 
 skill.md
+
+~/                    # 误创建目录
+harmonyApp/entry/libs/
+harmonyApp/entry/src/main/libs/
+test.md

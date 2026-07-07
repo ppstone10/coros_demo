@@ -1,0 +1,22 @@
+export const COROS_RED: string = '#E9003D';
+export const COROS_BUTTON_RED: string = '#B80035';
+export const COROS_BLACK: string = '#000000';
+export const COROS_WHITE: string = '#FFFFFF';
+export const COROS_MUTED: string = '#8F8F96';
+export const COROS_LINE: string = '#1F1F22';
+export const COROS_FIELD: string = '#0E0E10';
+export const COROS_CODE_ACTIVE_FIELD: string = '#151517';
+export const COROS_LEGAL_TEXT: string = '#C9C9CC';
+export const COROS_BUTTON_DISABLED_TEXT: string = '#FFFFFF66';
+export const COROS_RED_DISABLED: string = '#74001E';
+export const COROS_BUTTON_RED_DISABLED: string = '#5C001B';
+export const COROS_DIALOG_BG: string = '#222224';
+export const COROS_SHEET_BG: string = '#1A1A1B';
+export const COROS_OVERLAY_COLOR: string = '#000000C7';
+export const COROS_SUBTITLE_COLOR: string = '#D8D8DD';
+
+export const AUTH_TITLE_TOP_PADDING: number = 18;
+export const AUTH_TITLE_SIZE: number = 32;
+export const REGISTER_AGREEMENT_TOP_SPACING: number = 44;
+export const REGISTER_ACTION_TOP_SPACING: number = 28;
+export const VERSION_TEXT: string = 'V4.8.1.14';

@@ -1,5 +1,18 @@
 {
   "src": [
-    "pages/LoginPage"
+    "pages/EntrancePage",
+    "pages/LoginFormPage",
+    "pages/PhoneRegisterPage",
+    "pages/EmailRegisterPage",
+    "pages/VerifyCodePage",
+    "pages/PasswordSetupPage",
+    "pages/ForgotPasswordPage",
+    "pages/ResetPasswordPage",
+    "pages/ProfileCompletionPage",
+    "pages/SignedInPage",
+    "pages/PrivacyPolicyPage",
+    "pages/ServiceTermsPage",
+    "pages/LoginPage",
+    "pages/DebugStatePage"
   ]
 }

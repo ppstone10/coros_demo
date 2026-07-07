@@ -1,4 +1,5 @@
 import promptAction from '@ohos.promptAction';
+import router from '@ohos.router';
 import {
   AuthMode,
   LoginAction,
@@ -8,6 +9,38 @@ import {
   LoginState
 } from '../login/LoginState';
 import { LoginViewModel } from '../login/LoginViewModel';
+import {
+  COROS_RED,
+  COROS_BUTTON_RED,
+  COROS_BLACK,
+  COROS_WHITE,
+  COROS_MUTED,
+  COROS_LINE,
+  REGISTER_AGREEMENT_TOP_SPACING,
+  REGISTER_ACTION_TOP_SPACING,
+  VERSION_TEXT
+} from '../login/components/AuthColors';
+import {
+  TermsPromptAction,
+  VerifyTargetKind,
+  verifyCodeMessage,
+  AuthTitle,
+  ErrorText,
+  BlockingLoadingOverlay,
+  LegalDocumentPage,
+  CorosButton,
+  AuthHeader,
+  UnderlineInput,
+  PhoneInputComp,
+  DisabledUnderlineValue,
+  AgreementRowComp,
+  CodeBoxesComp,
+  ThirdPartyAreaComp
+} from '../login/components/AuthComponents';
+import {
+  PRIVACY_POLICY_PARAGRAPHS,
+  SERVICE_TERMS_PARAGRAPHS
+} from '../login/components/LegalContent';
 
 enum AuthPage {
   Entrance,
@@ -16,83 +49,13 @@ enum AuthPage {
   EmailRegister,
   VerifyCode,
   PasswordSetup,
+  ForgotPassword,
+  ResetPassword,
   PrivacyPolicy,
   ServiceTerms,
+  ProfileCompletion,
   SignedIn
 }
-
-enum VerifyTargetKind {
-  Phone,
-  Email
-}
-
-enum TermsPromptAction {
-  None,
-  Login,
-  PhoneCode,
-  EmailCode
-}
-
-class LegalParagraph {
-  text: string;
-  isHeading: boolean;
-
-  constructor(text: string, isHeading: boolean = false) {
-    this.text = text;
-    this.isHeading = isHeading;
-  }
-}
-
-const COROS_RED: string = '#E9003D';
-const COROS_BUTTON_RED: string = '#B80035';
-const COROS_MUTED: string = '#8F8F96';
-const COROS_LINE: string = '#1F1F22';
-const COROS_FIELD: string = '#0E0E10';
-const COROS_CODE_ACTIVE_FIELD: string = '#151517';
-const COROS_LEGAL_TEXT: string = '#C9C9CC';
-const AUTH_TITLE_TOP_PADDING: number = 18;
-const AUTH_TITLE_SIZE: number = 32;
-const REGISTER_AGREEMENT_TOP_SPACING: number = 44;
-const REGISTER_ACTION_TOP_SPACING: number = 28;
-const VERSION_TEXT: string = 'V4.8.1.14';
-
-const PRIVACY_POLICY_PARAGRAPHS: LegalParagraph[] = [
-  new LegalParagraph('最后更新时间：2025年12月24日'),
-  new LegalParagraph('导言'),
-  new LegalParagraph('广东高驰运动科技有限公司（以下简称"COROS"或"我们"）非常重视用户（或"您"）的隐私和个人信息保护，我们将按照法律法规的要求，尽力保护您的个人信息安全。'),
-  new LegalParagraph('本个人信息保护政策（以下简称"本政策"）适用于您通过 COROS 网站、COROS 移动应用程序（"COROS App"）及其他 COROS 产品和服务使用我们的产品与服务。'),
-  new LegalParagraph('本政策解释了我们如何收集、存储、使用、提供、删除您的信息，以及您享有的权利。请您认真阅读并充分理解本政策，特别是涉及个人敏感信息、系统权限、第三方共享和账号注销的条款。'),
-  new LegalParagraph('一、我们如何收集和使用您的个人信息', true),
-  new LegalParagraph('1. 我们将逐一说明所收集的个人信息类型及其对应用途，以便您了解每一项功能所处理的具体个人信息类别、处理目的及处理方式。'),
-  new LegalParagraph('2. 为了向您提供运动记录、设备连接、账号登录、安全保障和客户支持等服务，我们可能会在获得授权后处理账号信息、设备信息、运动数据、网络状态以及必要的日志信息。'),
-  new LegalParagraph('二、我们如何提供和共享您的个人信息', true),
-  new LegalParagraph('除非经过您的同意，我们不会主动将您的个人信息提供至 COROS 以外的第三方。如确需对外提供，或您需要我们向任何第三方提供信息时，我们会直接征得您的同意，但法律法规另有规定的除外。'),
-  new LegalParagraph('三、您如何管理自己的个人信息', true),
-  new LegalParagraph('您可以通过本政策所列途径查询、更新、复制、删除您的个人信息，也可以撤回同意、注销账号、投诉举报。我们会在符合法律法规要求的期限内处理您的请求。'),
-  new LegalParagraph('四、系统权限和敏感信息', true),
-  new LegalParagraph('为了依据本政策收集您的信息、向您提供服务、优化我们的服务并保障您的账号安全，我们可能需要向您索取相关系统权限；其中位置等敏感权限不会默认开启，只有在您明确同意后，我们才会在您同意的范围内调用或使用。'),
-  new LegalParagraph('五、本政策如何更新', true),
-  new LegalParagraph('我们会持续保护您的个人信息，并根据产品功能、法律法规或监管要求更新本政策。若本政策发生重大变化，我们会以合理方式向您提示。')
-];
-
-const SERVICE_TERMS_PARAGRAPHS: LegalParagraph[] = [
-  new LegalParagraph('最后更新日期：2023年9月4日'),
-  new LegalParagraph('特别提示：'),
-  new LegalParagraph('本《COROS 用户协议》（以下简称"本协议"）是您（或"用户"）与广东高驰运动科技股份有限公司（以下简称"COROS"或"我们"）签订的，就使用 COROS 网站、COROS 移动应用程序（"COROS App"）及其他 COROS 产品和服务（统称为"COROS产品和服务"）等事宜订立的协议。'),
-  new LegalParagraph('请您认真阅读并充分理解本协议，特别是以加粗形式提示您注意的免除或减轻 COROS 责任的条款。您有权选择同意或不同意本协议，除非您接受本协议的全部条款，否则您无权注册、登录或使用 COROS 产品和服务。'),
-  new LegalParagraph('一旦您点击"本人已阅读并同意接受本协议的全部内容"并完成注册流程，即视为您已充分阅读、理解并在您点击接受当时接受本协议的所有内容，本协议即在您与 COROS 之间成立并发生法律效力，您同意接受本协议各项条款的约束。'),
-  new LegalParagraph('请注意，本协议内容包括所有我们已经发布或未来可能变更或发布的各类协议、规则、公告或通知。除非法律规定或本协议有相反规定，前述内容一经公布即自动生效并成为本协议不可分割的组成部分，无需另行通知。'),
-  new LegalParagraph('如您不同意本协议的内容或在您同意本协议之后我们发布生效的任何协议、规则、公告或通知，您应立即取消登录、注销账号、停止使用 COROS 产品和服务；如您继续使用，则视为您始终同意本协议的所有内容并同意遵守。'),
-  new LegalParagraph('一、服务范围', true),
-  new LegalParagraph('1. 我们就使用 COROS 产品和服务给予您一项个人的、不可转让的、不可转授权的、非独占性的、可撤销的许可。'),
-  new LegalParagraph('2. 您应按照法律法规、本协议以及 COROS 发布的规则使用产品和服务，不得利用服务从事违法违规或侵犯他人合法权益的行为。'),
-  new LegalParagraph('3. 我们可能根据产品运营情况对服务内容进行调整、更新或优化，并会在合理范围内向您提供必要提示。'),
-  new LegalParagraph('二、账号与安全', true),
-  new LegalParagraph('1. 您应对您账号下的所有行为负责，并妥善保管账号、密码和验证码等信息。'),
-  new LegalParagraph('2. 如发现账号存在异常使用、被盗用或其他安全风险，请及时联系我们处理。'),
-  new LegalParagraph('三、协议变更', true),
-  new LegalParagraph('我们可能根据法律法规变化、业务调整或服务优化需要修改本协议。更新后的协议公布后即生效；如您继续使用 COROS 产品和服务，视为您同意接受更新后的协议。')
-];
 
 @Entry
 @Component
@@ -125,6 +88,27 @@ struct LoginPage {
   @State loginPasswordVisible: boolean = false;
   @State setupPasswordVisible: boolean = false;
   @State confirmPasswordVisible: boolean = false;
+  @State loginActionEnabled: boolean = false;
+  @State phoneCodeActionEnabled: boolean = false;
+  @State emailCodeActionEnabled: boolean = false;
+  @State registerActionEnabled: boolean = false;
+  @State showDeleteDialog: boolean = false;
+
+  @State profileUsername: string = '';
+  @State profileBirthDate: string = '';
+  @State profileHeightCm: string = '';
+  @State profileWeightKg: string = '';
+  @State profileGender: string = '';
+  @State profileMeasurementSystem: string = 'Metric';
+  @State profileCountry: string = '中国';
+  @State profilePhone: string = '';
+  @State profileActionEnabled: boolean = false;
+
+  @State forgotAccount: string = '';
+  @State resetNewPassword: string = '';
+  @State resetConfirmPassword: string = '';
+  @State resetPasswordVisible: boolean = false;
+  @State resetConfirmVisible: boolean = false;
 
   aboutToAppear(): void {
     this.syncState();
@@ -153,10 +137,16 @@ struct LoginPage {
         this.VerifyCodePage();
       } else if (this.page === AuthPage.PasswordSetup) {
         this.PasswordSetupPage();
+      } else if (this.page === AuthPage.ForgotPassword) {
+        this.ForgotPasswordPage();
+      } else if (this.page === AuthPage.ResetPassword) {
+        this.ResetPasswordPage();
       } else if (this.page === AuthPage.PrivacyPolicy) {
-        this.LegalDocumentPage('隐私政策', PRIVACY_POLICY_PARAGRAPHS);
+        LegalDocumentPage('隐私政策', PRIVACY_POLICY_PARAGRAPHS, () => { this.handleLegalBack(); });
       } else if (this.page === AuthPage.ServiceTerms) {
-        this.LegalDocumentPage('服务条款', SERVICE_TERMS_PARAGRAPHS);
+        LegalDocumentPage('服务条款', SERVICE_TERMS_PARAGRAPHS, () => { this.handleLegalBack(); });
+      } else if (this.page === AuthPage.ProfileCompletion) {
+        this.ProfileCompletionPage();
       } else {
         this.SignedInPage();
       }
@@ -170,13 +160,19 @@ struct LoginPage {
       }
 
       if (this.resendLoading) {
-        this.BlockingLoadingOverlay();
+        BlockingLoadingOverlay();
+      }
+
+      if (this.showDeleteDialog) {
+        this.DeleteAccountDialog();
       }
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#000000')
+    .backgroundColor(COROS_BLACK)
   }
+
+  // ========== 页面构建器 ==========
 
   @Builder
   private EntrancePage() {
@@ -191,22 +187,33 @@ struct LoginPage {
         .muted(true)
 
       Column() {
+        Row() {
+          Text('DEBUG')
+            .fontSize(11)
+            .fontColor('#FFFFFF80')
+            .padding({ left: 8, right: 8, top: 4, bottom: 4 })
+            .backgroundColor('#FFFFFF20')
+            .borderRadius(4)
+            .onClick(() => { router.pushUrl({ url: 'pages/DebugStatePage' }); })
+          Blank()
+        }
+        .width('100%')
+        .height(52)
+        .padding({ left: 20, right: 20 })
+        .alignItems(VerticalAlign.Center)
+
         Image($r('app.media.coros_logo'))
           .width(260)
           .height(48)
           .objectFit(ImageFit.Contain)
-          .margin({ top: 62 })
 
-        Blank()
-          .layoutWeight(1)
+        Blank().layoutWeight(1)
 
         Column({ space: 20 }) {
-          this.CorosButton('注册', COROS_RED, true, false, async () => {
-            await this.showPhoneRegister();
-          });
-          this.CorosButton('登录', '#424242', true, false, async () => {
-            await this.showLogin();
-          });
+          CorosButton({ textValue: '注册', color: COROS_RED, enabledValue: true, loading: false,
+            onTap: () => { this.showPhoneRegister(); } });
+          CorosButton({ textValue: '登录', color: '#424242', enabledValue: true, loading: false,
+            onTap: () => { this.showLogin(); } });
         }
         .width('100%')
         .padding({ left: 20, right: 20, bottom: 60 })
@@ -223,51 +230,49 @@ struct LoginPage {
   private LoginFormPage() {
     Scroll() {
       Column() {
-        this.AuthHeader(true);
-        this.AuthTitle('账号登录');
+        AuthHeader({ showBack: true, showFeedback: true,
+          onBack: () => { this.handleBack(); },
+          onFeedback: () => { this.showUnavailableFeature(); } });
+        AuthTitle('账号登录');
 
-        Blank()
-          .height(45)
+        Blank().height(45)
 
-        this.UnderlineInput('输入手机号或邮箱', this.username, InputType.Email, false, false, async (value: string) => {
-          await this.updateUsername(value);
-        });
+        UnderlineInput({ placeholder: '输入手机号或邮箱', textValue: this.username,
+          inputType: InputType.Email, isPassword: false, passwordVisible: false,
+          onChange: (value: string) => { this.updateUsername(value); } });
 
-        Blank()
-          .height(16)
+        Blank().height(16)
 
-        this.UnderlineInput('密码', this.password, this.loginPasswordVisible ? InputType.Normal : InputType.Password, true, this.loginPasswordVisible, async (value: string) => {
-          await this.updatePassword(value);
-        }, () => {
-          this.loginPasswordVisible = !this.loginPasswordVisible;
-        });
+        UnderlineInput({ placeholder: '密码', textValue: this.password,
+          inputType: this.loginPasswordVisible ? InputType.Normal : InputType.Password,
+          isPassword: true, passwordVisible: this.loginPasswordVisible,
+          onChange: (value: string) => { this.updatePassword(value); },
+          onPasswordToggle: () => { this.loginPasswordVisible = !this.loginPasswordVisible; } });
 
-        Blank()
-          .height(59)
+        Blank().height(59)
 
-        this.AgreementRow();
+        AgreementRowComp({ accepted: this.acceptedTerms,
+          onToggle: () => { this.acceptedTerms = !this.acceptedTerms; this.localError = ''; },
+          onPrivacyClick: () => { this.openPrivacyPolicy(); },
+          onServiceTermsClick: () => { this.openServiceTerms(); } });
 
-        Blank()
-          .height(12)
+        Blank().height(12)
 
-        this.CorosButton('登录', COROS_BUTTON_RED, this.canLogin(), this.isLoading, async () => {
-          await this.submitLogin();
-        });
+        CorosButton({ textValue: '登录', color: COROS_BUTTON_RED,
+          enabledValue: this.loginActionEnabled, loading: this.isLoading,
+          onTap: () => { this.submitLogin(); } });
 
-        this.ErrorText();
+ErrorText({ message: this.currentError() });
 
-        Text('忘记密码?')
+          Text('忘记密码?')
           .fontSize(14)
           .fontColor(COROS_MUTED)
           .margin({ top: 16 })
-          .onClick(() => {
-            this.showUnavailableFeature();
-          })
+          .onClick(() => { this.openForgotPassword(); })
 
-        Blank()
-          .layoutWeight(1)
+        Blank().layoutWeight(1)
 
-        this.ThirdPartyArea();
+        ThirdPartyAreaComp({ onUnavailableClick: () => { this.showUnavailableFeature(); } });
 
         Text(VERSION_TEXT)
           .fontSize(16)
@@ -282,34 +287,37 @@ struct LoginPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#000000')
+    .backgroundColor(COROS_BLACK)
   }
 
   @Builder
   private PhoneRegisterPage() {
     Scroll() {
       Column() {
-        this.AuthHeader(true);
-        this.AuthTitle('手机号注册');
+        AuthHeader({ showBack: true, showFeedback: true,
+          onBack: () => { this.handleBack(); },
+          onFeedback: () => { this.showUnavailableFeature(); } });
+        AuthTitle('手机号注册');
 
-        Blank()
-          .height(60)
+        Blank().height(60)
 
-        this.PhoneInput();
+        PhoneInputComp({ countryCode: '+86', phoneValue: this.username,
+          onChange: (value: string) => { this.updateUsername(this.normalizePhoneInput(value)); } });
 
-        Blank()
-          .height(REGISTER_AGREEMENT_TOP_SPACING)
+        Blank().height(REGISTER_AGREEMENT_TOP_SPACING)
 
-        this.AgreementRow();
+        AgreementRowComp({ accepted: this.acceptedTerms,
+          onToggle: () => { this.acceptedTerms = !this.acceptedTerms; this.localError = ''; },
+          onPrivacyClick: () => { this.openPrivacyPolicy(); },
+          onServiceTermsClick: () => { this.openServiceTerms(); } });
 
-        Blank()
-          .height(REGISTER_ACTION_TOP_SPACING)
+        Blank().height(REGISTER_ACTION_TOP_SPACING)
 
-        this.CorosButton('发送验证码', COROS_BUTTON_RED, this.canSendPhoneCode(), this.isLoading, async () => {
-          await this.requestPhoneVerifyCode();
-        });
+        CorosButton({ textValue: '发送验证码', color: COROS_BUTTON_RED,
+          enabledValue: this.phoneCodeActionEnabled, loading: this.isLoading,
+          onTap: () => { this.requestPhoneVerifyCode(); } });
 
-        this.ErrorText();
+        ErrorText({ message: this.currentError() });
 
         Text('邮箱注册')
           .fontSize(18)
@@ -317,12 +325,9 @@ struct LoginPage {
           .width('100%')
           .textAlign(TextAlign.Center)
           .margin({ top: 26 })
-          .onClick(async () => {
-            await this.showEmailRegister();
-          })
+          .onClick(() => { this.showEmailRegister(); })
 
-        Blank()
-          .layoutWeight(1)
+        Blank().layoutWeight(1)
       }
       .width('100%')
       .height('100%')
@@ -330,37 +335,42 @@ struct LoginPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#000000')
+    .backgroundColor(COROS_BLACK)
   }
 
   @Builder
   private EmailRegisterPage() {
     Scroll() {
       Column() {
-        this.AuthHeader(true);
-        this.AuthTitle('邮箱注册');
+        AuthHeader({ showBack: true, showFeedback: true,
+          onBack: () => { this.handleBack(); },
+          onFeedback: () => { this.showUnavailableFeature(); } });
+        AuthTitle('邮箱注册');
 
-        Blank()
-          .height(60)
+        Blank().height(60)
 
-        this.UnderlineInput('请输入邮箱', this.emailInput, InputType.Email, false, false, async (value: string) => {
-          this.emailInput = this.normalizeEmailInput(value);
-          this.localError = '';
-        });
+        UnderlineInput({ placeholder: '请输入邮箱', textValue: this.emailInput,
+          inputType: InputType.Email, isPassword: false, passwordVisible: false,
+          onChange: (value: string) => {
+            this.emailInput = this.normalizeEmailInput(value);
+            this.localError = '';
+            this.refreshActionStates();
+          } });
 
-        Blank()
-          .height(REGISTER_AGREEMENT_TOP_SPACING)
+        Blank().height(REGISTER_AGREEMENT_TOP_SPACING)
 
-        this.AgreementRow();
+        AgreementRowComp({ accepted: this.acceptedTerms,
+          onToggle: () => { this.acceptedTerms = !this.acceptedTerms; this.localError = ''; },
+          onPrivacyClick: () => { this.openPrivacyPolicy(); },
+          onServiceTermsClick: () => { this.openServiceTerms(); } });
 
-        Blank()
-          .height(REGISTER_ACTION_TOP_SPACING)
+        Blank().height(REGISTER_ACTION_TOP_SPACING)
 
-        this.CorosButton('发送验证码', COROS_BUTTON_RED, this.canSendEmailCode(), this.isLoading, async () => {
-          await this.requestEmailVerifyCode();
-        });
+        CorosButton({ textValue: '发送验证码', color: COROS_BUTTON_RED,
+          enabledValue: this.emailCodeActionEnabled, loading: this.isLoading,
+          onTap: () => { this.requestEmailVerifyCode(); } });
 
-        this.ErrorText();
+        ErrorText({ message: this.currentError() });
 
         Text('手机号注册')
           .fontSize(18)
@@ -368,12 +378,9 @@ struct LoginPage {
           .width('100%')
           .textAlign(TextAlign.Center)
           .margin({ top: 26 })
-          .onClick(async () => {
-            await this.showPhoneRegisterFromEmail();
-          })
+          .onClick(() => { this.showPhoneRegisterFromEmail(); })
 
-        Blank()
-          .layoutWeight(1)
+        Blank().layoutWeight(1)
       }
       .width('100%')
       .height('100%')
@@ -381,63 +388,58 @@ struct LoginPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#000000')
+    .backgroundColor(COROS_BLACK)
   }
 
   @Builder
   private VerifyCodePage() {
     Scroll() {
       Column() {
-        this.AuthHeader(false);
-        this.AuthTitle('输入验证码');
+        AuthHeader({ showBack: true, showFeedback: false,
+          onBack: () => { this.handleBack(); } });
+        AuthTitle('输入验证码');
 
-        Text(this.verifyCodeMessage())
+        Text(verifyCodeMessage(this.username, this.verifyTargetKind))
           .fontSize(16)
           .fontColor('#D8D8DD')
           .lineHeight(24)
           .margin({ top: 14 })
 
-        Blank()
-          .height(56)
+        Blank().height(56)
 
-        this.CodeBoxes();
+        CodeBoxesComp({ codeValue: this.codeInput, hasError: this.currentError().length > 0,
+          onChange: (value: string) => {
+            this.codeInput = this.normalizeVerifyCodeInput(value);
+            this.localError = '';
+            if (this.codeInput.length === 4) {
+              this.submitCode();
+            }
+          } });
 
-        this.ErrorText();
+        ErrorText({ message: this.currentError() });
 
-        Blank()
-          .height(58)
+        Blank().height(58)
 
         Row() {
           if (this.countdown > 0) {
-            Text('重新发送')
-              .fontSize(16)
-              .fontColor(COROS_MUTED)
-            Text(`（${this.countdown}s）`)
-              .fontSize(16)
-              .fontColor(COROS_RED)
+            Text('重新发送').fontSize(16).fontColor(COROS_MUTED)
+            Text('（' + this.countdown + 's）').fontSize(16).fontColor(COROS_RED)
           } else {
             Text('获取验证码')
               .fontSize(16)
               .fontColor(COROS_RED)
-              .onClick(async () => {
-                await this.resendVerifyCode();
-              })
+              .onClick(() => { this.resendVerifyCode(); })
           }
-
           Blank()
-
           Text('收不到验证码?')
             .fontSize(16)
             .fontColor(COROS_MUTED)
-            .onClick(() => {
-              this.showUnavailableFeature();
-            })
+            .onClick(() => { this.showUnavailableFeature(); })
         }
         .width('100%')
         .alignItems(VerticalAlign.Center)
 
-        Blank()
-          .layoutWeight(1)
+        Blank().layoutWeight(1)
       }
       .width('100%')
       .height('100%')
@@ -445,52 +447,55 @@ struct LoginPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#000000')
+    .backgroundColor(COROS_BLACK)
   }
 
   @Builder
   private PasswordSetupPage() {
     Scroll() {
       Column() {
-        this.AuthHeader(false);
-        this.AuthTitle('设置登录密码');
+        AuthHeader({ showBack: true, showFeedback: false,
+          onBack: () => { this.handleBack(); } });
+        AuthTitle('设置登录密码');
 
-        Blank()
-          .height(60)
+        Blank().height(60)
 
-        this.UnderlineInput('输入新的密码', this.setupPassword, this.setupPasswordVisible ? InputType.Normal : InputType.Password, true, this.setupPasswordVisible, async (value: string) => {
-          this.setupPassword = this.normalizePasswordInput(value);
-          this.localError = '';
-        }, () => {
-          this.setupPasswordVisible = !this.setupPasswordVisible;
-        });
+        UnderlineInput({ placeholder: '输入新的密码', textValue: this.setupPassword,
+          inputType: this.setupPasswordVisible ? InputType.Normal : InputType.Password,
+          isPassword: true, passwordVisible: this.setupPasswordVisible,
+          onChange: (value: string) => {
+            this.setupPassword = this.normalizePasswordInput(value);
+            this.localError = '';
+            this.refreshActionStates();
+          },
+          onPasswordToggle: () => { this.setupPasswordVisible = !this.setupPasswordVisible; } });
 
-        Blank()
-          .height(48)
+        Blank().height(48)
 
-        this.UnderlineInput('再次输入密码', this.confirmPassword, this.confirmPasswordVisible ? InputType.Normal : InputType.Password, true, this.confirmPasswordVisible, async (value: string) => {
-          this.confirmPassword = this.normalizePasswordInput(value);
-          this.localError = '';
-        }, () => {
-          this.confirmPasswordVisible = !this.confirmPasswordVisible;
-        });
+        UnderlineInput({ placeholder: '再次输入密码', textValue: this.confirmPassword,
+          inputType: this.confirmPasswordVisible ? InputType.Normal : InputType.Password,
+          isPassword: true, passwordVisible: this.confirmPasswordVisible,
+          onChange: (value: string) => {
+            this.confirmPassword = this.normalizePasswordInput(value);
+            this.localError = '';
+            this.refreshActionStates();
+          },
+          onPasswordToggle: () => { this.confirmPasswordVisible = !this.confirmPasswordVisible; } });
 
         Text('6-20位必须包含字母和数字')
           .fontSize(14)
           .fontColor('#D8D8DD')
           .margin({ top: 8 })
 
-        Blank()
-          .height(80)
+        Blank().height(80)
 
-        this.CorosButton('注册', COROS_BUTTON_RED, this.canRegister(), this.isLoading, async () => {
-          await this.submitRegister();
-        });
+        CorosButton({ textValue: '注册', color: COROS_BUTTON_RED,
+          enabledValue: this.registerActionEnabled, loading: this.isLoading,
+          onTap: () => { this.submitRegister(); } });
 
-        this.ErrorText();
+        ErrorText({ message: this.currentError() });
 
-        Blank()
-          .layoutWeight(1)
+        Blank().layoutWeight(1)
       }
       .width('100%')
       .height('100%')
@@ -498,38 +503,35 @@ struct LoginPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#000000')
+    .backgroundColor(COROS_BLACK)
   }
 
   @Builder
-  private SignedInPage() {
+  private ForgotPasswordPage() {
     Scroll() {
       Column() {
-        this.AuthHeader(false);
+        AuthHeader({ showBack: true, showFeedback: false,
+          onBack: () => { this.handleBack(); } });
+        AuthTitle('找回密码');
 
-        Image($r('app.media.coros_logo'))
-          .width(260)
-          .height(48)
-          .objectFit(ImageFit.Contain)
-          .alignSelf(ItemAlign.Center)
-          .margin({ top: 80 })
+        Blank().height(60)
 
-        Blank()
-          .height(96)
+        UnderlineInput({ placeholder: '输入手机号或邮箱', textValue: this.forgotAccount,
+          inputType: InputType.Email, isPassword: false, passwordVisible: false,
+          onChange: (value: string) => {
+            this.forgotAccount = value.trim();
+            this.localError = '';
+          } });
 
-        Text(`欢迎使用 COROS\n${this.sessionAccount}`)
-          .fontSize(26)
-          .fontColor('#FFFFFF')
-          .lineHeight(36)
-          .textAlign(TextAlign.Center)
-          .width('100%')
+        Blank().height(72)
 
-        Blank()
-          .height(48)
+        CorosButton({ textValue: '下一步', color: COROS_BUTTON_RED,
+          enabledValue: this.forgotAccount.trim().length > 0, loading: false,
+          onTap: () => { this.verifyForgotAccount(); } });
 
-        this.CorosButton('退出登录', COROS_BUTTON_RED, true, false, async () => {
-          await this.logout();
-        });
+        ErrorText({ message: this.localError });
+
+        Blank().layoutWeight(1)
       }
       .width('100%')
       .height('100%')
@@ -537,481 +539,341 @@ struct LoginPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#000000')
+    .backgroundColor(COROS_BLACK)
   }
 
   @Builder
-  private LegalDocumentPage(title: string, paragraphs: LegalParagraph[]) {
-    Column() {
-      Stack() {
-        Row() {
-          this.BackButton(() => {
-            this.localError = '';
-            this.page = this.legalReturnPage;
-          });
-          Blank()
-        }
-        .width('100%')
-        .height(52)
+  private ResetPasswordPage() {
+    Scroll() {
+      Column() {
+        AuthHeader({ showBack: true, showFeedback: false,
+          onBack: () => { this.handleBack(); } });
+        AuthTitle('设置新密码');
 
-        Text(title)
-          .fontSize(18)
-          .fontWeight(FontWeight.Bold)
-          .fontColor('#FFFFFF')
-          .width('100%')
-          .textAlign(TextAlign.Center)
+        Blank().height(42)
+
+        Text('账号').fontSize(14).fontColor('#D8D8DD')
+        Blank().height(8)
+
+        DisabledUnderlineValue({ value: this.forgotAccount, placeholder: '账号' });
+
+        Blank().height(42)
+
+        UnderlineInput({ placeholder: '输入新的密码', textValue: this.resetNewPassword,
+          inputType: this.resetPasswordVisible ? InputType.Normal : InputType.Password,
+          isPassword: true, passwordVisible: this.resetPasswordVisible,
+          onChange: (value: string) => {
+            this.resetNewPassword = this.normalizePasswordInput(value);
+            this.localError = '';
+          },
+          onPasswordToggle: () => { this.resetPasswordVisible = !this.resetPasswordVisible; } });
+
+        Blank().height(42)
+
+        UnderlineInput({ placeholder: '再次输入新密码', textValue: this.resetConfirmPassword,
+          inputType: this.resetConfirmVisible ? InputType.Normal : InputType.Password,
+          isPassword: true, passwordVisible: this.resetConfirmVisible,
+          onChange: (value: string) => {
+            this.resetConfirmPassword = this.normalizePasswordInput(value);
+            this.localError = '';
+          },
+          onPasswordToggle: () => { this.resetConfirmVisible = !this.resetConfirmVisible; } });
+
+        Text('6-20位，必须包含字母和数字')
+          .fontSize(14)
+          .fontColor('#D8D8DD')
+          .margin({ top: 8 })
+
+        Blank().height(72)
+
+        CorosButton({ textValue: '完成', color: COROS_BUTTON_RED,
+          enabledValue: this.viewModel.canSubmitResetPassword(this.resetNewPassword, this.resetConfirmPassword),
+          loading: false,
+          onTap: () => { this.submitResetPassword(); } });
+
+        ErrorText({ message: this.localError });
+
+        Blank().layoutWeight(1)
       }
       .width('100%')
-      .height(52)
+      .height('100%')
       .padding({ left: 20, right: 20 })
-
-      Scroll() {
-        Column({ space: 12 }) {
-          ForEach(paragraphs, (paragraph: LegalParagraph) => {
-            Text(paragraph.text)
-              .fontSize(paragraph.isHeading ? 19 : 18)
-              .fontWeight(paragraph.isHeading ? FontWeight.Bold : FontWeight.Regular)
-              .fontColor(paragraph.isHeading ? '#FFFFFF' : COROS_LEGAL_TEXT)
-              .lineHeight(paragraph.isHeading ? 28 : 30)
-          }, (paragraph: LegalParagraph) => paragraph.text)
-        }
-        .width('100%')
-        .padding({ top: 58, left: 20, right: 32, bottom: 32 })
-      }
-      .layoutWeight(1)
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#000000')
+    .backgroundColor(COROS_BLACK)
   }
 
   @Builder
-  private AuthHeader(showFeedback: boolean) {
-    Row() {
-      this.BackButton(() => {
-        this.handleBack();
-      });
-      Blank()
-      if (showFeedback) {
-        Text('◔ 建议&反馈')
-          .fontSize(14)
-          .fontColor(COROS_MUTED)
-          .onClick(() => {
-            this.showUnavailableFeature();
-          })
+  private ProfileCompletionPage() {
+    Column() {
+      Scroll() {
+        Column() {
+          AuthHeader({ showBack: true, showFeedback: false,
+            onBack: () => { this.handleProfileBack(); } });
+
+          Blank().height(22)
+
+          Text('完善个人信息')
+            .fontSize(36)
+            .fontColor(COROS_WHITE)
+            .lineHeight(44)
+            .fontWeight(FontWeight.Lighter)
+
+          Blank().height(12)
+
+          Text('以下信息可以帮助我们对体育科学做出更准确的预测，请仔细填写。')
+            .fontSize(18)
+            .fontColor('#E8E8EC')
+            .lineHeight(28)
+
+          Blank().height(28)
+
+          this.ProfileTextRow('用户名', true, this.profileUsername, '输入用户名', (value: string) => {
+            this.profileUsername = value.substring(0, 20);
+          });
+          this.ProfileTextRow('出生日期', true, this.profileBirthDate, '例如：2002年11月17日', (value: string) => {
+            this.profileBirthDate = value;
+          });
+          this.ProfileTextRow('身高（cm）', true, this.profileHeightCm, '例如：175', (value: string) => {
+            this.profileHeightCm = value.replace(/[^0-9]/g, '').substring(0, 3);
+          });
+          this.ProfileTextRow('体重（kg）', true, this.profileWeightKg, '例如：60.0', (value: string) => {
+            this.profileWeightKg = value.replace(/[^0-9.]/g, '').substring(0, 5);
+          });
+          this.ProfilePickerRow('公英制', false, this.measurementLabel(), '', () => { this.toggleMeasurementSystem(); });
+          this.ProfileTextRow('手机', false, this.profilePhone, '输入手机号', (value: string) => {
+            this.profilePhone = value.replace(/[^0-9+\-]/g, '').substring(0, 20);
+          });
+          this.ProfilePickerRow('国家与地区', false, this.profileCountry, '中国', () => { this.showUnavailableFeature(); });
+          this.GenderRow();
+
+          Blank().height(16)
+        }
+        .width('100%')
+        .padding({ left: 20, right: 20 })
       }
+      .layoutWeight(1)
+
+      Column() {
+        ErrorText({ message: this.errorMessage });
+        Blank().height(8)
+        CorosButton({ textValue: '完成', color: COROS_BUTTON_RED,
+          enabledValue: this.profileActionEnabled, loading: this.isLoading,
+          onTap: () => { this.submitProfile(); } });
+      }
+      .width('100%')
+      .padding({ left: 20, right: 20, top: 14, bottom: 18 })
     }
     .width('100%')
-    .height(52)
+    .height('100%')
+    .backgroundColor(COROS_BLACK)
+  }
+
+  @Builder
+  private ProfileTextRow(label: string, required: boolean, value: string, placeholder: string, onChange: (v: string) => void) {
+    Row() {
+      this.RequiredLabel(label, required);
+      TextInput({ text: value, placeholder: placeholder })
+        .fontSize(18).fontColor(COROS_WHITE).placeholderColor(COROS_MUTED)
+        .caretColor(COROS_RED).backgroundColor(COROS_BLACK).textAlign(TextAlign.End)
+        .layoutWeight(1).padding(0).height(66)
+        .onChange((v: string) => { onChange(v); this.refreshProfileActionState(); })
+    }
+    .width('100%').height(66).alignItems(VerticalAlign.Center)
+    Divider().color(COROS_LINE)
+  }
+
+  @Builder
+  private ProfilePickerRow(label: string, required: boolean, value: string, placeholder: string, onClick: () => void) {
+    Row() {
+      this.RequiredLabel(label, required);
+      Blank().layoutWeight(1)
+      Text(value.length > 0 ? value : placeholder)
+        .fontSize(18).fontColor(value.length > 0 ? '#DADAE0' : COROS_MUTED).textAlign(TextAlign.End)
+      Text(' >').fontSize(18).fontColor(COROS_MUTED).margin({ left: 12 })
+    }
+    .width('100%').height(66).alignItems(VerticalAlign.Center)
+    .onClick(() => { onClick(); })
+    Divider().color(COROS_LINE)
+  }
+
+  @Builder
+  private GenderRow() {
+    Row() {
+      this.RequiredLabel('性别', true);
+      Blank().layoutWeight(1)
+      Row() {
+        this.GenderButton('女', this.profileGender === 'Female', () => {
+          this.profileGender = this.profileGender === 'Female' ? '' : 'Female';
+          this.refreshProfileActionState();
+        });
+        Blank().width(10)
+        this.GenderButton('男', this.profileGender === 'Male', () => {
+          this.profileGender = this.profileGender === 'Male' ? '' : 'Male';
+          this.refreshProfileActionState();
+        });
+      }
+    }
+    .width('100%').height(78).alignItems(VerticalAlign.Center)
+  }
+
+  @Builder
+  private GenderButton(labelText: string, selected: boolean, onClick: () => void) {
+    Row() {
+      Text(labelText === '女' ? '♀' : '♂').fontSize(22).fontColor(selected ? COROS_RED : '#D8D8DD')
+      Text(' ' + labelText).fontSize(20).fontColor(selected ? COROS_RED : '#D8D8DD').fontWeight(FontWeight.Medium)
+    }
+    .width(82).height(48).justifyContent(FlexAlign.Center)
+    .border({ width: selected ? 1 : 0, color: selected ? COROS_RED : '#00000000', radius: 9 })
+    .backgroundColor('#19191B')
+    .onClick(() => { onClick(); })
+  }
+
+  @Builder
+  private RequiredLabel(textLabel: string, required: boolean) {
+    Row() {
+      Text(textLabel).fontSize(20).fontColor(COROS_WHITE)
+      if (required) {
+        Text('*').fontSize(16).fontColor(COROS_RED)
+      }
+    }
     .alignItems(VerticalAlign.Center)
   }
 
   @Builder
-  private BackButton(onTap: () => void) {
-    Text('‹')
-      .fontSize(44)
-      .fontColor('#FFFFFF')
-      .textAlign(TextAlign.Center)
-      .width(48)
-      .height(52)
-      .onClick(() => {
-        onTap();
-      })
-  }
-
-  @Builder
-  private AuthTitle(title: string) {
-    Text(title)
-      .fontSize(AUTH_TITLE_SIZE)
-      .fontWeight(FontWeight.Lighter)
-      .fontColor('#FFFFFF')
-      .margin({ top: AUTH_TITLE_TOP_PADDING })
-  }
-
-  @Builder
-  private UnderlineInput(
-    placeholder: string,
-    textValue: string,
-    inputType: InputType,
-    isPassword: boolean,
-    passwordVisible: boolean,
-    onChange: (value: string) => Promise<void>,
-    onPasswordToggle?: () => void
-  ) {
+  private SignedInPage() {
     Column() {
-      Row({ space: 6 }) {
-        TextInput({ placeholder: placeholder, text: textValue })
-          .type(inputType)
-          .fontSize(17)
-          .fontColor('#FFFFFF')
-          .placeholderColor(COROS_MUTED)
-          .caretColor(COROS_RED)
-          .backgroundColor('#000000')
-          .height(48)
-          .padding(0)
-          .layoutWeight(1)
-          .onChange(async (value: string) => {
-            await onChange(value);
-          })
+      AuthHeader({ showBack: false, showFeedback: false, onBack: () => {} });
 
-        if (textValue.length > 0) {
-          Image($r('app.media.icon_delete'))
-            .width(34)
-            .height(34)
-            .objectFit(ImageFit.Contain)
-            .onClick(async () => {
-              await onChange('');
-            })
+      Scroll() {
+        Column() {
+          Image($r('app.media.coros_logo'))
+            .width(260).height(48).objectFit(ImageFit.Contain)
+            .alignSelf(ItemAlign.Center).margin({ top: 60 })
+
+          Blank().height(96)
+
+          Text('欢迎使用 COROS\n' + this.sessionAccount)
+            .fontSize(26).fontColor(COROS_WHITE).lineHeight(36)
+            .textAlign(TextAlign.Center).width('100%')
+
+          Blank().height(48)
+
+          CorosButton({ textValue: '退出登录', color: COROS_BUTTON_RED, enabledValue: true, loading: false,
+            onTap: () => { this.logout(); } });
+
+          Blank().height(16)
+
+          CorosButton({ textValue: '注销账户', color: '#2A2A2E', enabledValue: true, loading: false,
+            onTap: () => { this.showDeleteDialog = true; } });
+
+          ErrorText({ message: this.localError });
         }
-
-        if (isPassword && textValue.length > 0) {
-          Image($r('app.media.icon_uneye'))
-            .width(34)
-            .height(34)
-            .objectFit(ImageFit.Contain)
-            .opacity(passwordVisible ? 0.45 : 1)
-            .onClick(() => {
-              if (onPasswordToggle !== undefined) {
-                onPasswordToggle();
-              }
-            })
-        }
-      }
-      .width('100%')
-      .height(48)
-      .alignItems(VerticalAlign.Center)
-
-      Divider()
-        .color(COROS_LINE)
-    }
-    .width('100%')
-  }
-
-  @Builder
-  private PhoneInput() {
-    Column() {
-      Row({ space: 24 }) {
-        Text('+86')
-          .fontSize(17)
-          .fontColor('#FFFFFF')
-        TextInput({ placeholder: '输入手机号', text: this.username })
-          .type(InputType.PhoneNumber)
-          .maxLength(11)
-          .fontSize(17)
-          .fontColor('#FFFFFF')
-          .placeholderColor(COROS_MUTED)
-          .caretColor(COROS_RED)
-          .backgroundColor('#000000')
-          .padding(0)
-          .layoutWeight(1)
-          .onChange(async (value: string) => {
-            await this.updateUsername(this.normalizePhoneInput(value));
-          })
-        if (this.username.length > 0) {
-          Image($r('app.media.icon_delete'))
-            .width(34)
-            .height(34)
-            .objectFit(ImageFit.Contain)
-            .onClick(async () => {
-              await this.updateUsername('');
-            })
-        }
-      }
-      .height(48)
-      .width('100%')
-      .alignItems(VerticalAlign.Center)
-
-      Divider()
-        .color(COROS_LINE)
-    }
-    .width('100%')
-  }
-
-  @Builder
-  private AgreementRow() {
-    Row({ space: 8 }) {
-      Text(this.acceptedTerms ? '✓' : '')
-        .fontSize(9)
-        .fontColor('#FFFFFF')
-        .textAlign(TextAlign.Center)
-        .width(18)
-        .height(18)
-        .border({ width: 1, color: this.acceptedTerms ? COROS_RED : '#D0D0D0', radius: 9 })
-        .backgroundColor(this.acceptedTerms ? COROS_RED : '#000000')
-        .margin({ top: 2 })
-        .onClick(() => {
-          this.acceptedTerms = !this.acceptedTerms;
-          this.localError = '';
-        })
-
-      Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
-        Text('我已阅读并同意COROS的 ')
-          .fontSize(14)
-          .fontColor('#FFFFFF')
-          .lineHeight(24)
-        Text('《隐私政策》')
-          .fontSize(14)
-          .fontColor(COROS_RED)
-          .lineHeight(24)
-          .onClick(() => {
-            this.openPrivacyPolicy();
-          })
-        Text(' 和 ')
-          .fontSize(14)
-          .fontColor('#FFFFFF')
-          .lineHeight(24)
-        Text('《服务条款》')
-          .fontSize(14)
-          .fontColor(COROS_RED)
-          .lineHeight(24)
-          .onClick(() => {
-            this.openServiceTerms();
-          })
+        .width('100%')
+        .padding({ left: 20, right: 20 })
       }
       .layoutWeight(1)
     }
     .width('100%')
-    .alignItems(VerticalAlign.Top)
+    .height('100%')
+    .backgroundColor(COROS_BLACK)
   }
 
-  @Builder
-  private CorosButton(textValue: string, color: string, enabledValue: boolean, loading: boolean, onTap: () => Promise<void>) {
-    Button(loading ? '处理中' : textValue, { type: ButtonType.Normal })
-      .fontSize(18)
-      .fontColor(enabledValue ? '#FFFFFF' : '#FFFFFF66')
-      .width('100%')
-      .height(48)
-      .borderRadius(9)
-      .backgroundColor(enabledValue ? color : this.disabledColor(color))
-      .enabled(enabledValue && !loading)
-      .onClick(async () => {
-        await onTap();
-      })
-  }
-
-  @Builder
-  private CodeBoxes() {
-    Stack() {
-      Row({ space: 28 }) {
-        ForEach([0, 1, 2, 3], (index: number) => {
-          Text(this.codeInput.length > index ? this.codeInput.charAt(index) : (index === this.codeInput.length ? '|' : ''))
-            .fontSize(30)
-            .fontColor(index === this.codeInput.length && this.codeInput.length < 4 ? COROS_RED : '#FFFFFF')
-            .textAlign(TextAlign.Center)
-            .width('20%')
-            .aspectRatio(1)
-            .backgroundColor(index === this.codeInput.length ? COROS_CODE_ACTIVE_FIELD : COROS_FIELD)
-            .border({ width: 2, color: this.currentError().length > 0 ? COROS_RED : '#3A3A3D', radius: 12 })
-        }, (index: number) => index.toString())
-      }
-      .width('100%')
-
-      TextInput({ text: this.codeInput })
-        .type(InputType.Number)
-        .maxLength(4)
-        .fontColor('#00000000')
-        .caretColor('#00000000')
-        .backgroundColor('#00000000')
-        .width('100%')
-        .height(80)
-        .opacity(0.02)
-        .onChange(async (value: string) => {
-          this.codeInput = this.normalizeVerifyCodeInput(value);
-          this.localError = '';
-          if (this.codeInput.length === 4) {
-            await this.submitCode();
-          }
-        })
-    }
-    .width('100%')
-  }
-
-  @Builder
-  private ThirdPartyArea() {
-    Column({ space: 24 }) {
-      Row({ space: 12 }) {
-        Divider()
-          .layoutWeight(1)
-          .color(COROS_LINE)
-        Text('第三方账号')
-          .fontSize(14)
-          .fontColor(COROS_MUTED)
-        Divider()
-          .layoutWeight(1)
-          .color(COROS_LINE)
-      }
-      .justifyContent(FlexAlign.Center)
-      .width('100%')
-
-      Row({ space: 54 }) {
-        this.ThirdPartyCircle('☘');
-        this.ThirdPartyCircle('···');
-      }
-      .justifyContent(FlexAlign.Center)
-      .width('100%')
-    }
-    .width('100%')
-  }
-
-  @Builder
-  private ThirdPartyCircle(textValue: string) {
-    Text(textValue)
-      .fontSize(20)
-      .fontColor('#FFFFFF')
-      .textAlign(TextAlign.Center)
-      .width(34)
-      .height(34)
-      .border({ width: 1, color: '#303036', radius: 17 })
-      .onClick(() => {
-        this.showUnavailableFeature();
-      })
-  }
-
-  @Builder
-  private ErrorText() {
-    if (this.currentError().length > 0) {
-      Text(this.currentError())
-        .fontSize(15)
-        .fontColor(COROS_RED)
-        .margin({ top: 10 })
-    }
-  }
+  // ========== 弹窗构建器（直接引用 this，响应式正常） ==========
 
   @Builder
   private TermsConsentSheet() {
     Column() {
-      Blank()
-        .layoutWeight(1)
-
+      Blank().layoutWeight(1)
       Column() {
-        Text('×')
-          .fontSize(34)
-          .fontColor('#FFFFFF')
-          .width('100%')
-          .textAlign(TextAlign.End)
-          .onClick(() => {
-            this.termsPromptAction = TermsPromptAction.None;
-          })
-
-        Text('阅读并同意以下条款，')
-          .fontSize(18)
-          .fontColor('#FFFFFF')
-          .width('100%')
-          .textAlign(TextAlign.Center)
-          .margin({ top: 12 })
-
+        Text('×').fontSize(34).fontColor(COROS_WHITE).width('100%').textAlign(TextAlign.End)
+          .onClick(() => { this.termsPromptAction = TermsPromptAction.None; })
+        Text('阅读并同意以下条款，').fontSize(18).fontColor(COROS_WHITE).width('100%')
+          .textAlign(TextAlign.Center).margin({ top: 12 })
         Row() {
-          Text('《隐私政策》')
-            .fontSize(18)
-            .fontColor(COROS_RED)
-            .onClick(() => {
-              this.openPrivacyPolicy();
-            })
-          Text(' 和 ')
-            .fontSize(18)
-            .fontColor('#FFFFFF')
-          Text('《服务条款》')
-            .fontSize(18)
-            .fontColor(COROS_RED)
-            .onClick(() => {
-              this.openServiceTerms();
-            })
+          Text('《隐私政策》').fontSize(18).fontColor(COROS_RED).onClick(() => { this.openPrivacyPolicy(); })
+          Text(' 和 ').fontSize(18).fontColor(COROS_WHITE)
+          Text('《服务条款》').fontSize(18).fontColor(COROS_RED).onClick(() => { this.openServiceTerms(); })
         }
-        .width('100%')
-        .justifyContent(FlexAlign.Center)
-        .margin({ top: 8 })
-
-        Blank()
-          .height(42)
-
-        this.CorosButton('同意并继续', COROS_RED, true, false, async () => {
-          await this.acceptTermsPromptAndContinue();
-        });
+        .width('100%').justifyContent(FlexAlign.Center).margin({ top: 8 })
+        Blank().height(42)
+        CorosButton({ textValue: '同意并继续', color: COROS_RED, enabledValue: true, loading: false,
+          onTap: () => { this.acceptTermsPromptAndContinue(); } });
       }
       .width('100%')
       .padding({ left: 22, right: 22, top: 18, bottom: 18 })
       .backgroundColor('#1A1A1B')
       .borderRadius({ topLeft: 12, topRight: 12 })
     }
-    .width('100%')
-    .height('100%')
-    .backgroundColor('#000000C7')
+    .width('100%').height('100%').backgroundColor('#000000C7')
   }
 
   @Builder
   private UnavailableFeatureDialog() {
     Column() {
-      Blank()
-        .layoutWeight(1)
+      Blank().layoutWeight(1)
       Column({ space: 20 }) {
-        Text('抱歉，该功能还在实现中')
-          .fontSize(16)
-          .fontColor('#FFFFFF')
-          .textAlign(TextAlign.Center)
-        Text('知道了')
-          .fontSize(16)
-          .fontColor(COROS_RED)
-          .onClick(() => {
-            this.unavailableDialogVisible = false;
-          })
+        Text('抱歉，该功能还在实现中').fontSize(16).fontColor(COROS_WHITE).textAlign(TextAlign.Center)
+        Text('知道了').fontSize(16).fontColor(COROS_RED)
+          .onClick(() => { this.unavailableDialogVisible = false; })
       }
       .padding({ left: 28, right: 28, top: 24, bottom: 24 })
-      .backgroundColor('#222224')
-      .borderRadius(12)
-      .margin({ left: 42, right: 42 })
-      Blank()
-        .layoutWeight(1)
+      .backgroundColor('#222224').borderRadius(12).margin({ left: 42, right: 42 })
+      Blank().layoutWeight(1)
     }
-    .width('100%')
-    .height('100%')
-    .backgroundColor('#0000009E')
-    .onClick(() => {
-      this.unavailableDialogVisible = false;
-    })
+    .width('100%').height('100%').backgroundColor('#0000009E')
+    .onClick(() => { this.unavailableDialogVisible = false; })
   }
 
   @Builder
-  private BlockingLoadingOverlay() {
+  private DeleteAccountDialog() {
     Column() {
-      Blank()
-        .layoutWeight(1)
-      LoadingProgress()
-        .width(36)
-        .height(36)
-        .color('#D8D8DD')
-        .padding(30)
-        .backgroundColor('#3A3A3C')
-        .borderRadius(8)
-      Blank()
-        .layoutWeight(1)
+      Blank().layoutWeight(1)
+      Column({ space: 24 }) {
+        Text('是否确认注销账号').fontSize(18).fontColor(COROS_WHITE).textAlign(TextAlign.Center)
+        Row({ space: 14 }) {
+          Button('取消', { type: ButtonType.Normal }).fontSize(16).fontColor(COROS_WHITE)
+            .layoutWeight(1).height(44).borderRadius(8).backgroundColor('#343438')
+            .onClick(() => { this.showDeleteDialog = false; })
+          Button('确认', { type: ButtonType.Normal }).fontSize(16).fontColor(COROS_WHITE)
+            .layoutWeight(1).height(44).borderRadius(8).backgroundColor(COROS_BUTTON_RED)
+            .onClick(() => { this.confirmDeleteAccount(); })
+        }
+        .width('100%')
+      }
+      .padding({ left: 24, right: 24, top: 22, bottom: 22 })
+      .backgroundColor('#202023').borderRadius(12).margin({ left: 42, right: 42 })
+      Blank().layoutWeight(1)
     }
-    .width('100%')
-    .height('100%')
-    .backgroundColor('#000000B8')
+    .width('100%').height('100%').backgroundColor('#0000009E')
+    .onClick(() => { this.showDeleteDialog = false; })
   }
 
-  private async showLogin(): Promise<void> {
-    await this.setMode(AuthMode.Login);
+  // ========== 业务逻辑方法 ==========
+
+  private showLogin(): void {
+    this.setMode(AuthMode.Login);
     this.localError = '';
     this.page = AuthPage.Login;
   }
 
-  private async showPhoneRegister(): Promise<void> {
-    await this.setMode(AuthMode.Register);
+  private showPhoneRegister(): void {
+    this.setMode(AuthMode.Register);
     this.localError = '';
     this.page = AuthPage.PhoneRegister;
   }
 
-  private async showEmailRegister(): Promise<void> {
-    await this.setMode(AuthMode.Register);
-    await this.updateUsername('');
+  private showEmailRegister(): void {
+    this.setMode(AuthMode.Register);
+    this.updateUsername('');
     this.emailInput = '';
     this.localError = '';
     this.page = AuthPage.EmailRegister;
   }
 
-  private async showPhoneRegisterFromEmail(): Promise<void> {
-    await this.updateUsername('');
+  private showPhoneRegisterFromEmail(): void {
+    this.updateUsername('');
     this.localError = '';
     this.page = AuthPage.PhoneRegister;
   }
@@ -1030,113 +892,205 @@ struct LoginPage {
     this.page = AuthPage.ServiceTerms;
   }
 
+  private openForgotPassword(): void {
+    this.forgotAccount = '';
+    this.localError = '';
+    this.page = AuthPage.ForgotPassword;
+  }
+
   private showUnavailableFeature(): void {
     this.unavailableDialogVisible = true;
   }
 
-  private async acceptTermsPromptAndContinue(): Promise<void> {
+  private handleLegalBack(): void {
+    this.localError = '';
+    this.page = this.legalReturnPage;
+  }
+
+  private acceptTermsPromptAndContinue(): void {
     let action: TermsPromptAction = this.termsPromptAction;
     this.acceptedTerms = true;
     this.termsPromptAction = TermsPromptAction.None;
-
     if (action === TermsPromptAction.Login) {
-      await this.submitLogin(true);
+      this.submitLogin(true);
     } else if (action === TermsPromptAction.PhoneCode) {
-      await this.requestPhoneVerifyCode(true);
+      this.requestPhoneVerifyCode(true);
     } else if (action === TermsPromptAction.EmailCode) {
-      await this.requestEmailVerifyCode(true);
+      this.requestEmailVerifyCode(true);
     }
   }
 
-  private async setMode(mode: AuthMode): Promise<void> {
+  private verifyForgotAccount(): void {
+    let account: string = this.forgotAccount.trim();
+    let isEmail: boolean = account.indexOf('@') >= 0;
+    let normalizedAccount: string = isEmail ? this.normalizeEmailInput(account) : account;
+    let validationMessage: string = '';
+    if (isEmail) {
+      validationMessage = this.viewModel.validateEmailAccount(normalizedAccount);
+    } else if (account !== this.viewModel.normalizePhoneInput(account)) {
+      validationMessage = '请输入11位手机号';
+    } else {
+      validationMessage = this.viewModel.validatePhoneAccount(normalizedAccount);
+    }
+    if (validationMessage.length > 0) {
+      this.localError = validationMessage;
+      return;
+    }
+    if (!this.viewModel.hasAccount(normalizedAccount)) {
+      this.localError = '账号不存在';
+      return;
+    }
+    this.forgotAccount = normalizedAccount;
+    this.resetNewPassword = '';
+    this.resetConfirmPassword = '';
+    this.localError = '';
+    this.page = AuthPage.ResetPassword;
+  }
+
+  private submitResetPassword(): void {
+    let validationMessage: string = this.viewModel.validateRegisterPassword(this.resetNewPassword, this.resetConfirmPassword);
+    if (validationMessage.length > 0) {
+      this.localError = validationMessage;
+      return;
+    }
+    let message: string = this.viewModel.resetPasswordMessage(this.forgotAccount, this.resetNewPassword);
+    if (message.length > 0) {
+      this.localError = message;
+      return;
+    }
+    this.localError = '';
+    this.page = AuthPage.Login;
+    this.showMessage('密码已更新');
+  }
+
+  private confirmDeleteAccount(): void {
+    let message: string = this.viewModel.deleteCurrentAccountMessage();
+    if (message.length > 0) {
+      this.localError = message;
+      this.showDeleteDialog = false;
+      return;
+    }
+    this.showDeleteDialog = false;
+    this.syncState();
+    this.page = AuthPage.Entrance;
+    this.showMessage('账户已注销');
+  }
+
+  private handleProfileBack(): void {
+    this.localError = '';
+    this.viewModel.clearSessionSilently();
+    this.syncState();
+    this.page = AuthPage.Entrance;
+  }
+
+  private submitProfile(): void {
+    let heightCm: number = this.profileHeightCm.length > 0 ? parseInt(this.profileHeightCm) : 0;
+    let weightKg: number = this.profileWeightKg.length > 0 ? parseFloat(this.profileWeightKg) : 0;
+    this.viewModel.submitProfile(
+      '', this.profileUsername, this.profileBirthDate,
+      heightCm, weightKg, this.profileMeasurementSystem,
+      this.profilePhone, this.profileCountry, this.profileGender
+    );
+    this.syncState();
+    this.handleProfileEffect();
+  }
+
+  private refreshProfileActionState(): void {
+    let heightCm: number = this.profileHeightCm.length > 0 ? parseInt(this.profileHeightCm) : 0;
+    let weightKg: number = this.profileWeightKg.length > 0 ? parseFloat(this.profileWeightKg) : 0;
+    this.profileActionEnabled = this.viewModel.canSubmitProfile(
+      this.profileUsername, this.profileBirthDate, heightCm, weightKg, this.profileGender
+    );
+  }
+
+  private measurementLabel(): string {
+    return this.profileMeasurementSystem === 'Imperial' ? '英制（mi/ft/inch/lb）' : '公制（km/m/cm/kg）';
+  }
+
+  private toggleMeasurementSystem(): void {
+    this.profileMeasurementSystem = this.profileMeasurementSystem === 'Imperial' ? 'Metric' : 'Imperial';
+  }
+
+  private setMode(mode: AuthMode): void {
     let action: LoginAction = new LoginAction();
     action.type = LoginActionType.ModeChanged;
     action.mode = mode;
-    await this.viewModel.dispatch(action);
+    this.viewModel.dispatch(action);
     this.syncState();
   }
 
-  private async updateUsername(value: string): Promise<void> {
+  private updateUsername(value: string): void {
     this.username = value;
+    this.localError = '';
+    this.refreshActionStates();
     let action: LoginAction = new LoginAction();
     action.type = LoginActionType.UsernameChanged;
     action.username = value;
-    await this.viewModel.dispatch(action);
-    this.localError = '';
-    this.syncState();
+    this.viewModel.dispatch(action);
   }
 
-  private async updatePassword(value: string): Promise<void> {
+  private updatePassword(value: string): void {
     this.password = value;
+    this.localError = '';
+    this.refreshActionStates();
     let action: LoginAction = new LoginAction();
     action.type = LoginActionType.PasswordChanged;
     action.password = value;
-    await this.viewModel.dispatch(action);
-    this.localError = '';
-    this.syncState();
-  }
-
-  private async updateDisplayName(value: string): Promise<void> {
-    let action: LoginAction = new LoginAction();
-    action.type = LoginActionType.DisplayNameChanged;
-    action.displayName = value;
-    await this.viewModel.dispatch(action);
-    this.syncState();
-  }
-
-  private async updateVerifyCode(value: string): Promise<void> {
-    let action: LoginAction = new LoginAction();
-    action.type = LoginActionType.VerifyCodeChanged;
-    action.verifyCode = value;
-    await this.viewModel.dispatch(action);
-    this.syncState();
+    this.viewModel.dispatch(action);
   }
 
   private async requestPhoneVerifyCode(skipTerms: boolean = false): Promise<void> {
-    let validationMessage: string = this.validatePhoneAccount(this.username);
+    let validationMessage: string = this.viewModel.validatePhoneAccount(this.username);
     if (validationMessage.length > 0) {
       this.localError = validationMessage;
+      return;
+    }
+    if (this.viewModel.hasAccount(this.username)) {
+      this.localError = '账号已存在';
       return;
     }
     if (!skipTerms && !this.acceptedTerms) {
       this.termsPromptAction = TermsPromptAction.PhoneCode;
       return;
     }
-
     let message: string = this.viewModel.requestVerifyCode(this.username);
     if (message.length > 0) {
       this.localError = message;
       return;
     }
-
     await this.openVerifyPage(this.username, VerifyTargetKind.Phone);
   }
 
   private async requestEmailVerifyCode(skipTerms: boolean = false): Promise<void> {
     let email: string = this.normalizeEmailInput(this.emailInput);
-    let validationMessage: string = this.validateEmailAccount(email);
+    let validationMessage: string = this.viewModel.validateEmailAccount(email);
     if (validationMessage.length > 0) {
       this.localError = validationMessage;
+      return;
+    }
+    if (this.viewModel.hasAccount(email)) {
+      this.localError = '账号已存在';
       return;
     }
     if (!skipTerms && !this.acceptedTerms) {
       this.termsPromptAction = TermsPromptAction.EmailCode;
       return;
     }
-
     let message: string = this.viewModel.requestVerifyCode(email);
     if (message.length > 0) {
       this.localError = message;
       return;
     }
-
     await this.openVerifyPage(email, VerifyTargetKind.Email);
   }
 
   private async openVerifyPage(account: string, targetKind: VerifyTargetKind): Promise<void> {
-    await this.setMode(AuthMode.Register);
-    await this.updateUsername(account);
-    await this.updateDisplayName(account);
+    this.setMode(AuthMode.Register);
+    this.updateUsername(account);
+    let action: LoginAction = new LoginAction();
+    action.type = LoginActionType.DisplayNameChanged;
+    action.displayName = account;
+    this.viewModel.dispatch(action);
     this.verifyTargetKind = targetKind;
     this.codeInput = '';
     this.localError = '';
@@ -1152,7 +1106,6 @@ struct LoginPage {
       this.resendLoading = false;
       return;
     }
-
     this.codeInput = '';
     this.localError = '';
     this.resendLoading = false;
@@ -1160,19 +1113,20 @@ struct LoginPage {
   }
 
   private async submitCode(): Promise<void> {
-    let validationMessage: string = this.validateVerifyCode(this.codeInput);
+    let validationMessage: string = this.viewModel.validateVerifyCode(this.codeInput);
     if (validationMessage.length > 0) {
       this.localError = validationMessage;
       return;
     }
-
     let message: string = this.viewModel.verifyCode(this.username, this.codeInput);
     if (message.length > 0) {
       this.localError = message;
       return;
     }
-
-    await this.updateVerifyCode(this.codeInput);
+    let action: LoginAction = new LoginAction();
+    action.type = LoginActionType.VerifyCodeChanged;
+    action.verifyCode = this.codeInput;
+    this.viewModel.dispatch(action);
     this.setupPassword = '';
     this.confirmPassword = '';
     this.localError = '';
@@ -1184,31 +1138,28 @@ struct LoginPage {
       this.termsPromptAction = TermsPromptAction.Login;
       return;
     }
-
-    await this.updateUsername(this.username);
-    await this.updatePassword(this.password);
-    await this.setMode(AuthMode.Login);
+    this.updateUsername(this.username);
+    this.updatePassword(this.password);
+    this.setMode(AuthMode.Login);
     let action: LoginAction = new LoginAction();
     action.type = LoginActionType.SubmitClicked;
-    await this.viewModel.dispatch(action);
+    this.viewModel.dispatch(action);
     this.syncState();
     this.handleEffect(AuthMode.Login);
   }
 
   private async submitRegister(): Promise<void> {
-    let validationMessage: string = this.validateRegisterPassword(this.setupPassword, this.confirmPassword);
+    let validationMessage: string = this.viewModel.validateRegisterPassword(this.setupPassword, this.confirmPassword);
     if (validationMessage.length > 0) {
       this.localError = validationMessage;
       return;
     }
-
-    await this.setMode(AuthMode.Register);
-    await this.updatePassword(this.setupPassword);
-    await this.updateVerifyCode(this.codeInput);
-
+    this.setMode(AuthMode.Register);
+    this.updatePassword(this.setupPassword);
+    this.syncState();
     let submitAction: LoginAction = new LoginAction();
     submitAction.type = LoginActionType.SubmitClicked;
-    await this.viewModel.dispatch(submitAction);
+    this.viewModel.dispatch(submitAction);
     this.syncState();
     this.handleEffect(AuthMode.Register);
   }
@@ -1216,7 +1167,7 @@ struct LoginPage {
   private async logout(): Promise<void> {
     let action: LoginAction = new LoginAction();
     action.type = LoginActionType.LogoutClicked;
-    await this.viewModel.dispatch(action);
+    this.viewModel.dispatch(action);
     this.syncState();
     this.handleEffect(AuthMode.Login);
   }
@@ -1226,7 +1177,6 @@ struct LoginPage {
     if (effect === null) {
       return;
     }
-
     if (effect.type === LoginEffectType.AuthSucceeded) {
       if (contextMode === AuthMode.Register) {
         this.viewModel.clearSessionSilently();
@@ -1244,14 +1194,25 @@ struct LoginPage {
       this.localError = '';
       return;
     }
-
     if (effect.type === LoginEffectType.LoggedOut) {
       this.acceptedTerms = false;
       this.page = AuthPage.Entrance;
       this.showMessage('已退出登录');
       return;
     }
+    this.showMessage(effect.message);
+  }
 
+  private handleProfileEffect(): void {
+    let effect: LoginEffect | null = this.viewModel.consumeEffect();
+    if (effect === null) {
+      return;
+    }
+    if (effect.type === LoginEffectType.AuthSucceeded) {
+      this.page = AuthPage.SignedIn;
+      this.showMessage('资料已保存');
+      return;
+    }
     this.showMessage(effect.message);
   }
 
@@ -1269,6 +1230,12 @@ struct LoginPage {
       return true;
     } else if (this.page === AuthPage.PasswordSetup) {
       this.page = AuthPage.VerifyCode;
+      return true;
+    } else if (this.page === AuthPage.ForgotPassword) {
+      this.page = AuthPage.Login;
+      return true;
+    } else if (this.page === AuthPage.ResetPassword) {
+      this.page = AuthPage.ForgotPassword;
       return true;
     } else if (this.page === AuthPage.PrivacyPolicy || this.page === AuthPage.ServiceTerms) {
       this.page = this.legalReturnPage;
@@ -1288,6 +1255,55 @@ struct LoginPage {
     this.isLoading = state.isLoading;
     this.isLoggedIn = state.isLoggedIn;
     this.errorMessage = state.errorMessage;
+    this.refreshActionStates();
+  }
+
+  private refreshActionStates(): void {
+    this.loginActionEnabled = !this.isLoading && this.localValidateLoginInput(this.username, this.password).length === 0;
+    this.phoneCodeActionEnabled = !this.isLoading && this.localValidatePhoneAccount(this.username).length === 0;
+    this.emailCodeActionEnabled = !this.isLoading && this.localValidateEmailAccount(this.emailInput).length === 0;
+    this.registerActionEnabled = !this.isLoading && this.localValidateRegisterPassword(this.setupPassword, this.confirmPassword).length === 0;
+  }
+
+  private localValidateLoginInput(account: string, password: string): string {
+    if (account.trim().length === 0) return '请输入账号';
+    if (password.length === 0) return '请输入密码';
+    if (password.length < 6) return '密码需要为6-20位';
+    return '';
+  }
+
+  private localValidatePhoneAccount(account: string): string {
+    let digits: string = '';
+    for (let i = 0; i < account.length; i++) {
+      let ch: string = account.charAt(i);
+      if (ch >= '0' && ch <= '9') digits += ch;
+    }
+    if (digits.length !== 11) return '请输入11位手机号';
+    return '';
+  }
+
+  private localValidateEmailAccount(email: string): string {
+    let trimmed: string = email.trim();
+    let atIndex: number = trimmed.indexOf('@');
+    if (atIndex <= 0) return '请输入有效邮箱';
+    let domain: string = trimmed.substring(atIndex + 1);
+    if (domain.indexOf('.') <= 0) return '请输入有效邮箱';
+    return '';
+  }
+
+  private localValidateRegisterPassword(password: string, confirmPassword: string): string {
+    if (password.length < 6 || password.length > 20) return '密码需要为6-20位';
+    let hasLetter: boolean = false;
+    let hasDigit: boolean = false;
+    for (let i = 0; i < password.length; i++) {
+      let ch: string = password.charAt(i);
+      if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) hasLetter = true;
+      else if (ch >= '0' && ch <= '9') hasDigit = true;
+      else return '密码只能包含字母和数字';
+    }
+    if (!hasLetter || !hasDigit) return '密码需要包含字母和数字';
+    if (password !== confirmPassword) return '两次输入的密码不一致';
+    return '';
   }
 
   private startCountdown(): void {
@@ -1313,29 +1329,6 @@ struct LoginPage {
     return this.localError.length > 0 ? this.localError : this.errorMessage;
   }
 
-  private verifyCodeMessage(): string {
-    if (this.verifyTargetKind === VerifyTargetKind.Email) {
-      return `验证码已发送至你的邮箱 ${this.username}，有效期10分钟`;
-    }
-    return `验证码已发送至你的手机+86-${this.username}，有效期10分钟`;
-  }
-
-  private canLogin(): boolean {
-    return !this.isLoading && this.username.trim().length > 0 && this.password.length >= 6;
-  }
-
-  private canSendPhoneCode(): boolean {
-    return this.validatePhoneAccount(this.username).length === 0 && !this.isLoading;
-  }
-
-  private canSendEmailCode(): boolean {
-    return this.validateEmailAccount(this.emailInput).length === 0 && !this.isLoading;
-  }
-
-  private canRegister(): boolean {
-    return this.validateRegisterPassword(this.setupPassword, this.confirmPassword).length === 0 && !this.isLoading;
-  }
-
   private normalizePhoneInput(value: string): string {
     return this.viewModel.normalizePhoneInput(value);
   }
@@ -1350,32 +1343,6 @@ struct LoginPage {
 
   private normalizePasswordInput(value: string): string {
     return this.viewModel.normalizePasswordInput(value);
-  }
-
-  private validatePhoneAccount(account: string): string {
-    return this.viewModel.validatePhoneAccount(account);
-  }
-
-  private validateEmailAccount(email: string): string {
-    return this.viewModel.validateEmailAccount(email);
-  }
-
-  private validateVerifyCode(code: string): string {
-    return this.viewModel.validateVerifyCode(code);
-  }
-
-  private validateRegisterPassword(passwordValue: string, confirmPasswordValue: string): string {
-    return this.viewModel.validateRegisterPassword(passwordValue, confirmPasswordValue);
-  }
-
-  private disabledColor(color: string): string {
-    if (color === COROS_BUTTON_RED) {
-      return '#5C001B';
-    }
-    if (color === COROS_RED) {
-      return '#74001E';
-    }
-    return '#1D1D1D';
   }
 
   private showMessage(message: string): void {

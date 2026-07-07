@@ -487,3 +487,127 @@
 - 如 iOS 模拟器桌面仍显示旧图标，需要人工卸载已安装 app、Clean Build Folder 或重启模拟器以清理系统图标缓存。
 - iOS 构建仍存在非阻塞 warning：`Build Shared KMP Framework` Run Script 未声明输出文件，会每次构建都运行；后续可按 Xcode 规范补 output dependency 或保持当前总是执行策略。
 - iOS 构建日志仍可见 `iosArm64/debugFramework` 搜索路径相关风险；如需真机运行，需要补齐 device framework 或改为 XCFramework 方案。
+
+---
+
+2026-07-06 鸿蒙 KMP + KNOI native UI 接入补充
+
+## 采纳内容
+- 采纳鸿蒙端“不走 KuiklyUI 共享 UI、继续使用 ArkUI / ArkTS Native UI”的技术路线，目标是通过 KNOI 调用 KMP shared 业务逻辑，逐步替换 ArkTS 本地复写逻辑。
+- 采纳独立 POC 模块方案：新增 `harmony-kmp-bridge`，不并入根 Gradle settings，避免根工程 Gradle 9 与 KuiklyBase / KNOI 插件链路冲突。
+- 采纳 KuiklyBase-Kotlin + KNOI 构建链路：`harmony-kmp-bridge` 使用 KuiklyBase Kotlin `2.0.21-KBA-003`、KNOI `0.0.4`、独立 Gradle 8.5 wrapper，并配置 `ohosArm64` sharedLib `baseName = "kn"`，产出 `libkn.so`。
+- 采纳 KNOI POC 正确入口：停止以 `import libshared_login_bridge.so` 作为入口，改为鸿蒙侧依赖 `@kuiklybase/knoi`，在 `EntryAbility.ets` 中执行 `setup('libkn.so', false)` 和 `init()`。
+- 采纳 KNOI 生成 API：通过 KNOI 生成 `harmonyApp/entry/src/main/ets/knoi/provider.ets`，鸿蒙侧调用生成的 `getHarmonyLoginService()`，不再手写 native 调用名。
+- 采纳 shared 登录逻辑接入：`HarmonyLoginService` 包装 `common` 中的 `LoginFacade`，向鸿蒙侧暴露登录、注册、验证码、状态快照、effect 快照和输入校验相关方法。
+- 采纳 so 打包路径：已将 `libkn.so` 放入 `harmonyApp/entry/src/main/libs/arm64-v8a/` 和 `harmonyApp/entry/libs/arm64-v8a/`，用于鸿蒙构建和打包。
+- 采纳鸿蒙端适配层拆分：新增/调整 `KnoiLoginAdapter.ets`、`LoginLogicAdapter.ets`、`LoginLogicProvider.ets`、`LoginViewModel.ets` 等，使 ArkTS 页面通过 adapter 间接调用 KNOI shared 逻辑。
+
+## 人工审查点
+- 需人工审查 KNOI 生成 API 与运行时 ABI：`setup('libkn.so')`、`libkn.so` 文件名、`baseName = "kn"` 和真机 `arm64-v8a` 环境需要保持一致，否则可能出现 native module 加载失败。
+- 需人工审查鸿蒙端 shared 复用边界：当前已接入登录 shared 逻辑，但后续新增业务仍需坚持先改 `common` / `LoginFacade` / `HarmonyLoginService`，避免 ArkTS 重新产生业务规则副本。
+- 需人工审查 KNOI 依赖 so 打包完整性：HAP 中应同时包含 `libkn.so`、`libknoi.so`、`libc++_shared.so` 等运行依赖；如切换 release/debug 或真机 ABI，需要重新确认产物来源和拷贝路径。
+- 需人工审查 ArkUI 输入响应机制：用户实测同一页面输入框变化不会实时刷新按钮状态，但跨页面返回后状态能刷新，说明 shared 校验结果可能可用，问题更可能在 ArkUI 页面状态绑定、组件拆分或 TextInput 受控输入模式上。
+
+## 验证结果
+- Gradle shared 验证通过：执行 `./gradlew :common:check`，结果通过。
+- KNOI bridge 构建验证通过：执行 `cd harmony-kmp-bridge && ./gradlew ohosArm64Binaries`，结果通过并产出 `libkn.so`。
+- 鸿蒙构建验证通过：使用 DevEco Studio 内置 Node / ohpm / hvigor 环境执行 `/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw assembleApp --no-daemon`，结果通过。
+- 一键脚本验证通过：执行 `./tools/build-shared-harmony.sh`，结果通过。
+- 产物检查通过：此前确认 HAP 中包含 `libkn.so`、`libknoi.so`、`libc++_shared.so`。
+- 验证中仍存在非阻塞 warning：KSP 版本相对 KuiklyBase Kotlin 偏旧、KNOI NAPI verification warning、部分 KNOI 导出函数 may throw warning、`showToast` deprecated、未配置签名。
+- 人工交互验证未通过：用户在鸿蒙端实测登录/注册页输入满足规则后按钮仍不会在同一页面实时变亮或变为可点击。
+
+## 人工修正点
+- 需要继续修正鸿蒙端按钮实时刷新问题：当前输入框同页变更没有驱动按钮状态实时重绘，需进一步检查 `UnderlineInput` / `TextInput({ text: ... })` 是否只是初始值、是否需要 `@Link` / `@Prop` / `$$` 双向绑定或拆成子组件传递可观察状态。
+- 需要增加临时可观测调试手段：建议在继续修复时临时输出或展示 `username`、`password`、`loginActionEnabled`、`registerActionEnabled` 等值，确认是输入状态未变、按钮状态未变，还是 ArkUI 未重绘；修复后再移除调试代码。
+- 需要真机或模拟器复验完整路径：登录、手机号注册、邮箱注册、验证码、设密、找回密码、注销账户等流程应确认业务结果来自 shared，并确认 UI 仍保持鸿蒙原生渲染。
+- 需要在按钮问题修复后补充回归验证：至少重新执行 `./gradlew :common:check`、`cd harmony-kmp-bridge && ./gradlew ohosArm64Binaries`、鸿蒙 `hvigorw assembleApp`，并进行鸿蒙端手动交互验收。
+
+---
+
+2026-07-07 鸿蒙端按钮响应式缺陷定位与修复（@Builder → @Component + @Prop）
+
+## 采纳内容
+- 新增调试页面 `harmonyApp/entry/src/main/ets/pages/DebugStatePage.ets`，含 9 个测试区（原生 Button / @Component / struct @Builder 三种实现的对照、动态 enabled/loading 切换、UnderlineInput/TextInput onChange、镜像登录表单的 @State 可视化、协议勾选 toggle、事件日志），用于定位"按钮始终不亮"问题。
+- 在 `LoginPage.ets` 的 `EntrancePage` 右上角添加半透明 `DEBUG` 入口，点击通过 `router.pushUrl` 跳转调试页。
+- 在 `entry/src/main/resources/base/profile/main_pages.json` 注册 `pages/DebugStatePage` 路由。
+- 确认根因：ArkUI `@Builder` 函数（模块级与 struct 成员级）的基本类型参数（boolean/string/number）为值传递的一次性快照，不建立响应式绑定；`@State` 变化时 `@Builder` 内部 `backgroundColor(enabledValue ? …)` 不会重新计算，导致按钮颜色恒为首次渲染值（灰色）。`onClick` 闭包因捕获的是调用时快照值仍可工作，所以"点击计数正常但颜色不变"。
+- 将 `AuthComponents.ets` 中所有依赖响应式状态的交互组件从 `@Builder function` 重构为 `@Component struct` + `@Prop`：`CorosButton`、`AuthHeader`、`UnderlineInput`、`PhoneInputComp`（原 PhoneInput，改名避免与系统组件冲突）、`DisabledUnderlineValue`、`AgreementRowComp`、`CodeBoxesComp`、`ThirdPartyAreaComp`。
+- 保留无回调的纯展示组件为 `@Builder`：`AuthTitle`、`ErrorText`、`BlockingLoadingOverlay`、`LegalDocumentPage`（确认安全）。
+- 同步重写 `LoginPage.ets` 与 `DebugStatePage.ets` 调用语法：从 `CorosButton('登录', RED, enabled, …)` 改为 `CorosButton({ textValue: '登录', color: RED, enabledValue: enabled, … })`。
+- 修复 `CorosButton` 的 `.enabled(!loading)` → `.enabled(!loading && this.enabledValue)`，确保禁用态真正拦截点击。
+- 调试页保留 struct 成员 `@Builder` 版本 `StructCorosButton` 作为负面对照样本（刻意不亮，用于证明 @Builder 缺陷）。
+- 此前对 `AuthComponents.ets` 的几次重构一并记录：将 `$$: { key: type }` 对象字面量参数改为具名参数（修 `arkts-no-obj-literals-as-types`）；`FontWeight.Light` → `FontWeight.Lighter`；移除 `CorosLogo` 模块级 `@Builder`（返回 void 无法链式 `.margin()`）改为内联 `Image`；重复 `export` 语句清理；动态 `import('./LegalContent')` 改为静态导入。
+
+## 人工审查点
+- `@Prop` 默认值合理性：各 `@Component` 的 `@Prop` 均设置了默认值（如 `enabledValue: boolean = true`、`textValue: string = ''`）。需人工确认默认值不会在父组件漏传参数时产生误用（例如 `enabledValue` 默认 `true` 可能导致禁用态按钮意外可点）。
+- 回调函数未用 `@Prop`：`onTap`、`onChange`、`onPasswordToggle` 等回调以普通成员变量声明（非 `@Prop`）。ArkUI 中函数类型不支持 `@Prop`，当前依赖闭包捕获 `this`。需人工确认跨组件回调的 `this` 绑定在所有场景下正确。
+- `PhoneInputComp` 命名变更：为避免与 ArkUI 系统 `PhoneInput` 潜在冲突改名，需人工确认调用点全部更新、无遗留旧名引用。
+- `LegalDocumentPage` 保留为 `@Builder`：其 `onBack` 回调为简单导航，未用响应式状态。若后续需在法律文档页内根据状态动态变化 UI，需重新评估是否升级为 `@Component`。
+- ProfileCompletion 页内的 `@Builder` 方法：`ProfileTextRow`/`ProfilePickerRow`/`GenderRow`/`GenderButton`/`RequiredLabel` 仍为 struct 成员 `@Builder`，依赖 `@State profileUsername` 等通过闭包捕获 `this` 更新。需人工确认这些字段的响应式更新路径是否受 @Builder 值传递影响（初步判断因直接引用 `this.xxx` 而非参数传递，应正常，但建议实测）。
+- `Video` 组件触摸拦截：`EntrancePage` 的 `Stack` 中 `Video` 全屏覆盖，按钮在 `Column` 内。需人工确认 Video 不会拦截上层 Column 的触摸事件（用户已反馈按钮可点，初步确认无问题）。
+- 是否将同样的 `@Component + @Prop` 模式推广到后续新增的鸿蒙交互组件，作为团队规范固化，需人工决策。
+
+## 验证结果
+- 用户实机测试反馈：输入合规账号密码后，登录按钮从灰色变红色（`enabledValue` 响应式生效），问题"登录/注册按钮始终不亮"已解决 —— 通过。
+- 用户实机测试反馈：调试页第 4 区切换 enabled 后，`@Component` 动态按钮变亮、`@Builder` 动态按钮不变亮，对照实验验证根因判断正确 —— 通过。
+- 用户实机测试反馈：第 7 区 `loginActionEnabled` 文字变红（@State 响应式）、`@Component` 登录按钮变亮、`@Builder` 对照按钮不变亮 —— 通过。
+- 用户实机测试反馈：第 1/2/3/5/6/8 区原生按钮、@Component 按钮、输入框、勾选框均正常响应 —— 通过。
+- 未执行：项目级 `assembleHap` 编译验证（本轮为用户在 DevEco Studio 内手动编译运行，未由 Codex 执行构建命令）、未执行 lint/typecheck、未执行 `./gradlew :common:check` 与 `ohosArm64Binaries` 回归。
+
+## 人工修正点
+- 建议移除或降级调试入口：`EntrancePage` 右上角的 `DEBUG` 按钮与 `DebugStatePage` 为诊断用途，正式发布前应移除或通过 build flag 隔离。
+- `main_pages.json` 中 `pages/DebugStatePage` 注册在发布版应一并移除。
+- 调试页中的 `StructCorosButton` 负面对照样本可保留用于回归测试，但若不需长期保留建议清理。
+- `AuthComponents.ets` 中原模块级 `@Builder` 版本的 `CorosButton`/`AuthHeader`/`UnderlineInput`/`PhoneInput`/`AgreementRow`/`CodeBoxes`/`ThirdPartyArea`/`DisabledUnderlineValue`/`BackButton`/`TermsConsentSheet`/`UnavailableFeatureDialog`/`DeleteAccountDialog` 已被 `@Component` 替代或移入 `LoginPage` struct，需人工确认无其他文件引用旧模块级符号。
+- 建议补充一次完整的 `assembleHap` 编译验证，确认无未使用导入、类型不匹配等编译告警。
+- 建议补充 `./gradlew :common:check` 与 `cd harmony-kmp-bridge && ./gradlew ohosArm64Binaries` 回归，确认 KMP 侧改动（`LoginFacade.changePassword` 等）未破坏 shared 构建产物。
+- 建议真机/模拟器复验完整业务路径：登录、手机号注册、邮箱注册、验证码、设密、找回密码、注销账户、完善资料，确认业务结果仍来自 shared 且 UI 保持鸿蒙原生渲染。
+
+---
+
+2026-07-07 鸿蒙端响应式缺陷修复、导航对齐与持久化排查
+
+## 采纳内容
+
+1. 采纳 ErrorText 响应式改造：将 `AuthComponents.ets` 中的 `ErrorText` 从模块级 `@Builder` 函数改造为 `@Component struct` + `@Prop message`，修正 ArkUI `@Builder` 对基本类型参数（string）按值快照导致错误提示不实时刷新的问题。同步更新全部 13 处调用点：`LoginFormPage`, `PasswordSetupPage`, `PhoneRegisterPage`, `EmailRegisterPage`, `ForgotPasswordPage`, `ResetPasswordPage`, `VerifyCodePage`, `ProfileCompletionPage`, `SignedInPage`, `DebugStatePage`, `LoginPage`，调用语法从 `ErrorText(value)` 改为 `ErrorText({ message: value })`。
+2. 采纳注册设密页返回导航修复：`PasswordSetupPage` 完成注册后改为 `router.replaceUrl({ url: LOGIN, params: { fromRegistration: true } })`；`LoginFormPage` 新增 `@State fromRegistration` 读取路由参数，`onBackPress` 中根据 `fromRegistration` 调用 `router.clear()` 后 `replaceUrl({ url: ENTRANCE })`，避免回退到验证码页或注册页。
+3. 采纳登录成功后清栈跳转：`LoginFormPage.handleLoginEffect` 在 `AuthSucceeded` 时先 `router.clear()` 再 `replaceUrl` 到 `PROFILE_COMPLETION` 或 `SIGNED_IN`，匹配 Android `popUpTo(ENTRANCE){inclusive=false}` 行为。退出登录和注销账户同样先清栈再跳入口页。
+4. 采纳重置密码页栈清理：`ResetPasswordPage` 完成后改为 `router.back({ url: LOGIN })`，弹回到栈中已存在的登录页，避免重复创建 Login 实例导致回退栈异常。
+5. 采纳 ProfileCompletionPage 滚轮选择器临时回退：本轮尝试将出生日期、身高、体重、公英制、国家地区改为 `TextPicker` 滚轮选择器，但因实测无法滚动，保留性别选择高亮修复，其余字段回退到文本输入方式。
+6. 采纳隐私条款弹窗临时恢复：将 `LoginFormPage`/`PhoneRegisterPage`/`EmailRegisterPage` 的 `TermsConsentSheet` 遮罩和 `hitTestBehavior(HitTestMode.Block)` 改动回退为 `#000000C7`，避免弹窗点击"同意"后无法跳转下一页的问题。
+7. 采纳 `HarmonyLoginService` 内部改造为持有 `dataSource: AuthStoreDataSource` 字段，新增 `exportStoreSnapshot(): String` / `restoreStoreSnapshot(json: String): Boolean` 两个方法。`exportStoreSnapshot` 调用 `generateStoreSnapshot()` 将 mock 仓库 accounts 序列化为 JSON；`restoreStoreSnapshot` 解析 JSON 后构造新的 `AuthStoreDataSource` 并替换 `facade`。
+8. 采纳 `StorePersister.ets` 持久化辅助工具：封装 `@ohos.data.preferences`，提供 `initPersistence(context)` 和 `saveStoreSnapshot()`；`EntryAbility` 启动时调用 `initPersistence(this.context)`；`KnoiLoginAdapter` 在 submit/logout/submitProfile/deleteCurrentAccount/clearSessionSilently/resetPassword 后调用 `saveStoreSnapshot()`。
+9. 确认持久化链路当前仍无法保存数据，已分析定位为以下五个根本原因（详见"人工审查点"）。
+
+## 人工审查点
+
+1. 需人工确认 KNOI `@ServiceProvider` 实例模型：`provider.ets` 中 `getHarmonyLoginService()` 每次通过 `getService<T>("HarmonyLoginService")` 获取代理。如果 KNOI 是 factory 模式（每次返回新实例指向不同 native 对象），则 EntryAbility 的 `restoreStoreSnapshot`、KnoiLoginAdapter 持有的 service、StorePersister 的 `exportStoreSnapshot` 分别操作不同的 native 实例，状态完全隔离，持久化必然失效。需人工确认 `@ServiceProvider` 是否为 singleton。
+2. 需人工确认 `choices` 隐私条款弹窗 UX 改造：当前 `TermsConsentSheet` 是 struct 成员 `@Builder`，在 `Stack` 内 `if` 条件渲染。用户反馈"弹窗在屏幕最下方，无虚化背景，看不到弹出"。`hitTestBehavior(HitTestMode.Block)` 改造方案会吞掉"同意"按钮点击事件导致无法跳转。此问题需要 UI 设计或产品确认：如果采用自定义弹窗需全面重写布局；如果对原生交互尝试可使用 `bindSheet` / `CustomDialog` 等系统级组件替代当前 `@Builder` 叠加方案。
+3. 需人工确认个人信息页滚轮选择器为何无法滚动：本轮尝试使用 `TextPicker` 嵌入到 `@Builder` `PickerOverlay` 中的方案，用户实测"划不动，只能用默认设置"。需人工调研 ArkUI TextPicker 在 `{@Builder 存在的响应式限制：`@Builder` 内的 UI 不支持响应式改动；`TextPicker` 可能需要在独立的根级组件中使用；或者需要避免 `TextPicker` 进入嵌套 `Stack`/`Column` 的约束，使用独立的 `CustomDialog` 或全屏 `Sheet` 替代临时回退前已确认文本输入可正常使用。
+4. 需人工确认 `initPersistence` 异步时序：`EntryAbility.onWindowStageCreate` 中 `initPersistence(this.context)` 是 async 但未 await，`preferences.getPreferences` 返回前 `prefsInstance` 仍为 null，早期触发的 `saveStoreSnapshot()` 可能直接 return。建议改为 `await initPersistence(this.context)` 或者将恢复逻辑前置到 `onCreate`。
+5. 需人工确认 `prefsInstance.flush()` 是否为异步落盘并需 `await`：当前实现未 await `flush()`，在 App 退出前可能尚未落盘。同时 `getSync` 在 `initPersistence` 中混串行调用 async 与 sync API，需确认 `@ohos.data.preferences` 在 API 12 的线程模型。
+6. 需人工确认 `exportStoreSnapshot` 数据完整性：当前 `generateStoreSnapshot` 只导出 `accounts` 数组，`currentSession`、`verifyCodes`、`defaultAccountsInitialized` 全部硬编码（null / [] / true）。`defaultAccountsInitialized=true` 会让 `LocalMockAuthRepository` 在 restore 后跳过默认账号初始化——如果之前没注册任何账号，restore 后仓库为空且不再创建默认测试账号。需产品或业务确认是否允许持久化过程中保留 `currentSession` 或重置后清空 session 会影响"记住登录态"的体验。
+7. 需人工确认 `restoreStoreSnapshot` 后 `KnoiLoginAdapter.state` 同步：`restoreStoreSnapshot` 在 Kotlin 侧替换了 `facade`，但 `KnoiLoginAdapter.private state` 是构造时 `refreshState()` 拿到的旧快照。如果后续某个方法直接读 `this.state`，会得到未同步的陈旧值。需人工确认是需要在 `restoreStoreSnapshot` 后强制刷新 adapter，还是改为所有方法都通过 `harmonyLoginService.stateSnapshot()` 直接读实时数据。
+8. 需人工确认邮箱注册与手机号注册无法反复切换的问题：用户反馈"邮箱注册和手机号注册不能反复点"，需要确认是 ArkUI 状态联动未正确清空（如 `this.username` / `this.emailInput` 切换时残留），还是 `router.replaceUrl` 跳转后导致首次页面的 `aboutToAppear` 中 dispatch ModeChanged 重复触发覆盖用户输入。建议人工在真机上验证切换路径并补全状态重置逻辑。
+9. 需人工确认导航流程与 Android/iOS 完整对齐：本轮仅修复 PasswordSetupPage 完成后跳转 Logout 和 Reset Password 后栈清理、登出/注销清栈。用户反馈"导航设置与安卓端/IOS端不一致"仍然残留，建议人工对照 Android `AuthNavGraph.kt` 的 `popUpTo` 规则逐页验证所有跳转路径，包括：登录后到 Profile 还是 SignedIn 的判定、注册完成到 Login 而非 Entrance、找回密码每步回退指向、验证码页回退是否回到对应注册页、邮箱注册与手机号注册互相切换是否需要清空对方状态等。
+
+## 验证结果
+
+1. 编译验证通过：执行 `cd harmony-kmp-bridge && ./gradlew clean ohosArm64Binaries`，结果 `BUILD SUCCESSFUL`（37s），新 `libkn.so` 已自动复制到 `harmonyApp/entry/src/main/libs/arm64-v8a/` 和 `harmonyApp/entry/libs/arm64-v8a/`，时间戳和 SIZE 均更新（2,912,224 → 2,941,152 字节）。
+2. 鸿蒙端编译验证通过：执行 `hvigorw assembleHap --mode module -p module=entry@default -p product=default --no-daemon`，结果 `BUILD SUCCESSFUL in 2s`，ErrorText @Component 改造、ProfileCompletionPage 临时回退、TermsConsentSheet 遮罩回退后均无编译错误。
+3. 未执行真机交互验收：未验证 ErrorText 在用户输入校验失败时是否实时亮起；未验证注册成功后是否正确跳转到 Login 而非 Entrance；未验证登录成功后 Profile 与 SignedIn 的分流；未验证 mock 仓库持久化的实际生效情况；未验证邮箱/手机号注册反复切换的稳定性。
+
+## 人工修正点
+
+1. 导航设置与安卓端/IOS端不一致：当前鸿蒙端在注册流程、找回密码、登出/注销的 `router` 栈管理与 Android `AuthNavGraph` 的 `popUpTo` 规则仍有差异。需人工对照三端一致路径逐页校准，原则：注册成功 → 清栈后跳 Login（而非 Entrance）；验证码回退 → 回到对应注册页；邮箱/手机号注册互相切换 → 清空对方输入；登录成功 → 根据 `isProfileComplete` 分流到 Profile 或 SignedIn 且清空注册栈。
+2. 隐私政策和服务条款弹窗无焦点不虚化：`TermsConsentSheet` 在最下方，背景遮罩透明度过低且未做非焦点虚化。需人工确定具体方案：改用 `CustomDialog` / `bindSheet` 系统级组件，或在 `@Builder` 方案中正确添加遮罩层 + 阻断点击穿透 + 保持弹窗内部按钮可点击（避免 `hitTestBehavior(HitTestMode.Block)` 拦截子组件）。
+3. 个人信息设置页面无法通过滚轮选择内容，无照片选择功能：本轮 TextPicker 方案实测不可滚动已回退。需人工确认 ArkUI TextPicker 在嵌套 `@Builder`/`Stack` 中无法滚动的原因，改用独立 `CustomDialog` 或 `Select` 组件；同时补齐头像照片选择功能（建议使用 `@ohos.multimedia.imagePicker` 或 `拍照` API 与 Android/iOS 对齐）。
+4. 邮箱注册和手机号注册不能反复点：需人工在真机上验证切换路径，确认是状态未清空、router 跳转参数丢失，还是 `aboutToAppear` 中 dispatch ModeChanged 覆盖用户输入，并补全切换时的状态重置逻辑（清空 username、emailInput、acceptedTerms、localError）。
+5. 账号 mock 信息无法保存，关闭 app 重新打开之后数据全部清空了：当前持久化方案失效的根本原因已在"人工审查点"罗列（KNOI 实例模型、async/await 时序、exportStoreSnapshot 数据完整性、prefsInstance.flush 异步、adapter.state 同步）。需人工确定修复方向：
+   - 优先确认 KNOI `@ServiceProvider` 实例模式，若为 factory 则需要在 `common/LoginStore` 或 `LoginFacade` 暴露统一的 load/save 接口而不是由 ArkTS 层多实例调用 restore；
+   - 或在 `HarmonyLoginService` 提供单例缓存（首次 `getHarmonyLoginService()` 后缓存到 ArkTS 全局变量，避免 KNOI 重复创建实例）；
+   - `initPersistence` 改为 `await`，或在 `UIAbility.onCreate` 中提前执行；
+   - `exportStoreSnapshot` 保留 `currentSession` 与 `defaultAccountsInitialized` 真实值；
+   - `prefsInstance.flush()` 改为 `await prefsInstance.flush()`；
+   - `restoreStoreSnapshot` 后触发 `KnoiLoginAdapter.refreshState()` 或改为每次读 `stateSnapshot()` 实时获取。
