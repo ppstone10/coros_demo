@@ -381,6 +381,72 @@ class LoginUseCaseTest {
         assertEquals(true, decoded.defaultAccountsInitialized)
     }
 
+    @Test
+    fun emptyStoreWithInitializedFlagReturnsNullSession() {
+        val store = MockAuthStore(defaultAccountsInitialized = true)
+        val dataSource = InMemoryAuthStoreDataSource(store)
+        val repository = LocalMockAuthRepository(dataSource, nowEpochMs = { 1000L })
+
+        assertEquals(null, repository.currentSession())
+        val access = repository.verifyBusinessAccess()
+        val failure = assertIs<MockResult.Failure>(access)
+        assertEquals(MockError.AuthRequired, failure.error)
+    }
+
+    @Test
+    fun corruptedSessionWithBlankUserIdReturnsNull() {
+        val store = MockAuthStore(
+            accounts = listOf(
+                MockAccount(
+                    userId = "",
+                    account = "corrupted@example.com",
+                    passwordHash = "",
+                    displayName = "",
+                    region = ""
+                )
+            ),
+            currentSession = MockAuthSession(
+                userId = "",
+                account = "corrupted@example.com",
+                displayName = "",
+                region = "",
+                isValid = false
+            ),
+            defaultAccountsInitialized = true
+        )
+        val dataSource = InMemoryAuthStoreDataSource(store)
+        val repository = LocalMockAuthRepository(dataSource, nowEpochMs = { 1000L })
+
+        assertEquals(null, repository.currentSession())
+    }
+
+    @Test
+    fun persistFailedOnRegisterReturnsError() {
+        var saveCallCount = 0
+        var stored: MockAuthStore = MockAuthStore()
+        val failingDataSource = object : AuthStoreDataSource {
+            override fun load(): MockAuthStore = stored
+            override fun save(store: MockAuthStore): Boolean {
+                stored = store
+                saveCallCount++
+                return saveCallCount <= 1
+            }
+        }
+        val repository = LocalMockAuthRepository(failingDataSource, nowEpochMs = { 1000L })
+        repository.requestVerifyCode("persist-fail@example.com")
+
+        val result = RegisterUseCase(repository).execute(
+            account = "persist-fail@example.com",
+            password = "password1",
+            verifyCode = LocalMockAuthRepository.DefaultVerifyCode,
+            region = "CN",
+            displayName = "Persist Fail"
+        )
+
+        val failure = assertIs<LoginResult.Failure>(result)
+        assertEquals(MockError.PersistFailed.code, failure.code)
+    }
+
     private fun repository(
         dataSource: AuthStoreDataSource = InMemoryAuthStoreDataSource()
     ): LocalMockAuthRepository {

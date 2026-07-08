@@ -2,12 +2,37 @@ syntax = "proto3";
 
 package training.auth;
 
+enum MeasurementSystem {
+  MEASUREMENT_SYSTEM_UNSPECIFIED = 0;
+  METRIC = 1;
+  IMPERIAL = 2;
+}
+
+enum UserGender {
+  USER_GENDER_UNSPECIFIED = 0;
+  MALE = 1;
+  FEMALE = 2;
+}
+
+message UserProfile {
+  optional string avatar_uri = 1;
+  string username = 2;
+  string birth_date = 3;
+  optional int32 height_cm = 4;
+  optional double weight_kg = 5;
+  MeasurementSystem measurement_system = 6;
+  string phone = 7;
+  string country_region = 8;
+  optional UserGender gender = 9;
+}
+
 message MockAccount {
   string user_id = 1;
   string account = 2;
   string password_hash = 3;
   string display_name = 4;
   string region = 5;
+  optional UserProfile profile = 6;
 }
 
 message MockAuthSession {
@@ -16,6 +41,7 @@ message MockAuthSession {
   string display_name = 3;
   string region = 4;
   bool is_valid = 5;
+  optional UserProfile profile = 6;
 }
 
 message MockVerifyCodeState {
@@ -26,6 +52,7 @@ message MockVerifyCodeState {
 
 message MockAuthStore {
   repeated MockAccount accounts = 1;
-  MockAuthSession current_session = 2;
+  optional MockAuthSession current_session = 2;
   repeated MockVerifyCodeState verify_codes = 3;
+  bool default_accounts_initialized = 4;
 }
