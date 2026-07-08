@@ -1,3 +1,4 @@
+import hilog from '@ohos.hilog';
 import {
   AuthMode,
   AuthSession,
@@ -6,8 +7,9 @@ import {
   LoginState
 } from './LoginState';
 import { LoginLogicAdapter } from './LoginLogicAdapter';
-import { getHarmonyLoginService, HarmonyLoginService } from '../knoi/provider';
+import { HarmonyLoginService } from '../knoi/provider';
 import { saveStoreSnapshot } from './StorePersister';
+import { getService } from './HarmonyServiceProvider';
 
 interface AuthSessionPayload {
   account: string;
@@ -38,7 +40,7 @@ interface LoginEffectPayload {
 }
 
 export class KnoiLoginAdapter implements LoginLogicAdapter {
-  private readonly harmonyLoginService: HarmonyLoginService = getHarmonyLoginService();
+  private readonly harmonyLoginService: HarmonyLoginService = getService();
   private state: LoginState = new LoginState();
 
   constructor() {
@@ -85,12 +87,16 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
   }
 
   async submit(): Promise<void> {
+    hilog.info(0x0001, 'demo_persist', 'KnoiLoginAdapter.submit() called');
     try {
       this.harmonyLoginService.submit();
+      const storeAfter: string = this.harmonyLoginService.exportStoreSnapshot();
+      hilog.info(0x0001, 'demo_persist', 'store after submit: ' + storeAfter);
       this.refreshState();
       this.persistSnapshot();
     } catch (error) {
       this.state.errorMessage = '提交失败，请重试';
+      hilog.error(0x0001, 'demo_persist', 'submit failed');
     }
   }
 
@@ -263,7 +269,9 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
   }
 
   private persistSnapshot(): void {
-    if (!saveStoreSnapshot()) {
+    hilog.info(0x0001, 'demo_persist', 'persistSnapshot called');
+    if (!saveStoreSnapshot(this.harmonyLoginService)) {
+      hilog.error(0x0001, 'demo_persist', 'persistSnapshot: saveStoreSnapshot returned false');
       console.error('login store snapshot was not persisted');
     }
   }

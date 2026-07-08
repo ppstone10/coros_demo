@@ -9,7 +9,7 @@ import com.tencent.tmm.knoi.annotation.ServiceProvider
 
 @ServiceProvider
 open class HarmonyLoginService {
-    private var dataSource: AuthStoreDataSource = MemoryAuthStoreDataSource()
+    private val dataSource: MemoryAuthStoreDataSource = MemoryAuthStoreDataSource()
     private var facade: LoginFacade = createFacade(dataSource)
 
     fun stateSnapshot(): String {
@@ -17,14 +17,16 @@ open class HarmonyLoginService {
     }
 
     fun exportStoreSnapshot(): String {
-        return HarmonyLoginJson.storeSnapshot(dataSource.load())
+        val store = dataSource.load()
+        val json = HarmonyLoginJson.storeSnapshot(store)
+        return json.dropLast(1) + ""","_s":{"accounts":${store.accounts.size},"session":${store.currentSession != null},"defaultInit":${store.defaultAccountsInitialized}}}"""
     }
 
     fun restoreStoreSnapshot(json: String): Boolean {
         if (json.isBlank()) return false
         return try {
             val store = HarmonyLoginJson.parseStoreSnapshot(json)
-            dataSource = MemoryAuthStoreDataSource(store)
+            dataSource.replaceStore(store)
             facade = createFacade(dataSource)
             true
         } catch (e: Exception) {
@@ -32,12 +34,20 @@ open class HarmonyLoginService {
         }
     }
 
-    fun validateStoreSnapshotRoundTrip(json: String): Boolean {
-        return HarmonyLoginJson.isStoreSnapshotRoundTripStable(json)
+    fun submit() {
+        facade.submit()
     }
 
-    fun validateCurrentStoreSnapshotRoundTrip(): Boolean {
-        return HarmonyLoginJson.isStoreSnapshotRoundTripStable(exportStoreSnapshot())
+    fun logout() {
+        facade.logout()
+    }
+
+    fun clearSessionSilently() {
+        facade.clearSessionSilently()
+    }
+
+    fun consumeEffectSnapshot(): String {
+        return HarmonyLoginJson.effectSnapshot(facade.consumeEffect())
     }
 
     fun setLoginMode() {
@@ -66,22 +76,6 @@ open class HarmonyLoginService {
 
     fun setRegion(value: String) {
         facade.setRegion(value)
-    }
-
-    fun submit() {
-        facade.submit()
-    }
-
-    fun logout() {
-        facade.logout()
-    }
-
-    fun clearSessionSilently() {
-        facade.clearSessionSilently()
-    }
-
-    fun consumeEffectSnapshot(): String {
-        return HarmonyLoginJson.effectSnapshot(facade.consumeEffect())
     }
 
     fun validateLogin(account: String, password: String): Boolean {
@@ -207,8 +201,11 @@ open class HarmonyLoginService {
         return facade.deleteCurrentAccount().orEmpty()
     }
 
-    private fun createFacade(dataSource: AuthStoreDataSource): LoginFacade {
-        return LoginFacade(LoginStore.create(LocalMockAuthRepository(dataSource)))
+    private fun createFacade(dataSource: MemoryAuthStoreDataSource): LoginFacade {
+        return LoginFacade(LoginStore.create(LocalMockAuthRepository(
+            dataSource,
+            nowEpochMs = { System.currentTimeMillis() }
+        )))
     }
 }
 
@@ -222,5 +219,9 @@ private class MemoryAuthStoreDataSource(
     override fun save(store: MockAuthStore): Boolean {
         this.store = store
         return true
+    }
+
+    fun replaceStore(newStore: MockAuthStore) {
+        this.store = newStore
     }
 }

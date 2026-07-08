@@ -1,3 +1,4 @@
+import hilog from '@ohos.hilog';
 import UIAbility from '@ohos.app.ability.UIAbility';
 import { BusinessError } from '@ohos.base';
 import window from '@ohos.window';
@@ -17,7 +18,9 @@ function initKnoiBridge(): void {
 
 export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage): void {
+    hilog.info(0x0001, 'demo_persist', 'onWindowStageCreate');
     initKnoiBridge();
+    hilog.info(0x0001, 'demo_persist', 'initKnoiBridge done');
     windowStage.getMainWindow()
       .then((mainWindow: window.Window) => {
         mainWindow.setWindowBackgroundColor('#000000');
@@ -47,15 +50,22 @@ export default class EntryAbility extends UIAbility {
       });
   }
 
+  onForeground(): void {
+    hilog.info(0x0001, 'demo_persist', 'onForeground');
+  }
+
   onBackground(): void {
+    hilog.info(0x0001, 'demo_persist', 'onBackground');
     this.persistCurrentLoginStore('background');
   }
 
   onWindowStageDestroy(): void {
+    hilog.info(0x0001, 'demo_persist', 'onWindowStageDestroy');
     this.persistCurrentLoginStore('window stage destroy');
   }
 
   onDestroy(): void {
+    hilog.info(0x0001, 'demo_persist', 'onDestroy');
     this.persistCurrentLoginStore('destroy');
   }
 

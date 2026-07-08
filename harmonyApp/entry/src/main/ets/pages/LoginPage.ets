@@ -1,3 +1,4 @@
+import hilog from '@ohos.hilog';
 import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
 import {
@@ -111,8 +112,10 @@ struct LoginPage {
   @State resetConfirmVisible: boolean = false;
 
   aboutToAppear(): void {
+    hilog.info(0x0001, 'demo_persist', 'LoginPage aboutToAppear, isLoggedIn=' + JSON.stringify(this.isLoggedIn) + ' sessionAccount="' + this.sessionAccount + '"');
     this.syncState();
     this.page = this.isLoggedIn && this.sessionAccount.length > 0 ? AuthPage.SignedIn : AuthPage.Entrance;
+    hilog.info(0x0001, 'demo_persist', 'LoginPage start page=' + JSON.stringify(this.page));
   }
 
   aboutToDisappear(): void {
@@ -1156,6 +1159,7 @@ ErrorText({ message: this.currentError() });
   }
 
   private async submitLogin(skipTerms: boolean = false): Promise<void> {
+    hilog.info(0x0001, 'demo_persist', 'submitLogin called, skipTerms=' + JSON.stringify(skipTerms));
     if (!skipTerms && !this.acceptedTerms) {
       this.termsPromptAction = TermsPromptAction.Login;
       return;
@@ -1171,6 +1175,7 @@ ErrorText({ message: this.currentError() });
   }
 
   private async submitRegister(): Promise<void> {
+    hilog.info(0x0001, 'demo_persist', 'submitRegister called');
     let validationMessage: string = this.viewModel.validateRegisterPassword(this.setupPassword, this.confirmPassword);
     if (validationMessage.length > 0) {
       this.localError = validationMessage;

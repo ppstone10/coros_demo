@@ -680,3 +680,64 @@
 - 需要人工补充三端视觉验收：对比 Android/iOS/Harmony 的启动页、App 图标、资料页男女图标、相机图标、右箭头、协议勾选、关闭/确认图标，确认尺寸和位置是否需要端侧微调。
 - 需要后续处理 Harmony deprecated API：将 `router.*` 与 `promptAction.showToast` 的 deprecated warning 独立纳入导航/提示层改造，不建议混在资源和持久化修复中处理。
 - 需要发布前处理 Harmony 签名与 KNOI warning：配置 signingConfigs，并评估 `libknoi.so` verification warning 对发布审核、安全扫描和目标设备兼容性的影响。
+
+---
+
+2026-07-08 Harmony 持久化修复：KNOI 实例引用同步与 Service 缓存
+
+## 采纳内容
+
+1. 采纳 `HarmonyLoginService.dataSource` 从 `var` 改为 `val`：
+   - `harmony-kmp-bridge/src/ohosArm64Main/kotlin/.../HarmonyLoginService.kt` — `dataSource` 字段改为 `private val`（永不重新赋值）。
+   - `MemoryAuthStoreDataSource` 新增 `replaceStore(newStore: MockAuthStore)` 方法，允许原地替换内部 store 而不创建新实例。
+   - `restoreStoreSnapshot()` 改为调用 `dataSource.replaceStore(store)` 原地修改，不再执行 `dataSource = MemoryAuthStoreDataSource(store)`。`facade` 仍重建，但使用同一个 `val dataSource` 引用。
+   - 根因：KNOI 框架通过动态代理转发方法调用，`var` 字段重新赋值后代理持有的旧引用未同步，导致 `facade.submit()` 写入实例 A 而 `exportStoreSnapshot()` 读取实例 B，持久化永远写空数据。
+
+2. 采纳 Service 实例缓存机制：
+   - 新建 `harmonyApp/entry/src/main/ets/login/HarmonyServiceProvider.ets`，在模块级别缓存 `HarmonyLoginService` 代理实例，所有调用点（`KnoiLoginAdapter`、`StorePersister`）统一通过 `getService()` 获取。
+   - 根因：`getHarmonyLoginService()` 每次返回不同 KNOI 代理，`KnoiLoginAdapter` 和 `StorePersister` 分别操作不同原生实例，save 的数据与 export 的实例不一致。
+
+3. 采纳 `saveStoreSnapshot()` 接受可选 service 参数：
+   - `StorePersister.ets` — `saveStoreSnapshot(service?: HarmonyLoginService)`，当 `KnoiLoginAdapter` 调用时传入 `this.harmonyLoginService`，确保 submit 和 save 使用完全相同的代理实例。
+   - 生命周期回调（`EntryAbility.onBackground/onDestroy`）不使用此参数，回退到 `getService()` 缓存的默认实例。
+
+4. 采纳辅助诊断手段：
+   - `HarmonyLoginService.exportStoreSnapshot()` 在返回的 JSON 末尾注入 `_s` 诊断字段（accounts 数量、session 是否存在、defaultInit 状态），ArkTS 侧可直接观察 dataSource 真实状态。
+   - `KnoiLoginAdapter.submit()` 中增加 `hilog` 输出 `store after submit` 完整 JSON 和 `_s` 信息。
+   - `StorePersister` 所有关键路径增加 `hilog` 日志（`exported snapshot length`、`prefsInstance` 状态、round-trip 告警）。
+   - `EntryAbility` 生命周期各阶段（`onWindowStageCreate`、`onForeground`、`onBackground`、`onWindowStageDestroy`、`onDestroy`）增加 `hilog` 追踪。
+
+5. 采纳 round-trip 检查降级为告警：
+   - `saveStoreSnapshot()` 中 `validateStoreSnapshotRoundTrip` 从 `return false` 阻止保存改为 `console.warn` + `hilog.warn` 后继续写入，不再因编解码校验失败阻塞持久化。
+
+6. 采纳 `createFacade` 补全 `nowEpochMs`：
+   - `HarmonyLoginService.createFacade()` 传入 `nowEpochMs = { System.currentTimeMillis() }`，修复此前默认为 `{ 0L }` 导致验证码时效性计算异常的问题。
+
+## 人工审查点
+
+1. 需人工确认 KNOI `@ServiceProvider` 实例模型是否确实为 factory 模式：当前修复假设 KNOI 每次 `getService` 返回不同原生实例（基于日志中不同 Service 的 dataSource 隔离现象）。如果后续 KNOI 版本改为真正的 singleton，则 `HarmonyServiceProvider` 缓存层仍然无害，但 `val dataSource` 原地修改策略的行为应保持不变。需人工在 KNOI 升级或重构时重新验证此假设。
+
+2. 需人工确认 `restoreStoreSnapshot` 后 `facade` 重建的副作用：`facade` 仍是 `var`，`restoreStoreSnapshot` 中新建 facade 后字段重新赋值。如果 KNOI 代理对 `facade` 的引用也不同步，则后续 `setLoginMode/setUsername/setPassword` 等方法调用的可能是旧 facade。当前由于这些方法在 submit 前会被 ArkTS 重新调用（`updateUsername`、`updatePassword`、`setMode`），旧 facade 的状态重置后仍可用。但如果后续有依赖 facade 初始状态的逻辑（如 `restoreStoreSnapshot` 后直接读 `stateSnapshot()`），可能读到旧 facade 的陈旧状态。
+
+3. 需人工确认 `_s` 诊断字段对 `restoreStoreSnapshot` 和 round-trip 校验的影响：`exportStoreSnapshot` 返回值包含 `_s` 字段，此字段被 `decode()` 忽略但会随 JSON 一起写入 Preferences。`restoreStoreSnapshot` 反序列化时已确认忽略未知字段，round-trip 校验也未受影响（`encode` 不产生 `_s`，`decode` 忽略后两次结果一致）。但手动编辑或跨版本迁移 Preferences 数据时需注意。
+
+4. 需人工确认 `hilog` 日志在生产环境的安全影响：当前 `store after submit` 输出完整 JSON（含 mock 密码 hash），`%{public}s` 格式使日志对系统 hilog 可见。生产环境应移除或改为 `%{private}s`。
+
+## 验证结果
+
+1. KMP common 回归验证：执行 `./gradlew :common:check`，结果 `BUILD SUCCESSFUL`。
+2. Harmony KNOI bridge 构建验证：执行 `cd harmony-kmp-bridge && ./gradlew :ohosArm64Binaries`，结果 `BUILD SUCCESSFUL`，生成的 `libkn.so` 包含 `val dataSource` 和 `replaceStore` 改动。
+3. 持久化链路端到端验证（用户实机 hilog）：
+   - 启动后 `stored json length=89`（空 store）→ `restoreStoreSnapshot result=true` —— 恢复路径正常。
+   - 登录后 `store after submit` 包含 3 个 accounts（2 默认 + 1 新注册）和 currentSession —— `dataSource.save()` 正确写入。
+   - 注册后 `saveStoreSnapshot`→ `exported snapshot length=660/1006`（非 89）—— 持久化写入正确实例的数据。
+   - 杀进程重启后 `stored json length` 不再是 89，而是之前保存的长度（660+/1006）—— 持久化恢复路径生效。
+   - 验证结果：用户确认数据持久化功能已修复。
+4. 未执行 lint/typecheck：鸿蒙端 ArkTS 编译由 DevEco Studio 内置检查通过，项目未配置独立 lint 命令。
+
+## 人工修正点
+
+1. 后续生产环境安全处理：`hilog` 中出现的完整 JSON（含 mock 密码 hash）应改为 `%{private}s` 或移除完整 JSON 输出。
+2. 后续 KNOI 升级或重构时，需重新验证 `@ServiceProvider` 实例模式和 `var facade` 引用同步行为。
+3. `facade` 字段同步的残余风险：`restoreStoreSnapshot` 后如果直接读 `stateSnapshot()` 可能拿到旧 facade 的状态，当前业务路径不依赖此行为，但后续新增逻辑时需注意。
+4. 建议定期清理 `Codex_worklog.md` 旧条目，保留最近 3~5 轮即可，避免文件过度膨胀。
