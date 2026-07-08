@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class LoginUseCaseTest {
     @Test
@@ -287,6 +288,97 @@ class LoginUseCaseTest {
 
         assertEquals(session, restoredRepository.currentSession())
         assertNotNull(restoredRepository.requireSession())
+    }
+
+    @Test
+    fun mockStoreJsonPreservesProfileDisplayNameAndSession() {
+        val store = MockAuthStore(
+            accounts = listOf(
+                MockAccount(
+                    userId = "mock-user-json",
+                    account = "json@example.com",
+                    passwordHash = "mock:1drowssap:9",
+                    displayName = "Json Runner",
+                    region = "CN",
+                    profile = UserProfile(
+                        username = "Json Runner",
+                        birthDate = "2001年01月01日",
+                        heightCm = 180,
+                        weightKg = 72.5,
+                        gender = UserGender.Male
+                    )
+                )
+            ),
+            currentSession = MockAuthSession(
+                userId = "mock-user-json",
+                account = "json@example.com",
+                displayName = "Json Runner",
+                region = "CN",
+                isValid = true,
+                profile = UserProfile(
+                    username = "Json Runner",
+                    birthDate = "2001年01月01日",
+                    heightCm = 180,
+                    weightKg = 72.5,
+                    gender = UserGender.Male
+                )
+            ),
+            defaultAccountsInitialized = true
+        )
+
+        val encoded = MockAuthStoreJson.encode(store)
+        val decoded = MockAuthStoreJson.decode(encoded)
+
+        assertEquals(store, decoded)
+        assertTrue(MockAuthStoreJson.isRoundTripStable(encoded))
+    }
+
+    @Test
+    fun mockStoreJsonReadsLegacyAndroidSnakeCaseSnapshot() {
+        val legacyJson = """
+            {
+              "accounts":[
+                {
+                  "user_id":"legacy-user",
+                  "account":"legacy@example.com",
+                  "password_hash":"mock:1drowssap:9",
+                  "display_name":"Legacy Runner",
+                  "region":"CN",
+                  "profile":{
+                    "avatar_uri":null,
+                    "username":"Legacy Runner",
+                    "birth_date":"2000年02月03日",
+                    "height_cm":171,
+                    "weight_kg":60.5,
+                    "measurement_system":"Metric",
+                    "phone":"13107012029",
+                    "country_region":"中国",
+                    "gender":"Female"
+                  }
+                }
+              ],
+              "current_session":{
+                "user_id":"legacy-user",
+                "account":"legacy@example.com",
+                "display_name":"Legacy Runner",
+                "region":"CN",
+                "is_valid":true,
+                "profile":null
+              },
+              "verify_codes":[
+                {"account":"legacy@example.com","code":"1234","expire_at_epoch_ms":61000}
+              ],
+              "default_accounts_initialized":true
+            }
+        """.trimIndent()
+
+        val decoded = MockAuthStoreJson.decode(legacyJson)
+
+        assertEquals("Legacy Runner", decoded.accounts.first().displayName)
+        assertEquals("Legacy Runner", decoded.accounts.first().profile?.username)
+        assertEquals("Legacy Runner", decoded.currentSession?.displayName)
+        assertEquals(61000L, decoded.verifyCodes.first().expireAtEpochMs)
+        assertEquals(true, decoded.defaultAccountsInitialized)
     }
 
     private fun repository(

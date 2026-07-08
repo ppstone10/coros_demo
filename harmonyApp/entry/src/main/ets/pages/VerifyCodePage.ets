@@ -68,7 +68,7 @@ struct VerifyCodePage {
       Scroll() {
         Column() {
           AuthHeader({ showBack: true, showFeedback: false,
-            onBack: () => { router.back(); } });
+            backRequested: () => { router.back(); } });
           AuthTitle('输入验证码');
 
           Text(verifyCodeMessage(this.account, this.targetKind))
@@ -80,7 +80,7 @@ struct VerifyCodePage {
           Blank().height(56)
 
           CodeBoxesComp({ codeValue: this.codeInput, hasError: this.localError.length > 0,
-            onChange: (value: string) => {
+            valueChanged: (value: string) => {
               this.codeInput = this.viewModel.normalizeVerifyCodeInput(value);
               this.localError = '';
               if (this.codeInput.length === 4) {

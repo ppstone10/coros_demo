@@ -57,6 +57,10 @@ class LoginFacade(
         return LoginRules.isLoginReady(account, password, isLoading)
     }
 
+    fun validateLoginInput(account: String, password: String): String? {
+        return LoginRules.validateLoginInput(account, password).message
+    }
+
     fun isPhoneAccountValid(account: String): Boolean {
         return LoginRules.isPhoneAccountValid(account)
     }
@@ -225,5 +229,17 @@ class LoginFacade(
             UserGender.Male.name -> UserGender.Male
             else -> null
         }
+    }
+}
+
+@Suppress("unused") // Exported to Swift; keeps platform persistence wiring out of iOS UI code.
+class LoginFacadeFactory {
+    fun createPersistent(
+        loadJson: () -> String?,
+        saveJson: (String) -> Boolean
+    ): LoginFacade {
+        val dataSource = JsonAuthStoreDataSource(loadJson, saveJson)
+        val repository = LocalMockAuthRepository(dataSource)
+        return LoginFacade(LoginStore.create(repository))
     }
 }

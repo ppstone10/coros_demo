@@ -611,3 +611,72 @@
    - `exportStoreSnapshot` 保留 `currentSession` 与 `defaultAccountsInitialized` 真实值；
    - `prefsInstance.flush()` 改为 `await prefsInstance.flush()`；
    - `restoreStoreSnapshot` 后触发 `KnoiLoginAdapter.refreshState()` 或改为每次读 `stateSnapshot()` 实时获取。
+
+2026-7-7 关于鸿蒙端数据不实时刷新的问题
+原因及解决方法：不是业务逻辑问题，而是 UI 状态链路设计问题。后续只要是弹窗、Picker、Sheet、表单行这种需要动态刷新和父子同步的东西，就拆成 @Component，展示用 @Prop，回写用 @Link，回调字段避开 ArkUI 内置事件名。
+
+## 采纳内容
+- 采纳鸿蒙表单组件父子同步改造：`AuthComponents.ets` 中 `UnderlineInput`、`PhoneInputComp`、`AgreementRowComp`、`CodeBoxesComp` 改为 `@Component + @Link` 回写父级状态，子组件内部先更新绑定值再触发业务回调。
+- 采纳鸿蒙回调字段命名规避：交互组件回调统一改为 `tapRequested`、`backRequested`、`feedbackRequested`、`valueChanged`、`passwordToggleRequested`、`acceptedChanged`、`privacyRequested`、`serviceTermsRequested`、`unavailableRequested`，避免继续使用 `onTap`、`onChange` 等 ArkUI 内置事件同名字段。
+- 采纳调用方迁移：同步更新登录、手机注册、邮箱注册、验证码、设密、找回密码、重置密码、入口页、已登录页、旧 `LoginPage`、`DebugStatePage`、`ProfileCompletionPage` 中对 `AuthHeader`、`CorosButton`、`UnderlineInput`、`PhoneInputComp`、`AgreementRowComp`、`CodeBoxesComp`、`ThirdPartyAreaComp` 的调用。
+- 采纳协议勾选链路修正：`AgreementRowComp` 由子组件直接更新 `@Link accepted`，父页面只在 `acceptedChanged` 中清理错误提示，避免父子同时 toggle 造成状态抢写。
+- 采纳可安全处理的 ArkTS 异常保护：`StorePersister.initPersistence` 增加整体 `try/catch` 并在失败时清空 `prefsInstance`；`EntryAbility.onWindowStageCreate` 对 `windowStage.loadContent('pages/EntrancePage')` 增加异常保护。
+- 采纳本轮范围决策：保留 KuiklyBase/KNOI 当前 Kotlin 工具链约束，不因 warning 盲目升级；旧 router API、`showToast` 废弃项和签名配置作为独立后续任务处理。
+
+## 人工审查点
+- 需人工确认真机交互体验：本轮已通过编译验证，但仍需人工在鸿蒙真机/模拟器上确认输入、清空、协议勾选、验证码自动提交、密码可见切换等 UI 是否实时刷新，因为 ArkUI 响应式问题最终以端侧交互表现为准。
+- 需人工确认协议勾选业务语义：当前子组件负责更新 `accepted`，父组件只清错误；需确认后续是否还需要埋点、弹窗联动或审计记录等业务副作用，避免迁移后遗漏产品要求。
+- 需人工确认旧 router API 迁移策略：`router.pushUrl/replaceUrl/back/clear/getParams` 仍为 deprecated warning，迁移到新导航体系会影响全登录链路回退栈，需要产品和端侧负责人确认三端导航一致性。
+- 需人工确认提示组件替换策略：`promptAction.showToast` 仍为 deprecated warning，替换为新提示 API 或统一封装会影响全局文案、展示时长和错误提示体验，需要人工确认 UX 标准。
+- 需人工确认发布风险：KNOI `libknoi.so` verification warning 与未配置 signingConfigs 仍存在，开发构建可通过，但发布前需人工确认安全、签名和运行时 ABI 策略。
+
+## 验证结果
+- 静态检查通过：执行 `rg -n "onTap:|onBack:|onFeedback:|onChange:|onPasswordToggle:|onToggle:|onPrivacyClick:|onServiceTermsClick:|onUnavailableClick:|this\\.onTap|this\\.onBack|this\\.onFeedback|this\\.onChange|this\\.onPasswordToggle|this\\.onPrivacyClick|this\\.onServiceTermsClick|this\\.onUnavailableClick|\\bonBack\\(" harmonyApp/entry/src/main/ets`，结果未发现旧自定义回调字段残留，检查通过。
+- 鸿蒙构建验证通过：执行 `env NODE_HOME=/Applications/DevEco-Studio.app/Contents/tools/node DEVECO_SDK_HOME=/Applications/DevEco-Studio.app/Contents/sdk PATH=/Applications/DevEco-Studio.app/Contents/tools/node/bin:/Applications/DevEco-Studio.app/Contents/tools/ohpm/bin:/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin:$PATH /Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw assembleApp --no-daemon`，结果 `BUILD SUCCESSFUL`，`@Link` 改造和调用方迁移通过 ArkTS 编译。
+- KMP common 回归验证通过：执行 `./gradlew :common:check`，结果 `BUILD SUCCESSFUL`。
+- Android 回归构建通过：执行 `./gradlew :androidApp:assembleDebug`，结果 `BUILD SUCCESSFUL`。
+- 验证中仍存在非阻塞 warning：KNOI NAPI verification warning、KNOI 依赖内部 may throw warning、旧 router API deprecated、`showToast` deprecated、未配置 signingConfigs；本轮未将这些 warning 作为失败项处理。
+
+## 人工修正点
+- 需要后续迁移鸿蒙导航层：逐步替换 deprecated `router.*` API，并对齐 Android/iOS 注册、登录、完善资料、找回密码、退出登录、注销账户的回退栈规则。
+- 需要后续统一提示能力：替换或封装 deprecated `promptAction.showToast`，统一错误提示、成功提示和未实现功能提示的展示行为。
+- 需要真机/模拟器补充完整交互验收：覆盖登录、手机号注册、邮箱注册、验证码、设密、找回密码、重置密码、完善资料 Picker/Sheet/Dialog、退出登录、注销账户。
+- 需要发布前处理签名与 KNOI 风险：配置 signingConfigs，确认 HAP 中 `libkn.so`、`libknoi.so`、`libc++_shared.so` 的 ABI 与加载路径，并评估 `libknoi.so` verification warning 对发布审核或安全扫描的影响。
+
+---
+
+2026-07-08 三端 KMP + Native UI 登录资产维护、持久化与资源一致性优化
+
+## 采纳内容
+- 采纳当前架构判断：保留 `common` 模块 MVI/业务规则作为核心资产，三端继续原生 UI；未引入 DI 框架，原因是当前仍为 mock 数据源 + 本地持久化场景，手动装配成本低于框架接入成本。
+- 采纳三端 mock 数据持久化方向：在 common 侧补齐 mock store JSON 编解码与快照能力，使账号、资料、登录态可被端侧持久化；Android/iOS/Harmony 均围绕 shared login facade/store 快照工作，避免 UI 端复制业务逻辑。
+- 采纳 iOS 持久化接入：`SharedLoginAdapter.swift` 接入本地保存与恢复，用户反馈完全退出 app 后再次启动可保留持久化数据。
+- 采纳 Harmony 持久化重做：`HarmonyLoginService` 收敛 JSON 解析与导入导出；`StorePersister.ets` 使用 preferences 保存 mock store 快照；`KnoiLoginAdapter.ets` 在登录、注册、完善资料、重置密码、退出、注销等状态变化后触发持久化；`EntryAbility.ets` 在启动和生命周期退出阶段恢复/保存状态，降低 KNOI 跨层传递链路导致的数据丢失风险。
+- 采纳鸿蒙注册切换问题修复：邮箱注册与手机号注册互相切换时改为明确路由替换和状态重置，不再因 `router.back()` 回到首页。
+- 采纳个人信息保持：完善资料页保存用户名、头像 URI、生日、身高、体重、公英制、手机号、国家地区、性别等字段；后续已登录页/登录态展示优先使用资料用户名，而不是手机号或邮箱账号。
+- 采纳鸿蒙信息完善 UI 去冗余：将头像、性别、表单行、选择器 Sheet、不可用弹窗等拆为独立 `@Component`，选择器标题栏统一复用 `PickerSheetHeaderComponent`，减少重复的 close/check/header 实现。
+- 采纳三端启动图和图标资源分离：启动页使用 `logo_splash`，App 图标使用 `app_icon`；Harmony 的 `startWindowIcon` 改为 `$media:logo_splash`，iOS 新增 `LaunchScreen.storyboard` 与 `LaunchLogo.imageset`。
+- 采纳 Harmony 资源与 Android/iOS 对齐：从 Android/iOS 已有资源同步 `app_icon`、`logo_splash`、`icon_camera`、`icon_female`、`icon_male`、`right_more`、`ic_profile_check`、`ic_profile_close` 等资源；鸿蒙 UI 中原先作为图标使用的 `×`、`✓`、`>`、`♀`、`♂`、`相机` 文本替换为 media 图片资源。
+
+## 人工审查点
+- 需人工真机确认 Harmony 持久化：构建已通过，但仍需在鸿蒙真机/模拟器执行注册、完善资料、登录态退出 app、杀进程重启等路径，因为 KNOI native 实例生命周期与 preferences 落盘时序只能通过端侧运行验证。
+- 需人工确认 mock store 持久化边界：当前目标是 mock 数据源本地保存，不涉及真实服务器；需产品/业务确认是否要持久化验证码、临时错误态、未完成注册流程中间态，避免保存过多临时数据。
+- 需人工确认个人资料展示规则：当前后续展示优先使用完善资料中设置的用户名；如果用户名为空或资料未完成，仍需确认回退到手机号/邮箱/账号 ID 的产品规则。
+- 需人工确认 Harmony 资源视觉尺寸：资源已与 Android/iOS 文件对齐并通过编译，但启动页 logo、协议勾选、男女图标、箭头、关闭/确认按钮在不同屏幕密度上的实际视觉尺寸仍需人工看机。
+- 需人工确认 iOS LaunchScreen 视觉：已使用 `logo_splash` 和黑色背景，但需在 iPhone/iPad 模拟器或真机确认启动图大小、居中位置是否符合设计预期。
+- 需人工确认发布配置风险：Harmony 仍存在未配置 signingConfigs、KNOI verification warning、旧 router/showToast deprecated warning；这些不阻塞开发构建，但发布前需要端侧负责人确认处理策略。
+
+## 验证结果
+- KMP common 验证通过：执行 `./gradlew :common:check`，结果 `BUILD SUCCESSFUL`，common 侧 mock store JSON、规则和用例测试通过。
+- Android 构建验证通过：执行 `./gradlew :androidApp:assembleDebug`，结果 `BUILD SUCCESSFUL`，Android 端接入 shared/common 改动后可编译。
+- Harmony 共享桥与应用构建验证通过：执行 `./tools/build-shared-harmony.sh`，结果 `BUILD SUCCESSFUL`，KNOI bridge、common check、Harmony `assembleApp` 均通过。
+- iOS 构建验证通过：执行 `xcodebuild -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug build`，结果 `** BUILD SUCCEEDED **`，LaunchScreen 与资源目录可被 Xcode 编译打包。
+- 静态资源一致性检查通过：执行 `file` 检查确认 Android/Harmony/iOS `logo_splash` 均为 640x640 PNG，Android/Harmony `app_icon` 均为 192x192 PNG；执行 `cmp -s` 确认 Harmony/iOS 的 `logo_splash` 与 Android 源文件一致，Harmony `app_icon` 与 Android `ic_launcher` 一致。
+- 鸿蒙文本图标残留扫描通过：执行 `rg -n "Text\\('×'\\)|Text\\('✓'\\)|Text\\(' >'\\)|Text\\('相机'\\)|Text\\('♀'\\)|Text\\('♂'\\)|Text\\(this\\.accepted \\? '✓'|☑|✅|✔" harmonyApp/entry/src/main/ets`，结果未命中，说明本轮目标文本图标占位已清理。
+- 用户侧验证反馈：iOS 端完全退出 app 后再次启动可以保留持久化数据；Harmony 端在本轮修复后仍无法持久化。
+
+## 人工修正点
+- 需要人工补充 Harmony 真机持久化验收：覆盖注册账号、完善资料用户名、退出 app、杀进程重启、登录态恢复、退出登录后重启不自动登录、注销账号后数据清理。
+- 需要人工补充三端视觉验收：对比 Android/iOS/Harmony 的启动页、App 图标、资料页男女图标、相机图标、右箭头、协议勾选、关闭/确认图标，确认尺寸和位置是否需要端侧微调。
+- 需要后续处理 Harmony deprecated API：将 `router.*` 与 `promptAction.showToast` 的 deprecated warning 独立纳入导航/提示层改造，不建议混在资源和持久化修复中处理。
+- 需要发布前处理 Harmony 签名与 KNOI warning：配置 signingConfigs，并评估 `libknoi.so` verification warning 对发布审核、安全扫描和目标设备兼容性的影响。

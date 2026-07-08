@@ -48,7 +48,10 @@ export class LoginAction {
 
 export enum LoginEffectType {
   AuthSucceeded,
+  ProfileSaved,
+  NavigateHome,
   LoggedOut,
+  SessionExpired,
   ShowMessage
 }
 

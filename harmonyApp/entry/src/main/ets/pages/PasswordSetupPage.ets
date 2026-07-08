@@ -54,7 +54,7 @@ struct PasswordSetupPage {
     Scroll() {
       Column() {
         AuthHeader({ showBack: true, showFeedback: false,
-          onBack: () => { router.back(); } });
+          backRequested: () => { router.back(); } });
         AuthTitle('设置登录密码');
 
         Blank().height(60)
@@ -62,24 +62,24 @@ struct PasswordSetupPage {
         UnderlineInput({ placeholder: '输入新的密码', textValue: this.setupPassword,
           inputType: this.setupPasswordVisible ? InputType.Normal : InputType.Password,
           isPassword: true, passwordVisible: this.setupPasswordVisible,
-          onChange: (value: string) => {
+          valueChanged: (value: string) => {
             this.setupPassword = this.viewModel.normalizePasswordInput(value);
             this.localError = '';
             this.refreshActionStates();
           },
-          onPasswordToggle: () => { this.setupPasswordVisible = !this.setupPasswordVisible; } });
+          passwordToggleRequested: () => { this.setupPasswordVisible = !this.setupPasswordVisible; } });
 
         Blank().height(48)
 
         UnderlineInput({ placeholder: '再次输入密码', textValue: this.confirmPassword,
           inputType: this.confirmPasswordVisible ? InputType.Normal : InputType.Password,
           isPassword: true, passwordVisible: this.confirmPasswordVisible,
-          onChange: (value: string) => {
+          valueChanged: (value: string) => {
             this.confirmPassword = this.viewModel.normalizePasswordInput(value);
             this.localError = '';
             this.refreshActionStates();
           },
-          onPasswordToggle: () => { this.confirmPasswordVisible = !this.confirmPasswordVisible; } });
+          passwordToggleRequested: () => { this.confirmPasswordVisible = !this.confirmPasswordVisible; } });
 
         Text('6-20位必须包含字母和数字')
           .fontSize(14)
@@ -90,7 +90,7 @@ struct PasswordSetupPage {
 
         CorosButton({ textValue: '注册', color: COROS_BUTTON_RED,
           enabledValue: this.registerActionEnabled, loading: this.isLoading,
-          onTap: () => { this.submitRegister(); } });
+          tapRequested: () => { this.submitRegister(); } });
 
         ErrorText({ message: this.localError });
 

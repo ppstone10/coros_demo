@@ -11,6 +11,10 @@ export interface HarmonyLoginService {
 
    restoreStoreSnapshot(json: string): boolean;
 
+   validateStoreSnapshotRoundTrip(json: string): boolean;
+
+   validateCurrentStoreSnapshotRoundTrip(): boolean;
+
    setLoginMode(): void;
 
    setRegisterMode(): void;

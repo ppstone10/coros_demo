@@ -55,7 +55,21 @@ protocol SharedLoginAdapterProtocol {
 }
 
 final class SharedLoginAdapter: SharedLoginAdapterProtocol {
-    private let facade = LoginFacade()
+    private static let storeKey = "training_auth_mock_store"
+    private let facade: LoginFacade
+
+    init() {
+        let defaults = UserDefaults.standard
+        self.facade = LoginFacadeFactory().createPersistent(
+            loadJson: {
+                defaults.string(forKey: Self.storeKey)
+            },
+            saveJson: { json in
+                defaults.set(json, forKey: Self.storeKey)
+                return KotlinBoolean(bool: defaults.synchronize())
+            }
+        )
+    }
 
     func snapshot() -> LoginState {
         facade.state

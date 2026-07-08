@@ -42,7 +42,7 @@ struct ResetPasswordPage {
     Scroll() {
       Column() {
         AuthHeader({ showBack: true, showFeedback: false,
-          onBack: () => { router.back(); } });
+          backRequested: () => { router.back(); } });
         AuthTitle('设置新密码');
 
         Blank().height(42)
@@ -57,22 +57,22 @@ struct ResetPasswordPage {
         UnderlineInput({ placeholder: '输入新的密码', textValue: this.resetNewPassword,
           inputType: this.resetPasswordVisible ? InputType.Normal : InputType.Password,
           isPassword: true, passwordVisible: this.resetPasswordVisible,
-          onChange: (value: string) => {
+          valueChanged: (value: string) => {
             this.resetNewPassword = this.viewModel.normalizePasswordInput(value);
             this.localError = '';
           },
-          onPasswordToggle: () => { this.resetPasswordVisible = !this.resetPasswordVisible; } });
+          passwordToggleRequested: () => { this.resetPasswordVisible = !this.resetPasswordVisible; } });
 
         Blank().height(42)
 
         UnderlineInput({ placeholder: '再次输入新密码', textValue: this.resetConfirmPassword,
           inputType: this.resetConfirmVisible ? InputType.Normal : InputType.Password,
           isPassword: true, passwordVisible: this.resetConfirmVisible,
-          onChange: (value: string) => {
+          valueChanged: (value: string) => {
             this.resetConfirmPassword = this.viewModel.normalizePasswordInput(value);
             this.localError = '';
           },
-          onPasswordToggle: () => { this.resetConfirmVisible = !this.resetConfirmVisible; } });
+          passwordToggleRequested: () => { this.resetConfirmVisible = !this.resetConfirmVisible; } });
 
         Text('6-20位，必须包含字母和数字')
           .fontSize(14)
@@ -84,7 +84,7 @@ struct ResetPasswordPage {
         CorosButton({ textValue: '完成', color: COROS_BUTTON_RED,
           enabledValue: this.viewModel.canSubmitResetPassword(this.resetNewPassword, this.resetConfirmPassword),
           loading: false,
-          onTap: () => { this.submitResetPassword(); } });
+          tapRequested: () => { this.submitResetPassword(); } });
 
         ErrorText({ message: this.localError });
 

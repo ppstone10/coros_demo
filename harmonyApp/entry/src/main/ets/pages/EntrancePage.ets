@@ -23,7 +23,10 @@ struct EntrancePage {
   aboutToAppear(): void {
     this.syncState();
     if (this.isLoggedIn && this.sessionAccount.length > 0) {
-      router.replaceUrl({ url: AuthRoutes.SIGNED_IN });
+      let state: LoginState = this.viewModel.state;
+      let targetUrl: string = state.currentSession !== null && state.currentSession.isProfileComplete ?
+        AuthRoutes.SIGNED_IN : AuthRoutes.PROFILE_COMPLETION;
+      router.replaceUrl({ url: targetUrl });
     }
   }
 
@@ -43,20 +46,7 @@ struct EntrancePage {
         .muted(true)
 
       Column() {
-        Row() {
-          Text('DEBUG')
-            .fontSize(11)
-            .fontColor('#FFFFFF80')
-            .padding({ left: 8, right: 8, top: 4, bottom: 4 })
-            .backgroundColor('#FFFFFF20')
-            .borderRadius(4)
-            .onClick(() => { router.pushUrl({ url: AuthRoutes.DEBUG }); })
-          Blank()
-        }
-        .width('100%')
-        .height(52)
-        .padding({ left: 20, right: 20 })
-        .alignItems(VerticalAlign.Center)
+        Blank().height(52)
 
         Image($r('app.media.coros_logo'))
           .width(260)
@@ -67,7 +57,7 @@ struct EntrancePage {
 
         Column({ space: 20 }) {
           CorosButton({ textValue: '注册', color: COROS_RED, enabledValue: true, loading: false,
-            onTap: () => {
+            tapRequested: () => {
               this.viewModel.dispatch({
                 type: 0, mode: AuthMode.Register, username: '', password: '',
                 verifyCode: '', displayName: '', region: 'CN'
@@ -76,7 +66,7 @@ struct EntrancePage {
               router.pushUrl({ url: AuthRoutes.PHONE_REGISTER });
             } });
           CorosButton({ textValue: '登录', color: '#424242', enabledValue: true, loading: false,
-            onTap: () => { router.pushUrl({ url: AuthRoutes.LOGIN }); } });
+            tapRequested: () => { router.pushUrl({ url: AuthRoutes.LOGIN }); } });
         }
         .width('100%')
         .padding({ left: 20, right: 20, bottom: 60 })
@@ -92,6 +82,11 @@ struct EntrancePage {
   private syncState(): void {
     let state: LoginState = this.viewModel.state;
     this.isLoggedIn = state.isLoggedIn;
-    this.sessionAccount = state.currentSession === null ? '' : state.currentSession.account;
+    if (state.currentSession === null) {
+      this.sessionAccount = '';
+      return;
+    }
+    this.sessionAccount = state.currentSession.displayName.length > 0 ?
+      state.currentSession.displayName : state.currentSession.account;
   }
 }

@@ -73,36 +73,36 @@ struct LoginFormPage {
       Scroll() {
         Column() {
           AuthHeader({ showBack: true, showFeedback: true,
-            onBack: () => { router.back(); },
-            onFeedback: () => { this.showUnavailableFeature(); } });
+            backRequested: () => { router.back(); },
+            feedbackRequested: () => { this.showUnavailableFeature(); } });
           AuthTitle('账号登录');
 
           Blank().height(45)
 
           UnderlineInput({ placeholder: '输入手机号或邮箱', textValue: this.username,
             inputType: InputType.Email, isPassword: false, passwordVisible: false,
-            onChange: (value: string) => { this.onUsernameChanged(value); } });
+            valueChanged: (value: string) => { this.onUsernameChanged(value); } });
 
           Blank().height(16)
 
           UnderlineInput({ placeholder: '密码', textValue: this.password,
             inputType: this.loginPasswordVisible ? InputType.Normal : InputType.Password,
             isPassword: true, passwordVisible: this.loginPasswordVisible,
-            onChange: (value: string) => { this.onPasswordChanged(value); },
-            onPasswordToggle: () => { this.loginPasswordVisible = !this.loginPasswordVisible; } });
+            valueChanged: (value: string) => { this.onPasswordChanged(value); },
+            passwordToggleRequested: () => { this.loginPasswordVisible = !this.loginPasswordVisible; } });
 
           Blank().height(59)
 
           AgreementRowComp({ accepted: this.acceptedTerms,
-            onToggle: () => { this.acceptedTerms = !this.acceptedTerms; this.localError = ''; },
-            onPrivacyClick: () => { this.openLegal(AuthRoutes.PRIVACY_POLICY); },
-            onServiceTermsClick: () => { this.openLegal(AuthRoutes.SERVICE_TERMS); } });
+            acceptedChanged: (_: boolean) => { this.localError = ''; },
+            privacyRequested: () => { this.openLegal(AuthRoutes.PRIVACY_POLICY); },
+            serviceTermsRequested: () => { this.openLegal(AuthRoutes.SERVICE_TERMS); } });
 
           Blank().height(12)
 
           CorosButton({ textValue: '登录', color: COROS_BUTTON_RED,
             enabledValue: this.loginActionEnabled, loading: this.isLoading,
-            onTap: () => { this.submitLogin(); } });
+            tapRequested: () => { this.submitLogin(); } });
 
           ErrorText({ message: this.currentError() });
 
@@ -114,7 +114,7 @@ struct LoginFormPage {
 
           Blank().layoutWeight(1)
 
-          ThirdPartyAreaComp({ onUnavailableClick: () => { this.showUnavailableFeature(); } });
+          ThirdPartyAreaComp({ unavailableRequested: () => { this.showUnavailableFeature(); } });
 
           Text(VERSION_TEXT)
             .fontSize(16)
@@ -145,7 +145,14 @@ struct LoginFormPage {
     Column() {
       Blank().layoutWeight(1)
       Column() {
-        Text('×').fontSize(34).fontColor(COROS_WHITE).width('100%').textAlign(TextAlign.End)
+        Row() {
+          Image($r('app.media.ic_profile_close'))
+            .width(34)
+            .height(34)
+            .objectFit(ImageFit.Contain)
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.End)
           .onClick(() => { this.termsPromptShown = false; })
         Text('阅读并同意以下条款，').fontSize(18).fontColor(COROS_WHITE).width('100%')
           .textAlign(TextAlign.Center).margin({ top: 12 })
@@ -159,7 +166,7 @@ struct LoginFormPage {
         .width('100%').justifyContent(FlexAlign.Center).margin({ top: 8 })
         Blank().height(42)
         CorosButton({ textValue: '同意并继续', color: COROS_RED, enabledValue: true, loading: false,
-          onTap: () => {
+          tapRequested: () => {
             this.acceptedTerms = true;
             this.termsPromptShown = false;
             this.submitLogin();

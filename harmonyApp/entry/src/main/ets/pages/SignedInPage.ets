@@ -38,7 +38,7 @@ struct SignedInPage {
   build() {
     Stack() {
       Column() {
-        AuthHeader({ showBack: false, showFeedback: false, onBack: () => {} });
+        AuthHeader({ showBack: false, showFeedback: false, backRequested: () => {} });
 
         Scroll() {
           Column() {
@@ -55,12 +55,12 @@ struct SignedInPage {
             Blank().height(48)
 
             CorosButton({ textValue: '退出登录', color: COROS_BUTTON_RED, enabledValue: true, loading: false,
-              onTap: () => { this.logout(); } });
+              tapRequested: () => { this.logout(); } });
 
             Blank().height(16)
 
             CorosButton({ textValue: '注销账户', color: '#2A2A2E', enabledValue: true, loading: false,
-              onTap: () => { this.showDeleteDialog = true; } });
+              tapRequested: () => { this.showDeleteDialog = true; } });
 
             ErrorText({ message: this.localError });
           }
@@ -136,7 +136,12 @@ struct SignedInPage {
 
   private syncState(): void {
     let state: LoginState = this.viewModel.state;
-    this.sessionAccount = state.currentSession === null ? '' : state.currentSession.account;
+    if (state.currentSession === null) {
+      this.sessionAccount = '';
+      return;
+    }
+    this.sessionAccount = state.currentSession.displayName.length > 0 ?
+      state.currentSession.displayName : state.currentSession.account;
   }
 
   private showMessage(message: string): void {

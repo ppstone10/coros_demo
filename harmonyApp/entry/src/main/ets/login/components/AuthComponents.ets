@@ -92,7 +92,7 @@ export function BlockingLoadingOverlay() {
 }
 
 @Builder
-export function LegalDocumentPage(title: string, paragraphs: LegalParagraph[], onBack: () => void) {
+export function LegalDocumentPage(title: string, paragraphs: LegalParagraph[], backRequested: () => void) {
   Column() {
     Stack() {
       Row() {
@@ -102,7 +102,7 @@ export function LegalDocumentPage(title: string, paragraphs: LegalParagraph[], o
           .textAlign(TextAlign.Center)
           .width(48)
           .height(52)
-          .onClick(() => { onBack(); })
+          .onClick(() => { backRequested(); })
         Blank()
       }
       .width('100%')
@@ -139,7 +139,7 @@ export function LegalDocumentPage(title: string, paragraphs: LegalParagraph[], o
   .backgroundColor(COROS_BLACK)
 }
 
-// ========== 交互式 @Component（@Prop 响应式） ==========
+// ========== 交互式 @Component（@Prop 展示，@Link 回写） ==========
 
 @Component
 export struct CorosButton {
@@ -147,7 +147,7 @@ export struct CorosButton {
   @Prop color: string = '';
   @Prop enabledValue: boolean = true;
   @Prop loading: boolean = false;
-  onTap: () => void = () => {};
+  tapRequested: () => void = () => {};
 
   build() {
     Button(this.loading ? '处理中' : this.textValue, { type: ButtonType.Normal })
@@ -160,7 +160,7 @@ export struct CorosButton {
       .enabled(!this.loading && this.enabledValue)
       .onClick(() => {
         if (this.enabledValue && !this.loading) {
-          this.onTap();
+          this.tapRequested();
         }
       })
   }
@@ -170,8 +170,8 @@ export struct CorosButton {
 export struct AuthHeader {
   @Prop showBack: boolean = true;
   @Prop showFeedback: boolean = false;
-  onBack: () => void = () => {};
-  onFeedback: () => void = () => {};
+  backRequested: () => void = () => {};
+  feedbackRequested: () => void = () => {};
 
   build() {
     Row() {
@@ -182,14 +182,14 @@ export struct AuthHeader {
           .textAlign(TextAlign.Center)
           .width(48)
           .height(52)
-          .onClick(() => { this.onBack(); })
+          .onClick(() => { this.backRequested(); })
       }
       Blank()
       if (this.showFeedback) {
         Text('◔ 建议&反馈')
           .fontSize(14)
           .fontColor(COROS_MUTED)
-          .onClick(() => { this.onFeedback(); })
+          .onClick(() => { this.feedbackRequested(); })
       }
     }
     .width('100%')
@@ -201,12 +201,17 @@ export struct AuthHeader {
 @Component
 export struct UnderlineInput {
   @Prop placeholder: string = '';
-  @Prop textValue: string = '';
+  @Link textValue: string;
   @Prop inputType: InputType = InputType.Normal;
   @Prop isPassword: boolean = false;
   @Prop passwordVisible: boolean = false;
-  onChange: (value: string) => void = () => {};
-  onPasswordToggle: () => void = () => {};
+  valueChanged: (value: string) => void = () => {};
+  passwordToggleRequested: () => void = () => {};
+
+  private commitValue(value: string): void {
+    this.textValue = value;
+    this.valueChanged(value);
+  }
 
   build() {
     Column() {
@@ -221,14 +226,14 @@ export struct UnderlineInput {
           .height(48)
           .padding(0)
           .layoutWeight(1)
-          .onChange((value: string) => { this.onChange(value); })
+          .onChange((value: string) => { this.commitValue(value); })
 
         if (this.textValue.length > 0) {
           Image($r('app.media.icon_delete'))
             .width(34)
             .height(34)
             .objectFit(ImageFit.Contain)
-            .onClick(() => { this.onChange(''); })
+            .onClick(() => { this.commitValue(''); })
         }
 
         if (this.isPassword && this.textValue.length > 0) {
@@ -237,7 +242,7 @@ export struct UnderlineInput {
             .height(34)
             .objectFit(ImageFit.Contain)
             .opacity(this.passwordVisible ? 0.45 : 1)
-            .onClick(() => { this.onPasswordToggle(); })
+            .onClick(() => { this.passwordToggleRequested(); })
         }
       }
       .width('100%')
@@ -253,8 +258,13 @@ export struct UnderlineInput {
 @Component
 export struct PhoneInputComp {
   @Prop countryCode: string = '+86';
-  @Prop phoneValue: string = '';
-  onChange: (value: string) => void = () => {};
+  @Link phoneValue: string;
+  valueChanged: (value: string) => void = () => {};
+
+  private commitValue(value: string): void {
+    this.phoneValue = value;
+    this.valueChanged(value);
+  }
 
   build() {
     Column() {
@@ -272,13 +282,13 @@ export struct PhoneInputComp {
           .backgroundColor(COROS_BLACK)
           .padding(0)
           .layoutWeight(1)
-          .onChange((value: string) => { this.onChange(value); })
+          .onChange((value: string) => { this.commitValue(value); })
         if (this.phoneValue.length > 0) {
           Image($r('app.media.icon_delete'))
             .width(34)
             .height(34)
             .objectFit(ImageFit.Contain)
-            .onClick(() => { this.onChange(''); })
+            .onClick(() => { this.commitValue(''); })
         }
       }
       .height(48)
@@ -316,23 +326,32 @@ export struct DisabledUnderlineValue {
 
 @Component
 export struct AgreementRowComp {
-  @Prop accepted: boolean = false;
-  onToggle: () => void = () => {};
-  onPrivacyClick: () => void = () => {};
-  onServiceTermsClick: () => void = () => {};
+  @Link accepted: boolean;
+  acceptedChanged: (accepted: boolean) => void = (_: boolean) => {};
+  privacyRequested: () => void = () => {};
+  serviceTermsRequested: () => void = () => {};
+
+  private toggleAccepted(): void {
+    this.accepted = !this.accepted;
+    this.acceptedChanged(this.accepted);
+  }
 
   build() {
     Row({ space: 8 }) {
-      Text(this.accepted ? '✓' : '')
-        .fontSize(9)
-        .fontColor(COROS_WHITE)
-        .textAlign(TextAlign.Center)
+      Stack({ alignContent: Alignment.Center }) {
+        if (this.accepted) {
+          Image($r('app.media.ic_profile_check'))
+            .width(12)
+            .height(12)
+            .objectFit(ImageFit.Contain)
+        }
+      }
         .width(18)
         .height(18)
         .border({ width: 1, color: this.accepted ? COROS_RED : '#D0D0D0', radius: 9 })
         .backgroundColor(this.accepted ? COROS_RED : COROS_BLACK)
         .margin({ top: 2 })
-        .onClick(() => { this.onToggle(); })
+        .onClick(() => { this.toggleAccepted(); })
 
       Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
         Text('我已阅读并同意COROS的 ')
@@ -343,7 +362,7 @@ export struct AgreementRowComp {
           .fontSize(14)
           .fontColor(COROS_RED)
           .lineHeight(24)
-          .onClick(() => { this.onPrivacyClick(); })
+          .onClick(() => { this.privacyRequested(); })
         Text(' 和 ')
           .fontSize(14)
           .fontColor(COROS_WHITE)
@@ -352,7 +371,7 @@ export struct AgreementRowComp {
           .fontSize(14)
           .fontColor(COROS_RED)
           .lineHeight(24)
-          .onClick(() => { this.onServiceTermsClick(); })
+          .onClick(() => { this.serviceTermsRequested(); })
       }
       .layoutWeight(1)
     }
@@ -363,9 +382,14 @@ export struct AgreementRowComp {
 
 @Component
 export struct CodeBoxesComp {
-  @Prop codeValue: string = '';
+  @Link codeValue: string;
   @Prop hasError: boolean = false;
-  onChange: (value: string) => void = () => {};
+  valueChanged: (value: string) => void = () => {};
+
+  private commitValue(value: string): void {
+    this.codeValue = value;
+    this.valueChanged(value);
+  }
 
   build() {
     Stack() {
@@ -392,7 +416,7 @@ export struct CodeBoxesComp {
         .width('100%')
         .height(80)
         .opacity(0.02)
-        .onChange((value: string) => { this.onChange(value); })
+        .onChange((value: string) => { this.commitValue(value); })
     }
     .width('100%')
   }
@@ -400,7 +424,7 @@ export struct CodeBoxesComp {
 
 @Component
 export struct ThirdPartyAreaComp {
-  onUnavailableClick: () => void = () => {};
+  unavailableRequested: () => void = () => {};
 
   build() {
     Column({ space: 24 }) {
@@ -422,7 +446,7 @@ export struct ThirdPartyAreaComp {
           .width(34)
           .height(34)
           .border({ width: 1, color: '#303036', radius: 17 })
-          .onClick(() => { this.onUnavailableClick(); })
+          .onClick(() => { this.unavailableRequested(); })
         Text('···')
           .fontSize(20)
           .fontColor(COROS_WHITE)
@@ -430,7 +454,7 @@ export struct ThirdPartyAreaComp {
           .width(34)
           .height(34)
           .border({ width: 1, color: '#303036', radius: 17 })
-          .onClick(() => { this.onUnavailableClick(); })
+          .onClick(() => { this.unavailableRequested(); })
       }
       .justifyContent(FlexAlign.Center)
       .width('100%')

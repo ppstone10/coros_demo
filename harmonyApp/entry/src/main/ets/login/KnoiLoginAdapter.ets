@@ -88,7 +88,7 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     try {
       this.harmonyLoginService.submit();
       this.refreshState();
-      saveStoreSnapshot();
+      this.persistSnapshot();
     } catch (error) {
       this.state.errorMessage = '提交失败，请重试';
     }
@@ -97,15 +97,19 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
   logout(): void {
     this.harmonyLoginService.logout();
     this.refreshState();
-    saveStoreSnapshot();
+    this.persistSnapshot();
   }
 
   requestVerifyCode(account: string): string {
-    return this.harmonyLoginService.requestVerifyCode(account);
+    let message: string = this.harmonyLoginService.requestVerifyCode(account);
+    this.saveSnapshotIfSucceeded(message);
+    return message;
   }
 
   requestResentVerifyCode(account: string): string {
-    return this.harmonyLoginService.requestResentVerifyCode(account);
+    let message: string = this.harmonyLoginService.requestResentVerifyCode(account);
+    this.saveSnapshotIfSucceeded(message);
+    return message;
   }
 
   verifyCode(account: string, code: string): string {
@@ -182,12 +186,14 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
   resetPassword(account: string, newPassword: string): string {
     let message: string = this.harmonyLoginService.resetPassword(account, newPassword);
     this.refreshState();
-    saveStoreSnapshot();
+    this.persistSnapshot();
     return message;
   }
 
   changePassword(account: string, oldPassword: string, newPassword: string): string {
-    return this.harmonyLoginService.changePassword(account, oldPassword, newPassword);
+    let message: string = this.harmonyLoginService.changePassword(account, oldPassword, newPassword);
+    this.saveSnapshotIfSucceeded(message);
+    return message;
   }
 
   submitProfile(
@@ -200,20 +206,20 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
       measurementSystem, phone, countryRegion, gender
     );
     this.refreshState();
-    saveStoreSnapshot();
+    this.persistSnapshot();
   }
 
   deleteCurrentAccount(): string {
     let message: string = this.harmonyLoginService.deleteCurrentAccount();
     this.refreshState();
-    saveStoreSnapshot();
+    this.persistSnapshot();
     return message;
   }
 
   clearSessionSilently(): void {
     this.harmonyLoginService.clearSessionSilently();
     this.refreshState();
-    saveStoreSnapshot();
+    this.persistSnapshot();
   }
 
   consumeEffect(): LoginEffect | null {
@@ -230,10 +236,16 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
       effect.session = this.mapSession(payload.session);
     }
 
-    if (payload.type === 'AuthSucceeded' || payload.type === 'ProfileSaved') {
+    if (payload.type === 'AuthSucceeded') {
       effect.type = LoginEffectType.AuthSucceeded;
+    } else if (payload.type === 'ProfileSaved') {
+      effect.type = LoginEffectType.ProfileSaved;
+    } else if (payload.type === 'NavigateHome') {
+      effect.type = LoginEffectType.NavigateHome;
     } else if (payload.type === 'LoggedOut') {
       effect.type = LoginEffectType.LoggedOut;
+    } else if (payload.type === 'SessionExpired') {
+      effect.type = LoginEffectType.SessionExpired;
     } else {
       effect.type = LoginEffectType.ShowMessage;
     }
@@ -242,6 +254,18 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
 
   private refreshState(): void {
     this.state = this.mapState(this.parseStatePayload(this.harmonyLoginService.stateSnapshot()));
+  }
+
+  private saveSnapshotIfSucceeded(message: string): void {
+    if (message.length === 0) {
+      this.persistSnapshot();
+    }
+  }
+
+  private persistSnapshot(): void {
+    if (!saveStoreSnapshot()) {
+      console.error('login store snapshot was not persisted');
+    }
   }
 
   private parseStatePayload(snapshot: string): LoginStatePayload {

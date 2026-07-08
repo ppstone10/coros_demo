@@ -33,6 +33,25 @@ object LoginRules {
             password.length >= PasswordMinLength
     }
 
+    fun validateLoginInput(account: String, password: String): LoginRuleCheck {
+        val normalizedAccount = account.trim()
+        return when {
+            normalizedAccount.isBlank() -> {
+                LoginRuleCheck(isValid = false, message = "请输入账号")
+            }
+
+            password.isBlank() -> {
+                LoginRuleCheck(isValid = false, message = "请输入密码")
+            }
+
+            password.length < PasswordMinLength -> {
+                LoginRuleCheck(isValid = false, message = "密码需要为6-20位")
+            }
+
+            else -> LoginRuleCheck(isValid = true)
+        }
+    }
+
     fun isPhoneAccountValid(account: String): Boolean {
         return normalizePhoneInput(account).length == PhoneAccountLength
     }

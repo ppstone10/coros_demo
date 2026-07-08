@@ -55,27 +55,27 @@ struct PhoneRegisterPage {
       Scroll() {
         Column() {
           AuthHeader({ showBack: true, showFeedback: true,
-            onBack: () => { router.back(); },
-            onFeedback: () => { this.showUnavailableFeature(); } });
+            backRequested: () => { router.back(); },
+            feedbackRequested: () => { this.showUnavailableFeature(); } });
           AuthTitle('手机号注册');
 
           Blank().height(60)
 
           PhoneInputComp({ countryCode: '+86', phoneValue: this.username,
-            onChange: (value: string) => { this.onPhoneChanged(value); } });
+            valueChanged: (value: string) => { this.onPhoneChanged(value); } });
 
           Blank().height(REGISTER_AGREEMENT_TOP_SPACING)
 
           AgreementRowComp({ accepted: this.acceptedTerms,
-            onToggle: () => { this.acceptedTerms = !this.acceptedTerms; this.localError = ''; },
-            onPrivacyClick: () => { this.openLegal(AuthRoutes.PRIVACY_POLICY); },
-            onServiceTermsClick: () => { this.openLegal(AuthRoutes.SERVICE_TERMS); } });
+            acceptedChanged: (_: boolean) => { this.localError = ''; },
+            privacyRequested: () => { this.openLegal(AuthRoutes.PRIVACY_POLICY); },
+            serviceTermsRequested: () => { this.openLegal(AuthRoutes.SERVICE_TERMS); } });
 
           Blank().height(REGISTER_ACTION_TOP_SPACING)
 
           CorosButton({ textValue: '发送验证码', color: COROS_BUTTON_RED,
             enabledValue: this.phoneCodeActionEnabled, loading: this.isLoading,
-            onTap: () => { this.requestPhoneVerifyCode(); } });
+            tapRequested: () => { this.requestPhoneVerifyCode(); } });
 
           ErrorText({ message: this.currentError() });
 
@@ -117,7 +117,14 @@ struct PhoneRegisterPage {
     Column() {
       Blank().layoutWeight(1)
       Column() {
-        Text('×').fontSize(34).fontColor(COROS_WHITE).width('100%').textAlign(TextAlign.End)
+        Row() {
+          Image($r('app.media.ic_profile_close'))
+            .width(34)
+            .height(34)
+            .objectFit(ImageFit.Contain)
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.End)
           .onClick(() => { this.termsPromptShown = false; })
         Text('阅读并同意以下条款，').fontSize(18).fontColor(COROS_WHITE).width('100%')
           .textAlign(TextAlign.Center).margin({ top: 12 })
@@ -131,7 +138,7 @@ struct PhoneRegisterPage {
         .width('100%').justifyContent(FlexAlign.Center).margin({ top: 8 })
         Blank().height(42)
         CorosButton({ textValue: '同意并继续', color: COROS_RED, enabledValue: true, loading: false,
-          onTap: () => {
+          tapRequested: () => {
             this.acceptedTerms = true;
             this.termsPromptShown = false;
             this.requestPhoneVerifyCode();

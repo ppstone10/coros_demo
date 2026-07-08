@@ -43,5 +43,9 @@ class LoginRulesTest {
         assertTrue(LoginRules.isLoginReady("13107012029", "123456", isLoading = false))
         assertFalse(LoginRules.isLoginReady("13107012029", "12345", isLoading = false))
         assertFalse(LoginRules.isLoginReady("13107012029", "123456", isLoading = true))
+        assertEquals("请输入账号", LoginRules.validateLoginInput("", "123456").message)
+        assertEquals("请输入密码", LoginRules.validateLoginInput("13107012029", "").message)
+        assertEquals("密码需要为6-20位", LoginRules.validateLoginInput("13107012029", "12345").message)
+        assertTrue(LoginRules.validateLoginInput("13107012029", "123456").isValid)
     }
 }

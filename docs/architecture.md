@@ -5,7 +5,7 @@
 - Android：Kotlin + Jetpack Compose。
 - iOS：Swift + SwiftUI。
 - HarmonyOS：ArkTS + ArkUI 原生开发。
-- 共享模块：`common` KMP 模块共享 Android/iOS 业务逻辑，并通过 KuiklyBase-Kotlin + KNOI bridge 服务 HarmonyOS 原生 UI。
+- 共享模块：`common` KMP 模块共享平台无关业务逻辑；Android/iOS 直接接入，HarmonyOS 通过 KuiklyBase-Kotlin + KNOI bridge 接入。
 
 ## 模块职责
 
@@ -29,3 +29,17 @@
 5. 结果转换为新的 `LoginState` 和一次性 `LoginEffect`。
 
 Android/iOS 使用 `common` 中的登录逻辑。HarmonyOS 保留 ArkUI 原生页面，通过独立 `harmony-kmp-bridge` 生成的 `libkn.so` 调用 `HarmonyLoginService`；该 service 编译并复用 `common/src/commonMain` 的 `LoginFacade`、`LoginStore` 与 mock auth 业务逻辑。缺少 KNOI 生成模块时，鸿蒙构建或运行应直接失败。
+
+## 平台接入原则
+
+- Android 是 Kotlin 侧调用方，可以直接使用 `common` 的 `LoginStore`、`LoginRules`、`LoginAction` 和 `LoginEffect`；不要为了形式统一强制绕一层 facade。
+- iOS 和 HarmonyOS 是跨语言调用方，优先通过 `LoginFacade`、KNOI service 或平台 adapter 暴露 primitive-friendly API。
+- 平台 ViewModel 只做原生 UI 状态、导航、提示和平台系统能力适配；登录规则、状态迁移、mock auth 流程继续放在 `common`。
+- 当前不引入 DI 框架。mock 数据和本地持久化场景使用集中构造点即可；只有真实网络层、多环境数据源或复杂替换策略出现后再评估 DI。
+
+## HarmonyOS 维护约束
+
+- `HarmonyLoginService` 只做 KNOI API 暴露和 `LoginFacade` 调用；JSON snapshot 编解码集中在 `HarmonyLoginJson`。
+- `KnoiLoginAdapter.ets` 只做 bridge 调用、状态/effect 映射和持久化触发，不复写登录、注册、验证码、密码或 profile 业务规则。
+- 成功改变 Kotlin store 的 HarmonyOS 调用必须触发 `saveStoreSnapshot()`；保存前和恢复后必须通过 bridge round-trip 校验。
+- `pages/LoginPage` 是历史对照页，不作为主流程入口；`DebugStatePage` 只用于开发期诊断，不在首屏或正式导航中暴露。

@@ -9,8 +9,18 @@ const SHARED_LOGIN_NATIVE_CANDIDATES = [
   path.resolve(process.cwd(), 'entry/libs', ABI, SHARED_LOGIN_NATIVE_LIB),
   path.resolve(process.cwd(), 'entry/src/main/libs', ABI, SHARED_LOGIN_NATIVE_LIB)
 ];
+const GENERATED_KNOI_PROVIDER = path.resolve(process.cwd(), 'entry/src/main/ets/knoi/provider.ets');
+const SHARED_LOGIN_OUTPUTS = [
+  ...SHARED_LOGIN_NATIVE_CANDIDATES,
+  GENERATED_KNOI_PROVIDER
+];
 const BRIDGE_DIR = path.resolve(process.cwd(), '../harmony-kmp-bridge');
 const BRIDGE_SOURCE_DIR = path.resolve(BRIDGE_DIR, 'src/ohosArm64Main/kotlin');
+const COMMON_SOURCE_DIR = path.resolve(process.cwd(), '../common/src/commonMain/kotlin');
+const KOTLIN_SOURCE_DIRS = [
+  BRIDGE_SOURCE_DIR,
+  COMMON_SOURCE_DIR
+];
 const BUILD_COMMANDS_REQUIRING_SHARED_LOGIN = [
   'assembleApp',
   'assembleHap',
@@ -28,10 +38,7 @@ function findExistingLib(): string | undefined {
   return SHARED_LOGIN_NATIVE_CANDIDATES.find((candidate: string) => fs.existsSync(candidate));
 }
 
-function isKotlinSourceNewer(existingLib: string): boolean {
-  const libStat = fs.statSync(existingLib);
-  const libMtime = libStat.mtimeMs;
-
+function latestKotlinSourceMtime(): number {
   function walkDir(dir: string): number {
     let latest = 0;
     try {
@@ -50,24 +57,41 @@ function isKotlinSourceNewer(existingLib: string): boolean {
     return latest;
   }
 
-  const sourceLatestMtime = walkDir(BRIDGE_SOURCE_DIR);
-  return sourceLatestMtime > libMtime;
+  return KOTLIN_SOURCE_DIRS
+    .map((sourceDir: string) => walkDir(sourceDir))
+    .reduce((latest: number, current: number) => Math.max(latest, current), 0);
+}
+
+function isKotlinSourceNewerThanNativeLibs(): boolean {
+  const outputMtimes = SHARED_LOGIN_NATIVE_CANDIDATES
+    .filter((output: string) => fs.existsSync(output))
+    .map((output: string) => fs.statSync(output).mtimeMs);
+  if (outputMtimes.length !== SHARED_LOGIN_NATIVE_CANDIDATES.length) {
+    return true;
+  }
+  const oldestOutputMtime = outputMtimes.reduce(
+    (oldest: number, current: number) => Math.min(oldest, current),
+    Number.POSITIVE_INFINITY
+  );
+  return latestKotlinSourceMtime() > oldestOutputMtime;
 }
 
 function buildSharedLoginNative(): void {
-  const existingLib = findExistingLib();
+  const missingOutputs = SHARED_LOGIN_OUTPUTS.filter((output: string) => !fs.existsSync(output));
 
-  if (existingLib !== undefined && fs.existsSync(BRIDGE_SOURCE_DIR)) {
-    if (!isKotlinSourceNewer(existingLib)) {
-      return; // library is up-to-date
+  if (missingOutputs.length === 0 && KOTLIN_SOURCE_DIRS.some((sourceDir: string) => fs.existsSync(sourceDir))) {
+    if (!isKotlinSourceNewerThanNativeLibs()) {
+      return; // generated bridge outputs are up-to-date
     }
     process.stdout.write(
       '[build-bridge] Kotlin source changed, rebuilding native bridge...\n'
     );
-  } else if (existingLib !== undefined) {
-    return; // library exists and we can't check source — assume up-to-date
+  } else if (missingOutputs.length === 0) {
+    return; // outputs exist and we can't check source, so assume up-to-date
   } else {
-    process.stdout.write('[build-bridge] libkn.so not found, building native bridge...\n');
+    process.stdout.write(
+      `[build-bridge] Generated bridge output missing, rebuilding native bridge:\n${missingOutputs.join('\n')}\n`
+    );
   }
 
   if (!fs.existsSync(BRIDGE_DIR)) {
@@ -91,10 +115,11 @@ function buildSharedLoginNative(): void {
     );
   }
 
-  if (!findExistingLib()) {
+  const stillMissingOutputs = SHARED_LOGIN_OUTPUTS.filter((output: string) => !fs.existsSync(output));
+  if (stillMissingOutputs.length > 0 || !findExistingLib()) {
     throw new Error(
-      `Build completed but ${SHARED_LOGIN_NATIVE_LIB} still not found. ` +
-      `Expected one of:\n${SHARED_LOGIN_NATIVE_CANDIDATES.join('\n')}`
+      'Build completed but generated bridge outputs are still missing. ' +
+      `Missing:\n${stillMissingOutputs.join('\n')}`
     );
   }
 

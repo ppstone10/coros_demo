@@ -31,14 +31,14 @@ struct ForgotPasswordPage {
     Scroll() {
       Column() {
         AuthHeader({ showBack: true, showFeedback: false,
-          onBack: () => { router.back(); } });
+          backRequested: () => { router.back(); } });
         AuthTitle('找回密码');
 
         Blank().height(60)
 
         UnderlineInput({ placeholder: '输入手机号或邮箱', textValue: this.forgotAccount,
           inputType: InputType.Email, isPassword: false, passwordVisible: false,
-          onChange: (value: string) => {
+          valueChanged: (value: string) => {
             this.forgotAccount = value.trim();
             this.localError = '';
           } });
@@ -47,7 +47,7 @@ struct ForgotPasswordPage {
 
         CorosButton({ textValue: '下一步', color: COROS_BUTTON_RED,
           enabledValue: this.forgotAccount.trim().length > 0, loading: false,
-          onTap: () => { this.verifyForgotAccount(); } });
+          tapRequested: () => { this.verifyForgotAccount(); } });
 
         ErrorText({ message: this.localError });
 

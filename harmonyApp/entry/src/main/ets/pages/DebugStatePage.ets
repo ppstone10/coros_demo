@@ -48,7 +48,7 @@ struct DebugStatePage {
 
   build() {
     Column() {
-      AuthHeader({ showBack: true, showFeedback: false, onBack: () => { this.handleBack(); } });
+      AuthHeader({ showBack: true, showFeedback: false, backRequested: () => { this.handleBack(); } });
 
       Scroll() {
         Column({ space: 16 }) {
@@ -69,12 +69,12 @@ struct DebugStatePage {
           Text('点击次数: ' + this.compButtonClickCount)
             .fontSize(16).fontColor(COROS_WHITE)
           CorosButton({ textValue: 'Component按钮', color: COROS_BUTTON_RED, enabledValue: true, loading: false,
-            onTap: () => {
+            tapRequested: () => {
               this.compButtonClickCount += 1;
               this.log('CorosButton onClick 触发 #' + this.compButtonClickCount);
             } });
           CorosButton({ textValue: '禁用态按钮(enabled=false)', color: COROS_BUTTON_RED, enabledValue: false, loading: false,
-            onTap: () => { this.log('禁用态按钮被点击了！这不应该发生'); } });
+            tapRequested: () => { this.log('禁用态按钮被点击了！这不应该发生'); } });
 
           // ===== 第 3 区：struct 成员 @Builder 按钮测试（对照） =====
           this.SectionTitle('3. struct 成员 @Builder 按钮测试（对照）');
@@ -105,7 +105,7 @@ struct DebugStatePage {
           }
           CorosButton({ textValue: '@Component动态按钮', color: COROS_BUTTON_RED,
             enabledValue: this.customEnabled, loading: this.customLoading,
-            onTap: () => { this.log('@Component 动态按钮被点击'); } });
+            tapRequested: () => { this.log('@Component 动态按钮被点击'); } });
           this.StructCorosButton('@Builder动态按钮', COROS_BUTTON_RED, this.customEnabled, this.customLoading, () => {
             this.log('@Builder 动态按钮被点击');
           });
@@ -115,9 +115,9 @@ struct DebugStatePage {
           Text('testInput="' + this.testInput + '"').fontSize(14).fontColor(COROS_MUTED)
           UnderlineInput({ placeholder: '输入测试文字', textValue: this.testInput,
             inputType: InputType.Normal, isPassword: false, passwordVisible: false,
-            onChange: (value: string) => {
+            valueChanged: (value: string) => {
               this.testInput = value;
-              this.log('UnderlineInput onChange: "' + value + '"');
+              this.log('UnderlineInput valueChanged: "' + value + '"');
             } });
 
           // ===== 第 6 区：原生 TextInput onChange 测试 =====
@@ -129,7 +129,7 @@ struct DebugStatePage {
             .height(48).width('100%')
             .onChange((value: string) => {
               this.testInput2 = value;
-              this.log('原生 TextInput onChange: "' + value + '"');
+              this.log('原生 TextInput valueChanged: "' + value + '"');
             })
           Divider().color(COROS_LINE)
 
@@ -145,25 +145,25 @@ struct DebugStatePage {
 
           UnderlineInput({ placeholder: '输入手机号或邮箱', textValue: this.username,
             inputType: InputType.Email, isPassword: false, passwordVisible: false,
-            onChange: (value: string) => {
+            valueChanged: (value: string) => {
               this.username = value;
               this.refreshActionStates();
-              this.log('username onChange: "' + value + '" → loginActionEnabled=' + this.loginActionEnabled);
+              this.log('username valueChanged: "' + value + '" → loginActionEnabled=' + this.loginActionEnabled);
             } });
           Blank().height(8)
           UnderlineInput({ placeholder: '密码', textValue: this.password,
             inputType: InputType.Password, isPassword: true, passwordVisible: false,
-            onChange: (value: string) => {
+            valueChanged: (value: string) => {
               this.password = value;
               this.refreshActionStates();
-              this.log('password onChange: "' + value + '" → loginActionEnabled=' + this.loginActionEnabled);
+              this.log('password valueChanged: "' + value + '" → loginActionEnabled=' + this.loginActionEnabled);
             },
-            onPasswordToggle: () => { this.log('密码可见切换被点击'); } });
+            passwordToggleRequested: () => { this.log('密码可见切换被点击'); } });
 
           Blank().height(12)
           CorosButton({ textValue: '登录(@Component)', color: COROS_BUTTON_RED,
             enabledValue: this.loginActionEnabled, loading: this.isLoading,
-            onTap: () => {
+            tapRequested: () => {
               this.log('登录按钮被点击! loginActionEnabled=' + this.loginActionEnabled);
               let action: LoginAction = new LoginAction();
               action.type = LoginActionType.SubmitClicked;
@@ -239,7 +239,7 @@ struct DebugStatePage {
 
   // struct 成员 @Builder 按钮实现，用于和 @Component 对比
   @Builder
-  private StructCorosButton(textValue: string, color: string, enabledValue: boolean, loading: boolean, onTap: () => void) {
+  private StructCorosButton(textValue: string, color: string, enabledValue: boolean, loading: boolean, tapRequested: () => void) {
     Button(loading ? '处理中' : textValue, { type: ButtonType.Normal })
       .fontSize(18)
       .fontColor(enabledValue ? COROS_WHITE : '#FFFFFF66')
@@ -248,7 +248,7 @@ struct DebugStatePage {
       .enabled(!loading && enabledValue)
       .onClick(() => {
         if (enabledValue) {
-          onTap();
+          tapRequested();
         }
       })
   }
