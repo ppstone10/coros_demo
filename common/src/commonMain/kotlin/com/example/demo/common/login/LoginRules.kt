@@ -1,5 +1,15 @@
 package com.example.demo.common.login
 
+/**
+ * @warning 此文件中的公开方法需要同步添加到 [com.example.demo.common.login.LoginFacade] 中，
+ * 以便 iOS/HarmonyOS 跨语言调用。同步列表（当前已同步）：
+ * normalizePhoneInput, normalizeEmailInput, normalizeVerifyCodeInput, normalizePasswordInput,
+ * isLoginReady, validateLoginInput, isPhoneAccountValid, isEmailAccountValid,
+ * isVerifyCodeComplete, isRegisterPasswordValid, isRegisterPasswordReady,
+ * validatePhoneAccount, validateEmailAccount, validateVerifyCode, validateRegisterPassword
+ *
+ * 新增公开方法后，请同步更新 LoginFacade 和 iOS SharedLoginAdapterProtocol。
+ */
 data class LoginRuleCheck(
     val isValid: Boolean,
     val message: String? = null

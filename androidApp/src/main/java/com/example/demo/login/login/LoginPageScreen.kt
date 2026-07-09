@@ -76,16 +76,9 @@ fun LoginPageScreen(
     }
 
     LaunchedEffect(viewModel.effect) {
-        when (val effect = viewModel.effect) {
-            is LoginEffect.AuthSucceeded -> {
-                onLoginSuccess()
-                viewModel.onEffectConsumed()
-            }
-            is LoginEffect.ShowMessage -> {
-                localError = effect.message
-                viewModel.onEffectConsumed()
-            }
-            else -> viewModel.onEffectConsumed()
+        if (viewModel.effect is LoginEffect.ShowMessage) {
+            localError = (viewModel.effect as LoginEffect.ShowMessage).message
+            viewModel.onEffectConsumed()
         }
     }
 

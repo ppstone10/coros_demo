@@ -1,5 +1,10 @@
 package com.example.demo.common.login
 
+/**
+ * @warning 此文件为 iOS/HarmonyOS 暴露的跨语言门面，方法列表与 [LoginRules] 保持同步。
+ * 新增方法后，请同步更新 iOS SharedLoginAdapterProtocol 和 SharedLoginAdapter。
+ * 当前已同步的方法见 LoginRules KDoc。
+ */
 @Suppress("unused") // Exported to Swift through Shared.framework; Kotlin callers do not reference it directly.
 class LoginFacade(
     private val store: LoginStore

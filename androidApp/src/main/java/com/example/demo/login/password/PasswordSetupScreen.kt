@@ -56,12 +56,9 @@ fun PasswordSetupScreen(
     }
 
     LaunchedEffect(viewModel.effect) {
-        when (viewModel.effect) {
-            is LoginEffect.ShowMessage -> {
-                localError = (viewModel.effect as LoginEffect.ShowMessage).message
-                viewModel.onEffectConsumed()
-            }
-            else -> viewModel.onEffectConsumed()
+        if (viewModel.effect is LoginEffect.ShowMessage) {
+            localError = (viewModel.effect as LoginEffect.ShowMessage).message
+            viewModel.onEffectConsumed()
         }
     }
 

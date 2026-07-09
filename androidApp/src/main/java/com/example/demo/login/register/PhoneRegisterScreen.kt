@@ -82,12 +82,9 @@ fun PhoneRegisterScreen(
     }
 
     LaunchedEffect(viewModel.effect) {
-        when (viewModel.effect) {
-            is com.example.demo.common.login.LoginEffect.ShowMessage -> {
-                localError = viewModel.effect?.let { (it as? com.example.demo.common.login.LoginEffect.ShowMessage)?.message }
-                viewModel.onEffectConsumed()
-            }
-            else -> viewModel.onEffectConsumed()
+        if (viewModel.effect is com.example.demo.common.login.LoginEffect.ShowMessage) {
+            localError = (viewModel.effect as com.example.demo.common.login.LoginEffect.ShowMessage).message
+            viewModel.onEffectConsumed()
         }
     }
 

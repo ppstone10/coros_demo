@@ -15,7 +15,7 @@ class LoginUseCaseTest {
 
         val success = assertIs<LoginResult.Success>(result)
         assertEquals("new.user@example.com", success.session.account)
-        assertEquals(success.session, repository.currentSession())
+        assertEquals(null, repository.currentSession())
     }
 
     @Test
@@ -95,6 +95,8 @@ class LoginUseCaseTest {
         val dataSource = InMemoryAuthStoreDataSource()
         val repository = repository(dataSource)
         register(repository, account = "profile@example.com")
+
+        LoginUseCase(repository).execute("profile@example.com", "password1")
 
         val saveResult = repository.saveProfile(
             UserProfile(
@@ -234,6 +236,8 @@ class LoginUseCaseTest {
         val repository = repository(dataSource)
         register(repository, account = "delete-me@example.com")
 
+        LoginUseCase(repository).execute("delete-me@example.com", "password1")
+
         val deleteResult = repository.deleteCurrentAccount()
 
         assertIs<MockResult.Success<Unit>>(deleteResult)
@@ -278,11 +282,13 @@ class LoginUseCaseTest {
     }
 
     @Test
-    fun localSessionCanBeRestored() {
+    fun localSessionCanBeRestoredAfterLogin() {
         val dataSource = InMemoryAuthStoreDataSource()
         val firstRepository = repository(dataSource)
-        val registerResult = register(firstRepository, account = "restore@example.com")
-        val session = assertIs<LoginResult.Success>(registerResult).session
+        register(firstRepository, account = "restore@example.com")
+
+        val loginResult = LoginUseCase(firstRepository).execute("restore@example.com", "password1")
+        val session = assertIs<LoginResult.Success>(loginResult).session
 
         val restoredRepository = repository(dataSource)
 

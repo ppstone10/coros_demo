@@ -299,7 +299,7 @@ class LocalMockAuthRepository(
         )
         val nextStore = store.copy(
             accounts = store.accounts + accountModel,
-            currentSession = session.toMockSession(),
+            currentSession = null,
             verifyCodes = store.verifyCodes.filterNot { it.account == account }
         )
 

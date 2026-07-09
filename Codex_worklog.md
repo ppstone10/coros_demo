@@ -884,3 +884,37 @@
 3. **账号注销 toast 差异化确认**：当前"退出登录"和"注销账户"通过不同的 KMM effect（`LoggedOut` vs `AccountDeleted`）产生不同 toast。需人工确认 UI/UX 是否接受两者均为 `ResetTo(Entrance)` 且 toast 不同。
 
 4. **旧版 `Codex_worklog.md` 中 07-02 条目的人工修正点 2**（iOS PasswordSetup 返回未对齐）**和 3**（HarmonyOS register success 跳转后 LoginFormPage fromRegistration 参数）**在此轮改造中已修复**（PasswordSetup 返回统一 replaceTop；注册成功走 resetKeepingEntranceAndPush 不再传递 fromRegistration 参数），如有需要可删除或更新旧条目标记。
+
+2026-07-09 Android 端 Effect 消费竞态修复与注册 session 持久化重构
+
+## 采纳内容
+
+1. 采纳 `AuthRepository.register()` 不持久化 session 的方案：将 `currentSession = session.toMockSession()` 改为 `currentSession = null`，注册只存账号不存 session，消除"先写盘再擦除"的冗余。登录的 `login()` 通过 `saveSession()` 正常持久化 session，不受影响。
+
+2. 采纳 Android 端统一 Effect 消费者架构：移除 `LoginPageScreen`、`PasswordSetupScreen`、`PhoneRegisterScreen`、`EmailRegisterScreen` 中 `LaunchedEffect(viewModel.effect)` 的 `else -> onEffectConsumed()` 分支，改为 `if (effect is ShowMessage) { ... }`。非 `ShowMessage` 的 Effect 透传到 `AuthNavGraph` 统一消费，消除竞态。
+
+3. 采纳 `AuthNavGraph` 中 `clearSessionSilently()` 移入注册分支内同步执行：不再使用 `coroutineScope.launch` 延迟执行，不再放在 `onEffectConsumed()` 之后的公共区域（避免清除登录流程的 session）。
+
+4. 修正 `LoginUseCaseTest` 中 3 个测试：`registerSuccessSavesSession`、`saveProfileMarksSessionCompleteAndPersistsForNextLogin`、`deleteCurrentAccountRemovesAccountAndSession`、`localSessionCanBeRestored` 改为注册后显式登录再操作，适配 `register()` 不持久化 session 的新行为。
+
+5. 确认三端锁竖屏配置：Android 添加 `android:screenOrientation="portrait"`，iOS 修改 `UISupportedInterfaceOrientations_iPhone` 为仅 `UIInterfaceOrientationPortrait`，HarmonyOS 添加 `"orientation": "portrait"`。
+
+6. 为 `LoginRules` 和 `LoginFacade` 新增同步警告 KDoc，提醒新增方法时同步更新另一端。
+
+## 人工审查点
+
+1. 需人工确认 `register()` 改动的影响范围：注册不再持久化 session 后，如果其他功能直接依赖 `repository.currentSession()` 来判断"刚注册的用户是否已登录"，需要改用 `LoginResult.Success(session)` 返回的 session 对象。当前测试已覆盖此变化。
+
+2. 需人工确认各 Screen 的错误显示是否正常：移除 `else -> onEffectConsumed()` 后，各 Screen 改为仅依赖 `state.errorMessage` 显示 Store 返回的错误。需人工走查所有 Screen 确认 `ErrorText(localError ?: state.errorMessage)` 在提交失败时正确渲染。
+
+3. 需人工确认 `showSnackbar()` 的挂起阻塞特性：当前保留 `showSnackbar()` 作为挂起函数阻塞 LaunchedEffect，快速连续操作时 Snackbar 动画可能导致 Effect 处理延迟。如需改善可改为非挂起的 overlay 方式。
+
+## 验证结果
+
+1. Gradle 单元测试验证通过：执行 `./gradlew :common:allTests`，29 个测试全部通过。
+
+2. 静态分析通过：确认无残留 `else -> onEffectConsumed()`（`grep "else ->.*onEffectConsumed" **/*Screen.kt` 结果为空），确认 `AuthRepository.register()` 不再持久化 session，确认 `AuthNavGraph.clearSessionSilently()` 在注册分支内同步执行、不在登录分支内执行。
+
+## 人工修正点
+
+1. 暂无明确人工修正点。
