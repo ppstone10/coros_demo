@@ -23,6 +23,8 @@ import {
   UnderlineInput
 } from '../login/components/AuthComponents';
 import { AuthRoutes, PasswordSetupParams } from '../login/AuthRoutes';
+import { navigate, NavOperation } from '../login/AuthNavigator';
+import { handleAuthEffect } from '../login/AuthEffectHandler';
 
 @Entry
 @Component
@@ -46,7 +48,8 @@ struct PasswordSetupPage {
   }
 
   onBackPress(): boolean {
-    router.back();
+    const target = this.targetKind === VerifyTargetKind.Email ? AuthRoutes.EMAIL_REGISTER : AuthRoutes.PHONE_REGISTER
+    navigate(NavOperation.ReplaceTop, target);
     return true;
   }
 
@@ -54,7 +57,10 @@ struct PasswordSetupPage {
     Scroll() {
       Column() {
         AuthHeader({ showBack: true, showFeedback: false,
-          backRequested: () => { router.back(); } });
+          backRequested: () => {
+            const target = this.targetKind === VerifyTargetKind.Email ? AuthRoutes.EMAIL_REGISTER : AuthRoutes.PHONE_REGISTER
+            navigate(NavOperation.ReplaceTop, target);
+          } });
         AuthTitle('设置登录密码');
 
         Blank().height(60)
@@ -145,8 +151,7 @@ struct PasswordSetupPage {
     this.setupPassword = '';
     this.confirmPassword = '';
     this.syncState();
-    router.replaceUrl({ url: AuthRoutes.LOGIN, params: { fromRegistration: true } });
-    this.showMessage('注册成功');
+    handleAuthEffect(effect);
   }
 
   private syncState(): void {

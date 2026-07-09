@@ -16,6 +16,7 @@ import {
 } from '../login/components/AuthColors';
 import {
   TermsPromptAction,
+  VerifyTargetKind,
   AuthTitle,
   ErrorText,
   CorosButton,
@@ -24,6 +25,7 @@ import {
   PhoneInputComp
 } from '../login/components/AuthComponents';
 import { AuthRoutes } from '../login/AuthRoutes';
+import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
 
 @Entry
 @Component
@@ -46,7 +48,7 @@ struct PhoneRegisterPage {
   }
 
   onBackPress(): boolean {
-    router.back();
+    navigate(NavOperation.Pop, '');
     return true;
   }
 
@@ -55,7 +57,7 @@ struct PhoneRegisterPage {
       Scroll() {
         Column() {
           AuthHeader({ showBack: true, showFeedback: true,
-            backRequested: () => { router.back(); },
+            backRequested: () => { navigate(NavOperation.Pop, ''); },
             feedbackRequested: () => { this.showUnavailableFeature(); } });
           AuthTitle('手机号注册');
 
@@ -90,7 +92,7 @@ struct PhoneRegisterPage {
                 type: LoginActionType.UsernameChanged, mode: AuthMode.Register, username: '', password: '',
                 verifyCode: '', displayName: '', region: 'CN'
               });
-              router.replaceUrl({ url: AuthRoutes.EMAIL_REGISTER });
+              navigate(NavOperation.ReplaceTop, AuthRoutes.EMAIL_REGISTER);
             })
 
           Blank().layoutWeight(1)
@@ -153,7 +155,7 @@ struct PhoneRegisterPage {
   }
 
   private openLegal(url: string): void {
-    router.pushUrl({ url: url, params: { returnPage: AuthRoutes.PHONE_REGISTER } });
+    navigate(NavOperation.Push, url);
   }
 
   private showUnavailableFeature(): void {
@@ -194,10 +196,7 @@ struct PhoneRegisterPage {
       this.localError = message;
       return;
     }
-    router.pushUrl({
-      url: AuthRoutes.VERIFY_CODE,
-      params: { account: this.username, targetKind: 0 }
-    });
+    navigateWithParams(NavOperation.Push, AuthRoutes.toVerifyCode(this.username, VerifyTargetKind.Phone));
   }
 
   private currentError(): string {

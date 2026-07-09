@@ -2,7 +2,7 @@ import SwiftUI
 
 struct EntranceView: View {
     @ObservedObject var viewModel: LoginViewModel
-    @Binding var path: NavigationPath
+    let router: AuthRouter
 
     var body: some View {
         ZStack {
@@ -14,11 +14,11 @@ struct EntranceView: View {
             VStack(spacing: 20) {
                 CorosFilledButton(text: "注册", color: corosRed, action: {
                     viewModel.requestRegisterMode()
-                    path.append(AuthRoute.phoneRegister)
+                    router.push(.phoneRegister)
                 })
                 CorosFilledButton(text: "登录", color: Color.white.opacity(0.26), action: {
                     viewModel.requestLoginMode()
-                    path.append(AuthRoute.login)
+                    router.push(.login)
                 })
             }
             .padding(.horizontal, 20).padding(.bottom, 60)

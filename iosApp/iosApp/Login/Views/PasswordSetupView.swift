@@ -3,7 +3,7 @@ import SwiftUI
 struct PasswordSetupView: View {
     let targetKind: VerifyTargetKind
     @ObservedObject var viewModel: LoginViewModel
-    @Binding var path: NavigationPath
+    let router: AuthRouter
 
     @State private var password = ""
     @State private var confirmPassword = ""
@@ -67,7 +67,6 @@ struct PasswordSetupView: View {
 
     private func backToRegisterPage() {
         viewModel.updateVerifyCode("")
-        path = NavigationPath()
-        path.append(targetKind == .email ? AuthRoute.emailRegister : AuthRoute.phoneRegister)
+        router.replaceTop(targetKind == .email ? .emailRegister : .phoneRegister)
     }
 }

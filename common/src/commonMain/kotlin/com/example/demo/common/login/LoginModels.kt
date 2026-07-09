@@ -120,6 +120,11 @@ enum class AuthMode {
     Register
 }
 
+enum class VerifyTarget {
+    Phone,
+    Email
+}
+
 data class UserDto(
     val id: String,
     val account: String,
@@ -173,6 +178,7 @@ sealed interface LoginEffect {
     data class AuthSucceeded(val session: AuthSession, val mode: AuthMode) : LoginEffect
     data class ProfileSaved(val session: AuthSession) : LoginEffect
     data object LoggedOut : LoginEffect
+    data object AccountDeleted : LoginEffect
     data object SessionExpired : LoginEffect
     data class ShowMessage(val message: String) : LoginEffect
 }

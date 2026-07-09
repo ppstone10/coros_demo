@@ -3,7 +3,7 @@ import Shared
 
 struct LoginPageView: View {
     @ObservedObject var viewModel: LoginViewModel
-    @Binding var path: NavigationPath
+    let router: AuthRouter
 
     @State private var acceptedTerms = false
     @State private var localError: String?
@@ -11,7 +11,7 @@ struct LoginPageView: View {
     @State private var showUnavailable = false
 
     var body: some View {
-        AuthBlackPage(onBack: { path.removeLast() }, showFeedback: true, onUnavailableClick: { showUnavailable = true }) {
+        AuthBlackPage(onBack: { router.pop() }, showFeedback: true, onUnavailableClick: { showUnavailable = true }) {
             AuthTitle("账号登录")
             Spacer().frame(height: 45)
             UnderlineInput(
@@ -30,8 +30,8 @@ struct LoginPageView: View {
             AgreementRow(
                 accepted: acceptedTerms,
                 onToggle: { acceptedTerms.toggle(); localError = nil },
-                onPrivacyClick: { path.append(AuthRoute.privacyPolicy) },
-                onServiceTermsClick: { path.append(AuthRoute.serviceTerms) }
+                onPrivacyClick: { router.push(.privacyPolicy) },
+                onServiceTermsClick: { router.push(.serviceTerms) }
             )
             Spacer().frame(height: 12)
             CorosFilledButton(
@@ -42,7 +42,7 @@ struct LoginPageView: View {
                 action: { submitLogin() }
             )
             ErrorText(localError ?? viewModel.state.errorMessage)
-            Button(action: { path.append(AuthRoute.forgotPassword) }) {
+            Button(action: { router.push(.forgotPassword) }) {
                 Text("忘记密码?").foregroundStyle(corosMuted).font(.system(size: 14)).padding(.top, 16)
             }.buttonStyle(.plain)
             Spacer(minLength: 40)
@@ -54,8 +54,8 @@ struct LoginPageView: View {
             if termsPromptAction != nil {
                 TermsConsentSheet(
                     onDismiss: { termsPromptAction = nil },
-                    onPrivacyClick: { path.append(AuthRoute.privacyPolicy) },
-                    onServiceTermsClick: { path.append(AuthRoute.serviceTerms) },
+                    onPrivacyClick: { router.push(.privacyPolicy) },
+                    onServiceTermsClick: { router.push(.serviceTerms) },
                     onAgree: {
                         acceptedTerms = true
                         termsPromptAction = nil

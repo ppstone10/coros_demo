@@ -1,4 +1,5 @@
-import { VerifyTargetKind } from '../login/components/AuthComponents';
+import router from '@ohos.router';
+import { VerifyTargetKind } from './components/AuthComponents';
 
 export class AuthRoutes {
   static readonly ENTRANCE: string = 'pages/EntrancePage';
@@ -14,15 +15,27 @@ export class AuthRoutes {
   static readonly PRIVACY_POLICY: string = 'pages/PrivacyPolicyPage';
   static readonly SERVICE_TERMS: string = 'pages/ServiceTermsPage';
   static readonly DEBUG: string = 'pages/DebugStatePage';
+
+  static toVerifyCode(account: string, targetKind: VerifyTargetKind): router.RouterOptions {
+    return { url: AuthRoutes.VERIFY_CODE, params: { account, targetKind } };
+  }
+
+  static toPasswordSetup(targetKind: VerifyTargetKind): router.RouterOptions {
+    return { url: AuthRoutes.PASSWORD_SETUP, params: { targetKind } };
+  }
+
+  static toResetPassword(account: string): router.RouterOptions {
+    return { url: AuthRoutes.RESET_PASSWORD, params: { account } };
+  }
 }
 
 export interface VerifyCodeParams {
   account: string;
-  targetKind: number;
+  targetKind: VerifyTargetKind;
 }
 
 export interface PasswordSetupParams {
-  targetKind: number;
+  targetKind: VerifyTargetKind;
 }
 
 export interface ResetPasswordParams {

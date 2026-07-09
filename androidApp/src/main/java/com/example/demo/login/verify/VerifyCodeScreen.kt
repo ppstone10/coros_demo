@@ -34,7 +34,7 @@ import com.example.demo.login.components.BlockingLoadingOverlay
 import com.example.demo.login.components.CodeBoxes
 import com.example.demo.login.components.ErrorText
 import com.example.demo.login.components.UnavailableFeatureDialog
-import com.example.demo.login.components.VerifyTargetKind
+import com.example.demo.common.login.VerifyTarget
 import com.example.demo.login.components.verifyCodeMessage
 import com.example.demo.ui.theme.DemoTheme
 import androidx.compose.material3.Text
@@ -45,7 +45,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @Composable
 fun VerifyCodeScreen(
     account: String,
-    targetKind: VerifyTargetKind,
+    targetKind: VerifyTarget,
     viewModel: LoginViewModel,
     onBack: () -> Unit,
     onCodeVerified: () -> Unit
@@ -164,7 +164,7 @@ private fun VerifyCodeScreenPreview() {
     DemoTheme {
         VerifyCodeScreen(
             account = "13107012029",
-            targetKind = VerifyTargetKind.Phone,
+            targetKind = VerifyTarget.Phone,
             viewModel = LoginViewModel(),
             onBack = {},
             onCodeVerified = {}

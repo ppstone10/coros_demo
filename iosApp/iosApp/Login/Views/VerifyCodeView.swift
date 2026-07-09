@@ -4,7 +4,7 @@ struct VerifyCodeView: View {
     let account: String
     let targetKind: VerifyTargetKind
     @ObservedObject var viewModel: LoginViewModel
-    @Binding var path: NavigationPath
+    let router: AuthRouter
 
     @State private var code = ""
     @State private var countdown = 60
@@ -14,7 +14,7 @@ struct VerifyCodeView: View {
 
     var body: some View {
         ZStack {
-            AuthBlackPage(onBack: { path.removeLast() }, showFeedback: false) {
+            AuthBlackPage(onBack: { router.pop() }, showFeedback: false) {
                 AuthTitle("输入验证码")
                 Spacer().frame(height: 14)
                 Text(verifyCodeMessage)
@@ -63,7 +63,7 @@ struct VerifyCodeView: View {
         let message = viewModel.verifyCodeMessage(account: account, code: code)
         if message == nil || message?.isEmpty == true {
             viewModel.updateVerifyCode(code)
-            path.append(AuthRoute.passwordSetup(targetKind: targetKind))
+            router.push(.passwordSetup(targetKind: targetKind))
         } else {
             localError = message
         }

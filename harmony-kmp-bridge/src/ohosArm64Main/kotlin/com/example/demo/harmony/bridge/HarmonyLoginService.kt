@@ -6,6 +6,8 @@ import com.example.demo.common.login.LoginFacade
 import com.example.demo.common.login.LoginStore
 import com.example.demo.common.login.MockAuthStore
 import com.tencent.tmm.knoi.annotation.ServiceProvider
+import kotlinx.cinterop.ExperimentalForeignApi
+import platform.posix.time
 
 @ServiceProvider
 open class HarmonyLoginService {
@@ -201,10 +203,11 @@ open class HarmonyLoginService {
         return facade.deleteCurrentAccount().orEmpty()
     }
 
+    @OptIn(ExperimentalForeignApi::class)
     private fun createFacade(dataSource: MemoryAuthStoreDataSource): LoginFacade {
         return LoginFacade(LoginStore.create(LocalMockAuthRepository(
             dataSource,
-            nowEpochMs = { System.currentTimeMillis() }
+            nowEpochMs = { time(null) * 1000L }
         )))
     }
 }

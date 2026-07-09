@@ -14,6 +14,7 @@ import {
   DisabledUnderlineValue
 } from '../login/components/AuthComponents';
 import { AuthRoutes, ResetPasswordParams } from '../login/AuthRoutes';
+import { navigate, NavOperation } from '../login/AuthNavigator';
 
 @Entry
 @Component
@@ -34,7 +35,7 @@ struct ResetPasswordPage {
   }
 
   onBackPress(): boolean {
-    router.back();
+    navigate(NavOperation.Pop, '');
     return true;
   }
 
@@ -42,7 +43,7 @@ struct ResetPasswordPage {
     Scroll() {
       Column() {
         AuthHeader({ showBack: true, showFeedback: false,
-          backRequested: () => { router.back(); } });
+          backRequested: () => { navigate(NavOperation.Pop, ''); } });
         AuthTitle('设置新密码');
 
         Blank().height(42)
@@ -111,7 +112,7 @@ struct ResetPasswordPage {
       return;
     }
     this.localError = '';
-    router.back({ url: AuthRoutes.LOGIN });
+    navigate(NavOperation.ResetKeepingEntranceAndPush, AuthRoutes.LOGIN);
     this.showMessage('密码已更新');
   }
 

@@ -1,5 +1,4 @@
 import promptAction from '@ohos.promptAction';
-import router from '@ohos.router';
 import {
   LoginActionType,
   LoginEffect,
@@ -17,7 +16,7 @@ import {
   CorosButton,
   AuthHeader
 } from '../login/components/AuthComponents';
-import { AuthRoutes } from '../login/AuthRoutes';
+import { handleAuthEffect } from '../login/AuthEffectHandler';
 
 @Entry
 @Component
@@ -115,9 +114,10 @@ struct SignedInPage {
     }
     this.showDeleteDialog = false;
     this.syncState();
-    router.clear();
-    router.replaceUrl({ url: AuthRoutes.ENTRANCE });
-    this.showMessage('账户已注销');
+    let effect: LoginEffect | null = this.viewModel.consumeEffect();
+    if (effect !== null && effect.type === LoginEffectType.AccountDeleted) {
+      handleAuthEffect(effect);
+    }
   }
 
   private async logout(): Promise<void> {
@@ -127,10 +127,8 @@ struct SignedInPage {
     });
     this.syncState();
     let effect: LoginEffect | null = this.viewModel.consumeEffect();
-    router.clear();
-    router.replaceUrl({ url: AuthRoutes.ENTRANCE });
     if (effect !== null && effect.type === LoginEffectType.LoggedOut) {
-      this.showMessage('已退出登录');
+      handleAuthEffect(effect);
     }
   }
 

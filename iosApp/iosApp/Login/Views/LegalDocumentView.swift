@@ -1,15 +1,15 @@
 import SwiftUI
 
 struct PrivacyPolicyView: View {
-    @Binding var path: NavigationPath
+    let router: AuthRouter
     var body: some View {
-        LegalDocumentPage(title: "隐私政策", paragraphs: privacyPolicyParagraphs, onBack: { path.removeLast() })
+        LegalDocumentPage(title: "隐私政策", paragraphs: privacyPolicyParagraphs, onBack: { router.pop() })
     }
 }
 
 struct ServiceTermsView: View {
-    @Binding var path: NavigationPath
+    let router: AuthRouter
     var body: some View {
-        LegalDocumentPage(title: "服务条款", paragraphs: serviceTermsParagraphs, onBack: { path.removeLast() })
+        LegalDocumentPage(title: "服务条款", paragraphs: serviceTermsParagraphs, onBack: { router.pop() })
     }
 }

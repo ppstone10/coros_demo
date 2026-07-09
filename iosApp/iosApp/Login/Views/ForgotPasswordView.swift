@@ -2,13 +2,13 @@ import SwiftUI
 
 struct ForgotPasswordView: View {
     @ObservedObject var viewModel: LoginViewModel
-    @Binding var path: NavigationPath
+    let router: AuthRouter
 
     @State private var account = ""
     @State private var localError: String?
 
     var body: some View {
-        AuthBlackPage(onBack: { path.removeLast() }, showFeedback: false) {
+        AuthBlackPage(onBack: { router.pop() }, showFeedback: false) {
             AuthTitle("找回密码")
             Spacer().frame(height: 60)
             UnderlineInput(
@@ -53,7 +53,6 @@ struct ForgotPasswordView: View {
             localError = "账号不存在"
             return
         }
-        path.append(AuthRoute.resetPassword(account: normalizedAccount))
+        router.push(.resetPassword(account: normalizedAccount))
     }
 }
-

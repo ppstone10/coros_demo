@@ -109,6 +109,7 @@ class LoginStore(
                 verifyCode = "",
                 errorMessage = null
             )
+            pendingEffect = LoginEffect.AccountDeleted
         }
         return result
     }

@@ -1,5 +1,6 @@
 package com.example.demo.login.components
 
+import com.example.demo.common.login.VerifyTarget
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -102,8 +103,8 @@ fun Context.findActivity(): Activity? {
     }
 }
 
-fun verifyCodeMessage(account: String, targetKind: VerifyTargetKind): String {
-    return if (targetKind == VerifyTargetKind.Email) {
+fun verifyCodeMessage(account: String, targetKind: VerifyTarget): String {
+    return if (targetKind == VerifyTarget.Email) {
         "验证码已发送至你的邮箱 $account，有效期10分钟"
     } else {
         "验证码已发送至你的手机+86-$account，有效期10分钟"
@@ -677,5 +678,5 @@ fun LegalParagraphText(paragraph: LegalParagraph) {
     )
 }
 
-enum class VerifyTargetKind { Phone, Email }
+// Use com.example.demo.common.login.VerifyTarget instead of local enum
 enum class TermsPromptAction { Login, PhoneCode, EmailCode }

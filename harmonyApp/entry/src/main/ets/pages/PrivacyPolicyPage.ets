@@ -2,6 +2,7 @@ import router from '@ohos.router';
 import { COROS_BLACK, COROS_WHITE } from '../login/components/AuthColors';
 import { LegalParagraph, PRIVACY_POLICY_PARAGRAPHS } from '../login/components/LegalContent';
 import { LegalDocumentParams } from '../login/AuthRoutes';
+import { navigate, NavOperation } from '../login/AuthNavigator';
 
 @Entry
 @Component
@@ -17,11 +18,7 @@ struct PrivacyPolicyPage {
   }
 
   onBackPress(): boolean {
-    if (this.returnPage.length > 0) {
-      router.back();
-    } else {
-      router.back();
-    }
+    navigate(NavOperation.Pop, '');
     return true;
   }
 
@@ -35,7 +32,7 @@ struct PrivacyPolicyPage {
             .textAlign(TextAlign.Center)
             .width(48)
             .height(52)
-            .onClick(() => { router.back(); })
+            .onClick(() => { navigate(NavOperation.Pop, ''); })
           Blank()
         }
         .width('100%')

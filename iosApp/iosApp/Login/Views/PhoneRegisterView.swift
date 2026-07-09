@@ -2,7 +2,7 @@ import SwiftUI
 
 struct PhoneRegisterView: View {
     @ObservedObject var viewModel: LoginViewModel
-    @Binding var path: NavigationPath
+    let router: AuthRouter
 
     @State private var acceptedTerms = false
     @State private var localError: String?
@@ -10,7 +10,7 @@ struct PhoneRegisterView: View {
     @State private var showUnavailable = false
 
     var body: some View {
-        AuthBlackPage(onBack: { path.removeLast() }, showFeedback: true, onUnavailableClick: { showUnavailable = true }) {
+        AuthBlackPage(onBack: { router.pop() }, showFeedback: true, onUnavailableClick: { showUnavailable = true }) {
             AuthTitle("手机号注册")
             Spacer().frame(height: 60)
             PhoneInput(
@@ -21,8 +21,8 @@ struct PhoneRegisterView: View {
             AgreementRow(
                 accepted: acceptedTerms,
                 onToggle: { acceptedTerms.toggle(); localError = nil },
-                onPrivacyClick: { path.append(AuthRoute.privacyPolicy) },
-                onServiceTermsClick: { path.append(AuthRoute.serviceTerms) }
+                onPrivacyClick: { router.push(.privacyPolicy) },
+                onServiceTermsClick: { router.push(.serviceTerms) }
             )
             Spacer().frame(height: 28)
             CorosFilledButton(
@@ -35,7 +35,7 @@ struct PhoneRegisterView: View {
             ErrorText(localError ?? viewModel.state.errorMessage)
             Button(action: {
                 viewModel.updateAccount("")
-                path.append(AuthRoute.emailRegister)
+                router.replaceTop(.emailRegister)
             }) {
                 Text("邮箱注册").foregroundStyle(corosRed).font(.system(size: 18))
                     .frame(maxWidth: .infinity).padding(.top, 26)
@@ -46,8 +46,8 @@ struct PhoneRegisterView: View {
             if termsPromptAction != nil {
                 TermsConsentSheet(
                     onDismiss: { termsPromptAction = nil },
-                    onPrivacyClick: { path.append(AuthRoute.privacyPolicy) },
-                    onServiceTermsClick: { path.append(AuthRoute.serviceTerms) },
+                    onPrivacyClick: { router.push(.privacyPolicy) },
+                    onServiceTermsClick: { router.push(.serviceTerms) },
                     onAgree: {
                         acceptedTerms = true
                         termsPromptAction = nil
@@ -77,7 +77,7 @@ struct PhoneRegisterView: View {
         let message = viewModel.requestPhoneVerifyCode()
         if message == nil || message?.isEmpty == true {
             viewModel.updateDisplayName(account)
-            path.append(AuthRoute.verifyCode(account: account, targetKind: .phone))
+            router.push(.verifyCode(account: account, targetKind: .phone))
         } else {
             localError = message
         }

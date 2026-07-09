@@ -29,6 +29,7 @@
 		A10000000000000000000023 /* ResetPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* ResetPasswordView.swift */; };
 		A10000000000000000000024 /* ProfileCompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* ProfileCompletionView.swift */; };
 		A10000000000000000000025 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* LaunchScreen.storyboard */; };
+		AE27D7404F2070F1294FA366 /* SnackbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8CC165A7902D5C2562B32CC /* SnackbarView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -55,6 +56,7 @@
 		A20000000000000000000023 /* ResetPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResetPasswordView.swift; sourceTree = "<group>"; };
 		A20000000000000000000024 /* ProfileCompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileCompletionView.swift; sourceTree = "<group>"; };
 		A20000000000000000000025 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		B8CC165A7902D5C2562B32CC /* SnackbarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SnackbarView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -123,6 +125,7 @@
 				A20000000000000000000011 /* AuthColors.swift */,
 				A20000000000000000000012 /* AuthComponents.swift */,
 				A20000000000000000000013 /* LegalContent.swift */,
+				B8CC165A7902D5C2562B32CC /* SnackbarView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -257,6 +260,7 @@
 				A10000000000000000000024 /* ProfileCompletionView.swift in Sources */,
 				A10000000000000000000020 /* SignedInView.swift in Sources */,
 				A10000000000000000000021 /* LegalDocumentView.swift in Sources */,
+				AE27D7404F2070F1294FA366 /* SnackbarView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

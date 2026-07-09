@@ -21,19 +21,6 @@ const KOTLIN_SOURCE_DIRS = [
   BRIDGE_SOURCE_DIR,
   COMMON_SOURCE_DIR
 ];
-const BUILD_COMMANDS_REQUIRING_SHARED_LOGIN = [
-  'assembleApp',
-  'assembleHap',
-  'PackageApp',
-  'PackageHap',
-  'BuildJS',
-  'CompileArkTS'
-];
-
-function shouldRequireSharedLoginNative(): boolean {
-  return process.argv.some((arg: string) => BUILD_COMMANDS_REQUIRING_SHARED_LOGIN.includes(arg));
-}
-
 function findExistingLib(): string | undefined {
   return SHARED_LOGIN_NATIVE_CANDIDATES.find((candidate: string) => fs.existsSync(candidate));
 }
@@ -126,9 +113,7 @@ function buildSharedLoginNative(): void {
   process.stdout.write('[build-bridge] libkn.so built and deployed successfully\n');
 }
 
-if (shouldRequireSharedLoginNative()) {
-  buildSharedLoginNative();
-}
+buildSharedLoginNative();
 
 export default {
   system: hapTasks,

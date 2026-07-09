@@ -1,20 +1,12 @@
 import router from '@ohos.router';
-import {
-  AuthMode,
-  LoginState
-} from '../login/LoginState';
+import { AuthMode, LoginState } from '../login/LoginState';
 import { getLoginViewModel } from '../login/LoginViewModelProvider';
-import {
-  COROS_RED,
-  COROS_BLACK
-} from '../login/components/AuthColors';
-import {
-  CorosButton
-} from '../login/components/AuthComponents';
+import { COROS_RED, COROS_BLACK } from '../login/components/AuthColors';
+import { CorosButton } from '../login/components/AuthComponents';
 import { AuthRoutes } from '../login/AuthRoutes';
+import { navigate, NavOperation } from '../login/AuthNavigator';
 
-@Entry
-@Component
+@Entry @Component
 struct EntrancePage {
   private viewModel = getLoginViewModel();
   @State isLoggedIn: boolean = false;
@@ -26,7 +18,7 @@ struct EntrancePage {
       let state: LoginState = this.viewModel.state;
       let targetUrl: string = state.currentSession !== null && state.currentSession.isProfileComplete ?
         AuthRoutes.SIGNED_IN : AuthRoutes.PROFILE_COMPLETION;
-      router.replaceUrl({ url: targetUrl });
+      navigate(NavOperation.ResetTo, targetUrl);
     }
   }
 
@@ -58,15 +50,11 @@ struct EntrancePage {
         Column({ space: 20 }) {
           CorosButton({ textValue: '注册', color: COROS_RED, enabledValue: true, loading: false,
             tapRequested: () => {
-              this.viewModel.dispatch({
-                type: 0, mode: AuthMode.Register, username: '', password: '',
-                verifyCode: '', displayName: '', region: 'CN'
-              });
-              this.viewModel.state;
-              router.pushUrl({ url: AuthRoutes.PHONE_REGISTER });
+              this.viewModel.dispatch({ type: 0, mode: AuthMode.Register, username: '', password: '', verifyCode: '', displayName: '', region: 'CN' });
+              navigate(NavOperation.Push, AuthRoutes.PHONE_REGISTER);
             } });
           CorosButton({ textValue: '登录', color: '#424242', enabledValue: true, loading: false,
-            tapRequested: () => { router.pushUrl({ url: AuthRoutes.LOGIN }); } });
+            tapRequested: () => { navigate(NavOperation.Push, AuthRoutes.LOGIN); } });
         }
         .width('100%')
         .padding({ left: 20, right: 20, bottom: 60 })
@@ -76,17 +64,14 @@ struct EntrancePage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#111111')
+    .backgroundColor(COROS_BLACK)
   }
 
   private syncState(): void {
     let state: LoginState = this.viewModel.state;
     this.isLoggedIn = state.isLoggedIn;
-    if (state.currentSession === null) {
-      this.sessionAccount = '';
-      return;
+    if (state.currentSession !== null) {
+      this.sessionAccount = state.currentSession.account;
     }
-    this.sessionAccount = state.currentSession.displayName.length > 0 ?
-      state.currentSession.displayName : state.currentSession.account;
   }
 }

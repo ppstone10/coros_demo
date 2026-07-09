@@ -144,16 +144,17 @@ struct PhoneInput: View {
     @Binding var text: String
     var autoFocus: Bool = false
     @FocusState private var isFocused: Bool
+    @State private var displayText: String = ""
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 24) {
                 Text("+86").foregroundStyle(.white).font(.system(size: 17))
                 ZStack(alignment: .leading) {
-                    if text.isEmpty {
+                    if displayText.isEmpty {
                         Text("输入手机号").foregroundStyle(corosMuted).font(.system(size: 17))
                     }
-                    TextField("", text: $text)
+                    TextField("", text: $displayText)
                         .keyboardType(.phonePad)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -161,13 +162,21 @@ struct PhoneInput: View {
                         .foregroundStyle(.white)
                         .font(.system(size: 17))
                         .tint(corosRed)
+                        .onChange(of: displayText) { _, newValue in
+                            let filtered = String(newValue.filter { $0.isNumber }.prefix(11))
+                            if filtered != newValue {
+                                displayText = filtered
+                            }
+                            text = filtered
+                        }
                 }
-                ClearInputButton(visible: !text.isEmpty, onClick: { text = "" })
+                ClearInputButton(visible: !displayText.isEmpty, onClick: { displayText = ""; text = "" })
             }
             .frame(height: 48)
             Rectangle().fill(corosLine).frame(height: 1)
         }
         .onAppear {
+            displayText = text
             if autoFocus {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { isFocused = true }
             }

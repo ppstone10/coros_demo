@@ -3,14 +3,14 @@ import SwiftUI
 struct ResetPasswordView: View {
     let account: String
     @ObservedObject var viewModel: LoginViewModel
-    @Binding var path: NavigationPath
+    let router: AuthRouter
 
     @State private var newPassword = ""
     @State private var confirmPassword = ""
     @State private var localError: String?
 
     var body: some View {
-        AuthBlackPage(onBack: { path.removeLast() }, showFeedback: false) {
+        AuthBlackPage(onBack: { router.pop() }, showFeedback: false) {
             AuthTitle("设置新密码")
             Spacer().frame(height: 42)
             Text("账号")
@@ -62,9 +62,7 @@ struct ResetPasswordView: View {
             localError = message
             return
         }
-        path = NavigationPath()
-        path.append(AuthRoute.login)
+        router.resetKeepingEntranceAndPush(.login)
         viewModel.toastMessage = "密码已更新"
     }
 }
-

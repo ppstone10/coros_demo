@@ -1,6 +1,5 @@
 package com.example.demo.navigation
 
-import android.net.Uri
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -16,15 +15,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.navigation.NavType
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import com.example.demo.common.login.AuthMode
 import com.example.demo.common.login.LoginEffect
+import com.example.demo.common.login.VerifyTarget
 import com.example.demo.login.components.rememberLoginViewModel
-import com.example.demo.login.components.VerifyTargetKind
 import com.example.demo.login.components.findActivity
 import com.example.demo.login.entrance.EntranceScreen
 import com.example.demo.login.legal.PrivacyPolicyScreen
@@ -40,23 +39,28 @@ import com.example.demo.login.signedin.SignedInScreen
 import com.example.demo.login.verify.VerifyCodeScreen
 import kotlinx.coroutines.launch
 
-object AuthRoutes {
-    const val ENTRANCE = "entrance"
-    const val LOGIN = "login"
-    const val PHONE_REGISTER = "phone_register"
-    const val EMAIL_REGISTER = "email_register"
-    const val VERIFY_CODE = "verify_code/{account}/{targetKind}"
-    const val PASSWORD_SETUP = "password_setup/{targetKind}"
-    const val FORGOT_PASSWORD = "forgot_password"
-    const val RESET_PASSWORD = "reset_password/{account}"
-    const val PRIVACY_POLICY = "privacy_policy"
-    const val SERVICE_TERMS = "service_terms"
-    const val PROFILE_COMPLETION = "profile_completion"
-    const val SIGNED_IN = "signed_in"
+private enum class NavOperation {
+    Push, Pop, ReplaceTop, ResetTo, ResetKeepingEntranceAndPush
+}
 
-    fun verifyCode(account: String, targetKind: String) = "verify_code/$account/$targetKind"
-    fun passwordSetup(targetKind: String) = "password_setup/$targetKind"
-    fun resetPassword(account: String) = "reset_password/${Uri.encode(account)}"
+private fun NavController.navigateWithOperation(
+    route: Any,
+    operation: NavOperation
+) {
+    when (operation) {
+        NavOperation.Push -> navigate(route)
+        NavOperation.Pop -> popBackStack()
+        NavOperation.ReplaceTop -> {
+            popBackStack()
+            navigate(route)
+        }
+        NavOperation.ResetTo -> navigate(route) {
+            popUpTo(0) { inclusive = true }
+        }
+        NavOperation.ResetKeepingEntranceAndPush -> navigate(route) {
+            popUpTo<EntranceRoute> { inclusive = false }
+        }
+    }
 }
 
 @Composable
@@ -68,10 +72,10 @@ fun AuthNavGraph() {
     val view = LocalView.current
 
     val currentSession = viewModel.state.currentSession
-    val startDestination = when {
-        viewModel.state.isLoggedIn && currentSession?.isProfileComplete == true -> AuthRoutes.SIGNED_IN
-        viewModel.state.isLoggedIn && currentSession != null -> AuthRoutes.PROFILE_COMPLETION
-        else -> AuthRoutes.ENTRANCE
+    val startDestination: Any = when {
+        viewModel.state.isLoggedIn && currentSession?.isProfileComplete == true -> SignedInRoute
+        viewModel.state.isLoggedIn && currentSession != null -> ProfileCompletionRoute
+        else -> EntranceRoute
     }
 
     SideEffect {
@@ -87,48 +91,41 @@ fun AuthNavGraph() {
             is LoginEffect.AuthSucceeded -> {
                 if (effect.mode == AuthMode.Register) {
                     viewModel.clearSessionSilently()
-                    navController.navigate(AuthRoutes.LOGIN) {
-                        popUpTo(AuthRoutes.ENTRANCE) { inclusive = false }
-                    }
+                    navController.navigateWithOperation(LoginRoute, NavOperation.ResetKeepingEntranceAndPush)
                     snackbarHostState.showSnackbar("注册成功")
                 } else {
                     val destination = if (effect.session.isProfileComplete) {
-                        AuthRoutes.SIGNED_IN
+                        SignedInRoute
                     } else {
-                        AuthRoutes.PROFILE_COMPLETION
+                        ProfileCompletionRoute
                     }
-                    navController.navigate(destination) {
-                        popUpTo(AuthRoutes.ENTRANCE) { inclusive = destination == AuthRoutes.SIGNED_IN }
-                    }
+                    navController.navigateWithOperation(destination, NavOperation.ResetTo)
                     snackbarHostState.showSnackbar("登录成功")
                 }
                 viewModel.onEffectConsumed()
             }
             is LoginEffect.NavigateHome -> {
-                navController.navigate(AuthRoutes.SIGNED_IN) {
-                    popUpTo(AuthRoutes.ENTRANCE) { inclusive = true }
-                }
+                navController.navigateWithOperation(SignedInRoute, NavOperation.ResetTo)
                 snackbarHostState.showSnackbar("登录成功")
                 viewModel.onEffectConsumed()
             }
             is LoginEffect.ProfileSaved -> {
-                navController.navigate(AuthRoutes.SIGNED_IN) {
-                    popUpTo(AuthRoutes.ENTRANCE) { inclusive = true }
-                }
+                navController.navigateWithOperation(SignedInRoute, NavOperation.ResetTo)
                 snackbarHostState.showSnackbar("资料已保存")
                 viewModel.onEffectConsumed()
             }
             LoginEffect.LoggedOut -> {
-                navController.navigate(AuthRoutes.ENTRANCE) {
-                    popUpTo(0) { inclusive = true }
-                }
+                navController.navigateWithOperation(EntranceRoute, NavOperation.ResetTo)
                 snackbarHostState.showSnackbar("已退出登录")
                 viewModel.onEffectConsumed()
             }
+            LoginEffect.AccountDeleted -> {
+                navController.navigateWithOperation(EntranceRoute, NavOperation.ResetTo)
+                snackbarHostState.showSnackbar("账户已注销")
+                viewModel.onEffectConsumed()
+            }
             LoginEffect.SessionExpired -> {
-                navController.navigate(AuthRoutes.LOGIN) {
-                    popUpTo(AuthRoutes.ENTRANCE) { inclusive = false }
-                }
+                navController.navigateWithOperation(LoginRoute, NavOperation.ResetKeepingEntranceAndPush)
                 snackbarHostState.showSnackbar("会话已失效，请重新登录")
                 viewModel.onEffectConsumed()
             }
@@ -151,156 +148,132 @@ fun AuthNavGraph() {
             startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(AuthRoutes.ENTRANCE) {
+            composable<EntranceRoute> {
                 EntranceScreen(
                     viewModel = viewModel,
                     onRegisterClick = {
                         viewModel.onModeChanged(AuthMode.Register)
-                        navController.navigate(AuthRoutes.PHONE_REGISTER)
+                        navController.navigateWithOperation(PhoneRegisterRoute, NavOperation.Push)
                     },
                     onLoginClick = {
                         viewModel.onModeChanged(AuthMode.Login)
-                        navController.navigate(AuthRoutes.LOGIN)
+                        navController.navigateWithOperation(LoginRoute, NavOperation.Push)
                     }
                 )
             }
 
-            composable(AuthRoutes.LOGIN) {
+            composable<LoginRoute> {
                 LoginPageScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() },
+                    onBack = { navController.navigateWithOperation(Unit, NavOperation.Pop) },
                     onLoginSuccess = {},
-                    onForgotPasswordClick = { navController.navigate(AuthRoutes.FORGOT_PASSWORD) },
-                    onPrivacyClick = { navController.navigate(AuthRoutes.PRIVACY_POLICY) },
-                    onServiceTermsClick = { navController.navigate(AuthRoutes.SERVICE_TERMS) }
+                    onForgotPasswordClick = {
+                        navController.navigateWithOperation(ForgotPasswordRoute, NavOperation.Push)
+                    },
+                    onPrivacyClick = { navController.navigateWithOperation(PrivacyPolicyRoute, NavOperation.Push) },
+                    onServiceTermsClick = { navController.navigateWithOperation(ServiceTermsRoute, NavOperation.Push) }
                 )
             }
 
-            composable(AuthRoutes.PHONE_REGISTER) {
+            composable<PhoneRegisterRoute> {
                 PhoneRegisterScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() },
+                    onBack = { navController.navigateWithOperation(Unit, NavOperation.Pop) },
                     onSendCode = { account ->
                         viewModel.onUsernameChanged(account)
                         viewModel.onDisplayNameChanged(account)
-                        navController.navigate(AuthRoutes.verifyCode(account, "phone"))
+                        navController.navigateWithOperation(
+                            VerifyCodeRoute(account = account, targetKind = VerifyTarget.Phone),
+                            NavOperation.Push
+                        )
                     },
                     onEmailRegister = {
                         viewModel.onUsernameChanged("")
-                        navController.navigate(AuthRoutes.EMAIL_REGISTER)
+                        navController.navigateWithOperation(EmailRegisterRoute, NavOperation.ReplaceTop)
                     },
-                    onPrivacyClick = { navController.navigate(AuthRoutes.PRIVACY_POLICY) },
-                    onServiceTermsClick = { navController.navigate(AuthRoutes.SERVICE_TERMS) }
+                    onPrivacyClick = { navController.navigateWithOperation(PrivacyPolicyRoute, NavOperation.Push) },
+                    onServiceTermsClick = { navController.navigateWithOperation(ServiceTermsRoute, NavOperation.Push) }
                 )
             }
 
-            composable(AuthRoutes.EMAIL_REGISTER) {
+            composable<EmailRegisterRoute> {
                 EmailRegisterScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() },
+                    onBack = { navController.navigateWithOperation(Unit, NavOperation.Pop) },
                     onSendCode = { email ->
                         viewModel.onUsernameChanged(email)
                         viewModel.onDisplayNameChanged(email)
-                        navController.navigate(AuthRoutes.verifyCode(email, "email"))
+                        navController.navigateWithOperation(
+                            VerifyCodeRoute(account = email, targetKind = VerifyTarget.Email),
+                            NavOperation.Push
+                        )
                     },
                     onPhoneRegister = {
                         viewModel.onUsernameChanged("")
-                        navController.navigate(AuthRoutes.PHONE_REGISTER) {
-                            popUpTo(AuthRoutes.ENTRANCE) { inclusive = false }
-                        }
+                        navController.navigateWithOperation(PhoneRegisterRoute, NavOperation.ReplaceTop)
                     },
-                    onPrivacyClick = { navController.navigate(AuthRoutes.PRIVACY_POLICY) },
-                    onServiceTermsClick = { navController.navigate(AuthRoutes.SERVICE_TERMS) }
+                    onPrivacyClick = { navController.navigateWithOperation(PrivacyPolicyRoute, NavOperation.Push) },
+                    onServiceTermsClick = { navController.navigateWithOperation(ServiceTermsRoute, NavOperation.Push) }
                 )
             }
 
-            composable(
-                route = AuthRoutes.VERIFY_CODE,
-                arguments = listOf(
-                    navArgument("account") { type = NavType.StringType },
-                    navArgument("targetKind") { type = NavType.StringType }
-                )
-            ) { entry ->
-                val account = entry.arguments?.getString("account") ?: ""
-                val targetKind = when (entry.arguments?.getString("targetKind")) {
-                    "email" -> VerifyTargetKind.Email
-                    else -> VerifyTargetKind.Phone
-                }
+            composable<VerifyCodeRoute> { backStackEntry ->
+                val route: VerifyCodeRoute = backStackEntry.toRoute()
                 VerifyCodeScreen(
-                    account = account,
-                    targetKind = targetKind,
+                    account = route.account,
+                    targetKind = route.targetKind,
                     viewModel = viewModel,
                     onBack = {
                         viewModel.onVerifyCodeChanged("")
-                        navController.popBackStack()
+                        navController.navigateWithOperation(Unit, NavOperation.Pop)
                     },
                     onCodeVerified = {
-                        navController.navigate(
-                            AuthRoutes.passwordSetup(
-                                if (targetKind == VerifyTargetKind.Email) "email" else "phone"
-                            )
+                        navController.navigateWithOperation(
+                            PasswordSetupRoute(targetKind = route.targetKind),
+                            NavOperation.Push
                         )
                     }
                 )
             }
 
-            composable(
-                route = AuthRoutes.PASSWORD_SETUP,
-                arguments = listOf(
-                    navArgument("targetKind") { type = NavType.StringType }
-                )
-            ) { entry ->
-                val targetKind = entry.arguments?.getString("targetKind")
+            composable<PasswordSetupRoute> { backStackEntry ->
+                val route: PasswordSetupRoute = backStackEntry.toRoute()
                 PasswordSetupScreen(
                     viewModel = viewModel,
                     onBack = {
                         viewModel.onVerifyCodeChanged("")
-                        val targetRoute = if (targetKind == "email") {
-                            AuthRoutes.EMAIL_REGISTER
+                        val targetRoute = if (route.targetKind == VerifyTarget.Email) {
+                            EmailRegisterRoute
                         } else {
-                            AuthRoutes.PHONE_REGISTER
+                            PhoneRegisterRoute
                         }
-                        val restored = navController.popBackStack(targetRoute, inclusive = false)
-                        if (!restored) {
-                            navController.navigate(targetRoute) {
-                                popUpTo(AuthRoutes.ENTRANCE) { inclusive = false }
-                            }
-                        }
+                        navController.navigateWithOperation(targetRoute, NavOperation.ReplaceTop)
                     },
-                    onRegisterSuccess = {
-                        navController.navigate(AuthRoutes.LOGIN) {
-                            popUpTo(AuthRoutes.PHONE_REGISTER) { inclusive = true }
-                        }
-                    }
+                    onRegisterSuccess = {}
                 )
             }
 
-            composable(AuthRoutes.FORGOT_PASSWORD) {
+            composable<ForgotPasswordRoute> {
                 ForgotPasswordScreen(
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() },
+                    onBack = { navController.navigateWithOperation(Unit, NavOperation.Pop) },
                     onAccountVerified = { account ->
-                        navController.navigate(AuthRoutes.resetPassword(account))
+                        navController.navigateWithOperation(
+                            ResetPasswordRoute(account = account),
+                            NavOperation.Push
+                        )
                     }
                 )
             }
 
-            composable(
-                route = AuthRoutes.RESET_PASSWORD,
-                arguments = listOf(
-                    navArgument("account") { type = NavType.StringType }
-                )
-            ) { entry ->
-                val account = Uri.decode(entry.arguments?.getString("account").orEmpty())
+            composable<ResetPasswordRoute> { backStackEntry ->
+                val route: ResetPasswordRoute = backStackEntry.toRoute()
                 ResetPasswordScreen(
-                    account = account,
+                    account = route.account,
                     viewModel = viewModel,
-                    onBack = { navController.popBackStack() },
+                    onBack = { navController.navigateWithOperation(Unit, NavOperation.Pop) },
                     onResetSuccess = {
-                        navController.navigate(AuthRoutes.LOGIN) {
-                            popUpTo(AuthRoutes.LOGIN) { inclusive = false }
-                            launchSingleTop = true
-                        }
+                        navController.navigateWithOperation(LoginRoute, NavOperation.ResetKeepingEntranceAndPush)
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar("密码已更新")
                         }
@@ -308,41 +281,31 @@ fun AuthNavGraph() {
                 )
             }
 
-            composable(AuthRoutes.PRIVACY_POLICY) {
-                PrivacyPolicyScreen(onBack = { navController.popBackStack() })
+            composable<PrivacyPolicyRoute> {
+                PrivacyPolicyScreen(onBack = { navController.navigateWithOperation(Unit, NavOperation.Pop) })
             }
 
-            composable(AuthRoutes.SERVICE_TERMS) {
-                ServiceTermsScreen(onBack = { navController.popBackStack() })
+            composable<ServiceTermsRoute> {
+                ServiceTermsScreen(onBack = { navController.navigateWithOperation(Unit, NavOperation.Pop) })
             }
 
-            composable(AuthRoutes.PROFILE_COMPLETION) {
+            composable<ProfileCompletionRoute> {
                 ProfileCompletionScreen(
                     viewModel = viewModel,
                     onBack = {
                         viewModel.clearSessionSilently()
-                        navController.navigate(AuthRoutes.ENTRANCE) {
-                            popUpTo(0) { inclusive = true }
-                        }
+                        navController.navigateWithOperation(EntranceRoute, NavOperation.ResetTo)
                     }
                 )
             }
 
-            composable(AuthRoutes.SIGNED_IN) {
+            composable<SignedInRoute> {
                 val activity = LocalView.current.context.findActivity()
                 SignedInScreen(
                     viewModel = viewModel,
                     onBack = { activity?.finish() },
-                    onLogout = {
-                        navController.navigate(AuthRoutes.ENTRANCE) {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    },
-                    onAccountDeleted = {
-                        navController.navigate(AuthRoutes.ENTRANCE) {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    }
+                    onLogout = {},
+                    onAccountDeleted = {}
                 )
             }
         }

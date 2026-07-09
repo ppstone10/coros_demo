@@ -1,9 +1,8 @@
 import SwiftUI
-import Shared
 
 struct SignedInView: View {
     @ObservedObject var viewModel: LoginViewModel
-    @Binding var path: NavigationPath
+    let router: AuthRouter
     @State private var showDeleteDialog = false
     @State private var localError: String?
 
@@ -39,8 +38,6 @@ struct SignedInView: View {
             localError = message
             return
         }
-        path = NavigationPath()
-        path.append(AuthRoute.entrance)
-        viewModel.toastMessage = "账号已注销"
+        // AccountDeleted effect is produced by the store and handled by AuthCoordinator
     }
 }

@@ -51,6 +51,7 @@ export enum LoginEffectType {
   ProfileSaved,
   NavigateHome,
   LoggedOut,
+  AccountDeleted,
   SessionExpired,
   ShowMessage
 }

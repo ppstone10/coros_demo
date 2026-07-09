@@ -741,3 +741,146 @@
 2. 后续 KNOI 升级或重构时，需重新验证 `@ServiceProvider` 实例模式和 `var facade` 引用同步行为。
 3. `facade` 字段同步的残余风险：`restoreStoreSnapshot` 后如果直接读 `stateSnapshot()` 可能拿到旧 facade 的状态，当前业务路径不依赖此行为，但后续新增逻辑时需注意。
 4. 建议定期清理 `Codex_worklog.md` 旧条目，保留最近 3~5 轮即可，避免文件过度膨胀。
+
+---
+
+2026-07-08 三端导航对齐与栈管理一致性修复
+
+## 采纳内容
+
+1. 采纳 iOS SessionExpired 处理补充：`AuthCoordinator.swift` 的 `handleNavigation` 中 SessionExpired 从 `path.append(login)` 改为 `path = NavigationPath()` + `append(login)`，避免按返回键回到过期页面。
+
+2. 采纳 HarmonyOS LoginPage.ets（SPA 单页）删除：该文件 1382 行、未被 `main_pages.json` 注册、未被任何页面导航引用，属于之前导航切换后的残留代码。EntryAbility 入口已为 `EntrancePage`，不受影响。
+
+3. 采纳 HarmonyOS Effect 处理集中化：新建 `AuthEffectHandler.ets`，将原来分散在 `LoginFormPage`、`PasswordSetupPage`、`ProfileCompletionPage`、`SignedInPage` 四个页面中的 5 处重复 effect 处理逻辑统一为 `handleAuthEffect(effect)`。补充此前缺失的 `NavigateHome` 和 `SessionExpired` 处理。导航方法分为 `navigateWithClear`（clear + replaceUrl）和 `navigateWithReplaceUrl`（仅 replaceUrl）。
+
+4. 采纳 HarmonyOS Route 定义增强：`AuthRoutes.ets` 新增 `toVerifyCode(account, targetKind)`、`toPasswordSetup(targetKind)`、`toResetPassword(account)` 三个导航辅助方法，返回 `router.RouterOptions` 类型，统一调用方式。
+
+5. 采纳 iOS 状态栏适配：`AuthCoordinator` 根视图添加 `.preferredColorScheme(.dark)`，使状态栏文字颜色与 Android 暗色一致。
+
+6. 采纳 iOS 自定义 Snackbar：新建 `Components/SnackbarView.swift`，使用 `.overlay` 替代原有的 `.alert()` 弹窗，非模态底部横幅、2.5 秒自动消失、spring 动画，体验与 Android Snackbar 一致。
+
+7. 采纳 Android 类型安全路由改造：`libs.versions.toml` 新增 `kotlin-serialization` plugin 和 `kotlinx-serialization-json` 依赖；新建 `navigation/AuthRoute.kt` 定义 12 个 `@Serializable` 路由类型；`AuthNavGraph.kt` 重写，`composable(route, arguments)` → `composable<T>()` + `backStackEntry.toRoute<T>()`，`popUpTo<Route>(inclusive = true)`，删除旧 `object AuthRoutes` 字符串常量。
+
+8. 采纳 ArkTS `no-untyped-obj-literals` 修复：`AuthEffectHandler.ets` 中删除将匿名对象 `{ fromRegistration: true }` 作为 `Record<string, Object>` 参数传递的写法，改为在 `router.RouterOptions` 类型字面量内部使用。
+
+9. 采纳注册成功跳转 Entrance 对齐：
+   - iOS：`AuthCoordinator` 注册成功分支从 `append(entrance) + append(login)` 改为仅 `append(entrance)`，栈为 `[Entrance]`，按返回退出。
+   - HarmonyOS：`AuthEffectHandler` 注册成功分支从 `back(ENTRANCE) + push(LOGIN)` 改为 `navigateWithClear(ENTRANCE)`（clear + replaceUrl），栈为 `[Entrance]`，按返回退出。
+   - Android：已有 `popUpTo(ENTRANCE){inclusive=false}` + `navigate(LoginRoute)`，栈为 `[Entrance, Login]`，按返回回 Entrance，无需改动。
+
+10. 采纳 HarmonyOS PasswordSetup 返回行为对齐：`PasswordSetupPage.ets` 的 `onBackPress()` 和 `backRequested` 从 `router.back()` 改为 `router.replaceUrl()` 到 `PHONE_REGISTER` 或 `EMAIL_REGISTER`，跳过验证码页，与 Android/iOS 行为对齐。
+
+11. 采纳 iOS PhoneInput 视觉截断：`PhoneInput` 使用 `@State displayText` 本地持有显示文本，`onChange` 中即时 `.filter{isNumber}.prefix(11)` 修正 `displayText` 再同步到外部 `text`，确保第 12 位字符不会在 UI 闪现。
+
+## 人工审查点
+
+1. 需人工确认 Android `@Serializable` 路由兼容性：`navigation-compose 2.8.0` + `kotlinx-serialization-json 1.8.1` 已通过编译，但 `popUpTo<T>()` 和 `backStackEntry.toRoute<T>()` 为 2.8.0 新增 API，如果后续升级 navigation-compose 版本需确认签名不变化。
+
+2. 需人工确认 HarmonyOS `router.back({url: ENTRANCE})` + `router.pushUrl(LOGIN)` 的时序：两步非原子操作间可能出现入口页闪现。已改用 `clear + replaceUrl` 消除此问题，但 `clear()` 会清空整个栈，用户按系统返回键直接退出而非回到 Entrance（与 Android 不完全一致）；目前这是 HarmonyOS router API 能力限制下的最优等价方案。
+
+3. 需人工确认 iOS `NavigationPath` 对 `@State displayText` 影响：`PhoneInput` 新增 `@State displayText`，ClearInputButton 的 `onClick` 改为同时清空 `displayText` 和 `text`。需确认真机/模拟器上清空行为正常，无残留值。
+
+4. 需人工确认 PasswordSetup 返回行为在三端的视觉效果一致性：Android `popBackStack<EmailRegisterRoute>` 尝试跳过验证码回注册页，失败时 navigate + popUpTo；HarmonyOS 直接用 `replaceUrl` 覆盖 PasswordSetup 页；iOS 仍是标准 `removeLast()` 回到验证码页。当前用户要求保持 HarmonyOS 对齐 Android 的行为，但 iOS 未做此对齐，需确认是否接受 iOS 端差异。
+
+5. 需人工确认 SnackbarView 在 iOS 模拟器/真机上的展示效果：auto-dismiss 2.5 秒、spring 动画、非模态，需要真机确认不与手势返回、键盘弹出等交互冲突。
+
+## 验证结果
+
+- Android 编译验证：执行 `./gradlew :androidApp:assembleDebug`，结果 `BUILD SUCCESSFUL`，`@Serializable` 路由 + `composable<T>()` + `popUpTo<T>()` 全部编译通过。
+- iOS 编译验证：执行 `xcodebuild -project iosApp/iosApp.xcodeproj -scheme IOSDemo -destination "platform=iOS Simulator,name=iPhone 17" build`，结果 `BUILD SUCCESSFUL`，SnackbarView + PhoneInput @State 改动编译通过。
+- iOS 编译验证（SnackbarView 添加）：SnackbarView.swift 已通过 Ruby gem `xcodeproj` 脚本加入 Xcode project 的 Compile Sources，命令行构建成功。
+- HarmonyOS 结构验证：因本地无 hvigor 环境，通过 Grep 确认 `LoginPage.ets` 已无引用、`handleAuthEffect` 在 4 个页面中正确导入和调用、`AuthRoutes.toXxx()` 路由辅助方法在 4 个页面中正确使用。
+- ArkTS 编译错误修复：用户实机 `hvigor` 构建曾报 `arkts-no-untyped-obj-literals`（`PasswordSetupPage.onBackPress` 中 `this.viewModel.onVerifyCodeChanged` 不存在），已修正为直接 `router.replaceUrl` 调用、移除不存在的 ViewModel 方法。
+
+## 人工修正点
+
+1. HarmonyOS PasswordSetup 返回行为：当前改为 `router.replaceUrl` 直接覆盖到注册页，但未清除验证码状态（因 HarmonyOS `LoginViewModel` 无 `onVerifyCodeChanged` 方法）。如需清空验证码需在 `dispatch` 中发 `VerifyCodeChanged` action。当前保持不处理，因不影响业务流程。
+
+2. iOS PasswordSetup 返回行为：iOS 仍为 `path.removeLast()` 回到验证码页，未对齐 Android/HarmonyOS 跳过验证码回注册页的行为。如需对齐需要手动构造 `NavigationPath` 移除验证码页层级。
+
+3. HarmonyOS register success 跳转后 LoginFormPage 仍尝试读取 `fromRegistration` 路由参数：当前 `clear + replaceUrl(ENTRANCE)` 不带参数，`router.getParams()` 返回 null，`fromRegistration` 为 false。LoginFormPage 的 `router.back()` 在空栈上无效果。行为等价但细节有差异。如需完全对齐 Android（`fromRegistration=true` + `clear+replaceUrl(ENTRANCE)`）可在 `replaceUrl` 时补全 params。
+
+4. 后续导航栈管理统一：Android 有 `popUpTo` 精细控制，iOS 和 HarmonyOS 受平台 API 限制只能做近似等效，短期内建议接受平台差异（iOS `NavigationPath` 重置，HarmonyOS `clear+replaceUrl`），待 iOS 自定义 `NavigationPath` 辅助函数或 HarmonyOS router API 升级后再对齐。
+
+2026-07-09 三端导航一致性改造
+
+## 采纳内容
+
+1. **KMM Common — VerifyTarget 枚举统一**
+   - `LoginModels.kt` 新增 `enum class VerifyTarget { Phone, Email }`
+   - Android `AuthRoute.kt`: `VerifyCodeRoute`/`PasswordSetupRoute` 的 `targetKind` 从 `String` 改为 `VerifyTarget`，移除 `else → Phone` 降级逻辑
+   - Android `AuthComponents.kt`: 移除本地 `VerifyTargetKind`，引用 KMM `VerifyTarget`
+   - HarmonyOS `AuthRoutes.ets`: `targetKind` 从 `number` 改为 `VerifyTargetKind`（值与 KMM 对齐）
+
+2. **iOS AuthCoordinator 重构（13 文件）**
+   - `AuthCoordinator.swift`: 新增 `AuthRouter` 结构体，封装 5 种导航语义操作（push/pop/replaceTop/resetTo/resetKeepingEntranceAndPush）
+   - 根视图从硬编码 `EntranceView` 改为动态 computed `startRoute`（登录→SignedIn/ProfileCompletion，未登录→Entrance），移除 `onAppear` 中 `path.append(startRoute)`
+   - 所有 View 接口从 `@Binding var path: NavigationPath` 改为 `let router: AuthRouter`
+   - `handleNavigation` 按 AuthRouter 操作分发，替代直接操作 NavigationPath
+   - `handleNavigation` 新增 `LoginEffectAccountDeleted` → `resetTo(.entrance)` + toast "账户已注销"
+
+3. **Android AuthNavGraph 统一（5 文件）**
+   - `AuthNavGraph.kt`: 新增 `NavController.navigateWithOperation()` 扩展函数，统一 5 种导航操作用 `NavOperation` 枚举分发
+   - 移除 `PasswordSetupScreen.onRegisterSuccess`、`SignedInScreen.onLogout/onAccountDeleted` 回调中的重复导航，终态事件只由 LoginEffect 驱动
+   - `PasswordSetupScreen.kt`: 移除本地 LaunchedEffect 中的 `clearSessionSilently()` + `onRegisterSuccess()`
+   - `SignedInScreen.kt`: 账号注销改为 `deleteCurrentAccountMessage()` + `onAccountDeleted()`，导航由 NavGraph 的 `AccountDeleted` effect handler 处理
+   - `AuthNavGraph.kt` 新增 `LoginEffect.AccountDeleted` → `ResetTo(Entrance)` + snackbar "账户已注销"
+
+4. **HarmonyOS 导航架构重构（17 文件）**
+   - `AuthNavigator.ets`（新增）：中央导航器，封装 5 种 `NavOperation`
+   - `AuthEffectHandler.ets`: 改用 `AuthNavigator` 导航，`SessionExpired` 从 `replaceUrl` 改为 `resetKeepingEntranceAndPush(Login)`
+   - 所有 Page 改用 `navigate()/navigateWithParams()`，移除直接调用 `router.pushUrl/replaceUrl/back`
+   - `LoginState.ets`: 新增 `AccountDeleted` 枚举值
+   - `KnoiLoginAdapter.ets`: 新增 `AccountDeleted` 映射
+   - `AuthEffectHandler.ets`: 新增 `AccountDeleted` → `ResetTo(ENTRANCE)` + toast "账户已注销"
+   - `SignedInPage.ets`: 账号注销通过 `consumeEffect()` + `handleAuthEffect(effect)` 处理
+   - `EntrancePage.ets`: 恢复已登录用户自动跳转（navigate ResetTo SignedIn/ProfileCompletion）
+
+5. **导航语义统一——非终端导航标准化**
+   - 手机⇄邮箱注册切换全部统一为 `ReplaceTop`（iOS: 原 push→改为 replaceTop; Android: 原 navigate+popUpTo→改为 ReplaceTop; HarmonyOS: 保持不变已有 replaceUrl）
+   - 重置密码完成从 Login 改为 `ResetKeepingEntranceAndPush(Login)`（iOS: 原 `resetTo(Login)` 丢失 Entrance→改为保留 Entrance）
+   - PasswordSetup 返回从不同操作统一为 `ReplaceTop(RegisterPage)`
+   - 账号注销统一走 effect（dispatch LogoutClicked/deleteCurrentAccount → LoggedOut/AccountDeleted effect → ResetTo(Entrance)）
+
+6. **Knoi Bridge 修复**
+   - `HarmonyLoginJson.kt:61`: 新增 `LoginEffect.AccountDeleted -> """{"type":"AccountDeleted"}"""` 序列化分支（根因——缺此分支导致运行时 `MatchError`）
+   - `HarmonyLoginService.kt:207`: 修复 `System.currentTimeMillis()` → `time(null) * 1000L`（Kotlin/Native 无 JVM System 类）
+   - 新增 `@OptIn(ExperimentalForeignApi::class)` 注解
+   - `StorePersister.ets`: 移除已不存在的方法 `validateStoreSnapshotRoundTrip()` 调用
+
+7. **hvigor 自动触发修复**
+   - `entry/hvigorfile.ts`: 移除 `shouldRequireSharedLoginNative()` 命令名匹配条件，改为无条件调用 `buildSharedLoginNative()`，内部通过 `isKotlinSourceNewerThanNativeLibs()` mtime 增量判断是否重建 bridge
+
+## 人工审查点
+
+1. **AccountDeleted effect 全链路验证**：KMM store 产出 → HarmonyLoginJson 序列化 → Knoi bridge → ArkTS 解析 → 页面消费。代码已对齐，但需实际运行鸿蒙 App 验证账号注销正常弹出 toast "账户已注销" 并跳转 Entrance。
+
+2. **HarmonyOS `router.clear()` + `replaceUrl(Entrance)` + `pushUrl(target)` 时序**：鸿蒙 router API 在 `clear()` 后立即 `pushUrl` 可能需异步等待。当前 AuthNavigator 同步执行，已在 `ResetKeepingEntranceAndPush` 中实现，需人工确认无竞态。
+
+3. **退出登录与账号注销的独立 toast**：退出显示"已退出登录"（`LoggedOut` effect），注销显示"账户已注销"（`AccountDeleted` effect）。需人工确认两按钮分别触发对应 effect 且 toast 正确。
+
+4. **三端 App 启动根页面**：HarmonyOS 通过 EntrancePage.aboutToAppear 做 auto-redirect，iOS 通过 computed startRoute 做动态 rootView，Android 通过 startDestination 动态计算。需人工确认三种方式在已登录状态下表现一致——不显示 Entrance 页面。
+
+5. **跨端 `VerifyTarget` 序列化兼容性**：iOS 使用本地 `VerifyTargetKind`，Android 使用 KMM `VerifyTarget`，HarmonyOS 使用本地 `VerifyTargetKind`。三端数值语义一致（Phone=0, Email=1），但 iOS 的 KMM bridge（Shared.framework）导出的 `VerifyTarget` 与本地 `VerifyTargetKind` 的映射需人工验证无编译冲突。
+
+## 验证结果
+
+- **KMM Common `VerifyTarget` 枚举**：已添加至 `LoginModels.kt`，通过语法检查 ✓
+- **iOS AuthCoordinator + AuthRouter**：13 个文件已修改完成，`AuthRoute` 关联值使用 `VerifyTargetKind` ✓
+- **Android AuthNavGraph NavOperation 重构**：308 行重写完成，删除了所有散落 popUpTo 和重复回调 ✓
+- **HarmonyOS AuthNavigator + 17 文件改造**：所有页面改用 `navigate()`/`navigateWithParams()`，不再直接调用 router API ✓
+- **HarmonyOS `EntryAbility.ets`**：未修改，保持原 `loadContent('pages/EntrancePage')` ✓
+- **鸿蒙编译修复**：PhoneRegisterPage 缺 `navigate` import → 已修复；EntrancePage dispatch 缺字段 → 已修复；EntrancePage 动画恢复 → Video 属性已恢复；`validateStoreSnapshotRoundTrip` → 已移除 ✓
+- **harmony-kmp-bridge 构建**：`./gradlew ohosArm64Binaries` 编译成功，`libkn.so` 重新生成并自动部署到鸿蒙 libs/ 目录（文件大小 4,788,944→4,799,040 bytes，时间戳更新为 Jul 9 11:08）✓
+- **鸿蒙 App 构建**：ArkTS 编译报错已全部修复，待用户通过 DevEco Studio 重新打包验证
+
+## 人工修正点
+
+1. **HarmonyOS `libkn.so` 需重新打包**：Knoi bridge 原生库已重建，用户需在 DevEco Studio 中重新构建鸿蒙 App 使新 `libkn.so` 生效（`AccountDeleted` 序列化分支包含在内）。
+
+2. **鸿蒙 App 构建后全流程回归测试**：需人工逐项验证——注册、登录、退出、注销、会话过期、重置密码、手机⇄邮箱切换、App 启动根页面等场景。
+
+3. **账号注销 toast 差异化确认**：当前"退出登录"和"注销账户"通过不同的 KMM effect（`LoggedOut` vs `AccountDeleted`）产生不同 toast。需人工确认 UI/UX 是否接受两者均为 `ResetTo(Entrance)` 且 toast 不同。
+
+4. **旧版 `Codex_worklog.md` 中 07-02 条目的人工修正点 2**（iOS PasswordSetup 返回未对齐）**和 3**（HarmonyOS register success 跳转后 LoginFormPage fromRegistration 参数）**在此轮改造中已修复**（PasswordSetup 返回统一 replaceTop；注册成功走 resetKeepingEntranceAndPush 不再传递 fromRegistration 参数），如有需要可删除或更新旧条目标记。

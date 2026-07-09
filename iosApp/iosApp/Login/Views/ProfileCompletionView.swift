@@ -22,7 +22,7 @@ private enum ProfilePicker: Identifiable {
 
 struct ProfileCompletionView: View {
     @ObservedObject var viewModel: LoginViewModel
-    @Binding var path: NavigationPath
+    let router: AuthRouter
 
     @State private var draft: ProfileDraft
     @State private var activePicker: ProfilePicker?
@@ -30,9 +30,9 @@ struct ProfileCompletionView: View {
     @State private var avatarData: Data?
     @State private var localError: String?
 
-    init(viewModel: LoginViewModel, path: Binding<NavigationPath>) {
+    init(viewModel: LoginViewModel, router: AuthRouter) {
         self.viewModel = viewModel
-        self._path = path
+        self.router = router
         let session = viewModel.state.currentSession
         let defaultName = session?.resolvedDisplayName ?? session?.account ?? ""
         self._draft = State(
@@ -189,8 +189,7 @@ struct ProfileCompletionView: View {
 
     private func backToEntrance() {
         viewModel.clearSessionSilently()
-        path = NavigationPath()
-        path.append(AuthRoute.entrance)
+        router.resetTo(.entrance)
     }
 }
 

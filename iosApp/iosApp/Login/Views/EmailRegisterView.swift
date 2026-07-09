@@ -2,7 +2,7 @@ import SwiftUI
 
 struct EmailRegisterView: View {
     @ObservedObject var viewModel: LoginViewModel
-    @Binding var path: NavigationPath
+    let router: AuthRouter
 
     @State private var acceptedTerms = false
     @State private var emailInput = ""
@@ -11,7 +11,7 @@ struct EmailRegisterView: View {
     @State private var showUnavailable = false
 
     var body: some View {
-        AuthBlackPage(onBack: { path.removeLast() }, showFeedback: true, onUnavailableClick: { showUnavailable = true }) {
+        AuthBlackPage(onBack: { router.pop() }, showFeedback: true, onUnavailableClick: { showUnavailable = true }) {
             AuthTitle("邮箱注册")
             Spacer().frame(height: 60)
             UnderlineInput(
@@ -24,8 +24,8 @@ struct EmailRegisterView: View {
             AgreementRow(
                 accepted: acceptedTerms,
                 onToggle: { acceptedTerms.toggle(); localError = nil },
-                onPrivacyClick: { path.append(AuthRoute.privacyPolicy) },
-                onServiceTermsClick: { path.append(AuthRoute.serviceTerms) }
+                onPrivacyClick: { router.push(.privacyPolicy) },
+                onServiceTermsClick: { router.push(.serviceTerms) }
             )
             Spacer().frame(height: 28)
             CorosFilledButton(
@@ -38,7 +38,7 @@ struct EmailRegisterView: View {
             ErrorText(localError ?? viewModel.state.errorMessage)
             Button(action: {
                 viewModel.updateAccount("")
-                path.removeLast()
+                router.replaceTop(.phoneRegister)
             }) {
                 Text("手机号注册").foregroundStyle(corosRed).font(.system(size: 18))
                     .frame(maxWidth: .infinity).padding(.top, 26)
@@ -49,8 +49,8 @@ struct EmailRegisterView: View {
             if termsPromptAction != nil {
                 TermsConsentSheet(
                     onDismiss: { termsPromptAction = nil },
-                    onPrivacyClick: { path.append(AuthRoute.privacyPolicy) },
-                    onServiceTermsClick: { path.append(AuthRoute.serviceTerms) },
+                    onPrivacyClick: { router.push(.privacyPolicy) },
+                    onServiceTermsClick: { router.push(.serviceTerms) },
                     onAgree: {
                         acceptedTerms = true
                         termsPromptAction = nil
@@ -81,7 +81,7 @@ struct EmailRegisterView: View {
         if message == nil || message?.isEmpty == true {
             viewModel.updateAccount(email)
             viewModel.updateDisplayName(email)
-            path.append(AuthRoute.verifyCode(account: email, targetKind: .email))
+            router.push(.verifyCode(account: email, targetKind: .email))
         } else {
             localError = message
         }

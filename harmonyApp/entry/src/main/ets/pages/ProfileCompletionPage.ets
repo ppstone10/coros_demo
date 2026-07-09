@@ -1,12 +1,12 @@
 import promptAction from '@ohos.promptAction';
 import photoAccessHelper from '@ohos.file.photoAccessHelper';
-import router from '@ohos.router';
 import {
   LoginEffect,
   LoginEffectType,
   LoginState
 } from '../login/LoginState';
 import { getLoginViewModel } from '../login/LoginViewModelProvider';
+import { navigate, NavOperation } from '../login/AuthNavigator';
 import {
   COROS_BUTTON_RED,
   COROS_BLACK,
@@ -22,6 +22,7 @@ import {
   AuthHeader
 } from '../login/components/AuthComponents';
 import { AuthRoutes } from '../login/AuthRoutes';
+import { handleAuthEffect } from '../login/AuthEffectHandler';
 
 
 function pcBuildNumberRange(min: number, max: number, suffix: string = ''): string[] {
@@ -1204,8 +1205,7 @@ struct ProfileCompletionPage {
     this.localError = '';
     this.viewModel.clearSessionSilently();
     this.syncState();
-    router.clear();
-    router.replaceUrl({ url: AuthRoutes.ENTRANCE });
+    navigate(NavOperation.ResetTo, AuthRoutes.ENTRANCE);
   }
 
 
@@ -1227,10 +1227,8 @@ struct ProfileCompletionPage {
     );
     this.syncState();
     let effect: LoginEffect | null = this.viewModel.consumeEffect();
-    if (effect !== null && effect.type === LoginEffectType.ProfileSaved) {
-      router.clear();
-      router.replaceUrl({ url: AuthRoutes.SIGNED_IN });
-      this.showMessage('资料已保存');
+    if (effect !== null) {
+      handleAuthEffect(effect);
     } else {
       let state: LoginState = this.viewModel.state;
       if (state.errorMessage.length > 0) {

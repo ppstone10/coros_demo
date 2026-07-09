@@ -58,6 +58,7 @@ internal object HarmonyLoginJson {
             }
 
             LoginEffect.LoggedOut -> """{"type":"LoggedOut"}"""
+            LoginEffect.AccountDeleted -> """{"type":"AccountDeleted"}"""
             LoginEffect.SessionExpired -> """{"type":"SessionExpired","message":"登录已过期"}"""
             is LoginEffect.ShowMessage -> buildString {
                 append('{')

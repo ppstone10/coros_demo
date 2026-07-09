@@ -250,6 +250,8 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
       effect.type = LoginEffectType.NavigateHome;
     } else if (payload.type === 'LoggedOut') {
       effect.type = LoginEffectType.LoggedOut;
+    } else if (payload.type === 'AccountDeleted') {
+      effect.type = LoginEffectType.AccountDeleted;
     } else if (payload.type === 'SessionExpired') {
       effect.type = LoginEffectType.SessionExpired;
     } else {

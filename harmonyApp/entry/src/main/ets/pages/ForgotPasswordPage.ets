@@ -14,6 +14,7 @@ import {
   UnderlineInput
 } from '../login/components/AuthComponents';
 import { AuthRoutes } from '../login/AuthRoutes';
+import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
 
 @Entry
 @Component
@@ -23,7 +24,7 @@ struct ForgotPasswordPage {
   @State localError: string = '';
 
   onBackPress(): boolean {
-    router.back();
+    navigate(NavOperation.Pop, '');
     return true;
   }
 
@@ -31,7 +32,7 @@ struct ForgotPasswordPage {
     Scroll() {
       Column() {
         AuthHeader({ showBack: true, showFeedback: false,
-          backRequested: () => { router.back(); } });
+          backRequested: () => { navigate(NavOperation.Pop, ''); } });
         AuthTitle('找回密码');
 
         Blank().height(60)
@@ -82,9 +83,6 @@ struct ForgotPasswordPage {
       this.localError = '账号不存在';
       return;
     }
-    router.pushUrl({
-      url: AuthRoutes.RESET_PASSWORD,
-      params: { account: normalizedAccount }
-    });
+    navigateWithParams(NavOperation.Push, AuthRoutes.toResetPassword(normalizedAccount));
   }
 }

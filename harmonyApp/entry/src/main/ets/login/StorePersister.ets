@@ -47,9 +47,6 @@ export function saveStoreSnapshot(service?: HarmonyLoginService): boolean {
     const svc: HarmonyLoginService = service ?? getService();
     const json = svc.exportStoreSnapshot();
     hilog.info(0x0001, 'demo_persist', 'exported snapshot length=' + JSON.stringify(json.length));
-    if (!svc.validateStoreSnapshotRoundTrip(json)) {
-      hilog.warn(0x0001, 'demo_persist', 'validateStoreSnapshotRoundTrip failed, saving anyway');
-    }
     prefsInstance.putSync(KEY_STORE_JSON, json);
     prefsInstance.flushSync();
     hilog.info(0x0001, 'demo_persist', 'save succeeded, json length=' + JSON.stringify(json.length));

@@ -28,6 +28,8 @@ import {
   ThirdPartyAreaComp
 } from '../login/components/AuthComponents';
 import { AuthRoutes } from '../login/AuthRoutes';
+import { navigate, NavOperation } from '../login/AuthNavigator';
+import { handleAuthEffect } from '../login/AuthEffectHandler';
 
 @Entry
 @Component
@@ -60,10 +62,9 @@ struct LoginFormPage {
 
   onBackPress(): boolean {
     if (this.fromRegistration) {
-      router.clear();
-      router.replaceUrl({ url: AuthRoutes.ENTRANCE });
+      navigate(NavOperation.ResetTo, AuthRoutes.ENTRANCE);
     } else {
-      router.back();
+      navigate(NavOperation.Pop, '');
     }
     return true;
   }
@@ -73,7 +74,7 @@ struct LoginFormPage {
       Scroll() {
         Column() {
           AuthHeader({ showBack: true, showFeedback: true,
-            backRequested: () => { router.back(); },
+            backRequested: () => { navigate(NavOperation.Pop, ''); },
             feedbackRequested: () => { this.showUnavailableFeature(); } });
           AuthTitle('账号登录');
 
@@ -110,7 +111,7 @@ struct LoginFormPage {
             .fontSize(14)
             .fontColor(COROS_MUTED)
             .margin({ top: 16 })
-            .onClick(() => { router.pushUrl({ url: AuthRoutes.FORGOT_PASSWORD }); })
+            .onClick(() => { navigate(NavOperation.Push, AuthRoutes.FORGOT_PASSWORD); })
 
           Blank().layoutWeight(1)
 
@@ -181,7 +182,7 @@ struct LoginFormPage {
   }
 
   private openLegal(url: string): void {
-    router.pushUrl({ url: url, params: { returnPage: AuthRoutes.LOGIN } });
+    navigate(NavOperation.Push, url);
   }
 
   private showUnavailableFeature(): void {
@@ -227,7 +228,7 @@ struct LoginFormPage {
 
   private handleLoginEffect(): void {
     let effect: LoginEffect | null = this.viewModel.consumeEffect();
-    if (effect === null || effect.type !== LoginEffectType.AuthSucceeded) {
+    if (effect === null) {
       let state: LoginState = this.viewModel.state;
       if (state.errorMessage.length > 0) {
         this.localError = state.errorMessage;
@@ -236,15 +237,7 @@ struct LoginFormPage {
     }
     this.localError = '';
     this.syncState();
-    let state: LoginState = this.viewModel.state;
-    let session = state.currentSession;
-    router.clear();
-    if (session !== null && !session.isProfileComplete) {
-      router.replaceUrl({ url: AuthRoutes.PROFILE_COMPLETION });
-    } else {
-      router.replaceUrl({ url: AuthRoutes.SIGNED_IN });
-    }
-    this.showMessage('登录成功');
+    handleAuthEffect(effect);
   }
 
   private syncState(): void {

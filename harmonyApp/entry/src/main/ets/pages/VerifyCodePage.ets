@@ -22,6 +22,7 @@ import {
   BlockingLoadingOverlay
 } from '../login/components/AuthComponents';
 import { AuthRoutes, VerifyCodeParams } from '../login/AuthRoutes';
+import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
 
 @Entry
 @Component
@@ -59,7 +60,7 @@ struct VerifyCodePage {
   }
 
   onBackPress(): boolean {
-    router.back();
+    navigate(NavOperation.Pop, '');
     return true;
   }
 
@@ -68,7 +69,7 @@ struct VerifyCodePage {
       Scroll() {
         Column() {
           AuthHeader({ showBack: true, showFeedback: false,
-            backRequested: () => { router.back(); } });
+            backRequested: () => { navigate(NavOperation.Pop, ''); } });
           AuthTitle('输入验证码');
 
           Text(verifyCodeMessage(this.account, this.targetKind))
@@ -149,10 +150,7 @@ struct VerifyCodePage {
       type: LoginActionType.VerifyCodeChanged, mode: AuthMode.Register, username: '', password: '',
       verifyCode: this.codeInput, displayName: '', region: 'CN'
     });
-    router.pushUrl({
-      url: AuthRoutes.PASSWORD_SETUP,
-      params: { targetKind: this.targetKind }
-    });
+    navigateWithParams(NavOperation.Push, AuthRoutes.toPasswordSetup(this.targetKind));
   }
 
   private async resendVerifyCode(): Promise<void> {

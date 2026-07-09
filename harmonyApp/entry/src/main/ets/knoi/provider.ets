@@ -11,9 +11,13 @@ export interface HarmonyLoginService {
 
    restoreStoreSnapshot(json: string): boolean;
 
-   validateStoreSnapshotRoundTrip(json: string): boolean;
+   submit(): void;
 
-   validateCurrentStoreSnapshotRoundTrip(): boolean;
+   logout(): void;
+
+   clearSessionSilently(): void;
+
+   consumeEffectSnapshot(): string;
 
    setLoginMode(): void;
 
@@ -28,14 +32,6 @@ export interface HarmonyLoginService {
    setDisplayName(value: string): void;
 
    setRegion(value: string): void;
-
-   submit(): void;
-
-   logout(): void;
-
-   clearSessionSilently(): void;
-
-   consumeEffectSnapshot(): string;
 
    validateLogin(account: string, password: string): boolean;
 
