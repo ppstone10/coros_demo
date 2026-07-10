@@ -4,5 +4,5 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-echo "Contract generation is not wired yet."
-echo "Input contracts live in ./contract and should generate Kotlin, Swift and ArkTS DTOs later."
+echo "Contract generation is deferred."
+echo "Data models are now defined in :common directly. contract/ holds only API contract (openapi/) and analytics events."

@@ -59,6 +59,12 @@ components:
           type: string
         accessToken:
           type: string
+    ErrorCode:
+      type: string
+      enum:
+        - AUTH_USERNAME_REQUIRED
+        - AUTH_PASSWORD_REQUIRED
+        - AUTH_INVALID_CREDENTIALS
     ErrorResponse:
       type: object
       required:
@@ -66,6 +72,6 @@ components:
         - message
       properties:
         code:
-          type: string
+          $ref: '#/components/schemas/ErrorCode'
         message:
           type: string

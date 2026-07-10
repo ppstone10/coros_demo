@@ -15,7 +15,7 @@
 | `androidApp` | Android 原生 UI。Compose 页面、Activity、Android 平台服务实现。 |
 | `iosApp` | iOS 原生 UI。SwiftUI 页面、ViewModel、KMP 框架适配器。 |
 | `harmonyApp` | HarmonyOS 原生 ArkTS + ArkUI。UI 不走 KuiklyUI；登录业务通过 `LoginLogicAdapter` 接 KNOI native bridge，不保留 ArkTS 登录业务 fallback。 |
-| `contract` | OpenAPI、JSON Schema、错误码、埋点事件。 |
+| `contract` | 后端 API 契约与埋点事件定义。当前为轻量骨架，数据模型由 `common` 定义。 |
 | `docs` | 架构、边界、集成和工作流说明。 |
 | `tools` | 构建、代码生成和验证脚本。 |
 | `experimental/harmony-kmp` | HarmonyOS 复用 KMP 能力的实验区，不接入主线构建。 |

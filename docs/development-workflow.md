@@ -38,7 +38,7 @@ env NODE_HOME=/Applications/DevEco-Studio.app/Contents/tools/node \
 3. Android 通过 `LoginStore` 或 `LoginFacade` 调用。
 4. iOS 通过 `SharedLoginAdapter` 调用。
 5. HarmonyOS 优先扩展 `harmony-kmp-bridge` 中的 KNOI service；登录、注册、验证码和登出逻辑已接入 `common/src/commonMain`，新增业务应继续放回 shared，再由 ArkTS 做原生 UI 映射。
-6. 若涉及协议字段，先更新 `contract`。
+6. 若涉及协议字段，直接更新 `common` 模型；`contract` 仅作为后端 API 契约归档。
 
 ### HarmonyOS bridge 修改规则
 

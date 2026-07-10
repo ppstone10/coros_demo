@@ -1,12 +1,10 @@
 # contract
 
-这里存放 Android、iOS、HarmonyOS 共用的接口和产品契约。
+后端 API 契约与埋点事件定义。
 
-目录说明：
+当前为空壳骨架，实际数据模型已在 `common` 中定义。
 
-- `openapi/`：后端 API 契约。
-- `schema/`：用于对齐 DTO 和状态模型的 JSON Schema。
-- `errors/`：稳定的错误码登记表。
-- `analytics/`：埋点事件名称和载荷约定。
+- `openapi/`：后端 API 契约。当前为占位，接入真实后端时应由后端维护此目录。
+- `analytics/`：埋点事件名称和载荷定义。三端统一，`common` 不参与。
 
-后续代码生成工具应以本目录为输入，生成 Kotlin、Swift、ArkTS 模型，同时不改变运行时架构。
+状态模型（`LoginState`、`LoginAction`、`LoginEffect`）和错误码由 `common` 模块作为单一事实来源，`contract` 不再维护。

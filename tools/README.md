@@ -5,7 +5,7 @@
 - `build-shared.sh`：构建并测试 KMP 共享模块。
 - `build-shared-xcframework.sh`：生成 iOS 使用的 `Shared.xcframework`。
 - `build-shared-harmony.sh`：安装 KuiklyBase-Kotlin/KNOI 生成的 HarmonyOS shared native module，并验证 `harmonyApp`。
-- `generate-contracts.sh`：预留脚本，后续用于从 `contract` 生成 Kotlin、Swift、ArkTS DTO。
+- `generate-contracts.sh`：预留脚本（当前无代码生成计划，数据模型以 `common` 为准）。
 
 这些脚本应该都可以从仓库根目录安全执行。
 

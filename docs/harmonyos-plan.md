@@ -14,11 +14,11 @@ HarmonyOS 当前采用 ArkTS + ArkUI 原生 UI，并通过独立 `harmony-kmp-br
 
 ## 对齐方式
 
-- 业务协议放在 `contract`。
-- Kotlin、Swift、ArkTS 的 DTO 命名和字段保持一致；新增字段优先从 `common`/`contract` 推导。
+- 业务数据模型以 `common` 为单一事实来源，`contract` 不维护状态模型副本。
+- Kotlin、Swift、ArkTS 的 DTO 命名和字段保持一致；新增字段优先从 `common` 推导。
 - 状态迁移流程以 `common` 登录状态容器为准。
 - HarmonyOS bridge 必须暴露 primitive-friendly API 或稳定 JSON snapshot，并为新增字段补映射验证。
-- 错误码与埋点事件以 `contract` 为准。
+- 埋点事件定义以 `contract` 为准。错误码由 `common` 的 `MockError` 枚举作为单一来源。
 
 ## 后续方向
 

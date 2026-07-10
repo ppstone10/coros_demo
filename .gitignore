@@ -57,6 +57,7 @@ dist/
 
 # Resources files
 /login_register_resources/
+/health_dashboard_resources/
 
 skill.md
 
