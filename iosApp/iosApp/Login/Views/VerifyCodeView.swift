@@ -7,7 +7,7 @@ struct VerifyCodeView: View {
     let router: AuthRouter
 
     @State private var code = ""
-    @State private var countdown = 60
+    @State private var countdown = 0
     @State private var resendLoading = false
     @State private var localError: String?
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -47,14 +47,14 @@ struct VerifyCodeView: View {
             }
             if resendLoading { BlockingLoadingOverlay() }
         }
-        .onReceive(timer) { _ in if countdown > 0 { countdown -= 1 } }
-        .onAppear { countdown = 60 }
+        .onReceive(timer) { _ in refreshCountdown() }
+        .onAppear { refreshCountdown() }
     }
 
     private var verifyCodeMessage: String {
         switch targetKind {
-        case .email: return "验证码已发送至你的邮箱 \(account)，有效期10分钟"
-        case .phone: return "验证码已发送至你的手机+86-\(account)，有效期10分钟"
+        case .email: return "验证码已发送至你的邮箱 \(account)，有效期60秒"
+        case .phone: return "验证码已发送至你的手机+86-\(account)，有效期60秒"
         }
     }
 
@@ -77,11 +77,15 @@ struct VerifyCodeView: View {
             if message == nil || message?.isEmpty == true {
                 code = ""
                 localError = nil
-                countdown = 60
+                refreshCountdown()
             } else {
                 localError = message
             }
             resendLoading = false
         }
+    }
+
+    private func refreshCountdown() {
+        countdown = viewModel.verifyCodeRemainingSeconds(account: account)
     }
 }

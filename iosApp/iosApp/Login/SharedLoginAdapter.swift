@@ -35,6 +35,7 @@ protocol SharedLoginAdapterProtocol {
     func requestVerifyCode(account: String) -> String?
     func requestResentVerifyCode(account: String) -> String?
     func verifyCode(account: String, code: String) -> String?
+    func verifyCodeRemainingSeconds(account: String) -> Int
     func resetPassword(account: String, newPassword: String) -> String?
     func submitProfile(
         avatarUri: String?,
@@ -186,15 +187,23 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
     }
 
     func requestVerifyCode(account: String) -> String? {
-        facade.requestVerifyCode(account: account)
+        syncClock()
+        return facade.requestVerifyCode(account: account)
     }
 
     func requestResentVerifyCode(account: String) -> String? {
-        facade.requestResentVerifyCode(account: account)
+        syncClock()
+        return facade.requestResentVerifyCode(account: account)
     }
 
     func verifyCode(account: String, code: String) -> String? {
-        facade.verifyCode(account: account, code: code)
+        syncClock()
+        return facade.verifyCode(account: account, code: code)
+    }
+
+    func verifyCodeRemainingSeconds(account: String) -> Int {
+        syncClock()
+        return Int(facade.verifyCodeRemainingSeconds(account: account))
     }
 
     func resetPassword(account: String, newPassword: String) -> String? {
@@ -230,6 +239,7 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
     }
 
     func submit() {
+        syncClock()
         facade.submit()
     }
 
@@ -243,5 +253,11 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
 
     func consumeEffect() -> LoginEffect? {
         facade.consumeEffect()
+    }
+
+    private func syncClock() {
+        facade.setCurrentTimeEpochMs(
+            value: Int64(Date().timeIntervalSince1970 * 1_000)
+        )
     }
 }

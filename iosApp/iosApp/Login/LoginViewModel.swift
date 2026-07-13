@@ -143,6 +143,10 @@ final class LoginViewModel: ObservableObject {
         return nil
     }
 
+    func verifyCodeRemainingSeconds(account: String) -> Int {
+        adapter.verifyCodeRemainingSeconds(account: account)
+    }
+
     func resetPasswordMessage(account: String, newPassword: String) -> String? {
         adapter.resetPassword(account: account, newPassword: newPassword)
     }

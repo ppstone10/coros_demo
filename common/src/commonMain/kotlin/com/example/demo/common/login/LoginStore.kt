@@ -84,6 +84,14 @@ class LoginStore(
         return authRepository.verifyCode(account, code)
     }
 
+    fun verifyCodeRemainingSeconds(account: String): Int {
+        return authRepository.verifyCodeRemainingSeconds(account)
+    }
+
+    fun setCurrentTimeEpochMs(value: Long) {
+        authRepository.setCurrentTimeEpochMs(value)
+    }
+
     fun changePassword(
         account: String,
         oldPassword: String,

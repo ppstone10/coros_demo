@@ -43,6 +43,8 @@ export interface HarmonyLoginService {
 
    verifyCode(account: string, code: string): string;
 
+   verifyCodeRemainingSeconds(account: string): number;
+
    normalizePhoneInput(value: string): string;
 
    normalizeEmailInput(value: string): string;

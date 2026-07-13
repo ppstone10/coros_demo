@@ -156,6 +156,14 @@ class LoginFacade(
         }
     }
 
+    fun verifyCodeRemainingSeconds(account: String): Int {
+        return store.verifyCodeRemainingSeconds(account)
+    }
+
+    fun setCurrentTimeEpochMs(value: Long) {
+        store.setCurrentTimeEpochMs(value)
+    }
+
     fun resetPassword(account: String, newPassword: String): String? {
         return when (val result = store.resetPassword(account, newPassword)) {
             is MockResult.Success -> null

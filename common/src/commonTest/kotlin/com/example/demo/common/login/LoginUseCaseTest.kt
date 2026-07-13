@@ -78,6 +78,22 @@ class LoginUseCaseTest {
     }
 
     @Test
+    fun verifyCodeRemainingSecondsUsesTheSameClockAsExpiration() {
+        var now = 1_000L
+        val repository = LocalMockAuthRepository(
+            InMemoryAuthStoreDataSource(),
+            nowEpochMs = { now }
+        )
+        repository.requestVerifyCode("remaining-code@example.com")
+
+        assertEquals(60, repository.verifyCodeRemainingSeconds("remaining-code@example.com"))
+        now += 1_500L
+        assertEquals(59, repository.verifyCodeRemainingSeconds("remaining-code@example.com"))
+        now += 60_000L
+        assertEquals(0, repository.verifyCodeRemainingSeconds("remaining-code@example.com"))
+    }
+
+    @Test
     fun loginSuccessSavesSession() {
         val repository = repository()
         register(repository, account = "login@example.com")

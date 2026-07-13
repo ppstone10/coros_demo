@@ -60,6 +60,10 @@ export class LoginViewModel {
     return this.adapter.verifyCode(account, code);
   }
 
+  verifyCodeRemainingSeconds(account: string): number {
+    return this.adapter.verifyCodeRemainingSeconds(account);
+  }
+
   normalizePhoneInput(value: string): string {
     return this.adapter.normalizePhoneInput(value);
   }

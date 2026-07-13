@@ -52,6 +52,7 @@ struct VerifyCodePage {
       type: LoginActionType.UsernameChanged, mode: AuthMode.Register, username: this.account, password: '',
       verifyCode: '', displayName: '', region: 'CN'
     });
+    this.refreshCountdown();
     this.startCountdown();
   }
 
@@ -164,19 +165,22 @@ struct VerifyCodePage {
     this.codeInput = '';
     this.localError = '';
     this.resendLoading = false;
+    this.refreshCountdown();
     this.startCountdown();
   }
 
   private startCountdown(): void {
     this.stopCountdown();
-    this.countdown = 60;
     this.countdownTimer = setInterval(() => {
-      if (this.countdown <= 0) {
+      this.refreshCountdown();
+      if (this.countdown === 0) {
         this.stopCountdown();
-        return;
       }
-      this.countdown -= 1;
     }, 1000);
+  }
+
+  private refreshCountdown(): void {
+    this.countdown = this.viewModel.verifyCodeRemainingSeconds(this.account);
   }
 
   private stopCountdown(): void {

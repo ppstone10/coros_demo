@@ -247,7 +247,7 @@ fun AuthNavGraph() {
                         } else {
                             PhoneRegisterRoute
                         }
-                        navController.navigateWithOperation(targetRoute, NavOperation.ReplaceTop)
+                        navController.navigateWithOperation(targetRoute, NavOperation.ResetKeepingEntranceAndPush)
                     },
                     onRegisterSuccess = {}
                 )

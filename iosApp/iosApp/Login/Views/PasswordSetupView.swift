@@ -67,6 +67,6 @@ struct PasswordSetupView: View {
 
     private func backToRegisterPage() {
         viewModel.updateVerifyCode("")
-        router.replaceTop(targetKind == .email ? .emailRegister : .phoneRegister)
+        router.resetKeepingEntranceAndPush(targetKind == .email ? .emailRegister : .phoneRegister)
     }
 }

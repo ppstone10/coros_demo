@@ -122,6 +122,10 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     return this.harmonyLoginService.verifyCode(account, code);
   }
 
+  verifyCodeRemainingSeconds(account: string): number {
+    return this.harmonyLoginService.verifyCodeRemainingSeconds(account);
+  }
+
   normalizePhoneInput(value: string): string {
     return this.harmonyLoginService.normalizePhoneInput(value);
   }

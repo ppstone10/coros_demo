@@ -33,9 +33,9 @@ export enum VerifyTargetKind {
 
 export function verifyCodeMessage(account: string, targetKind: VerifyTargetKind): string {
   if (targetKind === VerifyTargetKind.Email) {
-    return '验证码已发送至你的邮箱 ' + account + '，有效期10分钟';
+    return '验证码已发送至你的邮箱 ' + account + '，有效期60秒';
   }
-  return '验证码已发送至你的手机+86-' + account + '，有效期10分钟';
+  return '验证码已发送至你的手机+86-' + account + '，有效期60秒';
 }
 
 function disabledColor(color: string): string {

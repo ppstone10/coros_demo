@@ -37,6 +37,7 @@ open class HarmonyLoginService {
     }
 
     fun submit() {
+        syncClock()
         facade.submit()
     }
 
@@ -89,15 +90,23 @@ open class HarmonyLoginService {
     }
 
     fun requestVerifyCode(account: String): String {
+        syncClock()
         return facade.requestVerifyCode(account).orEmpty()
     }
 
     fun requestResentVerifyCode(account: String): String {
+        syncClock()
         return facade.requestResentVerifyCode(account).orEmpty()
     }
 
     fun verifyCode(account: String, code: String): String {
+        syncClock()
         return facade.verifyCode(account, code).orEmpty()
+    }
+
+    fun verifyCodeRemainingSeconds(account: String): Int {
+        syncClock()
+        return facade.verifyCodeRemainingSeconds(account)
     }
 
     fun normalizePhoneInput(value: String): String {
@@ -205,10 +214,12 @@ open class HarmonyLoginService {
 
     @OptIn(ExperimentalForeignApi::class)
     private fun createFacade(dataSource: MemoryAuthStoreDataSource): LoginFacade {
-        return LoginFacade(LoginStore.create(LocalMockAuthRepository(
-            dataSource,
-            nowEpochMs = { time(null) * 1000L }
-        )))
+        return LoginFacade(LoginStore.create(LocalMockAuthRepository(dataSource)))
+    }
+
+    @OptIn(ExperimentalForeignApi::class)
+    private fun syncClock() {
+        facade.setCurrentTimeEpochMs(time(null) * 1000L)
     }
 }
 

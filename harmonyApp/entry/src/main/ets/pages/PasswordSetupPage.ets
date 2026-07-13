@@ -49,7 +49,7 @@ struct PasswordSetupPage {
 
   onBackPress(): boolean {
     const target = this.targetKind === VerifyTargetKind.Email ? AuthRoutes.EMAIL_REGISTER : AuthRoutes.PHONE_REGISTER
-    navigate(NavOperation.ReplaceTop, target);
+    navigate(NavOperation.ResetKeepingEntranceAndPush, target);
     return true;
   }
 
@@ -59,7 +59,7 @@ struct PasswordSetupPage {
         AuthHeader({ showBack: true, showFeedback: false,
           backRequested: () => {
             const target = this.targetKind === VerifyTargetKind.Email ? AuthRoutes.EMAIL_REGISTER : AuthRoutes.PHONE_REGISTER
-            navigate(NavOperation.ReplaceTop, target);
+            navigate(NavOperation.ResetKeepingEntranceAndPush, target);
           } });
         AuthTitle('设置登录密码');
 

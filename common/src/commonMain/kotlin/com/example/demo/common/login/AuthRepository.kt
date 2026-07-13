@@ -26,6 +26,8 @@ interface AuthRepository {
         code: String = LocalMockAuthRepository.DefaultVerifyCode
     ): MockResult<MockVerifyCodeState>
     fun verifyCode(account: String, code: String): MockResult<Unit>
+    fun verifyCodeRemainingSeconds(account: String): Int
+    fun setCurrentTimeEpochMs(value: Long)
     fun currentSession(): AuthSession?
     fun requireSession(): AuthSession
     fun saveSession(session: AuthSession): MockResult<AuthSession>
@@ -42,8 +44,9 @@ interface AuthRepository {
 
 class LocalMockAuthRepository(
     private val dataSource: AuthStoreDataSource,
-    private val nowEpochMs: () -> Long = { 0L }
+    nowEpochMs: () -> Long = { 0L }
 ) : AuthRepository {
+    private var nowEpochMs: () -> Long = nowEpochMs
     override fun availableRegions(): List<AuthRegion> = DefaultRegions
 
     override fun hasAccount(account: String): Boolean {
@@ -100,6 +103,18 @@ class LocalMockAuthRepository(
             savedCode.code == verifyCode -> MockResult.Success(Unit)
             else -> MockResult.Failure(MockError.VerifyCodeInvalid)
         }
+    }
+
+    override fun verifyCodeRemainingSeconds(account: String): Int {
+        val savedCode = loadStore().verifyCodes.lastOrNull {
+            it.account.equals(account.trim(), ignoreCase = true)
+        } ?: return 0
+        val remainingMs = savedCode.expireAtEpochMs - nowEpochMs()
+        return ((remainingMs.coerceAtLeast(0) + 999L) / 1000L).toInt()
+    }
+
+    override fun setCurrentTimeEpochMs(value: Long) {
+        nowEpochMs = { value }
     }
 
     override fun currentSession(): AuthSession? {

@@ -17,6 +17,7 @@ export interface LoginLogicAdapter {
   requestVerifyCode(account: string): string;
   requestResentVerifyCode(account: string): string;
   verifyCode(account: string, code: string): string;
+  verifyCodeRemainingSeconds(account: string): number;
   normalizePhoneInput(value: string): string;
   normalizeEmailInput(value: string): string;
   normalizeVerifyCodeInput(value: string): string;

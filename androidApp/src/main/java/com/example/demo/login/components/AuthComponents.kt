@@ -105,9 +105,9 @@ fun Context.findActivity(): Activity? {
 
 fun verifyCodeMessage(account: String, targetKind: VerifyTarget): String {
     return if (targetKind == VerifyTarget.Email) {
-        "验证码已发送至你的邮箱 $account，有效期10分钟"
+        "验证码已发送至你的邮箱 $account，有效期60秒"
     } else {
-        "验证码已发送至你的手机+86-$account，有效期10分钟"
+        "验证码已发送至你的手机+86-$account，有效期60秒"
     }
 }
 
