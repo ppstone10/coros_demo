@@ -38,6 +38,10 @@ struct PasswordSetupPage {
   @State registerActionEnabled: boolean = false;
   @State setupPasswordVisible: boolean = false;
   @State confirmPasswordVisible: boolean = false;
+  @State selectedRegion: string = 'CN';
+  @State regionPickerVisible: boolean = false;
+  @State regionPickerIndex: number = 0;
+  private regionCountries: string[] = ['中国', '美国'];
 
   aboutToAppear(): void {
     let params = router.getParams() as PasswordSetupParams;
@@ -54,8 +58,9 @@ struct PasswordSetupPage {
   }
 
   build() {
-    Scroll() {
-      Column() {
+    Stack() {
+      Scroll() {
+        Column() {
         AuthHeader({ showBack: true, showFeedback: false,
           backRequested: () => {
             const target = this.targetKind === VerifyTargetKind.Email ? AuthRoutes.EMAIL_REGISTER : AuthRoutes.PHONE_REGISTER
@@ -92,7 +97,30 @@ struct PasswordSetupPage {
           .fontColor('#D8D8DD')
           .margin({ top: 8 })
 
-        Blank().height(80)
+        Blank().height(12)
+
+        Row() {
+          Text('国家与地区')
+            .fontSize(19)
+            .fontColor(COROS_WHITE)
+          Blank().layoutWeight(1)
+          Text(this.selectedRegion === 'US' ? '美国' : '中国')
+            .fontSize(19)
+            .fontColor('#DADAE0')
+          Image($r('app.media.right_more'))
+            .width(24)
+            .height(24)
+            .margin({ left: 12 })
+        }
+        .width('100%')
+        .height(66)
+        .border({ width: { bottom: 1 }, color: '#303034' })
+        .onClick(() => {
+          this.regionPickerIndex = this.selectedRegion === 'US' ? 1 : 0;
+          this.regionPickerVisible = true;
+        })
+
+        Blank().height(44)
 
         CorosButton({ textValue: '注册', color: COROS_BUTTON_RED,
           enabledValue: this.registerActionEnabled, loading: this.isLoading,
@@ -101,10 +129,69 @@ struct PasswordSetupPage {
         ErrorText({ message: this.localError });
 
         Blank().layoutWeight(1)
+        }
+        .width('100%')
+        .height('100%')
+        .padding({ left: 20, right: 20 })
       }
       .width('100%')
       .height('100%')
-      .padding({ left: 20, right: 20 })
+
+      if (this.regionPickerVisible) {
+        Stack() {
+        Column()
+          .width('100%')
+          .height('100%')
+          .backgroundColor('#B8000000')
+          .onClick(() => { this.regionPickerVisible = false; })
+
+        Column() {
+          Row() {
+            Text('取消')
+              .fontSize(18)
+              .fontColor(COROS_WHITE)
+              .onClick(() => { this.regionPickerVisible = false; })
+            Blank().layoutWeight(1)
+            Text('国家与地区')
+              .fontSize(20)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(COROS_WHITE)
+            Blank().layoutWeight(1)
+            Text('确定')
+              .fontSize(18)
+              .fontColor(COROS_WHITE)
+              .onClick(() => {
+                this.selectedRegion = this.regionPickerIndex === 1 ? 'US' : 'CN';
+                this.regionPickerVisible = false;
+                this.localError = '';
+              })
+          }
+          .width('100%')
+          .height(70)
+          .padding({ left: 22, right: 22 })
+
+          TextPicker({ range: this.regionCountries, selected: this.regionPickerIndex })
+            .width(180)
+            .height(240)
+            .defaultPickerItemHeight(54)
+            .canLoop(true)
+            .selectedTextStyle({ color: COROS_WHITE, font: { size: 28, weight: FontWeight.Medium } })
+            .textStyle({ color: '#CFCFD4', font: { size: 23, weight: FontWeight.Normal } })
+            .divider({ strokeWidth: 1, color: '#34343A', startMargin: 14, endMargin: 14 })
+            .onChange((value: string | string[], index: number | number[]) => {
+              this.regionPickerIndex = typeof index === 'number' ? index : 0;
+            })
+
+          Blank().height(28)
+        }
+        .width('100%')
+        .backgroundColor('#1A1A1B')
+        .borderRadius({ topLeft: 14, topRight: 14 })
+        .align(Alignment.Bottom)
+      }
+      .width('100%')
+      .height('100%')
+    }
     }
     .width('100%')
     .height('100%')
@@ -119,16 +206,16 @@ struct PasswordSetupPage {
     }
     this.viewModel.dispatch({
       type: LoginActionType.ModeChanged, mode: AuthMode.Register, username: '', password: '',
-      verifyCode: '', displayName: '', region: 'CN'
+      verifyCode: '', displayName: '', region: this.selectedRegion
     });
     this.viewModel.dispatch({
       type: LoginActionType.PasswordChanged, mode: AuthMode.Register, username: '', password: this.setupPassword,
-      verifyCode: '', displayName: '', region: 'CN'
+      verifyCode: '', displayName: '', region: this.selectedRegion
     });
     try {
       await this.viewModel.dispatch({
         type: LoginActionType.SubmitClicked, mode: AuthMode.Register, username: '', password: '',
-        verifyCode: '', displayName: '', region: 'CN'
+        verifyCode: '', displayName: '', region: this.selectedRegion
       });
     } catch (error) {
       this.localError = '提交失败，请重试';
@@ -147,7 +234,6 @@ struct PasswordSetupPage {
       }
       return;
     }
-    this.viewModel.clearSessionSilently();
     this.setupPassword = '';
     this.confirmPassword = '';
     this.syncState();
@@ -157,6 +243,7 @@ struct PasswordSetupPage {
   private syncState(): void {
     let state: LoginState = this.viewModel.state;
     this.isLoading = state.isLoading;
+    this.selectedRegion = state.selectedRegion.length > 0 ? state.selectedRegion : 'CN';
   }
 
   private refreshActionStates(): void {
@@ -168,6 +255,6 @@ struct PasswordSetupPage {
       promptAction.showToast({ message: message });
     } catch (error) {
       console.error('showToast failed');
+        }
+      }
     }
-  }
-}

@@ -38,6 +38,25 @@ data class AuthRegion(
     val isDefault: Boolean = false
 )
 
+data class MockAuthRegion(
+    val region: String,
+    val displayName: String,
+    val isDefault: Boolean = false
+)
+
+fun MockAuthRegion.toDomain() = AuthRegion(region, displayName, isDefault)
+fun AuthRegion.toMockRegion() = MockAuthRegion(region, displayName, isDefault)
+
+/** 将认证区域转换为资料页展示的国家与地区名称。 */
+fun String.toProfileCountryRegion(): String {
+    return when (uppercase()) {
+        "US" -> "美国"
+        "GB" -> "英国"
+        "JP" -> "日本"
+        else -> "中国"
+    }
+}
+
 data class MockAccount(
     val userId: String,
     val account: String,
@@ -123,7 +142,33 @@ enum class MockError(val code: String, val message: String) {
     VerifyCodeExpired("AUTH_VERIFY_CODE_EXPIRED", "验证码已过期，请重新获取"),
     EmptyData("AUTH_EMPTY_DATA", "暂无本地账号数据"),
     CorruptedData("AUTH_CORRUPTED_DATA", "本地登录数据损坏"),
-    PersistFailed("AUTH_PERSIST_FAILED", "本地登录状态保存失败")
+    PersistFailed("AUTH_PERSIST_FAILED", "本地登录状态保存失败"),
+    RegionRequired("AUTH_REGION_REQUIRED", "请选择注册地区")
+}
+
+/** 对应 auth_mock.proto 的 MockErrorMessage；错误只在内存中传递，不作为登录态持久化。 */
+data class MockErrorMessage(val code: String, val message: String)
+
+fun MockError.toProtoMessage() = MockErrorMessage(
+    code = when (this) {
+        MockError.AuthRequired -> "AUTH_REQUIRED"
+        MockError.InvalidParam -> "INVALID_PARAM"
+        MockError.AccountExists -> "ACCOUNT_EXISTS"
+        MockError.AccountNotFound -> "ACCOUNT_NOT_FOUND"
+        MockError.PasswordIncorrect -> "PASSWORD_INCORRECT"
+        MockError.VerifyCodeInvalid -> "VERIFY_CODE_INVALID"
+        MockError.VerifyCodeExpired -> "VERIFY_CODE_EXPIRED"
+        MockError.PersistFailed -> "PERSIST_FAILED"
+        MockError.RegionRequired -> "REGION_REQUIRED"
+        MockError.NewPasswordSameAsOld -> "NEW_PASSWORD_SAME_AS_OLD"
+        MockError.EmptyData -> "EMPTY_DATA"
+        MockError.CorruptedData -> "CORRUPTED_DATA"
+    },
+    message = message
+)
+
+fun MockErrorMessage.toMockError(): MockError? = MockError.entries.firstOrNull {
+    it.toProtoMessage().code == code
 }
 
 enum class AuthMode {

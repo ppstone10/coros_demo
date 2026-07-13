@@ -47,6 +47,11 @@ final class LoginViewModel: ObservableObject {
         refresh()
     }
 
+    func updateRegion(_ value: String) {
+        adapter.setRegion(value)
+        refresh()
+    }
+
     func updatePhone(_ value: String) {
         updateAccount(adapter.normalizePhoneInput(value))
     }

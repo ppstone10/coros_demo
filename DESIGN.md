@@ -51,7 +51,7 @@ UI (用户操作)
   → validateRegister() 校验
     → 校验失败 → 返回 MockError → UI 展示错误
     → 校验通过 → 创建 MockAccount + AuthSession
-      → dataSource.save() → 成功 → LoginResult.Success → LoginEffect.AuthSucceeded
+      → dataSource.save(账号 + currentSession) → 成功 → LoginResult.Success → LoginEffect.AuthSucceeded
       → dataSource.save() → 失败 → MockError.PersistFailed
 ```
 
@@ -94,14 +94,17 @@ UI (用户操作)
 | `MockAccount` | `MockAccount` (`LoginModels.kt:39`) | 直接字段映射 |
 | `MockAuthSession` | `MockAuthSession` (`LoginModels.kt:48`) | 直接字段映射 |
 | `UserProfile` | `UserProfile` (`LoginModels.kt:80`) | 直接字段映射 |
-| `MockAuthSession` → `AuthSession` | `AuthSession` (`LoginModels.kt:16`) | `toDomainOrNull()` (`LoginModels.kt:185`) — 空 userId/account 时返回 null |
-| `AuthSession` → `MockAuthSession` | `MockAuthSession` | `toMockSession()` (`LoginModels.kt:197`) |
+| `MockAuthRegion` | `MockAuthRegion` → `AuthRegion` | `toDomain()` / `toMockRegion()` |
+| `MockErrorMessage` | `MockErrorMessage` → `MockError` | `toProtoMessage()` / `toMockError()`，错误不持久化 |
+| `MockAuthStore` | `MockAuthStore` | `MockAuthStoreJson`，在 common 中按 protobuf JSON 命名规则集中写入/读取 |
+| `MockAuthSession` → `AuthSession` | `AuthSession` | `toDomainOrNull()` — 空 userId/account 时返回 null |
+| `AuthSession` → `MockAuthSession` | `MockAuthSession` | `toMockSession()` |
 
 ### 命名规则
 
 - Proto 使用 `snake_case` 字段名。
 - Kotlin 使用 `camelCase` 字段名。
-- JSON 持久化兼容两种命名（`camelCase` 优先，`snake_case` 作为 fallback，见 `MockAuthStoreJson.kt`）。
+- 本地 JSON 由 common 中的 `MockAuthStoreJson` 集中编解码：按 protobuf JSON 规则使用 `camelCase` 字段名、proto 枚举名称，`int64` 使用 JSON 字符串；读取时兼容既有 `snake_case` 与 Kotlin 枚举名称快照。HarmonyOS 平台层只保存和恢复该快照字符串，不复制 JSON 字段规则。
 
 ## 持久化方案
 
@@ -119,9 +122,9 @@ interface AuthStoreDataSource {
 | 平台 | 实现类 | 存储方式 |
 | --- | --- | --- |
 | 测试/通用 | `InMemoryAuthStoreDataSource` | 内存 Map |
-| Android | `AndroidAuthStoreDataSource` | SharedPreferences (JSON) |
-| iOS | `JsonAuthStoreDataSource` | 文件系统 (JSON) |
-| HarmonyOS | `MemoryAuthStoreDataSource` + `StorePersister` | 文件系统 (JSON) |
+| Android | `AndroidAuthStoreDataSource` | SharedPreferences（protobuf JSON） |
+| iOS | `JsonAuthStoreDataSource` | 文件系统（protobuf JSON） |
+| HarmonyOS | `MemoryAuthStoreDataSource` + `StorePersister` | 文件系统（protobuf JSON） |
 
 ### 存储内容
 
@@ -129,12 +132,14 @@ interface AuthStoreDataSource {
 - 当前会话
 - 验证码状态
 - `defaultAccountsInitialized` 标记
+- 会话签发/失效时间与 `isValid` 失效状态
 
 ## 账号态依赖规则
 
 - 所有业务 mock 数据源必须通过 `AuthRepository.verifyBusinessAccess()` 获取当前登录态。
 - `verifyBusinessAccess()` 返回 `MockResult.Success(AuthSession)` 或 `MockResult.Failure(AuthRequired)`。
 - UI 层收到 `AuthRequired` 后清理会话并导航到登录页。
+- `LocalBusinessMockDataSource` 提供示例业务摘要，按当前 `userId` 生成本地 mock 数据。
 
 ## iOS 集成
 

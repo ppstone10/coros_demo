@@ -6,6 +6,19 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class LoginRulesTest {
+
+    @Test
+    fun mockErrorMapsToTheProtoErrorMessage() {
+        val message = MockError.RegionRequired.toProtoMessage()
+        assertEquals("REGION_REQUIRED", message.code)
+        assertEquals(MockError.RegionRequired, message.toMockError())
+    }
+    @Test
+    fun registrationRegionMapsToTheProfileCountryRegion() {
+        assertEquals("中国", "CN".toProfileCountryRegion())
+        assertEquals("美国", "US".toProfileCountryRegion())
+    }
+
     @Test
     fun phoneInputIsNormalizedAndValidatedInCommon() {
         val normalized = LoginRules.normalizePhoneInput("13a10701202999")

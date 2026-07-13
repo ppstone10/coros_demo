@@ -150,8 +150,8 @@ private func handleNavigation(_ effect: LoginEffect, viewModel: LoginViewModel, 
     switch effect {
     case let effect as LoginEffectAuthSucceeded:
         if effect.mode == AuthMode.register_ {
-            viewModel.clearSessionSilently()
-            router.resetKeepingEntranceAndPush(.login)
+            let destination: AuthRoute = effect.session.isProfileComplete ? .signedIn : .profileCompletion
+            router.resetTo(destination)
             viewModel.toastMessage = "注册成功"
         } else {
             let destination: AuthRoute = effect.session.isProfileComplete ? .signedIn : .profileCompletion

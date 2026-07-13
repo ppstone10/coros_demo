@@ -1280,6 +1280,7 @@ struct ProfileCompletionPage {
     this.errorMessage = state.errorMessage;
     if (state.currentSession !== null) {
       this.profileUsername = state.currentSession.displayName;
+      this.profileCountry = state.currentSession.region === 'US' ? '美国' : '中国';
     }
   }
 

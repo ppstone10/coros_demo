@@ -44,7 +44,7 @@ struct ProfileCompletionView: View {
                 weightKg: nil,
                 measurementSystem: .metric,
                 phone: "",
-                countryRegion: "中国",
+                countryRegion: session?.region == "US" ? "美国" : "中国",
                 gender: nil
             )
         )

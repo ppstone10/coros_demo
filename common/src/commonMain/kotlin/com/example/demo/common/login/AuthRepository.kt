@@ -49,7 +49,7 @@ class LocalMockAuthRepository(
     nowEpochMs: () -> Long = { 0L }
 ) : AuthRepository {
     private var nowEpochMs: () -> Long = nowEpochMs
-    override fun availableRegions(): List<AuthRegion> = DefaultRegions
+    override fun availableRegions(): List<AuthRegion> = DefaultRegions.map { it.toDomain() }
 
     override fun hasAccount(account: String): Boolean {
         val normalizedAccount = account.trim()
@@ -190,7 +190,13 @@ class LocalMockAuthRepository(
 
     override fun markSessionExpired(): MockResult<Unit> {
         val store = loadStore()
-        return if (dataSource.save(store.copy(currentSession = null))) {
+        val session = store.currentSession?.toDomainOrNull()
+            ?: return MockResult.Success(Unit)
+        val expiredSession = session.copy(
+            isValid = false,
+            expireAtEpochMs = nowEpochMs()
+        )
+        return if (dataSource.save(store.copy(currentSession = expiredSession.toMockSession()))) {
             MockResult.Success(Unit)
         } else {
             MockResult.Failure(MockError.PersistFailed)
@@ -211,8 +217,14 @@ class LocalMockAuthRepository(
 
     override fun resumeSession(): SessionResumeResult {
         val store = loadStore()
-        val session = store.currentSession?.toDomainOrNull()?.takeIf { it.isValid }
+        val session = store.currentSession?.toDomainOrNull()
             ?: return SessionResumeResult.NoSession
+        if (!session.isValid) {
+            return when (clearSession()) {
+                is MockResult.Success -> SessionResumeResult.Expired
+                is MockResult.Failure -> SessionResumeResult.Failure(MockError.PersistFailed)
+            }
+        }
         if (session.expireAtEpochMs > 0L && session.expireAtEpochMs <= nowEpochMs()) {
             return when (clearSession()) {
                 is MockResult.Success -> SessionResumeResult.Expired
@@ -350,7 +362,7 @@ class LocalMockAuthRepository(
         )
         val nextStore = store.copy(
             accounts = store.accounts + accountModel,
-            currentSession = null,
+            currentSession = session.toMockSession(),
             verifyCodes = store.verifyCodes.filterNot { it.account == account }
         )
 
@@ -433,7 +445,9 @@ class LocalMockAuthRepository(
         if (verifyCode.length != VerifyCodeLength || verifyCode != savedCode.code) {
             return MockError.VerifyCodeInvalid
         }
-        if (availableRegions().none { it.region == region }) return MockError.InvalidParam
+        if (region.isBlank() || availableRegions().none { it.region == region }) {
+            return MockError.RegionRequired
+        }
         return null
     }
 
@@ -469,8 +483,8 @@ class LocalMockAuthRepository(
         const val DefaultPassword = "123456"
 
         val DefaultRegions = listOf(
-            AuthRegion(region = "CN", displayName = "China", isDefault = true),
-            AuthRegion(region = "US", displayName = "United States")
+            MockAuthRegion(region = "CN", displayName = "China", isDefault = true),
+            MockAuthRegion(region = "US", displayName = "United States")
         )
 
         private val DefaultAccounts = listOf(

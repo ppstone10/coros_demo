@@ -30,6 +30,9 @@ import com.example.demo.login.components.ErrorText
 import com.example.demo.login.components.UnderlineInput
 import com.example.demo.ui.theme.DemoTheme
 import androidx.compose.material3.Text
+import com.example.demo.common.login.toProfileCountryRegion
+import com.example.demo.login.profile.OptionSheet
+import com.example.demo.login.profile.ProfilePickerRow
 
 @Composable
 fun PasswordSetupScreen(
@@ -41,6 +44,8 @@ fun PasswordSetupScreen(
     var password by rememberSaveable { mutableStateOf("") }
     var confirmPassword by rememberSaveable { mutableStateOf("") }
     var localError by rememberSaveable { mutableStateOf<String?>(null) }
+    var showRegionSheet by rememberSaveable { mutableStateOf(false) }
+    val selectedCountryRegion = state.selectedRegion.toProfileCountryRegion()
 
     BackHandler(onBack = onBack)
 
@@ -95,7 +100,15 @@ fun PasswordSetupScreen(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = "6-20位必须包含字母和数字", color = Color(0xFFD8D8DD), fontSize = 14.sp)
-        Spacer(modifier = Modifier.height(80.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+        ProfilePickerRow(
+            label = "国家与地区",
+            required = false,
+            value = selectedCountryRegion,
+            placeholder = "中国",
+            onClick = { showRegionSheet = true }
+        )
+        Spacer(modifier = Modifier.height(44.dp))
         CorosFilledButton(
             text = "注册",
             color = CorosButtonRed,
@@ -105,6 +118,20 @@ fun PasswordSetupScreen(
         )
         ErrorText(localError ?: state.errorMessage)
         Spacer(modifier = Modifier.weight(1f))
+    }
+
+    if (showRegionSheet) {
+        OptionSheet(
+            title = "国家与地区",
+            options = state.regions.map { it.region to it.region.toProfileCountryRegion() },
+            selected = state.selectedRegion,
+            onDismiss = { showRegionSheet = false },
+            onConfirm = { region ->
+                viewModel.onRegionChanged(region)
+                showRegionSheet = false
+                localError = null
+            }
+        )
     }
 }
 

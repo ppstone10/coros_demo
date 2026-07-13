@@ -63,6 +63,7 @@ import com.example.demo.R
 import com.example.demo.common.login.MeasurementSystem
 import com.example.demo.common.login.UserGender
 import com.example.demo.common.login.UserProfile
+import com.example.demo.common.login.toProfileCountryRegion
 import com.example.demo.login.LoginViewModel
 import com.example.demo.login.components.CorosBlack
 import com.example.demo.login.components.CorosButtonRed
@@ -105,8 +106,12 @@ fun ProfileCompletionScreen(
         mutableStateOf(savedProfile?.measurementSystem ?: MeasurementSystem.Metric)
     }
     var phone by rememberSaveable(savedProfile?.phone) { mutableStateOf(savedProfile?.phone.orEmpty()) }
-    var countryRegion by rememberSaveable(savedProfile?.countryRegion) {
-        mutableStateOf(savedProfile?.countryRegion?.takeIf { it.isNotBlank() } ?: "中国")
+    val registeredCountryRegion = state.currentSession?.region?.toProfileCountryRegion().orEmpty()
+    var countryRegion by rememberSaveable(savedProfile?.countryRegion, registeredCountryRegion) {
+        mutableStateOf(
+            savedProfile?.countryRegion?.takeIf { it.isNotBlank() }
+                ?: registeredCountryRegion.ifBlank { "中国" }
+        )
     }
     var gender by rememberSaveable(savedProfile?.gender) { mutableStateOf(savedProfile?.gender) }
     var picker by remember { mutableStateOf<ProfilePicker?>(null) }
@@ -394,7 +399,7 @@ private fun ProfileTextRow(
 }
 
 @Composable
-private fun ProfilePickerRow(
+fun ProfilePickerRow(
     label: String,
     required: Boolean,
     value: String,
@@ -575,7 +580,7 @@ private fun WeightSheet(
 }
 
 @Composable
-private fun <T> OptionSheet(
+fun <T> OptionSheet(
     title: String,
     options: List<Pair<T, String>>,
     selected: T,

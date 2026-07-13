@@ -14,6 +14,33 @@ enum UserGender {
   FEMALE = 2;
 }
 
+enum MockErrorCode {
+  MOCK_ERROR_CODE_UNSPECIFIED = 0;
+  AUTH_REQUIRED = 1;
+  INVALID_PARAM = 2;
+  ACCOUNT_EXISTS = 3;
+  ACCOUNT_NOT_FOUND = 4;
+  PASSWORD_INCORRECT = 5;
+  VERIFY_CODE_INVALID = 6;
+  VERIFY_CODE_EXPIRED = 7;
+  PERSIST_FAILED = 8;
+  REGION_REQUIRED = 9;
+  NEW_PASSWORD_SAME_AS_OLD = 10;
+  EMPTY_DATA = 11;
+  CORRUPTED_DATA = 12;
+}
+
+message MockErrorMessage {
+  MockErrorCode code = 1;
+  string message = 2;
+}
+
+message MockAuthRegion {
+  string region = 1;
+  string display_name = 2;
+  bool is_default = 3;
+}
+
 message UserProfile {
   optional string avatar_uri = 1;
   string username = 2;
@@ -42,6 +69,8 @@ message MockAuthSession {
   string region = 4;
   bool is_valid = 5;
   optional UserProfile profile = 6;
+  int64 issued_at_epoch_ms = 7;
+  int64 expire_at_epoch_ms = 8;
 }
 
 message MockVerifyCodeState {

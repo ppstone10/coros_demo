@@ -1,5 +1,12 @@
 package com.example.demo.common.login
 
+/**
+ * 受 [auth_mock.proto] 约束的本地认证快照编解码器。
+ *
+ * 由于 HarmonyOS bridge 不直接提供 protobuf JSON runtime，三端复用本实现产生
+ * protobuf JSON 命名规则兼容的快照；平台持久化层仅负责读写字符串，不得自行
+ * 拼装认证模型 JSON 或复制字段规则。
+ */
 object MockAuthStoreJson {
     fun encode(store: MockAuthStore): String {
         return buildString {
@@ -86,11 +93,9 @@ object MockAuthStoreJson {
             append(',')
             appendJsonBoolean("isValid", isValid)
             append(',')
-            append("\"issuedAtEpochMs\":")
-            append(issuedAtEpochMs)
+            appendJsonField("issuedAtEpochMs", issuedAtEpochMs.toString())
             append(',')
-            append("\"expireAtEpochMs\":")
-            append(expireAtEpochMs)
+            appendJsonField("expireAtEpochMs", expireAtEpochMs.toString())
             append(',')
             append("\"profile\":")
             append(profile.toJson())
@@ -136,13 +141,15 @@ object MockAuthStoreJson {
             append(',')
             appendJsonNullableDouble("weightKg", weightKg)
             append(',')
-            appendJsonField("measurementSystem", measurementSystem.name)
+            // protobuf JSON 约定：proto 的 measurement_system / country_region
+            // 使用 lowerCamelCase 字段名，枚举使用 proto 中声明的名称。
+            appendJsonField("measurementSystem", measurementSystem.toProtoJsonName())
             append(',')
             appendJsonField("phone", phone)
             append(',')
             appendJsonField("countryRegion", countryRegion)
             append(',')
-            appendJsonNullableField("gender", gender?.name)
+            appendJsonNullableField("gender", gender?.toProtoJsonName())
             append('}')
         }
     }
@@ -199,9 +206,9 @@ object MockAuthStoreJson {
             isValid = parseBooleanOrDefault(json, defaultValue = false, "isValid", "is_valid"),
             profile = parseProfile(json),
             issuedAtEpochMs = optionalRawValue(json, "issuedAtEpochMs", "issued_at_epoch_ms")
-                ?.toLongOrNull() ?: 0L,
+                ?.trim('"')?.toLongOrNull() ?: 0L,
             expireAtEpochMs = optionalRawValue(json, "expireAtEpochMs", "expire_at_epoch_ms")
-                ?.toLongOrNull() ?: 0L
+                ?.trim('"')?.toLongOrNull() ?: 0L
         )
     }
 
@@ -209,7 +216,7 @@ object MockAuthStoreJson {
         return MockVerifyCodeState(
             account = requireString(json, "account"),
             code = requireString(json, "code"),
-            expireAtEpochMs = requireRawValue(json, "expireAtEpochMs", "expire_at_epoch_ms").toLongOrNull()
+            expireAtEpochMs = requireRawValue(json, "expireAtEpochMs", "expire_at_epoch_ms").trim('"').toLongOrNull()
                 ?: throw IllegalArgumentException("Invalid expireAtEpochMs")
         )
     }
@@ -232,18 +239,35 @@ object MockAuthStoreJson {
             birthDate = birthDate,
             heightCm = heightStr?.takeUnless { it == "null" }?.toIntOrNull(),
             weightKg = weightStr?.takeUnless { it == "null" }?.toDoubleOrNull(),
-            measurementSystem = try {
-                MeasurementSystem.valueOf(measureSys)
-            } catch (e: Exception) {
-                MeasurementSystem.Metric
-            },
+            measurementSystem = measureSys.toMeasurementSystem(),
             phone = phone,
             countryRegion = countryRegion.ifBlank { "中国" },
             gender = genderStr
                 ?.trim('"')
                 ?.takeUnless { it == "null" || it.isBlank() }
-                ?.let { runCatching { UserGender.valueOf(it) }.getOrNull() }
+                ?.toUserGender()
         )
+    }
+
+    private fun MeasurementSystem.toProtoJsonName() = when (this) {
+        MeasurementSystem.Metric -> "METRIC"
+        MeasurementSystem.Imperial -> "IMPERIAL"
+    }
+
+    private fun String.toMeasurementSystem() = when (this) {
+        "IMPERIAL", MeasurementSystem.Imperial.name -> MeasurementSystem.Imperial
+        else -> MeasurementSystem.Metric
+    }
+
+    private fun UserGender.toProtoJsonName() = when (this) {
+        UserGender.Male -> "MALE"
+        UserGender.Female -> "FEMALE"
+    }
+
+    private fun String.toUserGender(): UserGender? = when (trim('"')) {
+        "MALE", UserGender.Male.name -> UserGender.Male
+        "FEMALE", UserGender.Female.name -> UserGender.Female
+        else -> null
     }
 
     private fun StringBuilder.appendJsonField(name: String, value: String) {

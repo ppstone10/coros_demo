@@ -6,7 +6,9 @@ export function handleAuthEffect(effect: LoginEffect): void {
   switch (effect.type) {
     case LoginEffectType.AuthSucceeded:
       if (effect.mode === AuthMode.Register) {
-        navigate(NavOperation.ResetKeepingEntranceAndPush, AuthRoutes.LOGIN);
+        const target = effect.session.isProfileComplete
+          ? AuthRoutes.SIGNED_IN : AuthRoutes.PROFILE_COMPLETION;
+        navigate(NavOperation.ResetTo, target);
         showToast('注册成功');
       } else {
         const target = effect.session.isProfileComplete

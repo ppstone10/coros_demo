@@ -8,14 +8,17 @@ import kotlin.test.assertTrue
 
 class LoginUseCaseTest {
     @Test
-    fun registerSuccessSavesSession() {
-        val repository = repository()
+    fun registerSuccessSavesSessionAndCanBeRestored() {
+        val dataSource = InMemoryAuthStoreDataSource()
+        val repository = repository(dataSource)
 
         val result = register(repository, account = "new.user@example.com")
 
         val success = assertIs<LoginResult.Success>(result)
         assertEquals("new.user@example.com", success.session.account)
-        assertEquals(null, repository.currentSession())
+        assertTrue(repository.hasAccount("new.user@example.com"))
+        assertEquals(success.session, repository.currentSession())
+        assertEquals(success.session, repository(dataSource).currentSession())
     }
 
     @Test
@@ -46,6 +49,24 @@ class LoginUseCaseTest {
 
         val failure = assertIs<LoginResult.Failure>(result)
         assertEquals(MockError.VerifyCodeInvalid.code, failure.code)
+    }
+
+    @Test
+    fun missingRegionFailsWithExplicitMessage() {
+        val repository = repository()
+        repository.requestVerifyCode("missing-region@example.com")
+
+        val result = RegisterUseCase(repository).execute(
+            account = "missing-region@example.com",
+            password = "password1",
+            verifyCode = LocalMockAuthRepository.DefaultVerifyCode,
+            region = "",
+            displayName = "Missing Region"
+        )
+
+        val failure = assertIs<LoginResult.Failure>(result)
+        assertEquals(MockError.RegionRequired.code, failure.code)
+        assertEquals(MockError.RegionRequired.message, failure.message)
     }
 
     @Test
@@ -92,6 +113,10 @@ class LoginUseCaseTest {
         now += LocalMockAuthRepository.SessionTtlMs
         assertEquals(SessionResumeResult.Expired, repository.resumeSession())
         assertEquals(null, dataSource.load().currentSession)
+
+        val businessAccess = repository.verifyBusinessAccess()
+        val failure = assertIs<MockResult.Failure>(businessAccess)
+        assertEquals(MockError.AuthRequired, failure.error)
     }
 
     @Test
@@ -121,6 +146,18 @@ class LoginUseCaseTest {
         val success = assertIs<LoginResult.Success>(result)
         assertEquals("login@example.com", success.session.account)
         assertEquals(success.session, repository.currentSession())
+    }
+
+    @Test
+    fun businessAccessSucceedsAfterLogin() {
+        val repository = repository()
+        register(repository, account = "business-access@example.com")
+
+        val login = LoginUseCase(repository).execute("business-access@example.com", "password1")
+        val session = assertIs<LoginResult.Success>(login).session
+
+        val access = assertIs<MockResult.Success<AuthSession>>(repository.verifyBusinessAccess())
+        assertEquals(session, access.data)
     }
 
     @Test
@@ -304,14 +341,18 @@ class LoginUseCaseTest {
 
     @Test
     fun businessAccessFailsAfterSessionExpired() {
-        val repository = repository()
+        val dataSource = InMemoryAuthStoreDataSource()
+        val repository = repository(dataSource)
         register(repository, account = "expired@example.com")
 
         repository.markSessionExpired()
+        assertEquals(false, dataSource.load().currentSession?.isValid)
         val result = repository.verifyBusinessAccess()
 
         val failure = assertIs<MockResult.Failure>(result)
         assertEquals(MockError.AuthRequired, failure.error)
+        assertEquals(SessionResumeResult.Expired, repository(dataSource).resumeSession())
+        assertEquals(null, dataSource.load().currentSession)
     }
 
     @Test
@@ -327,6 +368,11 @@ class LoginUseCaseTest {
 
         assertEquals(session, restoredRepository.currentSession())
         assertNotNull(restoredRepository.requireSession())
+        assertEquals(SessionResumeResult.Active(session), restoredRepository.resumeSession())
+        val businessAccess = assertIs<MockResult.Success<AuthSession>>(
+            restoredRepository.verifyBusinessAccess()
+        )
+        assertEquals(session, businessAccess.data)
     }
 
     @Test
@@ -368,6 +414,10 @@ class LoginUseCaseTest {
         val encoded = MockAuthStoreJson.encode(store)
         val decoded = MockAuthStoreJson.decode(encoded)
 
+        assertTrue(encoded.startsWith("{"))
+        assertTrue(encoded.contains("\"currentSession\""))
+        assertTrue(encoded.contains("\"measurementSystem\":\"METRIC\""))
+        assertTrue(encoded.contains("\"issuedAtEpochMs\":\""))
         assertEquals(store, decoded)
         assertTrue(MockAuthStoreJson.isRoundTripStable(encoded))
     }

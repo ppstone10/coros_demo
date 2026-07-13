@@ -8,6 +8,8 @@ struct PasswordSetupView: View {
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var localError: String?
+    @State private var selectedRegion = "CN"
+    @State private var showsRegionPicker = false
 
     var body: some View {
         AuthBlackPage(onBack: { backToRegisterPage() }, showFeedback: false) {
@@ -35,7 +37,26 @@ struct PasswordSetupView: View {
             Text("6-20位必须包含字母和数字")
                 .foregroundStyle(Color(red: 216 / 255, green: 216 / 255, blue: 221 / 255))
                 .font(.system(size: 14))
-            Spacer().frame(height: 80)
+            Spacer().frame(height: 12)
+            Button(action: { showsRegionPicker = true }) {
+                HStack(spacing: 12) {
+                    Text("国家与地区")
+                        .foregroundStyle(.white)
+                        .font(.system(size: 19))
+                    Spacer(minLength: 16)
+                    Text(selectedRegion.countryRegionName)
+                        .foregroundStyle(Color.white.opacity(0.78))
+                        .font(.system(size: 19))
+                    Image("right_more")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
+                }
+                .frame(height: 66)
+                .overlay(alignment: .bottom) { Rectangle().fill(corosLine).frame(height: 1) }
+            }
+            .buttonStyle(.plain)
+            Spacer().frame(height: 44)
             CorosFilledButton(
                 text: "注册",
                 color: corosButtonRed,
@@ -45,6 +66,12 @@ struct PasswordSetupView: View {
             )
             ErrorText(localError ?? viewModel.state.errorMessage)
             Spacer(minLength: 80)
+        }
+        .onAppear { selectedRegion = viewModel.state.selectedRegion }
+        .sheet(isPresented: $showsRegionPicker) {
+            RegistrationRegionPicker(region: $selectedRegion)
+                .presentationDetents([.height(350)])
+                .presentationCornerRadius(14)
         }
     }
 
@@ -61,6 +88,7 @@ struct PasswordSetupView: View {
             localError = "两次输入的密码不一致"; return
         }
         viewModel.requestRegisterMode()
+        viewModel.updateRegion(selectedRegion)
         viewModel.updatePassword(password)
         viewModel.submit()
     }
@@ -68,5 +96,56 @@ struct PasswordSetupView: View {
     private func backToRegisterPage() {
         viewModel.updateVerifyCode("")
         router.resetKeepingEntranceAndPush(targetKind == .email ? .emailRegister : .phoneRegister)
+    }
+}
+
+private struct RegistrationRegionPicker: View {
+    @Binding var region: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedRegion = "CN"
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image("ic_profile_close")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(.plain)
+                Spacer()
+                Text("国家与地区").foregroundStyle(.white).font(.system(size: 20, weight: .semibold))
+                Spacer()
+                Button(action: {
+                    region = selectedRegion
+                    dismiss()
+                }) {
+                    Image("ic_profile_check")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 34, height: 34)
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(height: 58)
+            .padding(.horizontal, 20)
+
+            Picker("", selection: $selectedRegion) {
+                Text("中国").tag("CN")
+                Text("美国").tag("US")
+            }
+            .pickerStyle(.wheel)
+            .labelsHidden()
+            .colorScheme(.dark)
+        }
+        .background(Color(red: 27 / 255, green: 27 / 255, blue: 29 / 255).ignoresSafeArea())
+        .onAppear { selectedRegion = region }
+    }
+}
+
+private extension String {
+    var countryRegionName: String {
+        self == "US" ? "美国" : "中国"
     }
 }

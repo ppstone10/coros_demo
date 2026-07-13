@@ -110,9 +110,13 @@ fun AuthNavGraph() {
         when (val effect = viewModel.effect) {
             is LoginEffect.AuthSucceeded -> {
                 if (effect.mode == AuthMode.Register) {
-                    navController.navigateWithOperation(LoginRoute, NavOperation.ResetKeepingEntranceAndPush)
+                    val destination = if (effect.session.isProfileComplete) {
+                        SignedInRoute
+                    } else {
+                        ProfileCompletionRoute
+                    }
+                    navController.navigateWithOperation(destination, NavOperation.ResetTo)
                     snackbarHostState.showSnackbar("注册成功")
-                    viewModel.clearSessionSilently()
                 } else {
                     val destination = if (effect.session.isProfileComplete) {
                         SignedInRoute
