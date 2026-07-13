@@ -52,6 +52,8 @@ protocol SharedLoginAdapterProtocol {
     func submit()
     func logout()
     func clearSessionSilently()
+    func pauseSession()
+    func resumeSession()
     func consumeEffect() -> LoginEffect?
 }
 
@@ -70,6 +72,8 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
                 return KotlinBoolean(bool: defaults.synchronize())
             }
         )
+        syncClock()
+        facade.restoreSession()
     }
 
     func snapshot() -> LoginState {
@@ -249,6 +253,16 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
 
     func clearSessionSilently() {
         facade.clearSessionSilently()
+    }
+
+    func pauseSession() {
+        syncClock()
+        facade.pauseSession()
+    }
+
+    func resumeSession() {
+        syncClock()
+        facade.restoreSession()
     }
 
     func consumeEffect() -> LoginEffect? {

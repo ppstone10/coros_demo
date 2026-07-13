@@ -4,6 +4,7 @@ import { BusinessError } from '@ohos.base';
 import window from '@ohos.window';
 import { init, setup } from '@kuiklybase/knoi';
 import { initPersistence, saveStoreSnapshot } from '../login/StorePersister';
+import { getService } from '../login/HarmonyServiceProvider';
 
 let knoiInitialized: boolean = false;
 
@@ -56,6 +57,7 @@ export default class EntryAbility extends UIAbility {
 
   onBackground(): void {
     hilog.info(0x0001, 'demo_persist', 'onBackground');
+    getService().pauseSession();
     this.persistCurrentLoginStore('background');
   }
 

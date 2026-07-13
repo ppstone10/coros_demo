@@ -17,6 +17,8 @@ export interface HarmonyLoginService {
 
    clearSessionSilently(): void;
 
+   pauseSession(): void;
+
    consumeEffectSnapshot(): string;
 
    setLoginMode(): void;

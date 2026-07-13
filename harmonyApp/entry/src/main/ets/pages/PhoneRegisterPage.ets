@@ -11,6 +11,7 @@ import {
   COROS_BLACK,
   COROS_WHITE,
   COROS_RED,
+  COROS_OVERLAY_COLOR,
   REGISTER_AGREEMENT_TOP_SPACING,
   REGISTER_ACTION_TOP_SPACING
 } from '../login/components/AuthColors';
@@ -116,8 +117,12 @@ struct PhoneRegisterPage {
 
   @Builder
   TermsConsentSheet() {
-    Column() {
-      Blank().layoutWeight(1)
+    Stack({ alignContent: Alignment.Bottom }) {
+      Column()
+        .width('100%')
+        .height('100%')
+        .backgroundColor(COROS_OVERLAY_COLOR)
+        .onClick(() => { })
       Column() {
         Row() {
           Image($r('app.media.ic_profile_close'))
@@ -151,7 +156,7 @@ struct PhoneRegisterPage {
       .backgroundColor('#1A1A1B')
       .borderRadius({ topLeft: 12, topRight: 12 })
     }
-    .width('100%').height('100%').backgroundColor('#000000C7')
+    .width('100%').height('100%').zIndex(1)
   }
 
   private openLegal(url: string): void {

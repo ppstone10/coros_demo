@@ -78,6 +78,23 @@ class LoginUseCaseTest {
     }
 
     @Test
+    fun sessionExpiresAfterBackgroundTtlAndIsRemovedFromPersistence() {
+        var now = 1_000L
+        val dataSource = InMemoryAuthStoreDataSource()
+        val repository = LocalMockAuthRepository(dataSource, nowEpochMs = { now })
+
+        register(repository, account = "ttl@example.com")
+        repository.clearSession()
+        val login = assertIs<LoginResult.Success>(repository.login(LoginRequestDto("ttl@example.com", "password1")))
+        assertEquals(0L, login.session.expireAtEpochMs)
+
+        assertIs<MockResult.Success<Unit>>(repository.pauseSession())
+        now += LocalMockAuthRepository.SessionTtlMs
+        assertEquals(SessionResumeResult.Expired, repository.resumeSession())
+        assertEquals(null, dataSource.load().currentSession)
+    }
+
+    @Test
     fun verifyCodeRemainingSecondsUsesTheSameClockAsExpiration() {
         var now = 1_000L
         val repository = LocalMockAuthRepository(

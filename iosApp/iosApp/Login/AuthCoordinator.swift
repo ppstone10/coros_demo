@@ -47,6 +47,7 @@ struct AuthRouter {
 struct AuthCoordinator: View {
     @StateObject private var viewModel = LoginViewModel()
     @State private var path = NavigationPath()
+    @Environment(\.scenePhase) private var scenePhase
 
     private var router: AuthRouter {
         AuthRouter.create(path: $path)
@@ -120,6 +121,14 @@ struct AuthCoordinator: View {
         .onChange(of: viewModel.effectTrigger) { _ in
             guard let effect = viewModel.consumeEffect() else { return }
             handleNavigation(effect, viewModel: viewModel, router: router)
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase == .background {
+                viewModel.pauseSession()
+            }
+        }
+        .onAppear {
+            viewModel.handleInitialEffectIfNeeded()
         }
     }
 

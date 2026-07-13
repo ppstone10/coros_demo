@@ -133,6 +133,35 @@ class LoginStore(
         )
     }
 
+    fun pauseSession() {
+        authRepository.pauseSession()
+    }
+
+    fun resumeSession() {
+        when (val result = authRepository.resumeSession()) {
+            is SessionResumeResult.Active -> {
+                state = state.copy(currentSession = result.session, isLoggedIn = true, errorMessage = null)
+            }
+            SessionResumeResult.NoSession -> {
+                state = state.copy(currentSession = null, isLoggedIn = false, errorMessage = null)
+            }
+            SessionResumeResult.Expired -> {
+                state = state.copy(
+                    isLoggedIn = false,
+                    currentSession = null,
+                    password = "",
+                    verifyCode = "",
+                    errorMessage = MockError.AuthRequired.message
+                )
+                pendingEffect = LoginEffect.SessionExpired
+            }
+            is SessionResumeResult.Failure -> {
+                state = state.copy(errorMessage = result.error.message)
+                pendingEffect = LoginEffect.ShowMessage(result.error.message)
+            }
+        }
+    }
+
     private fun submit() {
         if (!state.canSubmit) {
             val message = if (state.mode == AuthMode.Register) {
@@ -247,14 +276,7 @@ class LoginStore(
         }
     }
 
-    private fun restoreSession() {
-        val session = authRepository.currentSession()
-        state = state.copy(
-            currentSession = session,
-            isLoggedIn = session?.isValid == true,
-            errorMessage = null
-        )
-    }
+    private fun restoreSession() = resumeSession()
 
     companion object {
         fun createFake(): LoginStore {

@@ -64,6 +64,17 @@ class LoginViewModel(
         dispatch(LoginAction.ExpireSessionClicked)
     }
 
+    fun onAppBackgrounded() {
+        store.pauseSession()
+        state = store.state
+    }
+
+    fun onAppForegrounded() {
+        store.resumeSession()
+        state = store.state
+        effect = store.consumeEffect()
+    }
+
     fun normalizePhoneInput(value: String): String {
         return LoginRules.normalizePhoneInput(value)
     }

@@ -12,7 +12,8 @@ export const COROS_RED_DISABLED: string = '#74001E';
 export const COROS_BUTTON_RED_DISABLED: string = '#5C001B';
 export const COROS_DIALOG_BG: string = '#222224';
 export const COROS_SHEET_BG: string = '#1A1A1B';
-export const COROS_OVERLAY_COLOR: string = '#000000C7';
+// ArkUI 颜色使用 #AARRGGBB：C7 表示约 78% 的遮罩不透明度。
+export const COROS_OVERLAY_COLOR: string = '#C7000000';
 export const COROS_SUBTITLE_COLOR: string = '#D8D8DD';
 
 export const AUTH_TITLE_TOP_PADDING: number = 18;

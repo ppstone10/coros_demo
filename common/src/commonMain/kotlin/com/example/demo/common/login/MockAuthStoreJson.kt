@@ -86,6 +86,12 @@ object MockAuthStoreJson {
             append(',')
             appendJsonBoolean("isValid", isValid)
             append(',')
+            append("\"issuedAtEpochMs\":")
+            append(issuedAtEpochMs)
+            append(',')
+            append("\"expireAtEpochMs\":")
+            append(expireAtEpochMs)
+            append(',')
             append("\"profile\":")
             append(profile.toJson())
             append('}')
@@ -191,7 +197,11 @@ object MockAuthStoreJson {
             displayName = requireString(json, "displayName", "display_name"),
             region = requireString(json, "region"),
             isValid = parseBooleanOrDefault(json, defaultValue = false, "isValid", "is_valid"),
-            profile = parseProfile(json)
+            profile = parseProfile(json),
+            issuedAtEpochMs = optionalRawValue(json, "issuedAtEpochMs", "issued_at_epoch_ms")
+                ?.toLongOrNull() ?: 0L,
+            expireAtEpochMs = optionalRawValue(json, "expireAtEpochMs", "expire_at_epoch_ms")
+                ?.toLongOrNull() ?: 0L
         )
     }
 

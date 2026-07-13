@@ -30,6 +30,8 @@ open class HarmonyLoginService {
             val store = HarmonyLoginJson.parseStoreSnapshot(json)
             dataSource.replaceStore(store)
             facade = createFacade(dataSource)
+            syncClock()
+            facade.restoreSession()
             true
         } catch (e: Exception) {
             false
@@ -47,6 +49,11 @@ open class HarmonyLoginService {
 
     fun clearSessionSilently() {
         facade.clearSessionSilently()
+    }
+
+    fun pauseSession() {
+        syncClock()
+        facade.pauseSession()
     }
 
     fun consumeEffectSnapshot(): String {

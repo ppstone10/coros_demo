@@ -5,6 +5,7 @@ import { COROS_RED, COROS_BLACK } from '../login/components/AuthColors';
 import { CorosButton } from '../login/components/AuthComponents';
 import { AuthRoutes } from '../login/AuthRoutes';
 import { navigate, NavOperation } from '../login/AuthNavigator';
+import { handleAuthEffect } from '../login/AuthEffectHandler';
 
 @Entry @Component
 struct EntrancePage {
@@ -14,6 +15,11 @@ struct EntrancePage {
 
   aboutToAppear(): void {
     this.syncState();
+    const effect = this.viewModel.consumeEffect();
+    if (effect !== null) {
+      handleAuthEffect(effect);
+      return;
+    }
     if (this.isLoggedIn && this.sessionAccount.length > 0) {
       let state: LoginState = this.viewModel.state;
       let targetUrl: string = state.currentSession !== null && state.currentSession.isProfileComplete ?

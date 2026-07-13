@@ -19,7 +19,9 @@ data class AuthSession(
     val displayName: String?,
     val region: String,
     val isValid: Boolean,
-    val profile: UserProfile? = null
+    val profile: UserProfile? = null,
+    val issuedAtEpochMs: Long = 0L,
+    val expireAtEpochMs: Long = 0L
 ) {
     val resolvedDisplayName: String
         get() = profile?.username?.takeIf { it.isNotBlank() }
@@ -51,7 +53,9 @@ data class MockAuthSession(
     val displayName: String = "",
     val region: String = "",
     val isValid: Boolean = false,
-    val profile: UserProfile? = null
+    val profile: UserProfile? = null,
+    val issuedAtEpochMs: Long = 0L,
+    val expireAtEpochMs: Long = 0L
 )
 
 data class MockVerifyCodeState(
@@ -99,6 +103,13 @@ data class UserProfile(
 sealed interface MockResult<out T> {
     data class Success<T>(val data: T) : MockResult<T>
     data class Failure(val error: MockError) : MockResult<Nothing>
+}
+
+sealed interface SessionResumeResult {
+    data class Active(val session: AuthSession) : SessionResumeResult
+    data object NoSession : SessionResumeResult
+    data object Expired : SessionResumeResult
+    data class Failure(val error: MockError) : SessionResumeResult
 }
 
 enum class MockError(val code: String, val message: String) {
@@ -196,7 +207,9 @@ fun MockAuthSession.toDomainOrNull(): AuthSession? {
         displayName = displayName.takeIf { it.isNotBlank() },
         region = region,
         isValid = isValid,
-        profile = profile
+        profile = profile,
+        issuedAtEpochMs = issuedAtEpochMs,
+        expireAtEpochMs = expireAtEpochMs
     )
 }
 
@@ -207,6 +220,8 @@ fun AuthSession.toMockSession(): MockAuthSession {
         displayName = displayName.orEmpty(),
         region = region,
         isValid = isValid,
-        profile = profile
+        profile = profile,
+        issuedAtEpochMs = issuedAtEpochMs,
+        expireAtEpochMs = expireAtEpochMs
     )
 }

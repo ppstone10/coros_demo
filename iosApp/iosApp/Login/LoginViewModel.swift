@@ -14,6 +14,7 @@ final class LoginViewModel: ObservableObject {
     init(adapter: SharedLoginAdapterProtocol = SharedLoginAdapter()) {
         self.adapter = adapter
         self.state = adapter.snapshot()
+        self.pendingEffect = adapter.consumeEffect()
     }
 
     func requestLoginMode() {
@@ -192,6 +193,21 @@ final class LoginViewModel: ObservableObject {
     func clearSessionSilently() {
         adapter.clearSessionSilently()
         refresh()
+    }
+
+    func pauseSession() {
+        adapter.pauseSession()
+        refresh()
+    }
+
+    func resumeSession() {
+        adapter.resumeSession()
+        refresh()
+    }
+
+    func handleInitialEffectIfNeeded() {
+        guard pendingEffect != nil else { return }
+        effectTrigger &+= 1
     }
 
     func consumeEffect() -> LoginEffect? {

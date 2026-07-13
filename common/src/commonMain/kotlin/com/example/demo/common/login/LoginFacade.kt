@@ -225,6 +225,14 @@ class LoginFacade(
         store.clearSessionSilently()
     }
 
+    fun restoreSession() {
+        store.resumeSession()
+    }
+
+    fun pauseSession() {
+        store.pauseSession()
+    }
+
     fun consumeEffect(): LoginEffect? {
         return store.consumeEffect()
     }

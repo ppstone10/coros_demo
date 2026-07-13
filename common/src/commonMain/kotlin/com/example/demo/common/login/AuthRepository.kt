@@ -34,6 +34,8 @@ interface AuthRepository {
     fun saveProfile(profile: UserProfile): MockResult<AuthSession>
     fun clearSession(): MockResult<Unit>
     fun markSessionExpired(): MockResult<Unit>
+    fun pauseSession(): MockResult<Unit>
+    fun resumeSession(): SessionResumeResult
     fun changePassword(account: String, oldPassword: String, newPassword: String): MockResult<Unit>
     fun resetPassword(account: String, newPassword: String): MockResult<Unit>
     fun deleteCurrentAccount(): MockResult<Unit>
@@ -118,9 +120,11 @@ class LocalMockAuthRepository(
     }
 
     override fun currentSession(): AuthSession? {
-        return loadStore().currentSession
+        val session = loadStore().currentSession
             ?.toDomainOrNull()
             ?.takeIf { it.isValid }
+            ?: return null
+        return session
     }
 
     override fun requireSession(): AuthSession {
@@ -186,11 +190,41 @@ class LocalMockAuthRepository(
 
     override fun markSessionExpired(): MockResult<Unit> {
         val store = loadStore()
-        val expiredSession = store.currentSession?.copy(isValid = false)
-        return if (dataSource.save(store.copy(currentSession = expiredSession))) {
+        return if (dataSource.save(store.copy(currentSession = null))) {
             MockResult.Success(Unit)
         } else {
             MockResult.Failure(MockError.PersistFailed)
+        }
+    }
+
+    override fun pauseSession(): MockResult<Unit> {
+        val store = loadStore()
+        val session = store.currentSession?.toDomainOrNull()?.takeIf { it.isValid }
+            ?: return MockResult.Success(Unit)
+        val suspendedSession = session.copy(expireAtEpochMs = nowEpochMs() + SessionTtlMs)
+        return if (dataSource.save(store.copy(currentSession = suspendedSession.toMockSession()))) {
+            MockResult.Success(Unit)
+        } else {
+            MockResult.Failure(MockError.PersistFailed)
+        }
+    }
+
+    override fun resumeSession(): SessionResumeResult {
+        val store = loadStore()
+        val session = store.currentSession?.toDomainOrNull()?.takeIf { it.isValid }
+            ?: return SessionResumeResult.NoSession
+        if (session.expireAtEpochMs > 0L && session.expireAtEpochMs <= nowEpochMs()) {
+            return when (clearSession()) {
+                is MockResult.Success -> SessionResumeResult.Expired
+                is MockResult.Failure -> SessionResumeResult.Failure(MockError.PersistFailed)
+            }
+        }
+        if (session.expireAtEpochMs == 0L) return SessionResumeResult.Active(session)
+        val activeSession = session.copy(expireAtEpochMs = 0L)
+        return if (dataSource.save(store.copy(currentSession = activeSession.toMockSession()))) {
+            SessionResumeResult.Active(activeSession)
+        } else {
+            SessionResumeResult.Failure(MockError.PersistFailed)
         }
     }
 
@@ -310,7 +344,9 @@ class LocalMockAuthRepository(
             displayName = accountModel.displayName,
             region = accountModel.region,
             isValid = true,
-            profile = accountModel.profile
+            profile = accountModel.profile,
+            issuedAtEpochMs = nowEpochMs(),
+            expireAtEpochMs = 0L
         )
         val nextStore = store.copy(
             accounts = store.accounts + accountModel,
@@ -352,7 +388,9 @@ class LocalMockAuthRepository(
             displayName = localAccount.displayName,
             region = localAccount.region,
             isValid = true,
-            profile = localAccount.profile
+            profile = localAccount.profile,
+            issuedAtEpochMs = nowEpochMs(),
+            expireAtEpochMs = 0L
         )
 
         return when (val result = saveSession(session)) {
@@ -424,6 +462,8 @@ class LocalMockAuthRepository(
         const val ResentVerifyCode = "4321"
         private const val VerifyCodeLength = LoginRules.VerifyCodeLength
         private const val VerifyCodeTtlMs = 60 * 1000L
+        // 仅在应用进入后台后开始计算；前台使用期间不会倒计时。
+        const val SessionTtlMs = 10 * 1000L
         const val DefaultAccount = "13107012029"
         const val DefaultEmailAccount = "2232591785@qq.com"
         const val DefaultPassword = "123456"
