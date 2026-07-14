@@ -14,6 +14,8 @@ import com.example.demo.common.login.LocalMockAuthRepository
 import com.example.demo.common.login.MockResult
 import com.example.demo.common.login.MockVerifyCodeState
 import com.example.demo.common.login.UserProfile
+import com.example.demo.common.health.HealthMockScenario
+import com.example.demo.health.AndroidHealthDashboardStateDataSource
 
 class LoginViewModel(
     private val store: LoginStore = LoginStore.createFake()
@@ -54,6 +56,15 @@ class LoginViewModel(
 
     fun onProfileSubmitted(profile: UserProfile) {
         dispatch(LoginAction.ProfileSubmitted(profile))
+    }
+
+    fun updateProfileMessage(profile: UserProfile): String? {
+        val message = when (val result = store.updateProfile(profile)) {
+            is MockResult.Success -> null
+            is MockResult.Failure -> result.error.message
+        }
+        state = store.state
+        return message
     }
 
     fun onLogout() {
@@ -212,6 +223,13 @@ class LoginViewModel(
         state = store.state
     }
 
+    fun loadHealthDashboard() = store.loadHealthDashboard()
+
+    fun selectHealthScenario(scenario: HealthMockScenario) = store.selectHealthScenario(scenario)
+
+    fun saveHealthCardConfiguration(types: List<com.example.demo.common.health.HealthCardType>) =
+        store.saveHealthCardConfiguration(types)
+
     fun onEffectConsumed() {
         effect = null
     }
@@ -228,7 +246,12 @@ class LoginViewModel(
                 AndroidAuthStoreDataSource(context.applicationContext),
                 nowEpochMs = { System.currentTimeMillis() }
             )
-            return LoginViewModel(LoginStore.create(repository))
+            return LoginViewModel(
+                LoginStore.create(
+                    authRepository = repository,
+                    healthStateDataSource = AndroidHealthDashboardStateDataSource(context.applicationContext)
+                )
+            )
         }
     }
 }

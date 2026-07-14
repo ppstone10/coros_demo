@@ -1,16 +1,16 @@
 package com.example.demo.login.components
 
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.demo.ui.resources.AppColors
 
-val CorosRed = Color(0xFFE9003D)
-val CorosButtonRed = Color(0xFFB80035)
-val CorosBlack = Color.Black
-val CorosWhite = Color.White
-val CorosMuted = Color(0xFF8F8F96)
-val CorosLine = Color(0xFF1F1F22)
+val CorosRed = AppColors.Auth.BrandRed
+val CorosButtonRed = AppColors.Auth.ButtonRed
+val CorosBlack = AppColors.Core.Black
+val CorosWhite = AppColors.Core.White
+val CorosMuted = AppColors.Auth.Muted
+val CorosLine = AppColors.Auth.Divider
 
 val AuthTitleTopPadding = 18.dp
 val AuthTitleSize: TextUnit = 32.sp

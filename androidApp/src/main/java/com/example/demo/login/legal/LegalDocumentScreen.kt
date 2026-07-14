@@ -3,15 +3,15 @@ package com.example.demo.login.legal
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.demo.login.components.LegalDocumentPage
-import com.example.demo.login.components.LegalParagraph
 import com.example.demo.login.components.PrivacyPolicyParagraphs
 import com.example.demo.login.components.ServiceTermsParagraphs
+import com.example.demo.ui.resources.AppText
 import com.example.demo.ui.theme.DemoTheme
 
 @Composable
 fun PrivacyPolicyScreen(onBack: () -> Unit) {
     LegalDocumentPage(
-        title = "隐私政策",
+        title = AppText.Auth.PrivacyPolicy,
         paragraphs = PrivacyPolicyParagraphs,
         onBack = onBack
     )
@@ -20,7 +20,7 @@ fun PrivacyPolicyScreen(onBack: () -> Unit) {
 @Composable
 fun ServiceTermsScreen(onBack: () -> Unit) {
     LegalDocumentPage(
-        title = "服务条款",
+        title = AppText.Auth.ServiceTerms,
         paragraphs = ServiceTermsParagraphs,
         onBack = onBack
     )

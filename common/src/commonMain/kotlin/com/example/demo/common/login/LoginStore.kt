@@ -1,10 +1,18 @@
 package com.example.demo.common.login
 
+import com.example.demo.common.health.HealthMockScenario
+import com.example.demo.common.health.HealthDashboardStateDataSource
+import com.example.demo.common.health.HealthDashboardStore
+import com.example.demo.common.health.InMemoryHealthDashboardStateDataSource
+import com.example.demo.common.health.PersistedDashboard
+
 class LoginStore(
     private val authRepository: AuthRepository,
     private val loginUseCase: LoginUseCase = LoginUseCase(authRepository),
-    private val registerUseCase: RegisterUseCase = RegisterUseCase(authRepository)
+    private val registerUseCase: RegisterUseCase = RegisterUseCase(authRepository),
+    healthStateDataSource: HealthDashboardStateDataSource = InMemoryHealthDashboardStateDataSource()
 ) {
+    private val healthDashboardStore = HealthDashboardStore(authRepository, healthStateDataSource)
     var state: LoginState = createInitialState(authRepository)
         private set
 
@@ -162,6 +170,15 @@ class LoginStore(
         }
     }
 
+    /** 健康业务只经共享层读取认证后的本地 mock 数据。 */
+    fun loadHealthDashboard(): MockResult<PersistedDashboard> = healthDashboardStore.load()
+
+    fun selectHealthScenario(scenario: HealthMockScenario): MockResult<PersistedDashboard> =
+        healthDashboardStore.selectScenario(scenario)
+
+    fun saveHealthCardConfiguration(types: List<com.example.demo.common.health.HealthCardType>): MockResult<PersistedDashboard> =
+        healthDashboardStore.saveCardConfiguration(types)
+
     private fun submit() {
         if (!state.canSubmit) {
             val message = if (state.mode == AuthMode.Register) {
@@ -234,8 +251,20 @@ class LoginStore(
     }
 
     private fun saveProfile(profile: UserProfile) {
+        when (val result = updateProfile(profile)) {
+            is MockResult.Success -> {
+                pendingEffect = LoginEffect.ProfileSaved(result.data)
+            }
+
+            is MockResult.Failure -> {
+                pendingEffect = LoginEffect.ShowMessage(result.error.message)
+            }
+        }
+    }
+
+    fun updateProfile(profile: UserProfile): MockResult<AuthSession> {
         state = state.copy(isLoading = true, errorMessage = null)
-        when (val result = authRepository.saveProfile(profile)) {
+        return when (val result = authRepository.saveProfile(profile)) {
             is MockResult.Success -> {
                 state = state.copy(
                     isLoading = false,
@@ -243,7 +272,7 @@ class LoginStore(
                     currentSession = result.data,
                     errorMessage = null
                 )
-                pendingEffect = LoginEffect.ProfileSaved(result.data)
+                result
             }
 
             is MockResult.Failure -> {
@@ -251,7 +280,7 @@ class LoginStore(
                     isLoading = false,
                     errorMessage = result.error.message
                 )
-                pendingEffect = LoginEffect.ShowMessage(result.error.message)
+                result
             }
         }
     }
@@ -283,8 +312,11 @@ class LoginStore(
             return create(LocalMockAuthRepository(InMemoryAuthStoreDataSource()))
         }
 
-        fun create(authRepository: AuthRepository): LoginStore {
-            return LoginStore(authRepository)
+        fun create(
+            authRepository: AuthRepository,
+            healthStateDataSource: HealthDashboardStateDataSource = InMemoryHealthDashboardStateDataSource()
+        ): LoginStore {
+            return LoginStore(authRepository, healthStateDataSource = healthStateDataSource)
         }
 
         private fun createInitialState(authRepository: AuthRepository): LoginState {

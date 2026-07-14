@@ -17,7 +17,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -36,6 +35,8 @@ import com.example.demo.login.components.ErrorText
 import com.example.demo.login.components.UnavailableFeatureDialog
 import com.example.demo.common.login.VerifyTarget
 import com.example.demo.login.components.verifyCodeMessage
+import com.example.demo.ui.resources.AppColors
+import com.example.demo.ui.resources.AppText
 import com.example.demo.ui.theme.DemoTheme
 import androidx.compose.material3.Text
 import kotlinx.coroutines.delay
@@ -88,7 +89,7 @@ fun VerifyCodeScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         AuthBlackPage(onBack = onBack, showFeedback = false) {
             Text(
-                text = "输入验证码",
+                text = AppText.Auth.VerificationCode,
                 color = CorosWhite,
                 fontSize = AuthTitleSize,
                 fontWeight = FontWeight.Light,
@@ -97,7 +98,7 @@ fun VerifyCodeScreen(
             Spacer(modifier = Modifier.height(14.dp))
             Text(
                 text = verifyCodeMessage(account, targetKind),
-                color = Color(0xFFD8D8DD),
+                color = AppColors.Auth.InputText,
                 fontSize = 16.sp,
                 lineHeight = 24.sp
             )
@@ -114,11 +115,11 @@ fun VerifyCodeScreen(
             Spacer(modifier = Modifier.height(58.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (countdown > 0) {
-                    Text(text = "重新发送", color = CorosMuted, fontSize = 16.sp)
+                    Text(text = AppText.Auth.Resend, color = CorosMuted, fontSize = 16.sp)
                     Text(text = "（${countdown}s）", color = CorosRed, fontSize = 16.sp)
                 } else {
                     Text(
-                        text = "获取验证码",
+                        text = AppText.Auth.GetCode,
                         color = CorosRed,
                         fontSize = 16.sp,
                         modifier = Modifier.clickable {
@@ -140,7 +141,7 @@ fun VerifyCodeScreen(
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = "收不到验证码?",
+                    text = AppText.Auth.CodeHelp,
                     color = CorosMuted,
                     fontSize = 16.sp,
                     modifier = Modifier.clickable { unavailableDialogVisible = true }

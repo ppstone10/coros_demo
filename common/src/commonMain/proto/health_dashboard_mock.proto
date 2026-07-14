@@ -1,0 +1,10 @@
+syntax = "proto3";
+package training.health;
+
+// 仅用于脱敏、本地 mock 健康首页，不包含真实服务端字段或协议。
+message DailySummaryMock { optional int32 steps = 1; optional int32 calories = 2; optional int32 active_minutes = 3; }
+message SleepSummaryMock { optional int32 duration_minutes = 1; optional int32 quality_score = 2; }
+message TrainingLoadMock { optional int32 value = 1; optional int32 recommended_min = 2; optional int32 recommended_max = 3; }
+message RecoveryMock { optional int32 score = 1; optional int32 remaining_hours = 2; }
+message HealthDashboardMock { DailySummaryMock daily = 1; SleepSummaryMock sleep = 2; TrainingLoadMock training_load = 3; RecoveryMock recovery = 4; }
+message HealthDashboardSnapshotMock { string user_id = 1; string scenario = 2; repeated string enabled_card_types = 3; }

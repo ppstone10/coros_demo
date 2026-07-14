@@ -39,7 +39,7 @@ import com.example.demo.login.password.ResetPasswordScreen
 import com.example.demo.login.profile.ProfileCompletionScreen
 import com.example.demo.login.register.EmailRegisterScreen
 import com.example.demo.login.register.PhoneRegisterScreen
-import com.example.demo.login.signedin.SignedInScreen
+import com.example.demo.home.MainTabsScreen
 import com.example.demo.login.verify.VerifyCodeScreen
 import kotlinx.coroutines.launch
 
@@ -324,13 +324,7 @@ fun AuthNavGraph() {
             }
 
             composable<SignedInRoute> {
-                val activity = LocalView.current.context.findActivity()
-                SignedInScreen(
-                    viewModel = viewModel,
-                    onBack = { activity?.finish() },
-                    onLogout = {},
-                    onAccountDeleted = {}
-                )
+                MainTabsScreen(viewModel)
             }
         }
     }

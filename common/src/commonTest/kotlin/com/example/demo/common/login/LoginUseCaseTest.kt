@@ -192,6 +192,28 @@ class LoginUseCaseTest {
     }
 
     @Test
+    fun editingProfilePersistsWithoutProducingNavigationEffect() {
+        val dataSource = InMemoryAuthStoreDataSource()
+        val repository = repository(dataSource)
+        register(repository, account = "profile-edit@example.com")
+        val store = LoginStore(repository)
+        val updated = UserProfile(
+            username = "Updated Runner",
+            birthDate = "1998年7月14日",
+            heightCm = 178,
+            weightKg = 63.5,
+            countryRegion = "中国",
+            gender = UserGender.Male
+        )
+
+        assertIs<MockResult.Success<AuthSession>>(store.updateProfile(updated))
+
+        assertEquals(updated, store.state.currentSession?.profile)
+        assertEquals(null, store.consumeEffect())
+        assertEquals(updated, repository(dataSource).currentSession()?.profile)
+    }
+
+    @Test
     fun incompleteProfileCannotBeSaved() {
         val repository = repository()
         register(repository, account = "incomplete-profile@example.com")
