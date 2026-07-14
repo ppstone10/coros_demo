@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -18,6 +17,8 @@ import com.example.demo.login.components.CorosRed
 import com.example.demo.login.components.CorosFilledButton
 import com.example.demo.login.components.CorosLogo
 import com.example.demo.login.components.HomeBackgroundVideo
+import com.example.demo.ui.resources.AppColors
+import com.example.demo.ui.resources.AppText
 import com.example.demo.ui.theme.DemoTheme
 
 @Composable
@@ -29,7 +30,7 @@ fun EntranceScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF111111))
+            .background(AppColors.Auth.EntranceBackground)
     ) {
         HomeBackgroundVideo(modifier = Modifier.fillMaxSize())
         CorosLogo(
@@ -45,15 +46,15 @@ fun EntranceScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             CorosFilledButton(
-                text = "注册",
+                text = AppText.Auth.Register,
                 color = CorosRed,
                 buttonHeight = 48.dp,
                 textSize = 18.sp,
                 onClick = onRegisterClick
             )
             CorosFilledButton(
-                text = "登录",
-                color = Color.White.copy(alpha = 0.26f),
+                text = AppText.Auth.Login,
+                color = AppColors.Core.White.copy(alpha = 0.26f),
                 buttonHeight = 48.dp,
                 textSize = 18.sp,
                 onClick = onLoginClick

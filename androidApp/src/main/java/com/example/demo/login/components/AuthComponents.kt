@@ -1,5 +1,6 @@
 package com.example.demo.login.components
 
+import androidx.activity.compose.BackHandler
 import com.example.demo.common.login.VerifyTarget
 import android.app.Activity
 import android.content.Context
@@ -13,6 +14,7 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,11 +61,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -84,6 +86,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.example.demo.R
+import com.example.demo.ui.resources.AppColors
+import com.example.demo.ui.resources.AppImage
+import com.example.demo.ui.resources.AppImages
+import com.example.demo.ui.resources.AppText
 import com.example.demo.login.LoginViewModel
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
@@ -184,7 +190,7 @@ fun AuthBlackPage(
         ) {
             if (showBack) {
                 Text(
-                    text = "‹",
+                    text = AppText.Common.Back,
                     color = CorosWhite,
                     fontSize = 44.sp,
                     modifier = Modifier.clickable(onClick = onBack)
@@ -193,7 +199,7 @@ fun AuthBlackPage(
             Spacer(modifier = Modifier.weight(1f))
             if (showFeedback) {
                 Text(
-                    text = "◔ 建议&反馈",
+                    text = AppText.Auth.Feedback,
                     color = CorosMuted,
                     fontSize = 14.sp,
                     modifier = Modifier.clickable(onClick = onUnavailableClick)
@@ -211,11 +217,10 @@ fun CorosLogo(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        androidx.compose.foundation.Image(
-            painter = painterResource(id = R.drawable.logo_coros),
-            contentDescription = "COROS Logo",
-            modifier = Modifier.width(260.dp).height(48.dp),
-            contentScale = ContentScale.Fit
+        AppImage(
+            asset = AppImages.Auth.Logo,
+            contentDescription = AppText.Auth.Logo,
+            modifier = Modifier.width(260.dp).height(48.dp)
         )
     }
 }
@@ -314,7 +319,7 @@ fun UnderlineInput(
             }
             .focusRequester(focusRequester),
         decorationBox = { innerTextField ->
-            Box(modifier = Modifier.fillMaxSize().border(width = 0.dp, color = Color.Transparent)) {
+            Box(modifier = Modifier.fillMaxSize().border(width = 0.dp, color = AppColors.Core.Transparent)) {
                 Row(modifier = Modifier.fillMaxSize().padding(bottom = 1.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(modifier = Modifier.weight(1f).padding(end = 8.dp), contentAlignment = Alignment.CenterStart) {
                         if (value.isBlank()) Text(text = placeholder, color = CorosMuted, fontSize = 17.sp)
@@ -390,7 +395,7 @@ fun PhoneInput(value: String, autoFocus: Boolean = false, onValueChange: (String
         }
     }
     Row(modifier = Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(text = "+86", color = CorosWhite, fontSize = 17.sp)
+        Text(text = AppText.Auth.ChinaDialingCode, color = CorosWhite, fontSize = 17.sp)
         Spacer(modifier = Modifier.width(24.dp))
         BasicTextField(
             value = value,
@@ -402,7 +407,7 @@ fun PhoneInput(value: String, autoFocus: Boolean = false, onValueChange: (String
             modifier = Modifier.weight(1f).focusRequester(focusRequester),
             decorationBox = { innerTextField ->
                 Box(contentAlignment = Alignment.CenterStart) {
-                    if (value.isBlank()) Text(text = "输入手机号", color = CorosMuted, fontSize = 17.sp)
+                    if (value.isBlank()) Text(text = AppText.Auth.PhonePlaceholder, color = CorosMuted, fontSize = 17.sp)
                     innerTextField()
                 }
             }
@@ -435,7 +440,7 @@ fun AgreementCheck(accepted: Boolean, modifier: Modifier = Modifier) {
             val strokeWidth = 1.dp.toPx()
             val radius = size.minDimension / 2f - strokeWidth / 2f
             val checkStroke = 1.4.dp.toPx()
-            drawCircle(color = if (accepted) CorosRed else Color.Transparent, radius = radius)
+            drawCircle(color = if (accepted) CorosRed else AppColors.Core.Transparent, radius = radius)
             drawCircle(color = if (accepted) CorosRed else CorosWhite.copy(alpha = 0.82f), radius = radius, style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth))
             if (accepted) {
                 drawLine(color = CorosWhite, start = Offset(size.width * 0.26f, size.height * 0.52f), end = Offset(size.width * 0.43f, size.height * 0.68f), strokeWidth = checkStroke)
@@ -485,8 +490,8 @@ fun CodeBoxes(code: String, hasError: Boolean, onCodeChanged: (String) -> Unit) 
             onValueChange = onCodeChanged,
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-            textStyle = TextStyle(color = Color.Transparent),
-            cursorBrush = SolidColor(Color.Transparent),
+            textStyle = TextStyle(color = AppColors.Core.Transparent),
+            cursorBrush = SolidColor(AppColors.Core.Transparent),
             modifier = Modifier.weight(1f).focusRequester(focusRequester),
             decorationBox = { innerTextField ->
                 Box(modifier = Modifier.fillMaxWidth()) {
@@ -495,8 +500,8 @@ fun CodeBoxes(code: String, hasError: Boolean, onCodeChanged: (String) -> Unit) 
                             val isActiveBox = index == code.length && code.length < 4
                             Box(
                                 modifier = Modifier.weight(1f).aspectRatio(1f).clip(RoundedCornerShape(12.dp))
-                                    .background(if (isActiveBox) Color(0xFF151517) else CorosBlack)
-                                    .border(2.dp, if (hasError) CorosRed else Color(0xFF3A3A3D), RoundedCornerShape(12.dp)),
+                                    .background(if (isActiveBox) AppColors.Auth.InputBox else CorosBlack)
+                                    .border(2.dp, if (hasError) CorosRed else AppColors.Auth.InputBorder, RoundedCornerShape(12.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 val digit = code.getOrNull(index)?.toString()
@@ -505,7 +510,7 @@ fun CodeBoxes(code: String, hasError: Boolean, onCodeChanged: (String) -> Unit) 
                             }
                         }
                     }
-                    Box(modifier = Modifier.matchParentSize().background(Color.Transparent)) { innerTextField() }
+                    Box(modifier = Modifier.matchParentSize().background(AppColors.Core.Transparent)) { innerTextField() }
                 }
             }
         )
@@ -516,11 +521,10 @@ fun CodeBoxes(code: String, hasError: Boolean, onCodeChanged: (String) -> Unit) 
 fun ClearInputButton(visible: Boolean, onClick: () -> Unit) {
     Box(modifier = Modifier.size(34.dp), contentAlignment = Alignment.Center) {
         if (visible) {
-            androidx.compose.foundation.Image(
-                painter = painterResource(id = R.drawable.icon_delete),
-                contentDescription = "清空输入",
-                modifier = Modifier.size(28.dp).clickable(onClick = onClick).padding(4.dp),
-                contentScale = ContentScale.Fit
+            AppImage(
+                asset = AppImages.Auth.ClearInput,
+                contentDescription = AppText.Auth.ClearInput,
+                modifier = Modifier.size(28.dp).clickable(onClick = onClick).padding(4.dp)
             )
         }
     }
@@ -528,11 +532,10 @@ fun ClearInputButton(visible: Boolean, onClick: () -> Unit) {
 
 @Composable
 fun PasswordVisibilityButton(passwordVisible: Boolean, onClick: () -> Unit) {
-    androidx.compose.foundation.Image(
-        painter = painterResource(id = R.drawable.icon_uneye),
-        contentDescription = if (passwordVisible) "隐藏密码" else "显示密码",
-        modifier = Modifier.size(34.dp).alpha(if (passwordVisible) 0.45f else 1f).clickable(onClick = onClick).padding(3.dp),
-        contentScale = ContentScale.Fit
+    AppImage(
+        asset = AppImages.Auth.PasswordHidden,
+        contentDescription = if (passwordVisible) AppText.Auth.HidePassword else AppText.Auth.ShowPassword,
+        modifier = Modifier.size(34.dp).alpha(if (passwordVisible) 0.45f else 1f).clickable(onClick = onClick).padding(3.dp)
     )
 }
 
@@ -553,7 +556,7 @@ fun ThirdPartyArea(onUnavailableClick: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(width = 120.dp, height = 1.dp).background(CorosLine))
-            Text(text = "第三方账号", color = CorosMuted, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 12.dp))
+            Text(text = AppText.Auth.ThirdPartyAccount, color = CorosMuted, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 12.dp))
             Box(modifier = Modifier.size(width = 120.dp, height = 1.dp).background(CorosLine))
         }
         Spacer(modifier = Modifier.height(24.dp))
@@ -567,7 +570,7 @@ fun ThirdPartyArea(onUnavailableClick: () -> Unit) {
 @Composable
 fun ThirdPartyCircle(text: String, onClick: () -> Unit) {
     Box(
-        modifier = Modifier.size(34.dp).clip(CircleShape).border(1.dp, Color(0xFF303036), CircleShape).clickable(onClick = onClick),
+        modifier = Modifier.size(34.dp).clip(CircleShape).border(1.dp, AppColors.Auth.ThirdPartyBorder, CircleShape).clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(text = text, color = CorosWhite, fontSize = 20.sp)
@@ -582,48 +585,72 @@ fun ErrorText(message: String?) {
 }
 
 @Composable
+fun ModalScrim(
+    color: Color,
+    onClick: (() -> Unit)? = null
+) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) {
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color)
+            .pointerInput(onClick) {
+                detectTapGestures { onClick?.invoke() }
+            }
+    )
+}
+
+@Composable
 fun TermsConsentSheet(onDismiss: () -> Unit, onPrivacyClick: () -> Unit, onServiceTermsClick: () -> Unit, onAgree: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.78f))) {
+    BackHandler(onBack = onDismiss)
+    Box(modifier = Modifier.fillMaxSize()) {
+        ModalScrim(color = AppColors.Core.Black.copy(alpha = 0.78f))
         Column(
             modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                 .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                .background(Color(0xFF1A1A1B)).padding(horizontal = 22.dp, vertical = 18.dp),
+                .background(AppColors.Auth.Sheet).padding(horizontal = 22.dp, vertical = 18.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(text = "×", color = CorosWhite, fontSize = 34.sp, modifier = Modifier.align(Alignment.End).clickable(onClick = onDismiss))
             Spacer(modifier = Modifier.height(12.dp))
-            Text(text = "阅读并同意以下条款，", color = CorosWhite, fontSize = 18.sp, textAlign = TextAlign.Center)
+            Text(text = AppText.Auth.ReadTerms, color = CorosWhite, fontSize = 18.sp, textAlign = TextAlign.Center)
             Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "《隐私政策》", color = CorosRed, fontSize = 18.sp, modifier = Modifier.clickable(onClick = onPrivacyClick))
+                Text(text = "《${AppText.Auth.PrivacyPolicy}》", color = CorosRed, fontSize = 18.sp, modifier = Modifier.clickable(onClick = onPrivacyClick))
                 Text(text = " 和 ", color = CorosWhite, fontSize = 18.sp)
-                Text(text = "《服务条款》", color = CorosRed, fontSize = 18.sp, modifier = Modifier.clickable(onClick = onServiceTermsClick))
+                Text(text = "《${AppText.Auth.ServiceTerms}》", color = CorosRed, fontSize = 18.sp, modifier = Modifier.clickable(onClick = onServiceTermsClick))
             }
             Spacer(modifier = Modifier.height(42.dp))
-            CorosFilledButton(text = "同意并继续", color = CorosRed, onClick = onAgree)
+            CorosFilledButton(text = AppText.Auth.AgreeAndContinue, color = CorosRed, onClick = onAgree)
         }
     }
 }
 
 @Composable
 fun UnavailableFeatureDialog(onDismiss: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.62f)).clickable(onClick = onDismiss), contentAlignment = Alignment.Center) {
+    Box(modifier = Modifier.fillMaxSize().background(AppColors.Core.Black.copy(alpha = 0.62f)).clickable(onClick = onDismiss), contentAlignment = Alignment.Center) {
         Column(
             modifier = Modifier.padding(horizontal = 42.dp).clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFF222224)).padding(horizontal = 28.dp, vertical = 24.dp),
+                .background(AppColors.Auth.Dialog).padding(horizontal = 28.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "抱歉，该功能还在实现中", color = CorosWhite, fontSize = 16.sp, textAlign = TextAlign.Center)
+            Text(text = AppText.Auth.Unavailable, color = CorosWhite, fontSize = 16.sp, textAlign = TextAlign.Center)
             Spacer(modifier = Modifier.height(20.dp))
-            Text(text = "知道了", color = CorosRed, fontSize = 16.sp, modifier = Modifier.clickable(onClick = onDismiss))
+            Text(text = AppText.Auth.GotIt, color = CorosRed, fontSize = 16.sp, modifier = Modifier.clickable(onClick = onDismiss))
         }
     }
 }
 
 @Composable
 fun BlockingLoadingOverlay() {
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.72f)), contentAlignment = Alignment.Center) {
-        Box(modifier = Modifier.size(96.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF3A3A3C)), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(modifier = Modifier.size(36.dp), color = Color(0xFFD8D8DD), strokeWidth = 4.dp)
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        ModalScrim(color = AppColors.Core.Black.copy(alpha = 0.72f))
+        Box(modifier = Modifier.size(96.dp).clip(RoundedCornerShape(8.dp)).background(AppColors.Auth.Loading), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(modifier = Modifier.size(36.dp), color = AppColors.Auth.InputText, strokeWidth = 4.dp)
         }
     }
 }
@@ -652,7 +679,7 @@ fun LegalDocumentPage(title: String, paragraphs: List<LegalParagraph>, onBack: (
     val scrollState = rememberScrollState()
     Column(modifier = Modifier.fillMaxSize().background(CorosBlack).statusBarsPadding().padding(horizontal = 20.dp)) {
         Box(modifier = Modifier.fillMaxWidth().height(52.dp), contentAlignment = Alignment.Center) {
-            Text(text = "‹", color = CorosWhite, fontSize = 44.sp, modifier = Modifier.align(Alignment.CenterStart).clickable(onClick = onBack))
+            Text(text = AppText.Common.Back, color = CorosWhite, fontSize = 44.sp, modifier = Modifier.align(Alignment.CenterStart).clickable(onClick = onBack))
             Text(text = title, color = CorosWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         }
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -671,7 +698,7 @@ fun LegalDocumentPage(title: String, paragraphs: List<LegalParagraph>, onBack: (
 fun LegalParagraphText(paragraph: LegalParagraph) {
     Text(
         text = buildLegalText(paragraph.text, paragraph.highlights),
-        color = if (paragraph.isHeading) CorosWhite else Color(0xFFC9C9CC),
+        color = if (paragraph.isHeading) CorosWhite else AppColors.Auth.LegalText,
         fontSize = if (paragraph.isHeading) 19.sp else 18.sp,
         lineHeight = if (paragraph.isHeading) 28.sp else 30.sp,
         fontWeight = if (paragraph.isHeading) FontWeight.Bold else FontWeight.Normal

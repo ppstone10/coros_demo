@@ -38,6 +38,7 @@ import com.example.demo.login.components.TermsPromptAction
 import com.example.demo.login.components.UnderlineInput
 import com.example.demo.login.components.UnavailableFeatureDialog
 import com.example.demo.login.components.findActivity
+import com.example.demo.ui.resources.AppText
 import com.example.demo.ui.theme.DemoTheme
 import androidx.compose.material3.Text
 
@@ -97,7 +98,7 @@ fun EmailRegisterScreen(
         onUnavailableClick = { unavailableDialogVisible = true }
     ) {
         Text(
-            text = "邮箱注册",
+            text = AppText.Auth.EmailRegister,
             color = CorosWhite,
             fontSize = AuthTitleSize,
             fontWeight = FontWeight.Light,
@@ -106,7 +107,7 @@ fun EmailRegisterScreen(
         Spacer(modifier = Modifier.height(60.dp))
         UnderlineInput(
             value = emailInput,
-            placeholder = "请输入邮箱",
+            placeholder = AppText.Auth.EmailPlaceholder,
             keyboardType = KeyboardType.Email,
             autoFocus = true,
             onValueChange = {
@@ -123,14 +124,14 @@ fun EmailRegisterScreen(
         )
         Spacer(modifier = Modifier.height(RegisterActionTopSpacing))
         CorosFilledButton(
-            text = "发送验证码",
+            text = AppText.Auth.SendCode,
             color = CorosButtonRed,
             enabled = viewModel.canRequestEmailCode(emailInput),
             onClick = { requestEmailVerifyCode() }
         )
         ErrorText(localError ?: state.errorMessage)
         Text(
-            text = "手机号注册",
+            text = AppText.Auth.PhoneRegister,
             color = CorosRed,
             fontSize = 18.sp,
             textAlign = TextAlign.Center,

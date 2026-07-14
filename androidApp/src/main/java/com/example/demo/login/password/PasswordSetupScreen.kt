@@ -11,7 +11,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,6 +32,8 @@ import androidx.compose.material3.Text
 import com.example.demo.common.login.toProfileCountryRegion
 import com.example.demo.login.profile.OptionSheet
 import com.example.demo.login.profile.ProfilePickerRow
+import com.example.demo.ui.resources.AppColors
+import com.example.demo.ui.resources.AppText
 
 @Composable
 fun PasswordSetupScreen(
@@ -69,7 +70,7 @@ fun PasswordSetupScreen(
 
     AuthBlackPage(onBack = onBack, showFeedback = false) {
         Text(
-            text = "设置登录密码",
+            text = AppText.Auth.SetLoginPassword,
             color = CorosWhite,
             fontSize = AuthTitleSize,
             fontWeight = FontWeight.Light,
@@ -78,7 +79,7 @@ fun PasswordSetupScreen(
         Spacer(modifier = Modifier.height(60.dp))
         UnderlineInput(
             value = password,
-            placeholder = "输入新的密码",
+            placeholder = AppText.Auth.NewPasswordPlaceholder,
             keyboardType = KeyboardType.Password,
             isPassword = true,
             autoFocus = true,
@@ -90,7 +91,7 @@ fun PasswordSetupScreen(
         Spacer(modifier = Modifier.height(48.dp))
         UnderlineInput(
             value = confirmPassword,
-            placeholder = "再次输入密码",
+            placeholder = AppText.Auth.ConfirmPasswordPlaceholder,
             keyboardType = KeyboardType.Password,
             isPassword = true,
             onValueChange = {
@@ -99,18 +100,18 @@ fun PasswordSetupScreen(
             }
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "6-20位必须包含字母和数字", color = Color(0xFFD8D8DD), fontSize = 14.sp)
+        Text(text = AppText.Auth.PasswordRule, color = AppColors.Auth.InputText, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(12.dp))
         ProfilePickerRow(
-            label = "国家与地区",
+            label = AppText.Profile.CountryRegion,
             required = false,
             value = selectedCountryRegion,
-            placeholder = "中国",
+            placeholder = AppText.Common.China,
             onClick = { showRegionSheet = true }
         )
         Spacer(modifier = Modifier.height(44.dp))
         CorosFilledButton(
-            text = "注册",
+            text = AppText.Auth.Register,
             color = CorosButtonRed,
             enabled = viewModel.canRegisterWithPassword(password, confirmPassword),
             isLoading = state.isLoading,
@@ -122,7 +123,7 @@ fun PasswordSetupScreen(
 
     if (showRegionSheet) {
         OptionSheet(
-            title = "国家与地区",
+            title = AppText.Profile.CountryRegion,
             options = state.regions.map { it.region to it.region.toProfileCountryRegion() },
             selected = state.selectedRegion,
             onDismiss = { showRegionSheet = false },

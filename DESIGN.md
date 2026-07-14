@@ -153,3 +153,12 @@ interface AuthStoreDataSource {
 - `HarmonyLoginService` 封装 `LoginFacade` 供 ArkTS 调用。
 - `harmonyApp` 通过 `KnoiLoginAdapter.ets` → `HarmonyLoginService` 完成登录操作。
 - native 运行期使用 `MemoryAuthStoreDataSource`；`StorePersister` 将 bridge 导出的 Store 快照保存到 ArkTS Preferences，并在启动时恢复。
+
+## 健康首页
+
+- `common/health` 提供脱敏健康模型和 `health_dashboard_mock.proto` 字段契约。
+- `HealthDashboardUseCase` 收敛多源 mock 数据为稳定的 `DashboardUiState` 与 `HealthCardUiModel`，Native UI 不拼接聚合规则。
+- 固定排序为：风险 > 今日恢复、睡眠、运动 > 训练趋势 > 单模块空态；全量缺失时显示首页级引导。
+- Android 登录成功后进入四 Tab：体能（健康首页）、记录（占位）、探索（占位）、我（复用当前账号页）。
+- 健康首页状态独立持久化：`HealthDashboardSnapshot` 使用认证 `userId` 分区，当前保存 mock 场景；Android 通过独立 SharedPreferences 存储。登出仅阻断访问，账号注销可在后续接入时清除该用户分区。
+- `HealthDashboardSnapshot.enabledCardTypes` 同时保存用户启用的卡片及顺序。编辑页支持加减卡片、最少三项约束和长按拖动换序，保存后首页按该配置输出；卡片点击进入对应的占位详情页。

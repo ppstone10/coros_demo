@@ -37,6 +37,7 @@ import com.example.demo.login.components.TermsConsentSheet
 import com.example.demo.login.components.TermsPromptAction
 import com.example.demo.login.components.UnavailableFeatureDialog
 import com.example.demo.login.components.findActivity
+import com.example.demo.ui.resources.AppText
 import com.example.demo.ui.theme.DemoTheme
 import androidx.compose.material3.Text
 
@@ -94,7 +95,7 @@ fun PhoneRegisterScreen(
         onUnavailableClick = { unavailableDialogVisible = true }
     ) {
         Text(
-            text = "手机号注册",
+            text = AppText.Auth.PhoneRegister,
             color = CorosWhite,
             fontSize = AuthTitleSize,
             fontWeight = FontWeight.Light,
@@ -118,7 +119,7 @@ fun PhoneRegisterScreen(
         )
         Spacer(modifier = Modifier.height(RegisterActionTopSpacing))
         CorosFilledButton(
-            text = "发送验证码",
+            text = AppText.Auth.SendCode,
             color = CorosButtonRed,
             enabled = viewModel.canRequestPhoneCode(),
             isLoading = state.isLoading,
@@ -126,7 +127,7 @@ fun PhoneRegisterScreen(
         )
         ErrorText(localError ?: state.errorMessage)
         Text(
-            text = "邮箱注册",
+            text = AppText.Auth.EmailRegister,
             color = CorosRed,
             fontSize = 18.sp,
             textAlign = TextAlign.Center,

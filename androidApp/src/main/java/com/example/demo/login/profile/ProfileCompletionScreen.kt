@@ -7,7 +7,6 @@ import android.widget.ImageView
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -45,12 +44,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -59,7 +55,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.example.demo.R
 import com.example.demo.common.login.MeasurementSystem
 import com.example.demo.common.login.UserGender
 import com.example.demo.common.login.UserProfile
@@ -73,6 +68,12 @@ import com.example.demo.login.components.CorosMuted
 import com.example.demo.login.components.CorosRed
 import com.example.demo.login.components.CorosWhite
 import com.example.demo.login.components.ErrorText
+import com.example.demo.login.components.ModalScrim
+import com.example.demo.ui.resources.AppColors
+import com.example.demo.ui.resources.AppImage
+import com.example.demo.ui.resources.AppImageAsset
+import com.example.demo.ui.resources.AppImages
+import com.example.demo.ui.resources.AppText
 import com.example.demo.ui.theme.DemoTheme
 import java.io.File
 import java.io.FileOutputStream
@@ -144,14 +145,14 @@ fun ProfileCompletionScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 18.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "‹",
+                    text = AppText.Common.Back,
                     color = CorosWhite,
                     fontSize = 44.sp,
                     modifier = Modifier.clickable(onClick = onBack)
@@ -163,96 +164,96 @@ fun ProfileCompletionScreen(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
-                Spacer(modifier = Modifier.height(22.dp))
+                Spacer(modifier = Modifier.height(14.dp))
                 Text(
-                    text = "完善个人信息",
+                    text = AppText.Profile.CompletionTitle,
                     color = CorosWhite,
-                    fontSize = 36.sp,
-                    lineHeight = 44.sp,
+                    fontSize = 28.sp,
+                    lineHeight = 34.sp,
                     fontWeight = FontWeight.Light
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "以下信息可以帮助我们对体育科学做出更准确的预测，请仔细填写。",
-                    color = Color(0xFFE8E8EC),
-                    fontSize = 18.sp,
-                    lineHeight = 28.sp
+                    text = AppText.Profile.CompletionDescription,
+                    color = AppColors.Profile.Description,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
                 )
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 ProfileAvatar(
                     avatarUri = avatarUri,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     onClick = { showAvatarSheet = true }
                 )
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 ProfileTextRow(
-                    label = "用户名",
+                    label = AppText.Profile.Username,
                     required = true,
                     value = username,
-                    placeholder = "输入用户名",
+                    placeholder = AppText.Profile.UsernamePlaceholder,
                     keyboardType = KeyboardType.Text,
                     onValueChange = { username = it.take(20) }
                 )
                 ProfilePickerRow(
-                    label = "出生日期",
+                    label = AppText.Profile.BirthDate,
                     required = true,
                     value = birthDate,
-                    placeholder = "去填写",
+                    placeholder = AppText.Profile.FillIn,
                     onClick = { picker = ProfilePicker.BirthDate }
                 )
                 ProfilePickerRow(
-                    label = "身高",
+                    label = AppText.Profile.Height,
                     required = true,
                     value = heightCm?.let { "$it cm" }.orEmpty(),
-                    placeholder = "去填写",
+                    placeholder = AppText.Profile.FillIn,
                     onClick = { picker = ProfilePicker.Height }
                 )
                 ProfilePickerRow(
-                    label = "体重",
+                    label = AppText.Profile.Weight,
                     required = true,
                     value = weightKg?.let { String.format("%.1f kg", it) }.orEmpty(),
-                    placeholder = "去填写",
+                    placeholder = AppText.Profile.FillIn,
                     onClick = { picker = ProfilePicker.Weight }
                 )
                 ProfilePickerRow(
-                    label = "公英制",
+                    label = AppText.Profile.Measurement,
                     required = false,
                     value = measurementSystem.displayText(),
                     placeholder = "",
                     onClick = { picker = ProfilePicker.Unit }
                 )
                 ProfileTextRow(
-                    label = "手机",
+                    label = AppText.Profile.Phone,
                     required = false,
                     value = phone,
-                    placeholder = "输入手机号",
+                    placeholder = AppText.Profile.PhonePlaceholder,
                     keyboardType = KeyboardType.Phone,
                     onValueChange = { phone = it.filter { char -> char.isDigit() || char == '+' || char == '-' }.take(20) }
                 )
                 ProfilePickerRow(
-                    label = "国家与地区",
+                    label = AppText.Profile.CountryRegion,
                     required = false,
                     value = countryRegion,
-                    placeholder = "中国",
+                    placeholder = AppText.Common.China,
                     onClick = { picker = ProfilePicker.Country }
                 )
                 GenderRow(selected = gender, onSelected = { gender = it })
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
             }
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(CorosBlack)
-                    .padding(top = 14.dp, bottom = 18.dp)
+                    .padding(top = 8.dp, bottom = 10.dp)
             ) {
                 ErrorText(state.errorMessage)
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(5.dp))
                 CorosFilledButton(
-                    text = "完成",
+                    text = AppText.Common.Complete,
                     color = CorosButtonRed,
                     enabled = viewModel.canSubmitProfile(profile),
                     isLoading = state.isLoading,
-                    buttonHeight = 56.dp,
+                    buttonHeight = 48.dp,
                     onClick = { viewModel.onProfileSubmitted(profile) }
                 )
             }
@@ -284,7 +285,7 @@ fun ProfileCompletionScreen(
                 }
             )
             ProfilePicker.Unit -> OptionSheet(
-                title = "公英制",
+                title = AppText.Profile.Measurement,
                 options = listOf(
                     MeasurementSystem.Metric to MeasurementSystem.Metric.displayText(),
                     MeasurementSystem.Imperial to MeasurementSystem.Imperial.displayText()
@@ -297,7 +298,7 @@ fun ProfileCompletionScreen(
                 }
             )
             ProfilePicker.Country -> OptionSheet(
-                title = "国家与地区",
+                title = AppText.Profile.CountryRegion,
                 options = listOf("中国" to "中国", "美国" to "美国", "英国" to "英国", "日本" to "日本"),
                 selected = countryRegion,
                 onDismiss = { picker = null },
@@ -326,25 +327,24 @@ fun ProfileCompletionScreen(
 }
 
 @Composable
-private fun ProfileAvatar(
+internal fun ProfileAvatar(
     avatarUri: String?,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     Box(
         modifier = modifier
-            .size(92.dp)
+            .size(76.dp)
             .clip(CircleShape)
-            .background(Color(0xFF171719))
+            .background(AppColors.Profile.AvatarBackground)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         if (avatarUri.isNullOrBlank()) {
-            Image(
-                painter = painterResource(id = R.drawable.icon_camera),
-                contentDescription = "添加头像",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
+            AppImage(
+                asset = AppImages.Profile.Camera,
+                contentDescription = AppText.Profile.AddAvatar,
+                modifier = Modifier.fillMaxSize()
             )
         } else {
             val context = LocalContext.current
@@ -371,7 +371,7 @@ private fun ProfileTextRow(
     onValueChange: (String) -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().height(66.dp),
+        modifier = Modifier.fillMaxWidth().height(56.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RequiredLabel(text = label, required = required)
@@ -382,14 +382,16 @@ private fun ProfileTextRow(
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             textStyle = TextStyle(
                 color = CorosWhite,
-                fontSize = 18.sp,
+                fontSize = 15.sp,
                 textAlign = TextAlign.End
             ),
             cursorBrush = SolidColor(CorosRed),
             modifier = Modifier.weight(1f),
             decorationBox = { innerTextField ->
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                    if (value.isBlank()) Text(text = placeholder, color = CorosMuted, fontSize = 18.sp)
+                    if (value.isBlank()) {
+                        Text(text = placeholder, color = CorosMuted, fontSize = 15.sp)
+                    }
                     innerTextField()
                 }
             }
@@ -407,23 +409,25 @@ fun ProfilePickerRow(
     onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().height(66.dp).clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RequiredLabel(text = label, required = required)
         Spacer(modifier = Modifier.weight(1f))
         Text(
             text = value.ifBlank { placeholder },
-            color = if (value.isBlank()) CorosMuted else Color(0xFFDADAE0),
-            fontSize = 18.sp,
+            color = if (value.isBlank()) CorosMuted else AppColors.Profile.Value,
+            fontSize = 15.sp,
             textAlign = TextAlign.End
         )
-        Spacer(modifier = Modifier.width(12.dp))
-        Image(
-            painter = painterResource(id = R.drawable.right_more),
+        Spacer(modifier = Modifier.width(8.dp))
+        AppImage(
+            asset = AppImages.Profile.Next,
             contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            contentScale = ContentScale.Fit
+            modifier = Modifier.size(19.dp)
         )
     }
     Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(CorosLine))
@@ -432,29 +436,29 @@ fun ProfilePickerRow(
 @Composable
 private fun RequiredLabel(text: String, required: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = text, color = CorosWhite, fontSize = 20.sp)
-        if (required) Text(text = "*", color = CorosRed, fontSize = 16.sp)
+        Text(text = text, color = CorosWhite, fontSize = 16.sp)
+        if (required) Text(text = "*", color = CorosRed, fontSize = 13.sp)
     }
 }
 
 @Composable
 private fun GenderRow(selected: UserGender?, onSelected: (UserGender) -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().height(78.dp),
+        modifier = Modifier.fillMaxWidth().height(62.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RequiredLabel(text = "性别", required = true)
+        RequiredLabel(text = AppText.Profile.Gender, required = true)
         Spacer(modifier = Modifier.weight(1f))
         GenderButton(
-            iconRes = R.drawable.icon_female,
-            text = "女",
+            icon = AppImages.Profile.Female,
+            text = AppText.Common.Female,
             selected = selected == UserGender.Female,
             onClick = { onSelected(UserGender.Female) }
         )
         Spacer(modifier = Modifier.width(10.dp))
         GenderButton(
-            iconRes = R.drawable.icon_male,
-            text = "男",
+            icon = AppImages.Profile.Male,
+            text = AppText.Common.Male,
             selected = selected == UserGender.Male,
             onClick = { onSelected(UserGender.Male) }
         )
@@ -462,40 +466,39 @@ private fun GenderRow(selected: UserGender?, onSelected: (UserGender) -> Unit) {
 }
 
 @Composable
-private fun GenderButton(iconRes: Int, text: String, selected: Boolean, onClick: () -> Unit) {
+private fun GenderButton(icon: AppImageAsset, text: String, selected: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
-            .width(82.dp)
-            .height(48.dp)
-            .clip(RoundedCornerShape(9.dp))
-            .background(Color(0xFF19191B))
+            .width(72.dp)
+            .height(40.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(AppColors.Profile.Control)
             .border(
                 width = if (selected) 1.dp else 0.dp,
-                color = if (selected) CorosRed else Color.Transparent,
-                shape = RoundedCornerShape(9.dp)
+                color = if (selected) CorosRed else AppColors.Core.Transparent,
+                shape = RoundedCornerShape(8.dp)
             )
             .clickable(onClick = onClick),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(id = iconRes),
+        AppImage(
+            asset = icon,
             contentDescription = null,
-            modifier = Modifier.size(22.dp),
-            contentScale = ContentScale.Fit
+            modifier = Modifier.size(18.dp)
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = text,
-            color = if (selected) CorosRed else Color(0xFFD8D8DD),
-            fontSize = 20.sp,
+            color = if (selected) CorosRed else AppColors.Auth.InputText,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Medium
         )
     }
 }
 
 @Composable
-private fun BirthDateSheet(
+internal fun BirthDateSheet(
     current: String,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
@@ -504,7 +507,7 @@ private fun BirthDateSheet(
     var year by rememberSaveable(current) { mutableIntStateOf(parsed.first) }
     var month by rememberSaveable(current) { mutableIntStateOf(parsed.second) }
     var day by rememberSaveable(current) { mutableIntStateOf(parsed.third) }
-    PickerSheet(title = "出生日期", onDismiss = onDismiss, onConfirm = {
+    PickerSheet(title = AppText.Profile.BirthDate, onDismiss = onDismiss, onConfirm = {
         onConfirm("${year}年${month}月${day}日")
     }) {
         Row(
@@ -541,13 +544,13 @@ private fun BirthDateSheet(
 }
 
 @Composable
-private fun HeightSheet(
+internal fun HeightSheet(
     current: Int,
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit
 ) {
     var height by rememberSaveable(current) { mutableIntStateOf(current.coerceIn(100, 230)) }
-    PickerSheet(title = "身高 (cm)", onDismiss = onDismiss, onConfirm = { onConfirm(height) }) {
+    PickerSheet(title = AppText.Profile.HeightPicker, onDismiss = onDismiss, onConfirm = { onConfirm(height) }) {
         Box(modifier = Modifier.fillMaxWidth().height(240.dp), contentAlignment = Alignment.Center) {
             WheelNumberPicker(value = height, min = 100, max = 230, onValueChange = { height = it })
         }
@@ -555,7 +558,7 @@ private fun HeightSheet(
 }
 
 @Composable
-private fun WeightSheet(
+internal fun WeightSheet(
     current: Double,
     onDismiss: () -> Unit,
     onConfirm: (Double) -> Unit
@@ -564,7 +567,7 @@ private fun WeightSheet(
     var decimalPart by rememberSaveable(current) {
         mutableIntStateOf(((current - current.toInt()) * 10).toInt().coerceIn(0, 9))
     }
-    PickerSheet(title = "体重 (kg)", onDismiss = onDismiss, onConfirm = {
+    PickerSheet(title = AppText.Profile.WeightPicker, onDismiss = onDismiss, onConfirm = {
         onConfirm(integerPart + decimalPart / 10.0)
     }) {
         Row(
@@ -603,7 +606,7 @@ fun <T> OptionSheet(
                         .clip(RoundedCornerShape(8.dp))
                         .border(
                             width = if (isSelected) 1.dp else 0.dp,
-                            color = if (isSelected) Color(0xFF38383C) else Color.Transparent,
+                            color = if (isSelected) AppColors.Profile.SelectedBorder else AppColors.Core.Transparent,
                             shape = RoundedCornerShape(8.dp)
                         )
                         .clickable { current = value },
@@ -627,19 +630,24 @@ private fun PickerSheet(
     onConfirm: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.72f))) {
+    BackHandler(onBack = onDismiss)
+    Box(modifier = Modifier.fillMaxSize()) {
+        ModalScrim(
+            color = AppColors.Core.Black.copy(alpha = 0.72f),
+            onClick = onDismiss
+        )
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
-                .background(Color(0xFF1A1A1B))
+                .background(AppColors.Auth.Sheet)
                 .navigationBarsPadding()
         ) {
             Box(modifier = Modifier.fillMaxWidth().height(70.dp)) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_profile_close),
-                    contentDescription = "关闭",
+                AppImage(
+                    asset = AppImages.Profile.Close,
+                    contentDescription = AppText.Profile.Close,
                     modifier = Modifier
                         .align(Alignment.CenterStart)
                         .padding(start = 22.dp)
@@ -653,9 +661,9 @@ private fun PickerSheet(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.align(Alignment.Center)
                 )
-                Image(
-                    painter = painterResource(id = R.drawable.ic_profile_check),
-                    contentDescription = "确定",
+                AppImage(
+                    asset = AppImages.Profile.Confirm,
+                    contentDescription = AppText.Common.Confirm,
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                         .padding(end = 26.dp)
@@ -711,9 +719,9 @@ private fun WheelNumberPicker(
             val isSelected = distance == 0
             val textColor = when (distance) {
                 0 -> CorosWhite
-                1 -> Color(0xFFCFCFD4)
-                2 -> Color(0xFF77777D)
-                else -> Color(0xFF4C4C52)
+                1 -> AppColors.Profile.WheelNear
+                2 -> AppColors.Profile.WheelFar
+                else -> AppColors.Profile.WheelFarthest
             }
             val fontSize = when (distance) {
                 0 -> 28.sp
@@ -727,7 +735,7 @@ private fun WheelNumberPicker(
                     .clip(RoundedCornerShape(8.dp))
                     .border(
                         width = if (isSelected) 1.dp else 0.dp,
-                        color = if (isSelected) Color(0xFF34343A) else Color.Transparent,
+                        color = if (isSelected) AppColors.Profile.WheelSelectedBorder else AppColors.Core.Transparent,
                         shape = RoundedCornerShape(8.dp)
                     )
                     .clickable { onValueChange(item) },
@@ -746,25 +754,30 @@ private fun WheelNumberPicker(
 }
 
 @Composable
-private fun AvatarActionSheet(
+internal fun AvatarActionSheet(
     onDismiss: () -> Unit,
     onAlbum: () -> Unit,
     onCamera: () -> Unit
 ) {
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.42f))) {
+    BackHandler(onBack = onDismiss)
+    Box(modifier = Modifier.fillMaxSize()) {
+        ModalScrim(
+            color = AppColors.Core.Black.copy(alpha = 0.42f),
+            onClick = onDismiss
+        )
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
-                .background(Color(0xFF18181A))
+                .background(AppColors.Profile.ActionSheet)
                 .navigationBarsPadding()
         ) {
-            SheetAction(text = "拍照片", onClick = onCamera)
+            SheetAction(text = AppText.Profile.TakePhoto, onClick = onCamera)
             Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(CorosLine))
-            SheetAction(text = "相册", onClick = onAlbum)
-            Box(modifier = Modifier.fillMaxWidth().height(8.dp).background(Color(0xFF101012)))
-            SheetAction(text = "取消", onClick = onDismiss)
+            SheetAction(text = AppText.Profile.Album, onClick = onAlbum)
+            Box(modifier = Modifier.fillMaxWidth().height(8.dp).background(AppColors.Profile.ActionSheetDivider))
+            SheetAction(text = AppText.Common.Cancel, onClick = onDismiss)
         }
     }
 }
@@ -795,7 +808,7 @@ private fun parseBirthDate(value: String): Triple<Int, Int, Int> {
     )
 }
 
-private fun saveAvatarBitmap(context: Context, bitmap: Bitmap): String {
+internal fun saveAvatarBitmap(context: Context, bitmap: Bitmap): String {
     val directory = File(context.filesDir, "profile_avatars").also { it.mkdirs() }
     val file = File(directory, "avatar_${System.currentTimeMillis()}.jpg")
     FileOutputStream(file).use { output ->
@@ -804,7 +817,7 @@ private fun saveAvatarBitmap(context: Context, bitmap: Bitmap): String {
     return Uri.fromFile(file).toString()
 }
 
-private fun copyAvatarToPrivateFile(context: Context, uri: Uri): String {
+internal fun copyAvatarToPrivateFile(context: Context, uri: Uri): String {
     val directory = File(context.filesDir, "profile_avatars").also { it.mkdirs() }
     val file = File(directory, "avatar_${System.currentTimeMillis()}.jpg")
     context.contentResolver.openInputStream(uri)?.use { input ->

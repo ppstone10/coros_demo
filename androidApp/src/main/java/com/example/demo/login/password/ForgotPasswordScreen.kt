@@ -23,6 +23,7 @@ import com.example.demo.login.components.CorosFilledButton
 import com.example.demo.login.components.CorosWhite
 import com.example.demo.login.components.ErrorText
 import com.example.demo.login.components.UnderlineInput
+import com.example.demo.ui.resources.AppText
 import com.example.demo.ui.theme.DemoTheme
 
 @Composable
@@ -58,7 +59,7 @@ fun ForgotPasswordScreen(
 
     AuthBlackPage(onBack = onBack, showFeedback = false) {
         Text(
-            text = "找回密码",
+            text = AppText.Auth.FindPassword,
             color = CorosWhite,
             fontSize = AuthTitleSize,
             fontWeight = FontWeight.Light,
@@ -67,7 +68,7 @@ fun ForgotPasswordScreen(
         Spacer(modifier = Modifier.height(60.dp))
         UnderlineInput(
             value = account,
-            placeholder = "输入手机号或邮箱",
+            placeholder = AppText.Auth.AccountPlaceholder,
             keyboardType = KeyboardType.Email,
             autoFocus = true,
             onValueChange = {
@@ -77,7 +78,7 @@ fun ForgotPasswordScreen(
         )
         Spacer(modifier = Modifier.height(72.dp))
         CorosFilledButton(
-            text = "下一步",
+            text = AppText.Auth.NextStep,
             color = CorosButtonRed,
             enabled = account.isNotBlank(),
             onClick = { verifyAccount() }
