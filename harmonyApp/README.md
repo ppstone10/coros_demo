@@ -7,6 +7,7 @@
 - UI 使用 ArkTS + ArkUI 原生实现，不采用 KuiklyUI 共享 UI。
 - 登录页面通过 `LoginViewModel` -> `LoginLogicAdapter` 调用业务逻辑。
 - `KnoiLoginAdapter` 通过 KuiklyBase-Kotlin + KNOI 调用 `harmony-kmp-bridge` 中的 `HarmonyLoginService`；该 service 复用 `common/src/commonMain` 的 `LoginFacade`、验证码、注册、登录和登出逻辑。
+- native 运行期使用内存 Store；`StorePersister.ets` 将 bridge 导出的认证 JSON 快照保存到 `@ohos.data.preferences`，并在应用启动时恢复。
 - `EntryAbility` 显式执行 `setup('libkn.so', false)` 和 `init()`；Harmony 登录业务不再走 `import libshared_login_bridge.so`。
 - KNOI 工具链、native module 产物和 DevEco/Hvigor 绑定验证记录在 `harmony-kmp-bridge`、`experimental/harmony-kmp` 与 `docs/harmonyos-kmp-experiment.md`。没有 `libkn.so` 时，鸿蒙端不应被视为已完成可运行构建。
 

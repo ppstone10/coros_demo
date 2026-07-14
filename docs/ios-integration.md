@@ -10,6 +10,8 @@ iOS 使用 SwiftUI 原生 UI，通过 KMP 产物接入共享业务逻辑。
 
 `SharedLoginAdapter` 强制 `import Shared`，不再提供 Swift 本地兜底实现。iOS 登录、注册、验证码和登出流程必须通过 KMP `LoginFacade` 调用 `common` 业务逻辑。
 
+认证持久化仍由 common 的 `JsonAuthStoreDataSource` 与 `MockAuthStoreJson` 负责；`SharedLoginAdapter` 只向它注入 `UserDefaults.standard` 的 JSON 字符串读写回调。SwiftUI 页面不直接读写账号库、Session 或验证码快照。
+
 ## Xcode 构建方式
 
 `iosApp.xcodeproj` 已配置 `Build Shared KMP Framework` Run Script phase：

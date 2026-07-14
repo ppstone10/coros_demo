@@ -2,7 +2,7 @@
 
 ## 架构总览
 
-KMP `common` 共享业务层 + 三端 Native UI：
+KMP `common` 共享业务层 + 三端 Native UI。Android/iOS 直接使用 KMP 产物；HarmonyOS 由独立 bridge 编译同一份 `commonMain` 纯业务源码：
 
 | 端 | 语言 | UI 框架 | KMP 集成方式 |
 | --- | --- | --- | --- |
@@ -30,17 +30,14 @@ UI (用户操作)
 
 | 模型 | 文件 | 说明 |
 | --- | --- | --- |
-| `LoginState` | `LoginModels.kt:131` | 页面状态：输入、加载、错误、当前会话 |
-| `LoginAction` | `LoginModels.kt:156` | 用户意图：输入改变、提交、登出、会话失效 |
-| `LoginEffect` | `LoginModels.kt:171` | 一次性效果：导航到首页、Toast 消息、登出 |
-| `AuthSession` | `LoginModels.kt:16` | 领域层登录态（含 profile 信息） |
-| `AuthRegion` | `LoginModels.kt:33` | 注册区域（CN/US） |
-| `UserProfile` | `LoginModels.kt:80` | 用户资料（头像、昵称、生日、身高、体重、计量单位等） |
-| `MockResult` | `LoginModels.kt:99` | 本地 mock 操作结果（Success/Failure） |
-| `MockError` | `LoginModels.kt:104` | 预定义错误码（11 种） |
-| `LoginResult` | `LoginModels.kt:180` | UseCase 返回结果 |
-| `RegisterRequestDto` | `LoginModels.kt:8` | 注册输入 DTO |
-| `LoginRequestDto` | `LoginModels.kt:3` | 登录输入 DTO |
+| `LoginState` | `LoginModels.kt` | 页面状态：输入、加载、错误、当前会话 |
+| `LoginAction` | `LoginModels.kt` | 用户意图：输入改变、提交、登出、会话失效 |
+| `LoginEffect` | `LoginModels.kt` | 一次性效果：认证成功、登出、失效、提示 |
+| `AuthSession` | `LoginModels.kt` | 领域层登录态（含 profile 信息） |
+| `AuthRegion` | `LoginModels.kt` | 注册区域（CN/US） |
+| `UserProfile` | `LoginModels.kt` | 用户资料（头像、昵称、生日、身高、体重、计量单位等） |
+| `MockResult` / `MockError` | `LoginModels.kt` | 本地 mock 操作结果和错误场景 |
+| `LoginResult` | `LoginModels.kt` | 登录/注册 UseCase 返回结果 |
 
 ## 状态流转
 
@@ -87,6 +84,8 @@ UI (用户操作)
 
 文件：`common/src/commonMain/proto/auth_mock.proto`
 
+当前 `.proto` 是结构契约，项目未使用 `protoc` 生成 Kotlin Message 类；`Mock*` data class 是对 Proto 的手工镜像。完整说明见 `docs/proto与domain model之间的关系.md`。
+
 ### Message 与 Domain Model 转换关系
 
 | Proto Message | Kotlin Data Class | 转换函数 |
@@ -104,7 +103,7 @@ UI (用户操作)
 
 - Proto 使用 `snake_case` 字段名。
 - Kotlin 使用 `camelCase` 字段名。
-- 本地 JSON 由 common 中的 `MockAuthStoreJson` 集中编解码：按 protobuf JSON 规则使用 `camelCase` 字段名、proto 枚举名称，`int64` 使用 JSON 字符串；读取时兼容既有 `snake_case` 与 Kotlin 枚举名称快照。HarmonyOS 平台层只保存和恢复该快照字符串，不复制 JSON 字段规则。
+- 本地 JSON 由 common 中的 `MockAuthStoreJson` 集中编解码：字段使用 `camelCase`、枚举使用 proto 枚举名称；读取时兼容既有 `snake_case` 与 Kotlin 枚举名称快照。HarmonyOS 平台层只保存和恢复认证 Store 快照，不复制认证字段规则。
 
 ## 持久化方案
 
@@ -123,8 +122,8 @@ interface AuthStoreDataSource {
 | --- | --- | --- |
 | 测试/通用 | `InMemoryAuthStoreDataSource` | 内存 Map |
 | Android | `AndroidAuthStoreDataSource` | SharedPreferences（protobuf JSON） |
-| iOS | `JsonAuthStoreDataSource` | 文件系统（protobuf JSON） |
-| HarmonyOS | `MemoryAuthStoreDataSource` + `StorePersister` | 文件系统（protobuf JSON） |
+| iOS | `JsonAuthStoreDataSource` | `UserDefaults` 保存认证 JSON |
+| HarmonyOS | `MemoryAuthStoreDataSource` + `StorePersister` | ArkTS Preferences 保存 bridge 导出的认证 JSON |
 
 ### 存储内容
 
@@ -145,7 +144,7 @@ interface AuthStoreDataSource {
 
 - `iosApp/Login/SharedLoginAdapter.swift` 包装 KMP `LoginFacade`。
 - `LoginFacade` 通过 `LoginStore` 处理 action 和 side effect。
-- 持久化通过 `JsonAuthStoreDataSource`（文件读写）。
+- `SharedLoginAdapter` 向 `JsonAuthStoreDataSource` 注入 `UserDefaults` 的字符串读写回调。
 - iOS 需先运行 `tools/build-shared-xcframework.sh` 生成 `Shared.framework`。
 
 ## HarmonyOS 集成
@@ -153,4 +152,4 @@ interface AuthStoreDataSource {
 - `harmony-kmp-bridge` 独立 Gradle 项目使用 KuiklyBase-Kotlin + KNOI 生成 `libkn.so`。
 - `HarmonyLoginService` 封装 `LoginFacade` 供 ArkTS 调用。
 - `harmonyApp` 通过 `KnoiLoginAdapter.ets` → `HarmonyLoginService` 完成登录操作。
-- 持久化通过 `MemoryAuthStoreDataSource` + `StorePersister`（文件 JSON）。
+- native 运行期使用 `MemoryAuthStoreDataSource`；`StorePersister` 将 bridge 导出的 Store 快照保存到 ArkTS Preferences，并在启动时恢复。

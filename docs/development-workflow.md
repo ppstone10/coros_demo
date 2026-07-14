@@ -38,14 +38,14 @@ env NODE_HOME=/Applications/DevEco-Studio.app/Contents/tools/node \
 3. Android 通过 `LoginStore` 或 `LoginFacade` 调用。
 4. iOS 通过 `SharedLoginAdapter` 调用。
 5. HarmonyOS 优先扩展 `harmony-kmp-bridge` 中的 KNOI service；登录、注册、验证码和登出逻辑已接入 `common/src/commonMain`，新增业务应继续放回 shared，再由 ArkTS 做原生 UI 映射。
-6. 若涉及协议字段，直接更新 `common` 模型；`contract` 仅作为后端 API 契约归档。
+6. 若涉及认证数据字段，先更新 `common/src/commonMain/proto/auth_mock.proto`，再同步更新 Kotlin `Mock*` 模型、Mapper、`MockAuthStoreJson` 与测试；`contract` 不维护认证接口契约。
 
 ### HarmonyOS bridge 修改规则
 
-- 新增 state/effect/store 字段时，先改 `common` 模型，再更新 `HarmonyLoginJson` 的编码、解析和 round-trip 校验路径。
-- 不在 `HarmonyLoginService` 中直接新增零散 JSON 拼接或解析函数；service 只负责暴露 KNOI 方法和调用 `LoginFacade`。
+- 新增 state/effect/store 字段时，先改 `common` 模型；认证 Store 字段同步更新 `MockAuthStoreJson`，bridge State/Effect 字段同步更新 `HarmonyLoginJson` 与 ArkTS 映射。
+- 不在 `HarmonyLoginService` 中直接新增零散的认证 Store JSON 解析逻辑；service 只负责暴露 KNOI 方法、调用 `LoginFacade` 和转发集中编解码器。
 - 任何会改变 Kotlin store 的 ArkTS adapter 方法，成功后必须调用 `saveStoreSnapshot()`。
-- `pages/LoginPage` 保留为历史对照页，不注册为主流程入口；`DebugStatePage` 不应出现在正式入口或常规导航中。
+- `DebugStatePage` 不应出现在正式入口或常规导航中。
 - Android 可以直接调用 `common` Kotlin API；iOS/HarmonyOS 使用 facade/bridge 是跨语言边界适配，不要求 Android 也套同一层。
 
 ## 修改平台 UI

@@ -10,10 +10,10 @@
 
 - `harmony-kmp-bridge`：独立 KuiklyBase-Kotlin/KNOI bridge 构建，不接入根 Gradle，并编译 `common/src/commonMain` 中的登录业务源码。
 - `harmony-kmp-bridge/src/ohosArm64Main/.../HarmonyLoginService.kt`：KNOI-facing service，包装 `LoginFacade`，暴露登录、注册、验证码、登出、校验和状态快照接口。
-- `harmony-kmp-bridge/src/ohosArm64Main/.../HarmonyLoginJson.kt`：集中维护 KNOI snapshot JSON 编解码和 round-trip 校验，避免在 service 中继续堆叠手写解析逻辑。
+- `harmony-kmp-bridge/src/ohosArm64Main/.../HarmonyLoginJson.kt`：集中维护 KNOI State/Effect snapshot JSON 与认证 Store 编解码的转发，避免在 service 中继续堆叠手写解析逻辑。
 - `harmonyApp/entry/src/main/ets/knoi/provider.ets`：由 KNOI 生成，包含 `getHarmonyLoginService()`。
 - `harmonyApp/entry/src/main/ets/login/KnoiLoginAdapter.ets`：ArkTS 登录状态壳，调用生成的 `getHarmonyLoginService()`，只负责状态/effect 映射，不再维护 ArkTS mock 账号、验证码或登录注册流程。
-- `harmonyApp/entry/src/main/ets/login/StorePersister.ets`：负责本地 snapshot 持久化；保存前和恢复后调用 bridge round-trip 校验，失败时记录日志并阻止写入不稳定快照。
+- `harmonyApp/entry/src/main/ets/login/StorePersister.ets`：负责本地 Store snapshot 持久化；从 ArkTS Preferences 读取或写入字符串，并交由 bridge 的集中编解码路径恢复认证数据。
 - `harmonyApp/entry/src/main/ets/entryability/EntryAbility.ets`：显式执行 `setup('libkn.so', false)` 和 `init()`。
 - `harmonyApp/entry/src/main/libs/arm64-v8a/libkn.so`：用户约定的 POC 产物落点。
 - `harmonyApp/entry/libs/arm64-v8a/libkn.so`：Hvigor 实际打包使用的 POC 产物落点。
@@ -35,7 +35,7 @@
 - KuiklyBase 当前要求 Kotlin `2.0.21-KBA-003`，`harmony-kmp-bridge` 必须继续作为独立工程锁定该工具链，不随根 KMP/Android/iOS 工具链升级。
 - KSP 版本警告不作为主线阻塞项；验收以 `ohosArm64Binaries` 成功、`provider.ets` 生成、`libkn.so` 复制到 Harmony 工程两个 ABI 落点、Hvigor `assembleApp` 成功为准。
 - 如果 KuiklyBase/KNOI 官方兼容矩阵更新，再评估 Kotlin/KSP/KNOI 版本联动升级，不能只为消除警告单独升级 KSP。
-- `harmonyApp/entry/hvigorfile.ts` 的自动重建检测必须同时覆盖 `harmony-kmp-bridge/src/ohosArm64Main/kotlin` 和 `common/src/commonMain/kotlin`，避免 shared 业务变更后复用旧 native 产物。
+- shared 业务源码或 bridge service 变更后，必须重新运行 `ohosArm64Binaries` 并将新的 `libkn.so` 与 `provider.ets` 复制到 Harmony 工程，避免复用旧 native 产物。
 
 ## 方案一：Kotlin/JS
 
