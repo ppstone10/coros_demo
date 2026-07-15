@@ -9,6 +9,14 @@ export class AuthSession {
   region: string = 'CN';
   isValid: boolean = false;
   isProfileComplete: boolean = false;
+  avatarUri: string = '';
+  birthDate: string = '';
+  heightCm: number = 0;
+  weightKg: number = 0;
+  measurementSystem: string = 'Metric';
+  phone: string = '';
+  countryRegion: string = '中国';
+  gender: string = '';
 }
 
 export class LoginState {

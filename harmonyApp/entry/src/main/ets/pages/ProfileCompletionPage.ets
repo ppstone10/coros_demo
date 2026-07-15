@@ -1,12 +1,13 @@
 import promptAction from '@ohos.promptAction';
 import photoAccessHelper from '@ohos.file.photoAccessHelper';
+import router from '@ohos.router';
 import {
   LoginEffect,
   LoginEffectType,
   LoginState
 } from '../login/LoginState';
 import { getLoginViewModel } from '../login/LoginViewModelProvider';
-import { navigate, NavOperation } from '../login/AuthNavigator';
+import { navigate, NavOperation, showToast } from '../login/AuthNavigator';
 import {
   COROS_BUTTON_RED,
   COROS_BLACK,
@@ -21,7 +22,7 @@ import {
   CorosButton,
   AuthHeader
 } from '../login/components/AuthComponents';
-import { AuthRoutes } from '../login/AuthRoutes';
+import { AuthRoutes, ProfilePageParams } from '../login/AuthRoutes';
 import { handleAuthEffect } from '../login/AuthEffectHandler';
 
 
@@ -437,9 +438,9 @@ struct RequiredLabelComponent {
 
   build() {
     Row() {
-      Text(this.label).fontSize(20).fontColor(COROS_WHITE)
+      Text(this.label).fontSize(16).fontColor(COROS_WHITE)
       if (this.required) {
-        Text('*').fontSize(16).fontColor(COROS_RED)
+        Text('*').fontSize(13).fontColor(COROS_RED)
       }
     }
     .alignItems(VerticalAlign.Center)
@@ -460,17 +461,17 @@ struct ProfilePickerRowComponent {
         RequiredLabelComponent({ label: this.label, required: this.required });
         Blank().layoutWeight(1)
         Text(this.value.length > 0 ? this.value : this.placeholder)
-          .fontSize(18)
+          .fontSize(15)
           .fontColor(this.value.length > 0 ? '#DADAE0' : COROS_MUTED)
           .textAlign(TextAlign.End)
         Image($r('app.media.right_more'))
-          .width(24)
-          .height(24)
+          .width(19)
+          .height(19)
           .objectFit(ImageFit.Contain)
           .margin({ left: 12 })
       }
       .width('100%')
-      .height(66)
+      .height(56)
       .alignItems(VerticalAlign.Center)
       .onClick(() => { this.tapRequested(); })
 
@@ -497,7 +498,7 @@ struct ProfileTextRowComponent {
       Row() {
         RequiredLabelComponent({ label: this.label, required: this.required });
         TextInput({ text: this.value, placeholder: this.placeholder })
-          .fontSize(18)
+          .fontSize(15)
           .fontColor(COROS_WHITE)
           .placeholderColor(COROS_MUTED)
           .caretColor(COROS_RED)
@@ -505,13 +506,13 @@ struct ProfileTextRowComponent {
           .textAlign(TextAlign.End)
           .layoutWeight(1)
           .padding(0)
-          .height(66)
+          .height(56)
           .onChange((value: string) => {
             this.updateValue(value);
           })
       }
       .width('100%')
-      .height(66)
+      .height(56)
       .alignItems(VerticalAlign.Center)
 
       Divider().color(COROS_LINE)
@@ -534,14 +535,14 @@ struct ProfileAvatarComponent {
           .objectFit(ImageFit.Cover)
       } else {
         Image($r('app.media.icon_camera'))
-          .width(92)
-          .height(92)
+          .width(76)
+          .height(76)
           .objectFit(ImageFit.Contain)
       }
     }
-    .width(92)
-    .height(92)
-    .borderRadius(46)
+    .width(76)
+    .height(76)
+    .borderRadius(38)
     .backgroundColor('#171719')
     .clip(true)
     .alignSelf(ItemAlign.Center)
@@ -566,17 +567,17 @@ struct ProfileGenderRowComponent {
       Row() {
         Row() {
           Image($r('app.media.icon_female'))
-            .width(22)
-            .height(22)
+            .width(18)
+            .height(18)
             .objectFit(ImageFit.Contain)
           Blank().width(8)
           Text('女')
-            .fontSize(20)
+            .fontSize(16)
             .fontColor(this.gender === 'Female' ? COROS_RED : '#D8D8DD')
             .fontWeight(FontWeight.Medium)
         }
-        .width(82)
-        .height(48)
+        .width(72)
+        .height(40)
         .justifyContent(FlexAlign.Center)
         .border({
           width: this.gender === 'Female' ? 1 : 0,
@@ -590,17 +591,17 @@ struct ProfileGenderRowComponent {
 
         Row() {
           Image($r('app.media.icon_male'))
-            .width(22)
-            .height(22)
+            .width(18)
+            .height(18)
             .objectFit(ImageFit.Contain)
           Blank().width(8)
           Text('男')
-            .fontSize(20)
+            .fontSize(16)
             .fontColor(this.gender === 'Male' ? COROS_RED : '#D8D8DD')
             .fontWeight(FontWeight.Medium)
         }
-        .width(82)
-        .height(48)
+        .width(72)
+        .height(40)
         .justifyContent(FlexAlign.Center)
         .border({
           width: this.gender === 'Male' ? 1 : 0,
@@ -612,7 +613,7 @@ struct ProfileGenderRowComponent {
       }
     }
     .width('100%')
-    .height(78)
+    .height(62)
     .alignItems(VerticalAlign.Center)
   }
 }
@@ -1029,6 +1030,57 @@ struct CountryPickerSheetV2 {
   }
 }
 
+@Component
+struct GenderPickerSheetV2 {
+  @Link profileGender: string;
+  @Link activePicker: string;
+  @State selectedIndex: number = 0;
+  private labels: string[] = ['女', '男'];
+  private values: string[] = ['Female', 'Male'];
+
+  aboutToAppear(): void {
+    let index: number = this.values.indexOf(this.profileGender);
+    this.selectedIndex = index >= 0 ? index : 0;
+  }
+
+  private close(): void {
+    this.activePicker = '';
+  }
+
+  private confirm(): void {
+    this.profileGender = this.values[this.selectedIndex];
+    this.activePicker = '';
+  }
+
+  build() {
+    Stack() {
+      Column().width('100%').height('100%').backgroundColor('#B8000000')
+        .onClick(() => { this.close(); })
+
+      Column() {
+        PickerSheetHeaderComponent({
+          title: '性别',
+          onDismiss: () => { this.close(); },
+          onConfirm: () => { this.confirm(); }
+        })
+        TextPicker({ range: this.labels, selected: this.selectedIndex })
+          .width('90%').height(240).defaultPickerItemHeight(54).canLoop(false)
+          .selectedTextStyle({ color: COROS_WHITE, font: { size: 28, weight: FontWeight.Medium } })
+          .textStyle({ color: '#CFCFD4', font: { size: 23, weight: FontWeight.Normal } })
+          .disappearTextStyle({ color: '#77777D', font: { size: 18, weight: FontWeight.Normal } })
+          .divider({ strokeWidth: 1, color: '#34343A', startMargin: 14, endMargin: 14 })
+          .onChange((_value: string | string[], index: number | number[]) => {
+            this.selectedIndex = pcClamp(pcPickerIndex(index), 0, this.values.length - 1);
+          })
+        Blank().height(28)
+      }
+      .width('100%').backgroundColor('#1A1A1B')
+      .borderRadius({ topLeft: 14, topRight: 14 }).align(Alignment.Bottom)
+    }
+    .width('100%').height('100%')
+  }
+}
+
 
 @Entry
 @Component
@@ -1049,9 +1101,20 @@ struct ProfileCompletionPage {
   @State unavailableDialogVisible: boolean = false;
   @State avatarSheetVisible: boolean = false;
   @State activePicker: string = '';
+  @State editMode: boolean = false;
+  @State originalAvatarUri: string = '';
+  @State originalUsername: string = '';
+  @State originalBirthDate: string = '';
+  @State originalHeightCm: string = '';
+  @State originalWeightKg: string = '';
+  @State originalGender: string = '';
+  @State originalCountry: string = '';
 
   aboutToAppear(): void {
+    let params = router.getParams() as ProfilePageParams;
+    this.editMode = params !== null && params !== undefined && params.editMode === true;
     this.syncState();
+    this.captureOriginalProfile();
   }
 
   onBackPress(): boolean {
@@ -1064,32 +1127,51 @@ struct ProfileCompletionPage {
       Column() {
         Scroll() {
           Column() {
-            AuthHeader({ showBack: true, showFeedback: false,
-              backRequested: () => { this.handleProfileBack(); } });
+            if (this.editMode) {
+              Row() {
+                Text('‹').fontSize(34).fontColor(COROS_WHITE).width(64)
+                  .onClick(() => { this.handleProfileBack(); })
+                Text('个人信息').fontSize(18).fontColor(COROS_WHITE).fontWeight(FontWeight.Medium)
+                  .layoutWeight(1).textAlign(TextAlign.Center)
+                Text('保存').fontSize(14).fontColor(COROS_WHITE).width(64).textAlign(TextAlign.Center)
+                  .padding({ top: 8, bottom: 8 })
+                  .backgroundColor(this.isProfileActionEnabled() ? '#F0003C' : '#5F001C')
+                  .borderRadius(6)
+                  .enabled(this.isProfileActionEnabled())
+                  .onClick(() => {
+                    if (this.isProfileActionEnabled()) this.submitProfile();
+                  })
+              }
+              .width('100%').height(62).alignItems(VerticalAlign.Center)
+              Blank().height(20)
+            } else {
+              AuthHeader({ showBack: true, showFeedback: false,
+                backRequested: () => { this.handleProfileBack(); } });
 
-            Blank().height(22)
+              Blank().height(14)
 
-            Text('完善个人信息')
-              .fontSize(36)
-              .fontColor(COROS_WHITE)
-              .lineHeight(44)
-              .fontWeight(FontWeight.Lighter)
+              Text('完善个人信息')
+                .fontSize(28)
+                .fontColor(COROS_WHITE)
+                .lineHeight(34)
+                .fontWeight(FontWeight.Lighter)
 
-            Blank().height(12)
+              Blank().height(8)
 
-            Text('以下信息可以帮助我们对体育科学做出更准确的预测，请仔细填写。')
-              .fontSize(18)
-              .fontColor('#E8E8EC')
-              .lineHeight(28)
+              Text('以下信息可以帮助我们对体育科学做出更准确的预测，请仔细填写。')
+                .fontSize(14)
+                .fontColor('#E8E8EC')
+                .lineHeight(20)
 
-            Blank().height(28)
+              Blank().height(20)
+            }
 
             ProfileAvatarComponent({
               avatarUri: this.profileAvatarUri,
               tapRequested: () => { this.avatarSheetVisible = true; }
             });
 
-            Blank().height(28)
+            Blank().height(20)
 
             ProfileTextRowComponent({
               label: '用户名',
@@ -1100,6 +1182,15 @@ struct ProfileCompletionPage {
                 return value.substring(0, 20);
               }
             });
+            if (this.editMode) {
+              ProfilePickerRowComponent({
+                label: '性别',
+                required: true,
+                value: this.genderLabel(),
+                placeholder: '去填写',
+                tapRequested: () => { this.activePicker = 'Gender'; }
+              });
+            }
             ProfilePickerRowComponent({
               label: '出生日期',
               required: true,
@@ -1121,22 +1212,24 @@ struct ProfileCompletionPage {
               placeholder: '去填写',
               tapRequested: () => { this.activePicker = 'Weight'; }
             });
-            ProfilePickerRowComponent({
-              label: '公英制',
-              required: false,
-              value: this.measurementLabel(),
-              placeholder: '',
-              tapRequested: () => { this.activePicker = 'Unit'; }
-            });
-            ProfileTextRowComponent({
-              label: '手机',
-              required: false,
-              value: $profilePhone,
-              placeholder: '输入手机号',
-              valueChanged: (value: string) => {
-                return value.replace(/[^0-9+\-]/g, '').substring(0, 20);
-              }
-            });
+            if (!this.editMode) {
+              ProfilePickerRowComponent({
+                label: '公英制',
+                required: false,
+                value: this.measurementLabel(),
+                placeholder: '',
+                tapRequested: () => { this.activePicker = 'Unit'; }
+              });
+              ProfileTextRowComponent({
+                label: '手机',
+                required: false,
+                value: $profilePhone,
+                placeholder: '输入手机号',
+                valueChanged: (value: string) => {
+                  return value.replace(/[^0-9+\-]/g, '').substring(0, 20);
+                }
+              });
+            }
             ProfilePickerRowComponent({
               label: '国家与地区',
               required: false,
@@ -1144,27 +1237,31 @@ struct ProfileCompletionPage {
               placeholder: '中国',
               tapRequested: () => { this.activePicker = 'Country'; }
             });
-            ProfileGenderRowComponent({
-              gender: $profileGender,
-              valueChanged: (_: string) => {}
-            });
+            if (!this.editMode) {
+              ProfileGenderRowComponent({
+                gender: $profileGender,
+                valueChanged: (_: string) => {}
+              });
+            }
 
             Blank().height(16)
           }
           .width('100%')
-          .padding({ left: 20, right: 20 })
+          .padding({ left: 18, right: 18 })
         }
         .layoutWeight(1)
 
-        Column() {
-          ErrorText({ message: this.localError });
-          Blank().height(8)
-          CorosButton({ textValue: '完成', color: COROS_BUTTON_RED,
-            enabledValue: this.isProfileActionEnabled(), loading: this.isLoading,
-            tapRequested: () => { this.submitProfile(); } });
+        if (!this.editMode) {
+          Column() {
+            ErrorText({ message: this.localError });
+            Blank().height(5)
+            CorosButton({ textValue: '完成', color: COROS_BUTTON_RED,
+              enabledValue: this.isProfileActionEnabled(), loading: this.isLoading,
+              tapRequested: () => { this.submitProfile(); } });
+          }
+          .width('100%')
+          .padding({ left: 18, right: 18, top: 8, bottom: 10 })
         }
-        .width('100%')
-        .padding({ left: 20, right: 20, top: 14, bottom: 18 })
       }
       .width('100%')
       .height('100%')
@@ -1185,6 +1282,9 @@ struct ProfileCompletionPage {
       if (this.activePicker === 'Country') {
         CountryPickerSheetV2({ profileCountry: $profileCountry, activePicker: $activePicker });
       }
+      if (this.activePicker === 'Gender') {
+        GenderPickerSheetV2({ profileGender: $profileGender, activePicker: $activePicker });
+      }
       if (this.avatarSheetVisible) {
         AvatarActionSheetComponent({
           visible: $avatarSheetVisible,
@@ -1203,6 +1303,10 @@ struct ProfileCompletionPage {
 
   private handleProfileBack(): void {
     this.localError = '';
+    if (this.editMode) {
+      navigate(NavOperation.Pop, '');
+      return;
+    }
     this.viewModel.clearSessionSilently();
     this.syncState();
     navigate(NavOperation.ResetTo, AuthRoutes.ENTRANCE);
@@ -1212,9 +1316,10 @@ struct ProfileCompletionPage {
   private isProfileActionEnabled(): boolean {
     let heightCm: number = this.profileHeightCm.length > 0 ? parseInt(this.profileHeightCm) : 0;
     let weightKg: number = this.profileWeightKg.length > 0 ? parseFloat(this.profileWeightKg) : 0;
-    return this.viewModel.canSubmitProfile(
+    let valid: boolean = this.viewModel.canSubmitProfile(
       this.profileUsername, this.profileBirthDate, heightCm, weightKg, this.profileGender
     );
+    return valid && (!this.editMode || this.hasProfileChanges());
   }
 
   private submitProfile(): void {
@@ -1225,10 +1330,14 @@ struct ProfileCompletionPage {
       heightCm, weightKg, this.profileMeasurementSystem,
       this.profilePhone, this.profileCountry, this.profileGender
     );
-    this.syncState();
     let effect: LoginEffect | null = this.viewModel.consumeEffect();
     if (effect !== null) {
-      handleAuthEffect(effect);
+      if (this.editMode && effect.type === LoginEffectType.ProfileSaved) {
+        showToast('资料已保存');
+        navigate(NavOperation.Pop, '');
+      } else {
+        handleAuthEffect(effect);
+      }
     } else {
       let state: LoginState = this.viewModel.state;
       if (state.errorMessage.length > 0) {
@@ -1274,14 +1383,48 @@ struct ProfileCompletionPage {
     return this.profileMeasurementSystem === 'Imperial' ? '英制（mi/ft/inch/lb）' : '公制（km/m/cm/kg）';
   }
 
+  private genderLabel(): string {
+    if (this.profileGender === 'Female') return '女';
+    if (this.profileGender === 'Male') return '男';
+    return '';
+  }
+
   private syncState(): void {
     let state: LoginState = this.viewModel.state;
     this.isLoading = state.isLoading;
     this.errorMessage = state.errorMessage;
     if (state.currentSession !== null) {
       this.profileUsername = state.currentSession.displayName;
-      this.profileCountry = state.currentSession.region === 'US' ? '美国' : '中国';
+      this.profileAvatarUri = state.currentSession.avatarUri;
+      this.profileBirthDate = state.currentSession.birthDate;
+      this.profileHeightCm = state.currentSession.heightCm > 0 ? `${state.currentSession.heightCm}` : '';
+      this.profileWeightKg = state.currentSession.weightKg > 0 ? state.currentSession.weightKg.toFixed(1) : '';
+      this.profileMeasurementSystem = state.currentSession.measurementSystem;
+      this.profilePhone = state.currentSession.phone;
+      this.profileCountry = state.currentSession.countryRegion.length > 0 ? state.currentSession.countryRegion :
+        (state.currentSession.region === 'US' ? '美国' : '中国');
+      this.profileGender = state.currentSession.gender;
     }
+  }
+
+  private captureOriginalProfile(): void {
+    this.originalAvatarUri = this.profileAvatarUri;
+    this.originalUsername = this.profileUsername;
+    this.originalBirthDate = this.profileBirthDate;
+    this.originalHeightCm = this.profileHeightCm;
+    this.originalWeightKg = this.profileWeightKg;
+    this.originalGender = this.profileGender;
+    this.originalCountry = this.profileCountry;
+  }
+
+  private hasProfileChanges(): boolean {
+    return this.profileAvatarUri !== this.originalAvatarUri ||
+      this.profileUsername !== this.originalUsername ||
+      this.profileBirthDate !== this.originalBirthDate ||
+      this.profileHeightCm !== this.originalHeightCm ||
+      this.profileWeightKg !== this.originalWeightKg ||
+      this.profileGender !== this.originalGender ||
+      this.profileCountry !== this.originalCountry;
   }
 
   private showMessage(message: string): void {

@@ -981,3 +981,34 @@
 ## 人工修正点
 
 - 暂无明确人工修正点。
+
+---
+
+2026-07-15 三端健康首页、个人资料与编辑卡片一致性完善
+
+## 采纳内容
+
+- 以 Android 当前效果为基准，完善 iOS 与 HarmonyOS 健康首页的健康总览、卡片列表和底部四项导航；统一步数为绿色、卡路里为黄色、运动时长为紫色，并补齐导航选中/未选中图标切换。
+- 将健康首页、卡片、导航和资料页面所需图片分别复制到 iOS、HarmonyOS 平台资源目录，并通过 iOS `AppImages/AppText/AppColors`、HarmonyOS `AppResources` 统一敛收图片、文案和颜色引用，减少页面内散落的资源名与硬编码。
+- 完善三端个人资料流程一致性：iOS 修改头像后可正确激活保存按钮；HarmonyOS 保存资料后返回“我”页面而非“体能”页面，头像和资料修改结果同步回“我”页面；HarmonyOS 个人信息整体布局向 Android/iOS 对齐。
+- 调整 iOS、HarmonyOS 个人信息完善页的标题、头像、表单、字体、间距及按钮尺寸，使内容密度与 Android 基本一致，同时保留必填校验、单位、地区、性别等既有业务逻辑。
+- 统一编辑卡片逻辑：三端均支持展示卡片的添加、删除、至少保留三项、顺序调整、保存、取消退出和恢复默认；未保存退出不再保留临时顺序，保存后才提交并持久化；添加按钮统一为绿色圆形底和白色“+”内容。
+- 完善卡片拖动体验：iOS 将排序手柄固定在左侧并使用高优先级拖动，拖动卡片跟手、相邻卡片动画让位，靠近上下边缘时驱动列表连续像素滚动；HarmonyOS 保持长按后进入拖动态，增加跟手位移、缩放、阴影、动画换位和基于 `Scroller` 的连续边缘滚动。
+- 统一编辑页保存按钮视觉，并缩小 Android 保存按钮高度；最终将 iOS 编辑卡片实际行高固定为 `56pt`，清除 SwiftUI `List` 默认上下行内边距，同时让拖动步进距离引用同一行高常量，使页面密度与 Android、HarmonyOS 保持一致且不影响排序触发位置。
+
+## 人工审查点
+
+- 用户已确认当前目标设备上的三端健康首页卡片效果基本一致；后续仍建议在小屏设备、较大系统字体和不同安全区机型上复查固定 `56pt/vp` 行高是否出现文字截断或点击区域过窄，因为本轮主要按当前三台模拟设备进行视觉对齐。
+- 建议在 iOS 与 HarmonyOS 真机复查长列表边缘自动滚动的速度、长按阈值和连续拖动稳定性；模拟器构建与用户当前交互验收已通过，但真机触控采样率和系统手势竞争可能影响最终手感。
+
+## 验证结果
+
+- Android 构建验证：执行 `./gradlew :androidApp:assembleDebug`，Debug APK 构建成功，结果为 `BUILD SUCCESSFUL`。
+- iOS 构建验证：执行 `xcodebuild -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug -derivedDataPath /private/tmp/demo-ios-derived CODE_SIGNING_ALLOWED=NO build`，结果为 `BUILD SUCCEEDED`；健康首页、资料页、左侧拖动手柄、连续滚动及最终卡片行高修改均通过 Swift 编译和链接。
+- HarmonyOS 构建验证：配置 DevEco Studio 内置 Node、SDK 与 Hvigor 环境后执行 `hvigorw assembleHap --no-daemon`，ArkTS 编译与 HAP 打包成功，结果为 `BUILD SUCCESSFUL`；输出仅包含既有 KNOI 校验、路由 API 弃用和未配置签名等非阻断警告。
+- 静态检查：多次执行 `git diff --check`，均未发现空白字符或补丁格式错误。
+- 人工验收：用户通过三端模拟设备持续对比健康首页、资料页面和编辑卡片交互，并最终明确确认三端健康首页卡片已经保持一致。
+
+## 人工修正点
+
+- 暂无明确人工修正点。

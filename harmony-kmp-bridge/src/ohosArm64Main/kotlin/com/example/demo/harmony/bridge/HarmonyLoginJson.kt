@@ -103,6 +103,22 @@ internal object HarmonyLoginJson {
             appendJsonBoolean("isValid", session.isValid)
             append(',')
             appendJsonBoolean("isProfileComplete", session.isProfileComplete)
+            append(',')
+            appendJsonField("avatarUri", session.profile?.avatarUri.orEmpty())
+            append(',')
+            appendJsonField("birthDate", session.profile?.birthDate.orEmpty())
+            append(',')
+            appendJsonNumber("heightCm", session.profile?.heightCm ?: 0)
+            append(',')
+            appendJsonDouble("weightKg", session.profile?.weightKg ?: 0.0)
+            append(',')
+            appendJsonField("measurementSystem", session.profile?.measurementSystem?.name ?: "Metric")
+            append(',')
+            appendJsonField("phone", session.profile?.phone.orEmpty())
+            append(',')
+            appendJsonField("countryRegion", session.profile?.countryRegion.orEmpty())
+            append(',')
+            appendJsonField("gender", session.profile?.gender?.name.orEmpty())
             append('}')
         }
     }
@@ -116,6 +132,20 @@ internal object HarmonyLoginJson {
     }
 
     private fun StringBuilder.appendJsonBoolean(name: String, value: Boolean) {
+        append('"')
+        append(name)
+        append("\":")
+        append(value)
+    }
+
+    private fun StringBuilder.appendJsonNumber(name: String, value: Int) {
+        append('"')
+        append(name)
+        append("\":")
+        append(value)
+    }
+
+    private fun StringBuilder.appendJsonDouble(name: String, value: Double) {
         append('"')
         append(name)
         append("\":")

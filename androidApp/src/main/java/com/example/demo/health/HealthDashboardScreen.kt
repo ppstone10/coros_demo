@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -339,16 +340,21 @@ private fun CardEditor(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1f)
             )
-            Text(
-                text = AppText.Common.Save,
-                color = AppColors.Core.White,
-                fontSize = 14.sp,
+            Box(
                 modifier = Modifier
+                    .width(64.dp)
+                    .height(30.dp)
                     .clip(RoundedCornerShape(6.dp))
                     .background(AppColors.Health.Action)
-                    .clickable { onSave(active.toList()) }
-                    .padding(horizontal = 17.dp, vertical = 8.dp)
-            )
+                    .clickable { onSave(active.toList()) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = AppText.Common.Save,
+                    color = AppColors.Core.White,
+                    fontSize = 14.sp
+                )
+            }
         }
         Text(
             text = AppText.Health.ManageOrder,
@@ -581,13 +587,32 @@ private fun EditorRow(
                 fontSize = 15.sp,
                 modifier = Modifier.weight(1f)
             )
-            AppImage(
-                asset = if (isAdd) AppImages.Health.EditorAdd else AppImages.Health.EditorRemove,
-                contentDescription = if (isAdd) AppText.Health.Add else AppText.Health.Remove,
-                modifier = Modifier
-                    .size(30.dp)
-                    .clickable(onClick = onAction)
-            )
+            if (isAdd) {
+                Box(
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.Health.AddAction)
+                        .clickable(onClick = onAction),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "+",
+                        color = AppColors.Core.White,
+                        fontSize = 24.sp,
+                        lineHeight = 24.sp,
+                        fontWeight = FontWeight.Light
+                    )
+                }
+            } else {
+                AppImage(
+                    asset = AppImages.Health.EditorRemove,
+                    contentDescription = AppText.Health.Remove,
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clickable(onClick = onAction)
+                )
+            }
         }
         if (!roundBottom) {
             Box(

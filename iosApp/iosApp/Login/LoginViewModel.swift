@@ -172,6 +172,21 @@ final class LoginViewModel: ObservableObject {
         refresh()
     }
 
+    /// Saves an edit made inside the signed-in area without letting the root
+    /// coordinator reset the selected tab for the ProfileSaved effect.
+    func submitInlineProfile(_ profile: ProfileDraft) -> String? {
+        submitProfile(profile)
+        guard let effect = consumeEffect() else { return state.errorMessage }
+        if effect is LoginEffectProfileSaved {
+            toastMessage = "资料已保存"
+            return nil
+        }
+        if let messageEffect = effect as? LoginEffectShowMessage {
+            return messageEffect.message
+        }
+        return state.errorMessage
+    }
+
     func deleteCurrentAccountMessage() -> String? {
         let message = adapter.deleteCurrentAccount()
         refresh()

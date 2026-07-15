@@ -40,6 +40,7 @@ object AppColors {
         val Risk = Color(0xFFFFA34A)
         val Chevron = Color(0xFF666666)
         val Action = Color(0xFFF0003C)
+        val AddAction = Color(0xFF00DF7B)
         val Warning = Color(0xFFFF4B55)
         val EditorTitle = Color(0xFFECECEC)
         val EditorDivider = Color(0xFF303030)

@@ -17,6 +17,14 @@ interface AuthSessionPayload {
   region: string;
   isValid: boolean;
   isProfileComplete: boolean;
+  avatarUri?: string;
+  birthDate?: string;
+  heightCm?: number;
+  weightKg?: number;
+  measurementSystem?: string;
+  phone?: string;
+  countryRegion?: string;
+  gender?: string;
 }
 
 interface LoginStatePayload {
@@ -349,6 +357,15 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     session.region = payload.region.length > 0 ? payload.region : 'CN';
     session.isValid = payload.isValid;
     session.isProfileComplete = payload.isProfileComplete === undefined ? false : payload.isProfileComplete;
+    session.avatarUri = payload.avatarUri === undefined ? '' : payload.avatarUri;
+    session.birthDate = payload.birthDate === undefined ? '' : payload.birthDate;
+    session.heightCm = payload.heightCm === undefined ? 0 : payload.heightCm;
+    session.weightKg = payload.weightKg === undefined ? 0 : payload.weightKg;
+    session.measurementSystem = payload.measurementSystem === undefined ? 'Metric' : payload.measurementSystem;
+    session.phone = payload.phone === undefined ? '' : payload.phone;
+    session.countryRegion = payload.countryRegion === undefined || payload.countryRegion.length === 0 ?
+      (session.region === 'US' ? '美国' : '中国') : payload.countryRegion;
+    session.gender = payload.gender === undefined ? '' : payload.gender;
     return session;
   }
 
@@ -378,6 +395,14 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     snapshot.region = source.region;
     snapshot.isValid = source.isValid;
     snapshot.isProfileComplete = source.isProfileComplete;
+    snapshot.avatarUri = source.avatarUri;
+    snapshot.birthDate = source.birthDate;
+    snapshot.heightCm = source.heightCm;
+    snapshot.weightKg = source.weightKg;
+    snapshot.measurementSystem = source.measurementSystem;
+    snapshot.phone = source.phone;
+    snapshot.countryRegion = source.countryRegion;
+    snapshot.gender = source.gender;
     return snapshot;
   }
 }

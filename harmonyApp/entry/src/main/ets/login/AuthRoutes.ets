@@ -27,6 +27,10 @@ export class AuthRoutes {
   static toResetPassword(account: string): router.RouterOptions {
     return { url: AuthRoutes.RESET_PASSWORD, params: { account } };
   }
+
+  static toProfileEdit(): router.RouterOptions {
+    return { url: AuthRoutes.PROFILE_COMPLETION, params: { editMode: true } };
+  }
 }
 
 export interface VerifyCodeParams {
@@ -44,4 +48,8 @@ export interface ResetPasswordParams {
 
 export interface LegalDocumentParams {
   returnPage: string;
+}
+
+export interface ProfilePageParams {
+  editMode?: boolean;
 }

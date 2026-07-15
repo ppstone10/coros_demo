@@ -64,26 +64,26 @@ struct ProfileCompletionView: View {
                     Spacer()
                 }
                 .frame(height: 52)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 18)
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
-                        Spacer().frame(height: 22)
+                        Spacer().frame(height: 14)
                         Text("完善个人信息")
                             .foregroundStyle(.white)
-                            .font(.system(size: 36, weight: .light))
-                        Spacer().frame(height: 12)
+                            .font(.system(size: 28, weight: .light))
+                        Spacer().frame(height: 8)
                         Text("以下信息可以帮助我们对体育科学做出更准确的预测，请仔细填写。")
                             .foregroundStyle(Color(red: 232 / 255, green: 232 / 255, blue: 236 / 255))
-                            .font(.system(size: 18))
-                            .lineSpacing(6)
-                        Spacer().frame(height: 28)
+                            .font(.system(size: 14))
+                            .lineSpacing(3)
+                        Spacer().frame(height: 20)
                         ProfileAvatarButton(
                             avatarData: avatarData,
                             selectedPhoto: $selectedPhoto
                         )
                         .frame(maxWidth: .infinity)
-                        Spacer().frame(height: 28)
+                        Spacer().frame(height: 20)
                         ProfileTextRow(
                             label: "用户名",
                             required: true,
@@ -144,7 +144,7 @@ struct ProfileCompletionView: View {
                         }
                         Spacer().frame(height: 18)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 18)
                 }
                 .scrollIndicators(.hidden)
 
@@ -155,13 +155,13 @@ struct ProfileCompletionView: View {
                         color: corosButtonRed,
                         enabled: viewModel.canSubmitProfile(draft),
                         isLoading: viewModel.state.isLoading,
-                        buttonHeight: 56,
+                        buttonHeight: 48,
                         action: submitProfile
                     )
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 14)
-                .padding(.bottom, 18)
+                .padding(.horizontal, 18)
+                .padding(.top, 8)
+                .padding(.bottom, 10)
                 .background(Color.black)
             }
         }
@@ -176,7 +176,9 @@ struct ProfileCompletionView: View {
                 let data = try? await newValue.loadTransferable(type: Data.self)
                 await MainActor.run {
                     avatarData = data
-                    draft.avatarUri = newValue.itemIdentifier
+                    if let data {
+                        draft.avatarUri = ProfileImageStore.save(data)
+                    }
                 }
             }
         }
@@ -204,13 +206,13 @@ private struct ProfileAvatarButton: View {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 92, height: 92)
+                        .frame(width: 76, height: 76)
                         .clipShape(Circle())
                 } else {
                     Image("icon_camera")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 92, height: 92)
+                        .frame(width: 76, height: 76)
                 }
             }
         }
@@ -233,11 +235,11 @@ private struct ProfileTextRow: View {
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .foregroundStyle(.white)
-                .font(.system(size: 19))
+                .font(.system(size: 15))
                 .multilineTextAlignment(.trailing)
                 .tint(corosRed)
         }
-        .frame(height: 66)
+        .frame(height: 56)
         .overlay(alignment: .bottom) { Rectangle().fill(corosLine).frame(height: 1) }
     }
 }
@@ -256,15 +258,15 @@ private struct ProfileActionRow: View {
                 Spacer(minLength: 16)
                 Text(value.isEmpty ? placeholder : value)
                     .foregroundStyle(value.isEmpty ? corosMuted : Color.white.opacity(0.78))
-                    .font(.system(size: 19))
+                    .font(.system(size: 15))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                 Image("right_more")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 24, height: 24)
+                    .frame(width: 19, height: 19)
             }
-            .frame(height: 66)
+            .frame(height: 56)
             .overlay(alignment: .bottom) { Rectangle().fill(corosLine).frame(height: 1) }
         }
         .buttonStyle(.plain)
@@ -277,10 +279,10 @@ private struct RequiredLabel: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            Text(label).foregroundStyle(.white).font(.system(size: 19))
-            if required { Text("*").foregroundStyle(corosRed).font(.system(size: 17)) }
+            Text(label).foregroundStyle(.white).font(.system(size: 16))
+            if required { Text("*").foregroundStyle(corosRed).font(.system(size: 13)) }
         }
-        .frame(minWidth: 96, alignment: .leading)
+        .frame(minWidth: 86, alignment: .leading)
     }
 }
 
@@ -298,12 +300,12 @@ private struct ProfileGenderRow: View {
                         Image(gender.iconName)
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 22, height: 22)
+                            .frame(width: 18, height: 18)
                         Text(gender.title)
                     }
                     .foregroundStyle(selected == gender ? corosRed : .white)
-                    .font(.system(size: 18))
-                    .frame(width: 86, height: 48)
+                    .font(.system(size: 16))
+                    .frame(width: 72, height: 40)
                     .background(Color(red: 27 / 255, green: 27 / 255, blue: 29 / 255))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
@@ -314,7 +316,7 @@ private struct ProfileGenderRow: View {
                 .buttonStyle(.plain)
             }
         }
-        .frame(height: 72)
+        .frame(height: 62)
     }
 }
 
