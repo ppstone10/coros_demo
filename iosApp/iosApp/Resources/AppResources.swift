@@ -50,8 +50,8 @@ enum AppText {
 
     enum Account {
         static let my = "我"
-        static let incomplete = "待完善"
-        static let complete = "已完善"
+        static let incomplete = "资料待完善"
+        static let complete = "资料已完善"
         static let personalInfo = "个人信息"
         static let accountSection = "账号"
         static let loginAccount = "登录账号"

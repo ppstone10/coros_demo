@@ -8,37 +8,59 @@ import { getLoginViewModel } from '../login/LoginViewModelProvider';
 import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
 import { AuthRoutes } from '../login/AuthRoutes';
 import { handleAuthEffect } from '../login/AuthEffectHandler';
+import { getService } from '../login/HarmonyServiceProvider';
+import { saveStoreSnapshot } from '../login/StorePersister';
 import { AppColors, AppImages, AppText } from '../resources/AppResources';
+import lottie, { AnimationItem } from '@ohos/lottie';
+
+interface CardEntry {
+  type: string;
+  title: string;
+  summary: string;
+  isRisk: boolean;
+}
+
+interface HealthSnapshot {
+  scenario: string;
+  dateLabel: string;
+  steps: number;
+  calories: number;
+  activeMinutes: number;
+  cards: CardEntry[];
+  enabledTypes: string;
+}
 
 class HealthCardModel {
   id: string;
   title: string;
   summary: string;
   iconIndex: number;
+  isRisk: boolean;
 
-  constructor(id: string, title: string, summary: string, iconIndex: number) {
+  constructor(id: string, title: string, summary: string, iconIndex: number, isRisk: boolean = false) {
     this.id = id;
     this.title = title;
     this.summary = summary;
     this.iconIndex = iconIndex;
+    this.isRisk = isRisk;
   }
 }
 
 function createDefaultHealthCards(): HealthCardModel[] {
   return [
-    new HealthCardModel('weeklyPlan', '本周计划', '本周无计划', 0),
-    new HealthCardModel('trainingLoad', '本周负荷', '本周负荷 526，建议范围 300-700', 1),
-    new HealthCardModel('trainingAssessment', '训练量评估', '将在第一次运动后 7 天评估您的训练量', 2),
-    new HealthCardModel('recovery', '体力恢复', '恢复评分 78，预计 14 小时后恢复', 3),
-    new HealthCardModel('running', '跑步能力', '记录一笔 25min 以上的户外跑步运动', 4),
-    new HealthCardModel('cycling', '骑行FTP', '连接功率计，完成一次 20min 以上稳定骑行', 5),
-    new HealthCardModel('heartRate', '心率', '佩戴手表记录心率数据', 6),
-    new HealthCardModel('stress', '压力', '佩戴手表或进行健康快测获取压力', 7),
-    new HealthCardModel('sleep', '睡眠', '昨夜睡眠 7小时18分，质量 86', 8),
-    new HealthCardModel('hrv', 'HRV评估', '睡觉时佩戴手表获取数据', 9),
-    new HealthCardModel('rhr', '静息心率', '睡觉时佩戴手表或进行静息心率测试', 10),
-    new HealthCardModel('healthCheck', '健康快测', '使用手表“健康快测”获取数据', 11),
-    new HealthCardModel('body', '体型管理', '体重 68.2 kg · 本周主要锻炼部位', 12)
+    new HealthCardModel('WeeklyPlan', '本周计划', '本周无计划', 0),
+    new HealthCardModel('TrainingLoad', '本周负荷', '本周负荷 526，建议范围 300-700', 1),
+    new HealthCardModel('TrainingAssessment', '训练量评估', '将在第一次运动后 7 天评估您的训练量', 2),
+    new HealthCardModel('Recovery', '体力恢复', '恢复评分 78，预计 14 小时后恢复', 3),
+    new HealthCardModel('RunningAbility', '跑步能力', '记录一笔 25min 以上的户外跑步运动', 4),
+    new HealthCardModel('CyclingAbility', '骑行FTP', '连接功率计，完成一次 20min 以上稳定骑行', 5),
+    new HealthCardModel('HeartRate', '心率', '佩戴手表记录心率数据', 6),
+    new HealthCardModel('Stress', '压力', '佩戴手表或进行健康快测获取压力', 7),
+    new HealthCardModel('Sleep', '睡眠', '昨夜睡眠 7小时18分，质量 86', 8),
+    new HealthCardModel('HrvAssessment', 'HRV评估', '睡觉时佩戴手表获取数据', 9),
+    new HealthCardModel('RestingHeartRate', '静息心率', '睡觉时佩戴手表或进行静息心率测试', 10),
+    new HealthCardModel('HealthCheck', '健康快测', '使用手表"健康快测"获取数据', 11),
+    new HealthCardModel('BodyManagement', '体型管理', '体重 68.2 kg · 本周主要锻炼部位', 12)
   ];
 }
 
@@ -66,6 +88,22 @@ struct SignedInPage {
   private cardDragScrollTimer: number = -1;
   @State detailCardId: string = '';
   @State warning: string = '';
+  @State refreshing: boolean = false;
+  @State dragOffset: number = 0;
+  @State showScenarioPicker: boolean = false;
+  @State scenarioName: string = 'Normal';
+  @State scenarioDisplayText: string = '正常数据';
+  private scenarios: string[] = ['Normal','PartialMissing','AllEmpty','Abnormal','ReadFailure'];
+  @State healthSteps: string = '8769';
+  @State healthCalories: string = '769';
+  @State healthMinutes: string = '69';
+  @State healthDateLabel: string = AppText.DATE;
+  @State dashboardVersion: number = 0;
+  @State dashboardVisible: boolean = true;
+  private lottieCanvasCtx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true));
+  private lottieItem: AnimationItem | null = null;
+  private lottieLoaded: boolean = false;
+  private isAtScrollTop: boolean = true;
   @State showDeleteDialog: boolean = false;
   @State localError: string = '';
   @State sessionAccount: string = '';
@@ -79,7 +117,13 @@ struct SignedInPage {
 
   aboutToAppear(): void {
     this.loadSavedCardOrder();
+    this.loadHealthDataFromKMP();
     this.syncState();
+  }
+
+  aboutToDisappear(): void {
+    lottie.destroy();
+    this.lottieLoaded = false;
   }
 
   onPageShow(): void {
@@ -122,6 +166,9 @@ struct SignedInPage {
       if (this.showDeleteDialog) {
         this.DeleteAccountDialog();
       }
+      if (this.showScenarioPicker) {
+        this.ScenarioPicker();
+      }
     }
     .width('100%')
     .height('100%')
@@ -130,102 +177,117 @@ struct SignedInPage {
 
   @Builder
   HealthDashboard() {
-    Scroll() {
-      Column() {
-        this.HealthHero();
-        ForEach(this.healthCards, (card: HealthCardModel) => {
-          this.DashboardCard(card);
-        }, (card: HealthCardModel) => card.id)
+    Column() {
+      this.HeroTopRow();
+      Refresh({ refreshing: $$this.refreshing }) {
+        Scroll() {
+          Column() {
+            Column() {
+              this.ArcMetrics();
+            }
+            .id(`arc_${this.dashboardVersion}`)
+            ForEach(this.healthCards, (card: HealthCardModel) => {
+              this.DashboardCard(card);
+            }, (card: HealthCardModel) => `${card.id}_v${this.dashboardVersion}`)
 
-        Text(AppText.EDIT_CARDS)
-          .fontSize(13)
-          .fontColor('#DDDDDD')
-          .padding({ left: 28, right: 28, top: 10, bottom: 10 })
-          .backgroundColor(AppColors.HEALTH_CARD)
-          .borderRadius(22)
-          .margin({ top: 18, bottom: 42 })
-          .onClick(() => { this.beginCardEditing(); })
+            Text(AppText.EDIT_CARDS)
+              .fontSize(13)
+              .fontColor('#DDDDDD')
+              .padding({ left: 28, right: 28, top: 10, bottom: 10 })
+              .backgroundColor(AppColors.HEALTH_CARD)
+              .borderRadius(22)
+              .margin({ top: 18, bottom: 42 })
+              .onClick(() => { this.beginCardEditing(); })
+          }
+          .width('100%')
+          .alignItems(HorizontalAlign.Center)
+        }
+        .scrollBar(BarState.Off)
+        .id(`scrollData_${this.dashboardVersion}`)
       }
-      .width('100%')
-      .alignItems(HorizontalAlign.Center)
+      .layoutWeight(1)
+      .onRefreshing(() => {
+        this.refreshing = true;
+        this.lottieItem?.goToAndPlay(0, true);
+        setTimeout(() => {
+          this.performRefresh();
+        }, 4460);
+      })
     }
+    .width('100%')
     .layoutWeight(1)
-    .scrollBar(BarState.Off)
   }
 
   @Builder
-  HealthHero() {
-    Column() {
-      Row() {
-        Column() {
-          Text(AppText.DATE).fontSize(11).fontColor('#8C8C8C')
-          Text(AppText.TODAY).fontSize(28).fontColor(AppColors.WHITE).fontWeight(FontWeight.Medium)
-        }
-        .alignItems(HorizontalAlign.Start)
-        .layoutWeight(1)
-
-        Image(AppImages.calendar()).width(23).height(23).objectFit(ImageFit.Contain)
-        Blank().width(18)
-        Image(AppImages.device()).width(23).height(23).objectFit(ImageFit.Contain)
+  HeroTopRow() {
+    Row() {
+      Column() {
+        Text(this.healthDateLabel).fontSize(11).fontColor('#8C8C8C')
+        Text(AppText.TODAY).fontSize(28).fontColor(AppColors.WHITE).fontWeight(FontWeight.Medium)
       }
-      .width('100%')
-      .margin({ top: 10 })
-
-      Blank().height(44)
-
-      Stack({ alignContent: Alignment.Center }) {
-        Progress({ value: 78, total: 100, type: ProgressType.Ring })
-          .width(126).height(126)
-          .color(AppColors.GAUGE)
-          .style({ strokeWidth: 5 })
-
-        Row() {
-          this.Metric(AppImages.steps(), '8769', '步');
-          Blank().layoutWeight(1)
-          this.Metric(AppImages.calories(), '769', 'Kcal');
-          Blank().layoutWeight(1)
-          this.Metric(AppImages.activeDuration(), '69', 'Min');
-        }
-        .width('100%')
-      }
-      .width('100%')
-      .height(128)
+      .alignItems(HorizontalAlign.Start).layoutWeight(1)
+      Image(AppImages.calendar()).width(23).height(23).objectFit(ImageFit.Contain)
+      Blank().width(18)
+      Canvas(this.lottieCanvasCtx)
+        .width(30).height(30)
+        .backgroundColor('#00000000')
+        .onReady(() => {
+          if (this.lottieItem !== null) {
+            this.lottieItem.destroy('lottieWatch');
+          }
+          this.lottieCanvasCtx.imageSmoothingEnabled = true;
+          this.lottieCanvasCtx.imageSmoothingQuality = 'medium';
+          this.lottieItem = lottie.loadAnimation({
+            container: this.lottieCanvasCtx,
+            renderer: 'canvas',
+            loop: false,
+            autoplay: false,
+            name: 'lottieWatch',
+            path: 'common/watch_status.json',
+          });
+          this.lottieItem.addEventListener('DOMLoaded', () => {
+            this.lottieLoaded = true;
+          });
+          this.lottieItem.addEventListener('complete', () => {
+            this.lottieItem?.goToAndStop(0, true);
+          });
+        })
+        .gesture(LongPressGesture().onAction(() => { this.showScenarioPicker = true; }))
     }
-    .width('100%')
-    .height(292)
-    .padding({ left: 20, right: 20, top: 36 })
+    .width('100%').padding({ left: 20, right: 20, top: 32 })
+  }
+
+  @Builder
+  ArcMetrics() {
+    Stack({ alignContent: Alignment.Center }) {
+      Progress({ value: 78, total: 100, type: ProgressType.Ring })
+        .width(126).height(126).color(AppColors.GAUGE).style({ strokeWidth: 5 })
+      Row() {
+        MetricComp({ icon: AppImages.steps(), value: this.healthSteps, unit: '步' })
+          .id(`metricSteps_${this.dashboardVersion}`)
+        Blank().layoutWeight(1)
+        MetricComp({ icon: AppImages.calories(), value: this.healthCalories, unit: 'Kcal' })
+          .id(`metricCal_${this.dashboardVersion}`)
+        Blank().layoutWeight(1)
+        MetricComp({ icon: AppImages.activeDuration(), value: this.healthMinutes, unit: 'Min' })
+          .id(`metricMin_${this.dashboardVersion}`)
+      }
+      .width('100%')
+    }
+    .width('100%').height(128).padding({ left: 20, right: 20 }).margin({ top: 16 })
   }
 
   @Builder
   Metric(icon: Resource, value: string, unit: string) {
-    Column({ space: 3 }) {
-      Image(icon).width(22).height(22).objectFit(ImageFit.Contain)
-      Text(value).fontSize(28).fontColor(AppColors.WHITE)
-      Text(unit).fontSize(11).fontColor('#898989')
-    }
-    .width(82)
+    MetricComp({ icon: icon, value: value, unit: unit })
   }
 
   @Builder
   DashboardCard(card: HealthCardModel) {
-    Row() {
-      Image(AppImages.healthIcon(card.iconIndex)).width(22).height(22).objectFit(ImageFit.Contain)
-      Blank().width(10)
-      Column({ space: 5 }) {
-        Text(card.title).fontSize(16).fontColor('#E8E8E8').fontWeight(FontWeight.Medium)
-        Text(card.summary).fontSize(12).fontColor(AppColors.MUTED).maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      .alignItems(HorizontalAlign.Start)
-      .layoutWeight(1)
-      Text('›').fontSize(25).fontColor('#666666')
-    }
-    .width('calc(100% - 32vp)')
-    .constraintSize({ minHeight: 76 })
-    .padding({ left: 15, right: 15, top: 12, bottom: 12 })
-    .margin({ left: 16, right: 16, top: 5, bottom: 5 })
-    .backgroundColor(AppColors.HEALTH_CARD)
-    .borderRadius(8)
-    .onClick(() => { this.detailCardId = card.id; })
+    DashboardCardComp({
+      card: card,
+      onTap: () => { this.detailCardId = card.id; }
+    })
   }
 
   @Builder
@@ -268,7 +330,7 @@ struct SignedInPage {
             .margin({ top: 24, bottom: 32 })
             .backgroundColor(AppColors.HEALTH_CARD).borderRadius(8)
             .onClick(() => {
-              this.editingHealthCards = createDefaultHealthCards();
+              this.loadHealthDataFromKMP();
               this.warning = '';
             })
         }
@@ -390,7 +452,7 @@ struct SignedInPage {
             Text(this.sessionAccount).fontSize(12).fontColor(AppColors.ACCOUNT_MUTED).maxLines(1)
           }
           .alignItems(HorizontalAlign.Start).layoutWeight(1)
-          Text(this.profileComplete ? '已完善' : '待完善').fontSize(11)
+          Text(this.profileComplete ? '资料已完善' : '资料待完善').fontSize(11)
             .fontColor(this.profileComplete ? AppColors.COMPLETE : AppColors.INCOMPLETE)
         }
         .width('100%').padding(18).backgroundColor(AppColors.HEALTH_CARD).borderRadius(10)
@@ -508,6 +570,93 @@ struct SignedInPage {
     .width('100%').height('100%').backgroundColor('#0000009E')
   }
 
+  @Builder
+  ScenarioPicker() {
+    Column() {
+      Column({ space: 8 }) {
+        ForEach(this.scenarios, (scenario: string) => {
+          Row() {
+            Text(this.scenarioLabel(scenario)).fontSize(15).fontColor(AppColors.WHITE)
+            Blank().layoutWeight(1)
+            if (scenario === this.scenarioName) {
+              Text('✓').fontSize(16).fontColor(AppColors.STEPS)
+            }
+          }
+          .width('100%').padding(14)
+          .onClick(() => {
+            this.scenarioName = scenario;
+            getService().selectHealthScene(scenario);
+            this.showScenarioPicker = false;
+          })
+        }, (scenario: string) => scenario)
+      }
+      .borderRadius(10).backgroundColor('#222225').padding(12).margin({ left: 24, right: 24 })
+    }
+    .width('100%').height('100%').backgroundColor('#0000009E').justifyContent(FlexAlign.Center)
+    .onClick(() => { this.showScenarioPicker = false; })
+  }
+
+  private performRefresh(): void {
+    this.loadHealthDataFromKMP();
+    this.refreshing = false;
+    this.dashboardVersion++;
+    this.lottieItem?.goToAndStop(0, true);
+  }
+
+  private scenarioLabel(name: string): string {
+    switch (name) {
+      case 'Normal': return '正常数据';
+      case 'PartialMissing': return '部分数据缺失';
+      case 'AllEmpty': return '全部数据为空';
+      case 'Abnormal': return '异常数据';
+      case 'ReadFailure': return '数据损坏';
+      default: return name;
+    }
+  }
+
+  private loadHealthDataFromKMP(): void {
+    try {
+      let json: string = getService().loadHealthSnapshot();
+      if (!json || json === '{}') return;
+      let data: HealthSnapshot = JSON.parse(json) as HealthSnapshot;
+      if (!data || !data.cards || data.cards.length === 0) return;
+      this.scenarioName = data.scenario || 'Normal';
+      this.healthDateLabel = data.dateLabel || AppText.DATE;
+      this.healthSteps = String(data.steps || 0);
+      this.healthCalories = String(data.calories || 0);
+      this.healthMinutes = String(data.activeMinutes || 0);
+      let cards: HealthCardModel[] = [];
+      for (let i = 0; i < data.cards.length; i++) {
+        let c: CardEntry = data.cards[i];
+        let idx: number = this.cardIconIndex(c.type);
+        cards.push(new HealthCardModel(c.type, c.title, c.summary, idx, c.isRisk));
+      }
+      this.healthCards = cards;
+    } catch (e) {
+      // keep defaults
+    }
+  }
+
+  private cardIconIndex(typeName: string): number {
+    switch (typeName) {
+      case 'WeeklyPlan': return 0;
+      case 'TrainingLoad': return 1;
+      case 'TrainingAssessment': return 2;
+      case 'Recovery': return 3;
+      case 'RunningAbility': return 4;
+      case 'CyclingAbility': return 5;
+      case 'HeartRate': return 6;
+      case 'Stress': return 7;
+      case 'Sleep': return 8;
+      case 'HrvAssessment': return 9;
+      case 'RestingHeartRate': return 10;
+      case 'HealthCheck': return 11;
+      case 'BodyManagement': return 12;
+      case 'TodayActivity': return 6;
+      default: return 6;
+    }
+  }
+
   private beginCardEditing(): void {
     this.editingHealthCards = this.healthCards.slice();
     this.warning = '';
@@ -523,7 +672,11 @@ struct SignedInPage {
 
   private commitCardEditing(): void {
     this.healthCards = this.editingHealthCards.slice();
-    this.savedHealthCardOrder = this.healthCards.map((card: HealthCardModel) => card.id).join(',');
+    let typeNamesCsv: string = this.healthCards.map((card: HealthCardModel) => card.id).join(',');
+    this.savedHealthCardOrder = typeNamesCsv;
+    getService().saveCardConfig(typeNamesCsv);
+    saveStoreSnapshot();
+    this.loadHealthDataFromKMP();
     this.editingCards = false;
     this.editingHealthCards = [];
     this.warning = '';
@@ -703,5 +856,50 @@ struct SignedInPage {
     this.weightText = state.currentSession.weightKg > 0 ? `${state.currentSession.weightKg.toFixed(1)} kg` : '';
     this.countryRegion = state.currentSession.countryRegion;
     this.profileComplete = state.currentSession.isProfileComplete;
+  }
+}
+
+@Component
+struct MetricComp {
+  @Prop icon: Resource;
+  @Prop value: string;
+  @Prop unit: string;
+
+  build() {
+    Column({ space: 3 }) {
+      Image(this.icon).width(22).height(22).objectFit(ImageFit.Contain)
+      Text(this.value).fontSize(28).fontColor('#FFFFFF')
+      Text(this.unit).fontSize(11).fontColor('#898989')
+    }
+    .width(82)
+  }
+}
+
+@Component
+struct DashboardCardComp {
+  @Prop card: HealthCardModel;
+  onTap?: () => void;
+
+  build() {
+    Row() {
+      Image(AppImages.healthIcon(this.card.iconIndex)).width(22).height(22).objectFit(ImageFit.Contain)
+      Blank().width(10)
+      Column({ space: 5 }) {
+        Text(this.card.title).fontSize(16).fontColor('#E8E8E8').fontWeight(FontWeight.Medium)
+        Text(this.card.summary).fontSize(12).fontColor(this.card.isRisk ? AppColors.RISK : AppColors.MUTED)
+          .maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .alignItems(HorizontalAlign.Start).layoutWeight(1)
+      Text('›').fontSize(25).fontColor('#666666')
+    }
+    .width('calc(100% - 32vp)')
+    .constraintSize({ minHeight: 76 })
+    .padding({ left: 15, right: 15, top: 12, bottom: 12 })
+    .margin({ left: 16, right: 16, top: 5, bottom: 5 })
+    .backgroundColor(AppColors.HEALTH_CARD)
+    .borderRadius(8)
+    .onClick(() => {
+      if (this.onTap) { this.onTap(); }
+    })
   }
 }

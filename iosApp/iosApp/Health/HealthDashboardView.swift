@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
 import UIKit
+import Shared
+import Lottie
 
 struct HealthCard: Identifiable, Hashable, Codable {
     let id: String
@@ -10,100 +12,154 @@ struct HealthCard: Identifiable, Hashable, Codable {
     let isRisk: Bool
 }
 
-private let defaultHealthCards: [HealthCard] = [
-    HealthCard(id: "weeklyPlan", title: "本周计划", summary: "本周无计划", icon: AppImages.Health.weeklyPlan, isRisk: false),
-    HealthCard(id: "trainingLoad", title: "本周负荷", summary: "本周负荷 526，建议范围 300-700", icon: AppImages.Health.trainingLoad, isRisk: false),
-    HealthCard(id: "trainingAssessment", title: "训练量评估", summary: "将在第一次运动后 7 天评估您的训练量", icon: AppImages.Health.trainingAssessment, isRisk: false),
-    HealthCard(id: "recovery", title: "体力恢复", summary: "恢复评分 78，预计 14 小时后恢复", icon: AppImages.Health.recovery, isRisk: false),
-    HealthCard(id: "running", title: "跑步能力", summary: "记录一笔 25min 以上的户外跑步运动", icon: AppImages.Health.runningAbility, isRisk: false),
-    HealthCard(id: "cycling", title: "骑行FTP", summary: "连接功率计，完成一次 20min 以上稳定骑行", icon: AppImages.Health.cyclingAbility, isRisk: false),
-    HealthCard(id: "heartRate", title: "心率", summary: "佩戴手表记录心率数据", icon: AppImages.Health.heartRate, isRisk: false),
-    HealthCard(id: "stress", title: "压力", summary: "佩戴手表或进行健康快测获取压力", icon: AppImages.Health.stress, isRisk: false),
-    HealthCard(id: "sleep", title: "睡眠", summary: "昨夜睡眠 7小时18分，质量 86", icon: AppImages.Health.sleep, isRisk: false),
-    HealthCard(id: "hrv", title: "HRV评估", summary: "睡觉时佩戴手表获取数据", icon: AppImages.Health.hrv, isRisk: false),
-    HealthCard(id: "rhr", title: "静息心率", summary: "睡觉时佩戴手表或进行静息心率测试", icon: AppImages.Health.restingHeartRate, isRisk: false),
-    HealthCard(id: "healthCheck", title: "健康快测", summary: "使用手表“健康快测”获取数据", icon: AppImages.Health.healthCheck, isRisk: false),
-    HealthCard(id: "body", title: "体型管理", summary: "体重 68.2 kg · 本周主要锻炼部位", icon: AppImages.Health.body, isRisk: false)
+let defaultHealthCards: [HealthCard] = [
+    HealthCard(id: "WeeklyPlan", title: "本周计划", summary: "本周无计划", icon: AppImages.Health.weeklyPlan, isRisk: false),
+    HealthCard(id: "TrainingLoad", title: "本周负荷", summary: "本周负荷 526，建议范围 300-700", icon: AppImages.Health.trainingLoad, isRisk: false),
+    HealthCard(id: "TrainingAssessment", title: "训练量评估", summary: "将在第一次运动后 7 天评估您的训练量", icon: AppImages.Health.trainingAssessment, isRisk: false),
+    HealthCard(id: "Recovery", title: "体力恢复", summary: "恢复评分 78，预计 14 小时后恢复", icon: AppImages.Health.recovery, isRisk: false),
+    HealthCard(id: "RunningAbility", title: "跑步能力", summary: "记录一笔 25min 以上的户外跑步运动", icon: AppImages.Health.runningAbility, isRisk: false),
+    HealthCard(id: "CyclingAbility", title: "骑行FTP", summary: "连接功率计，完成一次 20min 以上稳定骑行", icon: AppImages.Health.cyclingAbility, isRisk: false),
+    HealthCard(id: "HeartRate", title: "心率", summary: "佩戴手表记录心率数据", icon: AppImages.Health.heartRate, isRisk: false),
+    HealthCard(id: "Stress", title: "压力", summary: "佩戴手表或进行健康快测获取压力", icon: AppImages.Health.stress, isRisk: false),
+    HealthCard(id: "Sleep", title: "睡眠", summary: "昨夜睡眠 7小时18分，质量 86", icon: AppImages.Health.sleep, isRisk: false),
+    HealthCard(id: "HrvAssessment", title: "HRV评估", summary: "睡觉时佩戴手表获取数据", icon: AppImages.Health.hrv, isRisk: false),
+    HealthCard(id: "RestingHeartRate", title: "静息心率", summary: "睡觉时佩戴手表或进行静息心率测试", icon: AppImages.Health.restingHeartRate, isRisk: false),
+    HealthCard(id: "HealthCheck", title: "健康快测", summary: "使用手表“健康快测”获取数据", icon: AppImages.Health.healthCheck, isRisk: false),
+    HealthCard(id: "BodyManagement", title: "体型管理", summary: "体重 68.2 kg · 本周主要锻炼部位", icon: AppImages.Health.body, isRisk: false)
 ]
 
 struct HealthDashboardView: View {
     @Binding var isFullscreen: Bool
-    @State private var cards = defaultHealthCards
+    @StateObject private var viewModel = HealthDashboardViewModel()
     @State private var editing = false
     @State private var detail: HealthCard?
+    @State private var dragOffset: CGFloat = 0
+    @State private var showScenarioPicker = false
+    @State private var isAtScrollTop = true
 
     var body: some View {
         Group {
             if editing {
-                HealthCardEditor(initial: cards, onClose: closeEditor, onSave: saveCards)
+                HealthCardEditor(initial: viewModel.cards, onClose: closeEditor, onSave: saveCards)
             } else if let detail {
                 HealthDetailView(card: detail) {
                     self.detail = nil
                     isFullscreen = false
                 }
             } else {
-                dashboard
-            }
-        }
-        .background(Color.black)
-        .onAppear(perform: loadCards)
-    }
+                // Dashboard — 3 parts
+                VStack(spacing: 0) {
+                    // Part 1: Fixed top row
+                    HeroTopRow(dateLabel: viewModel.dateLabel,
+                               isSyncing: viewModel.isLoading,
+                               onLongPressWatch: { showScenarioPicker = true })
 
-    private var dashboard: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                HealthHeroView()
-                ForEach(cards) { card in
-                    Button {
-                        detail = card
-                        isFullscreen = true
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(card.icon).resizable().scaledToFit().frame(width: 22, height: 22)
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text(card.title).font(.system(size: 16, weight: .medium)).foregroundStyle(.white)
-                                Text(card.summary).font(.system(size: 12)).foregroundStyle(AppColors.Health.muted).lineLimit(2)
+                    // Part 2: Scrollable content
+                    ZStack(alignment: .top) {
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                // Track scroll offset to know when at top
+                                GeometryReader { geo in
+                                    Color.clear.preference(key: ScrollTopKey.self,
+                                        value: geo.frame(in: .named("scrollSpace")).minY)
+                                }
+                                .frame(height: 0)
+
+                                HeroArcView(steps: viewModel.steps,
+                                            calories: viewModel.calories,
+                                            minutes: viewModel.activeMinutes)
+                                    .offset(y: max(0.0, dragOffset))
+
+                                ForEach(viewModel.cards) { card in
+                                    Button {
+                                        detail = card
+                                        isFullscreen = true
+                                    } label: {
+                                        HStack(spacing: 10) {
+                                            Image(card.icon).resizable().scaledToFit().frame(width: 22, height: 22)
+                                            VStack(alignment: .leading, spacing: 5) {
+                                                Text(card.title).font(.system(size: 16, weight: .medium)).foregroundStyle(.white)
+                                                Text(card.summary).font(.system(size: 12)).foregroundStyle(card.isRisk ? AppColors.Health.risk : AppColors.Health.muted).lineLimit(2)
+                                            }
+                                            Spacer(minLength: 8)
+                                            Text("›").font(.system(size: 25, weight: .light)).foregroundStyle(Color.gray)
+                                        }
+                                        .padding(.horizontal, 15)
+                                        .frame(maxWidth: .infinity, minHeight: 76)
+                                        .background(AppColors.Health.card)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 5)
+                                    .offset(y: max(0.0, dragOffset))
+                                }
+
+                                Button {
+                                    editing = true
+                                    isFullscreen = true
+                                } label: {
+                                    Text(AppText.Health.editCards)
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(Color(red: 221 / 255, green: 221 / 255, blue: 221 / 255))
+                                        .padding(.horizontal, 28).padding(.vertical, 10)
+                                        .background(AppColors.Health.card)
+                                        .clipShape(Capsule())
+                                }
+                                .buttonStyle(.plain)
+                                .padding(18)
+                                .offset(y: max(0.0, dragOffset))
                             }
-                            Spacer(minLength: 8)
-                            if card.isRisk { Circle().fill(AppColors.Health.risk).frame(width: 7, height: 7) }
-                            Text("›").font(.system(size: 25, weight: .light)).foregroundStyle(Color.gray)
                         }
-                        .padding(.horizontal, 15)
-                        .frame(maxWidth: .infinity, minHeight: 76)
-                        .background(AppColors.Health.card)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 5)
-                }
+                        .coordinateSpace(name: "scrollSpace")
+                        .scrollIndicators(.hidden)
+                        .simultaneousGesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    let t = value.translation.height
+                                    if isAtScrollTop && t > 0 && !viewModel.isLoading {
+                                        dragOffset = min(t * 0.4, 250)
+                                    }
+                                }
+                                .onEnded { value in
+                                    if value.translation.height > 80 && !viewModel.isLoading {
+                                        withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { dragOffset = 55 }
+                                        Task { await viewModel.refresh() }
+                                    } else {
+                                        withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { dragOffset = 0 }
+                                    }
+                                }
+                        )
+                        .onChange(of: viewModel.isLoading) { _, loading in
+                            if !loading {
+                                withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { dragOffset = 0 }
+                            }
+                        }
 
-                Button {
-                    editing = true
-                    isFullscreen = true
-                } label: {
-                    Text(AppText.Health.editCards)
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color(red: 221 / 255, green: 221 / 255, blue: 221 / 255))
-                        .padding(.horizontal, 28)
-                        .padding(.vertical, 10)
-                        .background(AppColors.Health.card)
-                        .clipShape(Capsule())
+                        // Refresh overlay
+                        if dragOffset > 10 || viewModel.isLoading {
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: AppColors.Health.steps))
+                                    .scaleEffect(0.8)
+                                Text("数据同步中")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(AppColors.Health.muted)
+                            }
+                            .padding(.top, 6)
+                        }
+                    }
+                    .onPreferenceChange(ScrollTopKey.self) { topOffset in
+                        isAtScrollTop = topOffset >= 0
+                    }
                 }
-                .buttonStyle(.plain)
-                .padding(18)
-                Spacer().frame(height: 24)
+                .ignoresSafeArea(edges: .top)
             }
         }
-        .scrollIndicators(.hidden)
         .background(Color.black)
-    }
-
-    private func loadCards() {
-        guard let ids = UserDefaults.standard.stringArray(forKey: "health_card_order") else { return }
-        let byID = Dictionary(uniqueKeysWithValues: defaultHealthCards.map { ($0.id, $0) })
-        let restored = ids.compactMap { byID[$0] }
-        if restored.count >= 3 { cards = restored }
+        .sheet(isPresented: $showScenarioPicker) {
+            ScenarioPickerView(viewModel: viewModel)
+        }
     }
 
     private func closeEditor() {
@@ -112,57 +168,77 @@ struct HealthDashboardView: View {
     }
 
     private func saveCards(_ value: [HealthCard]) {
-        cards = value
-        UserDefaults.standard.set(value.map(\.id), forKey: "health_card_order")
+        viewModel.saveCardConfiguration(value.map(\.id))
+        viewModel.load()
         closeEditor()
     }
 }
 
-private struct HealthHeroView: View {
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(AppText.Health.date).font(.system(size: 11)).foregroundStyle(Color.gray)
-                    Text(AppText.Health.today).font(.system(size: 28, weight: .semibold)).foregroundStyle(.white)
-                }
-                Spacer()
-                Image(AppImages.Health.calendar).resizable().scaledToFit().frame(width: 23, height: 23)
-                Spacer().frame(width: 18)
-                Image(AppImages.Health.device).resizable().scaledToFit().frame(width: 23, height: 23)
-            }
-            .padding(.top, 10)
+private struct ScrollTopKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
 
-            Spacer().frame(height: 46)
-            ZStack {
-                Circle()
-                    .trim(from: 0.13, to: 0.87)
-                    .stroke(AppColors.Health.gauge, style: StrokeStyle(lineWidth: 5, lineCap: .round))
-                    .rotationEffect(.degrees(90))
-                    .frame(width: 125, height: 125)
-                HStack {
-                    HealthMetric(icon: AppImages.Health.steps, value: "8769", unit: AppText.Health.steps, color: AppColors.Health.steps)
-                    Spacer()
-                    HealthMetric(icon: AppImages.Health.calories, value: "769", unit: AppText.Health.calories, color: AppColors.Health.calories)
-                    Spacer()
-                    HealthMetric(icon: AppImages.Health.active, value: "69", unit: AppText.Health.minutes, color: AppColors.Health.active)
-                }
+// MARK: - HeroTopRow
+
+private struct HeroTopRow: View {
+    let dateLabel: String
+    let isSyncing: Bool
+    let onLongPressWatch: () -> Void
+
+    @State private var lottieId = UUID()
+    private var playback: LottiePlaybackMode {
+        isSyncing ? .playing(.fromProgress(0, toProgress: 1, loopMode: LottieLoopMode.playOnce)) : .paused
+    }
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(dateLabel).font(.system(size: 11)).foregroundStyle(Color.gray)
+                Text(AppText.Health.today).font(.system(size: 28, weight: .semibold)).foregroundStyle(.white)
             }
-            .frame(height: 128)
+            Spacer()
+            Image(AppImages.Health.calendar).resizable().scaledToFit().frame(width: 23, height: 23)
+            Spacer().frame(width: 18)
+            LottieView(animation: .named("watch_status"))
+                .playbackMode(playback)
+                .animationDidFinish { _ in lottieId = UUID() }
+                .frame(width: 30, height: 30)
+                .id(lottieId)
+                .onLongPressGesture(perform: onLongPressWatch)
         }
         .padding(.horizontal, 20)
-        .frame(height: 292, alignment: .top)
-        .background(Color.black)
+        .padding(.top, 54)
     }
 }
 
-private struct HealthMetric: View {
-    let icon: String
-    let value: String
-    let unit: String
-    let color: Color
+// MARK: - HeroArcView
+
+private struct HeroArcView: View {
+    let steps: Int
+    let calories: Int
+    let minutes: Int
 
     var body: some View {
+        ZStack {
+            Circle()
+                .trim(from: 0.13, to: 0.87)
+                .stroke(AppColors.Health.gauge, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                .rotationEffect(.degrees(90))
+                .frame(width: 125, height: 125)
+            HStack {
+                metricView(icon: AppImages.Health.steps, value: "\(steps)", unit: AppText.Health.steps, color: AppColors.Health.steps)
+                Spacer()
+                metricView(icon: AppImages.Health.calories, value: "\(calories)", unit: AppText.Health.calories, color: AppColors.Health.calories)
+                Spacer()
+                metricView(icon: AppImages.Health.active, value: "\(minutes)", unit: AppText.Health.minutes, color: AppColors.Health.active)
+            }
+        }
+        .frame(height: 128)
+        .padding(.horizontal, 20)
+    }
+
+    private func metricView(icon: String, value: String, unit: String, color: Color) -> some View {
         VStack(spacing: 3) {
             Image(icon).resizable().renderingMode(.template).scaledToFit().foregroundStyle(color).frame(width: 22, height: 22)
             Text(value).font(.system(size: 28)).foregroundStyle(.white)
@@ -171,6 +247,36 @@ private struct HealthMetric: View {
         .frame(width: 82)
     }
 }
+
+// MARK: - ScenarioPickerView
+
+private struct ScenarioPickerView: View {
+    @ObservedObject var viewModel: HealthDashboardViewModel
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationView {
+            List(Array(zip(viewModel.scenarioNames, viewModel.scenarioDisplayNames)), id: \.0) { name, display in
+                Button(action: { viewModel.selectScenario(name); dismiss() }) {
+                    HStack {
+                        Text(display).foregroundColor(.white)
+                        Spacer()
+                        if viewModel.selectedScenario == name {
+                            Image(systemName: "checkmark").foregroundColor(AppColors.Health.steps)
+                        }
+                    }
+                }
+                .listRowBackground(AppColors.Health.card)
+            }
+            .scrollContentBackground(.hidden).background(Color.black)
+            .navigationTitle("选择数据场景")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } } }
+        }
+    }
+}
+
+// =========== CardEditor / ScrollViewAccessor / HealthDetailView — 原样保留 ===========
 
 private struct HealthCardEditor: View {
     @State var active: [HealthCard]
@@ -194,7 +300,10 @@ private struct HealthCardEditor: View {
         self.onSave = onSave
     }
 
-    private var inactive: [HealthCard] { defaultHealthCards.filter { !active.contains($0) } }
+    private var inactive: [HealthCard] {
+        let activeIDs = Set(active.map(\.id))
+        return defaultHealthCards.filter { !activeIDs.contains($0.id) }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -471,10 +580,10 @@ private struct HealthDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button(action: onBack) { Text(AppText.Common.back).font(.system(size: 38, weight: .light)) }
-                Spacer()
-                Text(card.title).font(.system(size: 19))
-                Spacer().frame(width: 32)
+                Button(action: onBack) { Text("‹").font(.system(size: 38, weight: .light)) }
+                    .frame(width: 38)
+                Text(card.title).font(.system(size: 19)).frame(maxWidth: .infinity, alignment: .center)
+                Spacer().frame(width: 38)
             }
             .foregroundStyle(.white).padding(.horizontal, 18).frame(height: 64)
             Spacer()

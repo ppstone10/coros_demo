@@ -55,6 +55,9 @@ protocol SharedLoginAdapterProtocol {
     func pauseSession()
     func resumeSession()
     func consumeEffect() -> LoginEffect?
+    func loadHealthDashboard() -> PersistedDashboard?
+    func selectHealthScenario(_ name: String) -> PersistedDashboard?
+    func saveHealthCardConfiguration(_ typeNames: [String]) -> PersistedDashboard?
 }
 
 final class SharedLoginAdapter: SharedLoginAdapterProtocol {
@@ -63,6 +66,14 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
 
     init() {
         let defaults = UserDefaults.standard
+        let healthKey = "health_dashboard_store"
+        let healthStore = JsonHealthDashboardStateDataSource(
+            readString: { userId in defaults.string(forKey: "\(healthKey)_\(userId)") },
+            writeString: { userId, json in
+                defaults.set(json, forKey: "\(healthKey)_\(userId)")
+                return true
+            }
+        )
         self.facade = LoginFacadeFactory().createPersistent(
             loadJson: {
                 defaults.string(forKey: Self.storeKey)
@@ -70,7 +81,8 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
             saveJson: { json in
                 defaults.set(json, forKey: Self.storeKey)
                 return KotlinBoolean(bool: defaults.synchronize())
-            }
+            },
+            healthStateDataSource: healthStore
         )
         syncClock()
         facade.restoreSession()
@@ -267,6 +279,18 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
 
     func consumeEffect() -> LoginEffect? {
         facade.consumeEffect()
+    }
+
+    func loadHealthDashboard() -> PersistedDashboard? {
+        facade.loadHealthDashboard()
+    }
+
+    func selectHealthScenario(_ name: String) -> PersistedDashboard? {
+        facade.selectHealthScenario(name: name)
+    }
+
+    func saveHealthCardConfiguration(_ typeNames: [String]) -> PersistedDashboard? {
+        facade.saveHealthCardConfiguration(typeNames: typeNames)
     }
 
     private func syncClock() {

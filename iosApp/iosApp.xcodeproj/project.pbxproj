@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		921197F7300879E1008AB802 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 921197F6300879E1008AB802 /* Lottie */; };
+		921197F930087A6B008AB802 /* HealthDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 921197F830087A6B008AB802 /* HealthDashboardViewModel.swift */; };
+		921197FB30087A90008AB802 /* watch_status.json in Resources */ = {isa = PBXBuildFile; fileRef = 921197FA30087A90008AB802 /* watch_status.json */; };
 		A10000000000000000000001 /* IOSDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* IOSDemoApp.swift */; };
 		A10000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* ContentView.swift */; };
 		A10000000000000000000004 /* SharedLoginAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* SharedLoginAdapter.swift */; };
@@ -37,6 +40,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		921197F830087A6B008AB802 /* HealthDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDashboardViewModel.swift; sourceTree = "<group>"; };
+		921197FA30087A90008AB802 /* watch_status.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = watch_status.json; sourceTree = "<group>"; };
 		A20000000000000000000001 /* IOSDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSDemoApp.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A20000000000000000000004 /* SharedLoginAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLoginAdapter.swift; sourceTree = "<group>"; };
@@ -72,6 +77,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				921197F7300879E1008AB802 /* Lottie in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,34 +131,11 @@
 		A40000000000000000000005 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				921197FA30087A90008AB802 /* watch_status.json */,
 				C20000000000000000000001 /* AppResources.swift */,
 				A20000000000000000000009 /* home.mp4 */,
 			);
 			path = Resources;
-			sourceTree = "<group>";
-		};
-		C40000000000000000000001 /* Home */ = {
-			isa = PBXGroup;
-			children = (
-				C20000000000000000000002 /* MainTabsView.swift */,
-			);
-			path = Home;
-			sourceTree = "<group>";
-		};
-		C40000000000000000000002 /* Health */ = {
-			isa = PBXGroup;
-			children = (
-				C20000000000000000000003 /* HealthDashboardView.swift */,
-			);
-			path = Health;
-			sourceTree = "<group>";
-		};
-		C40000000000000000000003 /* Account */ = {
-			isa = PBXGroup;
-			children = (
-				C20000000000000000000004 /* AccountView.swift */,
-			);
-			path = Account;
 			sourceTree = "<group>";
 		};
 		A40000000000000000000006 /* Components */ = {
@@ -182,6 +165,31 @@
 				A20000000000000000000021 /* LegalDocumentView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		C40000000000000000000001 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				C20000000000000000000002 /* MainTabsView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		C40000000000000000000002 /* Health */ = {
+			isa = PBXGroup;
+			children = (
+				921197F830087A6B008AB802 /* HealthDashboardViewModel.swift */,
+				C20000000000000000000003 /* HealthDashboardView.swift */,
+			);
+			path = Health;
+			sourceTree = "<group>";
+		};
+		C40000000000000000000003 /* Account */ = {
+			isa = PBXGroup;
+			children = (
+				C20000000000000000000004 /* AccountView.swift */,
+			);
+			path = Account;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -229,6 +237,9 @@
 				Base,
 			);
 			mainGroup = A40000000000000000000001;
+			packageReferences = (
+				921197F5300879E1008AB802 /* XCRemoteSwiftPackageReference "lottie-spm" */,
+			);
 			productRefGroup = A40000000000000000000004 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -246,6 +257,7 @@
 				A10000000000000000000008 /* Assets.xcassets in Resources */,
 				A10000000000000000000009 /* home.mp4 in Resources */,
 				A10000000000000000000025 /* LaunchScreen.storyboard in Resources */,
+				921197FB30087A90008AB802 /* watch_status.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -281,6 +293,7 @@
 				A10000000000000000000002 /* ContentView.swift in Sources */,
 				C10000000000000000000001 /* AppResources.swift in Sources */,
 				C10000000000000000000002 /* MainTabsView.swift in Sources */,
+				921197F930087A6B008AB802 /* HealthDashboardViewModel.swift in Sources */,
 				C10000000000000000000003 /* HealthDashboardView.swift in Sources */,
 				C10000000000000000000004 /* AccountView.swift in Sources */,
 				A10000000000000000000004 /* SharedLoginAdapter.swift in Sources */,
@@ -445,7 +458,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = NO;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -487,7 +500,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = NO;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -529,6 +542,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		921197F5300879E1008AB802 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.6.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		921197F6300879E1008AB802 /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 921197F5300879E1008AB802 /* XCRemoteSwiftPackageReference "lottie-spm" */;
+			productName = Lottie;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A60000000000000000000001 /* Project object */;
 }

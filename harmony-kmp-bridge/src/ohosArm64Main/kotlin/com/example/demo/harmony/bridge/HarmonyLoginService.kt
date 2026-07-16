@@ -1,5 +1,9 @@
 package com.example.demo.harmony.bridge
 
+import com.example.demo.common.health.HealthCardType
+import com.example.demo.common.health.HealthCardUiModel
+import com.example.demo.common.health.HealthMockScenario
+import com.example.demo.common.health.PersistedDashboard
 import com.example.demo.common.login.AuthStoreDataSource
 import com.example.demo.common.login.LocalMockAuthRepository
 import com.example.demo.common.login.LoginFacade
@@ -21,7 +25,11 @@ open class HarmonyLoginService {
     fun exportStoreSnapshot(): String {
         val store = dataSource.load()
         val json = HarmonyLoginJson.storeSnapshot(store)
-        return json.dropLast(1) + ""","_s":{"accounts":${store.accounts.size},"session":${store.currentSession != null},"defaultInit":${store.defaultAccountsInitialized}}}"""
+        val pd = facade.loadHealthDashboard()
+        val healthPart = if (pd != null) {
+            ",\"_health\":{\"scenario\":\"${pd.scenario.name}\",\"enabledTypes\":\"${pd.enabledCardTypes.joinToString(",") { it.name }}\"}"
+        } else ""
+        return json.dropLast(1) + ""","_s":{"accounts":${store.accounts.size},"session":${store.currentSession != null},"defaultInit":${store.defaultAccountsInitialized}}$healthPart}"""
     }
 
     fun restoreStoreSnapshot(json: String): Boolean {
@@ -32,6 +40,7 @@ open class HarmonyLoginService {
             facade = createFacade(dataSource)
             syncClock()
             facade.restoreSession()
+            restoreHealthFromStoreJson(json)
             true
         } catch (e: Exception) {
             false
@@ -219,6 +228,64 @@ open class HarmonyLoginService {
         return facade.deleteCurrentAccount().orEmpty()
     }
 
+    fun loadHealthSnapshot(): String {
+        val pd = facade.loadHealthDashboard()
+        return if (pd != null) healthSnapshotJson(pd) else "{}"
+    }
+
+    fun selectHealthScene(name: String): String {
+        val pd = facade.selectHealthScenario(name)
+        return if (pd != null) healthSnapshotJson(pd) else "{}"
+    }
+
+    fun saveCardConfig(typeNamesCsv: String): String {
+        val names = typeNamesCsv.split(",").map { it.trim() }.filter { it.isNotBlank() }
+        val pd = facade.saveHealthCardConfiguration(names)
+        return if (pd != null) healthSnapshotJson(pd) else "{}"
+    }
+
+    fun exportHealthSnapshot(): String {
+        val pd = facade.loadHealthDashboard()
+        return if (pd != null) healthSnapshotJson(pd) else "{}"
+    }
+
+    fun restoreHealthSnapshot(json: String): Boolean {
+        try {
+            if (json.isBlank() || json == "{}") return false
+            return true
+        } catch (e: Exception) { return false }
+    }
+
+    private fun restoreHealthFromStoreJson(json: String) {
+        try {
+            val healthIdx = json.indexOf("\"_health\":{")
+            if (healthIdx < 0) return
+            val start = json.indexOf('{', healthIdx) + 1
+            val end = json.indexOf('}', start)
+            if (end < 0) return
+            val body = json.substring(start, end)
+            val scenarioKey = "\"scenario\":\""
+            val scenarioIdx = body.indexOf(scenarioKey)
+            if (scenarioIdx >= 0) {
+                val sStart = scenarioIdx + scenarioKey.length
+                val sEnd = body.indexOf('"', sStart)
+                val scenario = body.substring(sStart, if (sEnd >= 0) sEnd else body.length)
+                if (scenario.isNotBlank()) facade.selectHealthScenario(scenario)
+            }
+            val typesKey = "\"enabledTypes\":\""
+            val typesIdx = body.indexOf(typesKey)
+            if (typesIdx >= 0) {
+                val tStart = typesIdx + typesKey.length
+                val tEnd = body.indexOf('"', tStart)
+                val typesStr = body.substring(tStart, if (tEnd >= 0) tEnd else body.length)
+                if (typesStr.isNotBlank()) {
+                    val names = typesStr.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                    facade.saveHealthCardConfiguration(names)
+                }
+            }
+        } catch (_: Exception) { }
+    }
+
     @OptIn(ExperimentalForeignApi::class)
     private fun createFacade(dataSource: MemoryAuthStoreDataSource): LoginFacade {
         return LoginFacade(LoginStore.create(LocalMockAuthRepository(dataSource)))
@@ -246,3 +313,36 @@ private class MemoryAuthStoreDataSource(
         this.store = newStore
     }
 }
+
+private fun healthSnapshotJson(pd: PersistedDashboard): String {
+    val sb = StringBuilder()
+    sb.append("{\"scenario\":\"")
+    sb.append(pd.scenario.name)
+    sb.append("\",\"dateLabel\":\"")
+    sb.append(pd.uiState.dateLabel.esc())
+    sb.append("\",\"steps\":")
+    sb.append(pd.uiState.dailySummary?.steps ?: 0)
+    sb.append(",\"calories\":")
+    sb.append(pd.uiState.dailySummary?.calories ?: 0)
+    sb.append(",\"activeMinutes\":")
+    sb.append(pd.uiState.dailySummary?.activeMinutes ?: 0)
+    sb.append(",\"cards\":[")
+    pd.uiState.cards.forEachIndexed { index, card ->
+        if (index > 0) sb.append(",")
+        sb.append("{\"type\":\"")
+        sb.append(card.type.name)
+        sb.append("\",\"title\":\"")
+        sb.append(card.title.esc())
+        sb.append("\",\"summary\":\"")
+        sb.append(card.summary.esc())
+        sb.append("\",\"isRisk\":")
+        sb.append(card.status.name == "Risk")
+        sb.append("}")
+    }
+    sb.append("],\"enabledTypes\":\"")
+    sb.append(pd.enabledCardTypes.joinToString(",") { it.name })
+    sb.append("\"}")
+    return sb.toString()
+}
+
+private fun String.esc(): String = replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")

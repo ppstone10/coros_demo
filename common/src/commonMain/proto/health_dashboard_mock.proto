@@ -2,9 +2,27 @@ syntax = "proto3";
 package training.health;
 
 // 仅用于脱敏、本地 mock 健康首页，不包含真实服务端字段或协议。
+
 message DailySummaryMock { optional int32 steps = 1; optional int32 calories = 2; optional int32 active_minutes = 3; }
 message SleepSummaryMock { optional int32 duration_minutes = 1; optional int32 quality_score = 2; }
 message TrainingLoadMock { optional int32 value = 1; optional int32 recommended_min = 2; optional int32 recommended_max = 3; }
 message RecoveryMock { optional int32 score = 1; optional int32 remaining_hours = 2; }
-message HealthDashboardMock { DailySummaryMock daily = 1; SleepSummaryMock sleep = 2; TrainingLoadMock training_load = 3; RecoveryMock recovery = 4; }
+message WeeklyPlanMock { optional bool has_plan = 1; optional int32 planned_minutes = 2; optional string description = 3; }
+message TrainingAssessmentMock { optional int32 volume_score = 1; optional string trend = 2; }
+message RunningAbilityMock { optional int32 vo2max = 1; optional int32 score = 2; }
+message CyclingAbilityMock { optional int32 ftp = 1; optional int32 score = 2; }
+message HeartRateMock { optional int32 resting_hr = 1; optional int32 current_hr = 2; }
+message StressMock { optional int32 stress_level = 1; optional string status = 2; }
+message HrvAssessmentMock { optional int32 hrv_score = 1; optional string status = 2; }
+message RestingHeartRateMock { optional int32 value = 1; }
+message HealthCheckMock { optional int32 overall_score = 1; optional int32 last_check_days = 2; }
+message BodyManagementMock { optional double weight_kg = 1; optional double body_fat = 2; optional double bmi = 3; }
+
+message HealthDashboardMock {
+  DailySummaryMock daily = 1; SleepSummaryMock sleep = 2; TrainingLoadMock training_load = 3; RecoveryMock recovery = 4;
+  WeeklyPlanMock weekly_plan = 5; TrainingAssessmentMock training_assessment = 6;
+  RunningAbilityMock running_ability = 7; CyclingAbilityMock cycling_ability = 8;
+  HeartRateMock heart_rate = 9; StressMock stress = 10; HrvAssessmentMock hrv_assessment = 11;
+  RestingHeartRateMock resting_heart_rate = 12; HealthCheckMock health_check = 13; BodyManagementMock body_management = 14;
+}
 message HealthDashboardSnapshotMock { string user_id = 1; string scenario = 2; repeated string enabled_card_types = 3; }

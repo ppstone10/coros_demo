@@ -85,6 +85,16 @@ export interface HarmonyLoginService {
 
    deleteCurrentAccount(): string;
 
+   loadHealthSnapshot(): string;
+
+   selectHealthScene(name: string): string;
+
+   saveCardConfig(typeNamesCsv: string): string;
+
+   exportHealthSnapshot(): string;
+
+   restoreHealthSnapshot(json: string): boolean;
+
 }
 
 export function getHarmonyLoginService(): HarmonyLoginService {

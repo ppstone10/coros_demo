@@ -55,6 +55,27 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     this.refreshState();
   }
 
+  loadHealthDashboard(): object | null {
+    try {
+      const json = this.harmonyLoginService.loadHealthSnapshot();
+      return JSON.parse(json);
+    } catch (e) { return null; }
+  }
+
+  selectHealthScenario(name: string): object | null {
+    try {
+      const json = this.harmonyLoginService.selectHealthScene(name);
+      return JSON.parse(json);
+    } catch (e) { return null; }
+  }
+
+  saveCardConfiguration(typeNamesCsv: string): object | null {
+    try {
+      const json = this.harmonyLoginService.saveCardConfig(typeNamesCsv);
+      return JSON.parse(json);
+    } catch (e) { return null; }
+  }
+
   getState(): LoginState {
     this.refreshState();
     return this.cloneState(this.state);

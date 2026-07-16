@@ -1,5 +1,11 @@
 package com.example.demo.common.login
 
+import com.example.demo.common.health.HealthCardType
+import com.example.demo.common.health.HealthDashboardStateDataSource
+import com.example.demo.common.health.HealthMockScenario
+import com.example.demo.common.health.InMemoryHealthDashboardStateDataSource
+import com.example.demo.common.health.PersistedDashboard
+
 /**
  * @warning 此文件为 iOS/HarmonyOS 暴露的跨语言门面，方法列表与 [LoginRules] 保持同步。
  * 新增方法后，请同步更新 iOS SharedLoginAdapterProtocol 和 SharedLoginAdapter。
@@ -237,6 +243,23 @@ class LoginFacade(
         return store.consumeEffect()
     }
 
+    fun loadHealthDashboard(): PersistedDashboard? {
+        val result = store.loadHealthDashboard()
+        return if (result is MockResult.Success<*>) result.data as? PersistedDashboard else null
+    }
+
+    fun selectHealthScenario(name: String): PersistedDashboard? {
+        val scenario = HealthMockScenario.entries.firstOrNull { it.name == name } ?: return null
+        val result = store.selectHealthScenario(scenario)
+        return if (result is MockResult.Success<*>) result.data as? PersistedDashboard else null
+    }
+
+    fun saveHealthCardConfiguration(typeNames: List<String>): PersistedDashboard? {
+        val types = typeNames.mapNotNull { n -> HealthCardType.entries.firstOrNull { it.name == n } }
+        val result = store.saveHealthCardConfiguration(types)
+        return if (result is MockResult.Success<*>) result.data as? PersistedDashboard else null
+    }
+
     private fun String.toMeasurementSystemOrDefault(): MeasurementSystem {
         return when (this) {
             MeasurementSystem.Imperial.name -> MeasurementSystem.Imperial
@@ -257,10 +280,11 @@ class LoginFacade(
 class LoginFacadeFactory {
     fun createPersistent(
         loadJson: () -> String?,
-        saveJson: (String) -> Boolean
+        saveJson: (String) -> Boolean,
+        healthStateDataSource: HealthDashboardStateDataSource = InMemoryHealthDashboardStateDataSource()
     ): LoginFacade {
         val dataSource = JsonAuthStoreDataSource(loadJson, saveJson)
         val repository = LocalMockAuthRepository(dataSource)
-        return LoginFacade(LoginStore.create(repository))
+        return LoginFacade(LoginStore.create(repository, healthStateDataSource))
     }
 }

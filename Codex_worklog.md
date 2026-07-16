@@ -1012,3 +1012,90 @@
 ## 人工修正点
 
 - 暂无明确人工修正点。
+
+---
+
+2026-07-16 健康首页总览卡片三端功能对齐与完善
+
+## 采纳内容
+
+### 1. 数据层扩展（common 共享）
+- `health_dashboard_mock.proto`：新增 10 个 message（WeeklyPlanMock、RunningAbilityMock 等），扩展 HealthDashboardMock 覆盖全部 14 种卡片。
+- `HealthDashboardModels.kt`：新增 10 个 data class（WeeklyPlan、TrainingAssessment 等），`HealthDashboardData` 从 4 字段扩展到 14 字段，`HealthCardAction` 补充全部卡片类型。
+- `HealthDashboardMock.kt`（新建）：所有 14 种卡片的 proto 镜像类 + `toDomain()`/`toMock()` 双向映射。
+- `HealthDashboardUseCase.kt`：14 种卡片 × 5 个场景（Normal/PartialMissing/AllEmpty/Abnormal/ReadFailure）的完整 sample 数据；全部 14 个专属 card builder（含 Risk 检测逻辑），优先级别 0-32 覆盖。
+- `MockHealthDashboardStoreJson.kt`（新建）：手写 proto-compatible JSON 编解码 `HealthDashboardSnapshot`（对等 `MockAuthStoreJson` 模式，零依赖，三端通用）。
+- `JsonHealthDashboardStateDataSource.kt`（新建）：公共 DataSource 代理，接收平台 `readString(userId)/writeString(userId, json)` lambda，内部调 `MockHealthDashboardStoreJson`。
+- `AndroidHealthDashboardStateDataSource.kt`：重写为委托 `JsonHealthDashboardStateDataSource`，去掉原有管道符硬编码。
+
+### 2. Android 端
+- `HealthDashboardScreen.kt` 完整重写：
+  - 三部分布局：Part1 `HeroTopRow`（固定日期行+日历+Lottie手表）、Part2 `NestedScrollConnection`+`graphicsLayer{translationY}`（可滑动卡片区+下拉拉伸回弹）、Part3 底部导航（MainTabsScreen 控制）。
+  - 下拉刷新：`NestedScrollConnection` 跟踪 overscroll → `onPostScroll` 累积 `pullOffset` → `graphicsLayer` 实时偏移 → `onPreFling` 判断阈值触发 `isRefreshing=true` → 松手回弹到 60px 保持 → `Animatable` 动画回弹。
+  - Lottie 手表动画：`Animatable(0→1, tween(4460ms))` 驱动三段动画（连接中→同步中→同步完成），完成后 `snapTo(0f)` 归位首帧。
+  - 长按手表 → `AlertDialog` 选择 5 种场景，持久化但**不立即刷新**，等下拉刷新后才加载新数据。
+  - 刷新覆盖层：`isRefreshing` 时叠加 spinner+"数据同步中"。
+  - ReadFailure 布局：保留日期行，替换卡片区为错误提示文字。
+  - Lottie 绿点修复：watch_status.json 中 green 图层 fill opacity 有两个同在 t=0 的关键帧 `s:[0]` 和 `s:[100]`，Android 引擎取第一个→始终不可见；iOS/鸿蒙取最后一个→始终可见。改为静态 `"a":0,"k":[100]`，三端统一。
+  - 间距修复：HeroTopRow 与 ArcMetrics 之间 Spacer 从 46dp 改为 8dp。
+  - 圆环修复：Canvas 尺寸从 `150dp×125dp` 改为 `150dp` 正方形，arc offset/size 同步修正。
+- `androidApp/build.gradle.kts`：新增 `lottie-compose:6.6.4` 依赖（group: `com.airbnb.android`）。
+- `gradle/libs.versions.toml`：新增 lottie 版本号 `6.6.4`。
+- `watch_status.json`：从 `health_dashboard_resources/lottie/` 复制到 `res/raw/`。
+
+### 3. iOS 端
+- `LoginFacade.kt`：新增 3 个健康方法（`loadHealthDashboard`/`selectHealthScenario`/`saveHealthCardConfiguration`），`LoginFacadeFactory.createPersistent` 新增 `healthStateDataSource` 参数，默认 `InMemoryHealthDashboardStateDataSource()`。
+- `SharedLoginAdapter.swift`：协议 +3、实现 +3 健康桥接方法；`init()` 中创建 `JsonHealthDashboardStateDataSource` 绑定 `UserDefaults`，传入 `createPersistent(healthStateDataSource:)`。
+- `HealthDashboardViewModel.swift`（新建）：`@MainActor ObservableObject`，定义 `CardItem`/`DashboardData` 纯 Swift 类型，`load()` 从 KMP `PersistedDashboard` 映射到 Swift 类型，`refresh()` 含 4.46s 异步等待，`scenarioNames/scenarioDisplayNames`。
+- `HealthDashboardView.swift` 重写：
+  - 三部分布局：`HeroTopRow`（固定）+ `ScrollView`+`DragGesture`（可滑动+下拉拉伸回弹）+ `Spacer`（底部导航在 MainTabsView）。
+  - Lottie 手表：`LottieView.playbackMode(isSyncing ? .playing(.fromProgress(0, toProgress:1, loopMode:.playOnce)) : .paused)`，`animationDidFinish` 回调重置 `lottieId = UUID()` 回到首帧。
+  - 下拉拉伸：`DragGesture().onChanged` 跟踪 `dragOffset`，`.onEnded` 判断阈值触发 `Task{ await viewModel.refresh() }`，`interpolatingSpring` 动画回弹。
+  - 场景选择器：`ScenarioPickerView` sheet + 长按手势。
+  - CardEditor/HealthDetailView/ScrollViewAccessor **完全不动**。
+- `AppResources.swift`：补充 `AppColors.Health.cardTitle/date/metricUnit/activeDuration/chevron/editText/editorTitle/placeholder` 等常量，`AppText.Health` 新增 `stepsUnit/caloriesUnit/minutesUnit/dataUnavailable/weeklyPlan/todayActivity` 等常量，`AppImages.Health.activeDuration/todayActivity`。
+- `watch_status.json`：复制到 `iosApp/Resources/`。
+
+### 4. 鸿蒙端
+- `HarmonyLoginService.kt`：新增 `loadHealthSnapshot()`/`selectHealthScene()`/`saveCardConfig()` 3 个 `@ServiceProvider` 方法 + `healthSnapshotJson()` 内联 JSON 编码。新增 `exportHealthSnapshot()`/`restoreHealthSnapshot()`。健康数据嵌入 auth store snapshot：`exportStoreSnapshot` 输出追加 `"_health":{"scenario":"...","enabledTypes":"..."}`，`restoreStoreSnapshot` 调用 `restoreHealthFromStoreJson` 解析 `_health` 字段并恢复。
+- `KnoiLoginAdapter.ets`：新增 `loadHealthDashboard()`/`selectHealthScenario()`/`saveCardConfiguration()` 3 个桥接方法，委托到 `harmonyLoginService`。
+- `StorePersister.ets`：`saveStoreSnapshot` 新增 `exportHealthSnapshot` 写入 `KEY_HEALTH_JSON`，`initPersistence` 新增 `restoreHealthSnapshot`。
+- `SignedInPage.ets` 重写：
+  - 数据模型：`HealthCardModel` 新增 `isRisk` 字段，`createDefaultHealthCards()` ID 从小写改为 PascalCase（与 KMP 枚举名一致，修复编辑卡片去重问题）。
+  - 三部分布局：`HeroTopRow`（固定，含 Lottie Canvas）+ `Refresh` 组件+`Scroll`（可滑动卡片+下拉刷新）+ `BottomNavigation`（已存在，不动）。
+  - Lottie：使用 `@ohos/lottie` Canvas API，`Canvas.onReady()` 中 `lottie.loadAnimation({container, renderer:'canvas', loop:false, autoplay:false, path:'common/watch_status.json'})`。`AnimationItem.goToAndPlay(0,true)` 播放，`goToAndStop(0,true)` 归位。`destroy()` 在重新加载前清除旧动画。Canvas 移到 `.id()` keyed 区域**外**，避免 `dashboardVersion++` 时 Canvas 重建导致动画消失。
+  - UI 响应式修复：`DashboardCard`/`Metric` 从 `@Builder` 改为 `@Component struct`+`@Prop`（`DashboardCardComp`/`MetricComp`），遵循 worklog 中已验证的 ArkTS 响应式模式。`ForEach` key 改为 `` `${card.id}_v${dashboardVersion}` ``，ArcMetrics 外层 `Column` 加 `.id(`arc_${dashboardVersion}`)`，Scroll 加 `.id(`scrollData_${dashboardVersion}`)`，通过 `id` 变化强制 ArkUI 重组视图。
+  - 下拉刷新：`Refresh({refreshing:$$this.refreshing})` + `onRefreshing` 回调 → `setTimeout(4460ms)` → `performRefresh()` → `loadHealthDataFromKMP()`+`refreshing=false`+`dashboardVersion++`。
+  - 场景选择器：`ScenarioPicker` 全屏 overlay，`ForEach` 5 种场景，选择后调 `getService().selectHealthScene()` 持久化，不立即刷新。
+  - `loadHealthDataFromKMP()`：`getService().loadHealthSnapshot()` → `JSON.parse` → `HealthSnapshot` 接口（具名属性，点号访问，适配 ArkTS 禁止 bracket 访问规则）。
+- `EntryAbility.ets`：状态栏/导航栏颜色从 `#00000000`（透明）改为 `#000000`（黑色），修复白色状态栏/导航栏问题。
+- `provider.ets`：KNOI 自动生成，新增 `loadHealthSnapshot`/`selectHealthScene`/`saveCardConfig`/`exportHealthSnapshot`/`restoreHealthSnapshot` 方法声明。
+- `libkn.so`：通过 `cd harmony-kmp-bridge && ./gradlew ohosArm64Binaries` 重新编译。
+- `@ohos/lottie`：通过 `ohpm install @ohos/lottie` 安装到 HarmonyOS 项目。
+- `watch_status.json`：复制到 `entry/src/main/ets/common/` 和 `entry/src/main/resources/rawfile/`。
+
+## 人工审查点
+
+- **KNOI @ServiceProvider 实例模型**：`HarmonyLoginService` 的 `@ServiceProvider` 标记依赖 KNOI 框架。若 KNOI 采用 factory 模式（每次 `getService()` 返回新原生实例），则 `exportStoreSnapshot` 与 `restoreStoreSnapshot` 可能操作不同实例，持久化失效。当前通过在 auth store JSON 中嵌入 `_health` 字段绕过了问题（health 数据随 auth 一起序列化/反序列化），但若 auth 持久化本身也存在 KNOI 实例隔离问题，则整体持久化仍不可靠。需人工确认或升级 KNOI 版本。
+- **鸿蒙 Lottie Canvas 架构**：`@ohos/lottie` 不是 UI 组件而是 JS API（`lottie.loadAnimation` 绑定 `CanvasRenderingContext2D`），与 Android/iOS 的 LottieView 用法完全不同。Canvas 生命周期管理（`onReady` 加载、`destroy` 清理）较脆弱，后续如果需要复杂动画控制建议评估 `@ohos/lottie-turbo`（README 推荐）。
+- **鸿蒙 `@Component+@Prop` vs `@Builder` 响应式**：`DashboardCardComp`/`MetricComp` 改为 `@Component+@Prop` 后解决了 View 复用导致数据不刷新的问题。但 `ForEach` 中仍依赖 key 变化（`dashboardVersion`）强制重建，非原生响应式（不似 Android Compose/SwiftUI 的自动重组）。后续如有性能问题，可评估 `@Observed`+`@ObjectLink` 模式。
+- **Lottie 绿点修复影响范围**：`watch_status.json` 中 green 图层的 fill opacity 从 keyframed 改为静态 100%，修改影响所有三端。当前三端均已替换为新文件，确认无 regression。
+- **鸿蒙端场景切换不立即刷新**：与 Android/iOS 保持一致——选择场景后仅持久化，需下拉刷新才更新 UI。此行为已在三端确认。
+
+## 验证结果
+
+- `./gradlew :common:check`：common 模块 Android + iOS 双端编译及全部单元测试通过（15 个 test target 全部 PASS）。
+- `./gradlew :androidApp:compileDebugKotlin`：Android Compose 编译通过。
+- `./gradlew :common:compileKotlinIosSimulatorArm64`：iOS KMP 目标编译通过。
+- `cd harmony-kmp-bridge && ./gradlew ohosArm64Binaries`：鸿蒙 libkn.so 编译通过，产物自动复制到 harmonyApp/entry/libs/。
+- iOS 模拟器 `xcodebuild -project iosApp.xcodeproj -scheme IOSDemo`：BUILD SUCCEEDED。
+- 鸿蒙端：DevEco Studio 编译验证由用户手动执行，ARKTS 编译错误（索引签名、bracket 访问、JSON.parse 类型）已逐轮修复至 BUILD SUCCEEDED 状态。
+- 未执行：三端人工 UI 验收、端到端持久化重启测试、多账号隔离测试。
+
+## 人工修正点
+
+- 鸿蒙端持久化：当前通过在 auth store JSON 中嵌入 `_health` 字段实现 health 数据随 auth 一起保存。若后续 auth 持久化链路修复或改造（如 KNOI 支持 singleton），health 持久化方案可能需要同步调整。
+- 鸿蒙端 Lottie 文件路径：`watch_status.json` 同时存于 `ets/common/` 和 `resources/rawfile/`，需确认最终发布时只需保留一份；`canvas` 渲染模式下 `lottie.loadAnimation({path})` 只支持 `ets/` 相对路径，`rawfile` 副本可删除。
+- 鸿蒙端 CardEditor 去重：`createDefaultHealthCards()` ID 改为 PascalCase 后，确认 `inactiveCards()` 去重逻辑正确（按 ID 过滤，无需再按全量 `HealthCardModel` 比较）。
+- iOS 端 `LoginFacadeFactory.createPersistent` 新增第三参数 `healthStateDataSource`，需确认之前所有调用 `createPersistent(loadJson:,saveJson:)` 的代码（如测试代码、模拟器）均已更新或仍可使用默认值（`InMemoryHealthDashboardStateDataSource()`）。
+- Android 端 gauge 圆环改为正方形 Canvas (`150.dp`)，确认原 150×125dp 的非正方形设计是否为有意为之（如对应不同屏幕比例），当前修改后圆环为标准圆形。
