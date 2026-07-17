@@ -7,7 +7,8 @@
 1. 读取 `LEARNINGS.md`，了解持久架构决策、边界和已验证踩坑。
 2. 读取 `spec/TRACE.md`，定位已有 Spec、测试与实现。
 3. 读取本次任务相关的 `spec/*.md`。
-4. 必要时读取 `DESIGN.md`、`REQUIREMENT_NOTES.md`；只有追溯细节时才读 `docs/worklog/`。
+4. **读取 `Codex_worklog.md` 最新一条记录的 `## 下轮交接` 段**，了解上一轮遗留状态。
+5. 必要时读取 `DESIGN.md`、`REQUIREMENT_NOTES.md`；只有追溯细节时才读 `docs/worklog/` 完整日志。
 
 ## 必须执行的开发顺序
 
@@ -18,8 +19,8 @@
   → 先写测试并运行红灯
   → 写最小实现并运行绿灯
   → TRACE 填入测试、实现、验证证据和真实状态
-  → Codex_worklog.md 追加时间/概要标题和四段记录
-  → LEARNINGS.md 提炼持久结论（如有）
+   → Codex_worklog.md 追加时间/概要标题、四段记录和 `## 下轮交接`（已完成 / 未完成阻塞项 / 下轮起步建议）
+   → LEARNINGS.md 提炼持久结论（如有）
 ```
 
 纯文案、注释和机械格式调整可以引用既有 Spec；行为、接口、数据或验收口径变化必须先更新 Spec。测试无法自动化时，必须在 Spec 和 TRACE 中写明人工验收方法，不能假装通过。

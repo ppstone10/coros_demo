@@ -5,6 +5,8 @@ import window from '@ohos.window';
 import { init, setup } from '@kuiklybase/knoi';
 import { initPersistence, saveStoreSnapshot } from '../login/StorePersister';
 import { getService } from '../login/HarmonyServiceProvider';
+import { AppColors } from '../resources/AppResources';
+import { initializeAppLanguage } from '../resources/AppLanguage';
 
 let knoiInitialized: boolean = false;
 
@@ -21,19 +23,20 @@ export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage): void {
     hilog.info(0x0001, 'demo_persist', 'onWindowStageCreate');
     initKnoiBridge();
+    initializeAppLanguage();
     hilog.info(0x0001, 'demo_persist', 'initKnoiBridge done');
     windowStage.getMainWindow()
       .then((mainWindow: window.Window) => {
-        mainWindow.setWindowBackgroundColor('#000000');
+        mainWindow.setWindowBackgroundColor(AppColors.BLACK);
         return mainWindow.setWindowLayoutFullScreen(true)
           .then(() => {
             return mainWindow.setWindowSystemBarProperties({
-              statusBarColor: '#000000',
-              navigationBarColor: '#000000',
+              statusBarColor: AppColors.BLACK,
+              navigationBarColor: AppColors.BLACK,
               isStatusBarLightIcon: true,
               isNavigationBarLightIcon: true,
-              statusBarContentColor: '#FFFFFF',
-              navigationBarContentColor: '#FFFFFF'
+              statusBarContentColor: AppColors.WHITE,
+              navigationBarContentColor: AppColors.WHITE
             });
           });
       })

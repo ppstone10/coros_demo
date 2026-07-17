@@ -13,14 +13,14 @@ struct PasswordSetupView: View {
 
     var body: some View {
         AuthBlackPage(onBack: { backToRegisterPage() }, showFeedback: false) {
-            AuthTitle("设置登录密码")
+            AuthTitle(appLocalized("auth_set_login_password"))
             Spacer().frame(height: 60)
             UnderlineInput(
                 text: Binding(
                     get: { password },
                     set: { password = viewModel.normalizePasswordInput($0); localError = nil }
                 ),
-                placeholder: "输入新的密码",
+                placeholder: appLocalized("auth_new_password_placeholder"),
                 isPassword: true,
                 autoFocus: true
             )
@@ -30,22 +30,22 @@ struct PasswordSetupView: View {
                     get: { confirmPassword },
                     set: { confirmPassword = viewModel.normalizePasswordInput($0); localError = nil }
                 ),
-                placeholder: "再次输入密码",
+                placeholder: appLocalized("auth_confirm_password_placeholder"),
                 isPassword: true
             )
             Spacer().frame(height: 8)
-            Text("6-20位必须包含字母和数字")
-                .foregroundStyle(Color(red: 216 / 255, green: 216 / 255, blue: 221 / 255))
+            Text(appLocalized("auth_password_rule"))
+                .foregroundStyle(AppColors.Auth.inputText)
                 .font(.system(size: 14))
             Spacer().frame(height: 12)
             Button(action: { showsRegionPicker = true }) {
                 HStack(spacing: 12) {
-                    Text("国家与地区")
+                    Text(appLocalized("profile_country_region"))
                         .foregroundStyle(.white)
                         .font(.system(size: 19))
                     Spacer(minLength: 16)
                     Text(selectedRegion.countryRegionName)
-                        .foregroundStyle(Color.white.opacity(0.78))
+                        .foregroundStyle(AppColors.Auth.primaryText)
                         .font(.system(size: 19))
                     Image("right_more")
                         .resizable()
@@ -58,7 +58,7 @@ struct PasswordSetupView: View {
             .buttonStyle(.plain)
             Spacer().frame(height: 44)
             CorosFilledButton(
-                text: "注册",
+                text: appLocalized("auth_register"),
                 color: corosButtonRed,
                 enabled: canRegister,
                 isLoading: viewModel.state.isLoading,
@@ -85,7 +85,7 @@ struct PasswordSetupView: View {
             return
         }
         if password != confirmPassword {
-            localError = "两次输入的密码不一致"; return
+            localError = appLocalized("auth_validation_password_mismatch"); return
         }
         viewModel.requestRegisterMode()
         viewModel.updateRegion(selectedRegion)
@@ -115,7 +115,7 @@ private struct RegistrationRegionPicker: View {
                 }
                 .buttonStyle(.plain)
                 Spacer()
-                Text("国家与地区").foregroundStyle(.white).font(.system(size: 20, weight: .semibold))
+                Text(appLocalized("profile_country_region")).foregroundStyle(.white).font(.system(size: 20, weight: .semibold))
                 Spacer()
                 Button(action: {
                     region = selectedRegion
@@ -132,20 +132,20 @@ private struct RegistrationRegionPicker: View {
             .padding(.horizontal, 20)
 
             Picker("", selection: $selectedRegion) {
-                Text("中国").tag("CN")
-                Text("美国").tag("US")
+                Text(appLocalized("common_china")).tag("CN")
+                Text(appLocalized("common_united_states")).tag("US")
             }
             .pickerStyle(.wheel)
             .labelsHidden()
             .colorScheme(.dark)
         }
-        .background(Color(red: 27 / 255, green: 27 / 255, blue: 29 / 255).ignoresSafeArea())
+        .background(AppColors.Auth.sheet.ignoresSafeArea())
         .onAppear { selectedRegion = region }
     }
 }
 
 private extension String {
     var countryRegionName: String {
-        self == "US" ? "美国" : "中国"
+        countryDisplayName(self)
     }
 }

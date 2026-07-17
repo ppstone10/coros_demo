@@ -9,20 +9,20 @@ struct ForgotPasswordView: View {
 
     var body: some View {
         AuthBlackPage(onBack: { router.pop() }, showFeedback: false) {
-            AuthTitle("找回密码")
+            AuthTitle(appLocalized("auth_find_password"))
             Spacer().frame(height: 60)
             UnderlineInput(
                 text: Binding(
                     get: { account },
                     set: { account = $0.trimmingCharacters(in: .whitespacesAndNewlines); localError = nil }
                 ),
-                placeholder: "输入手机号或邮箱",
+                placeholder: appLocalized("auth_account_placeholder"),
                 keyboardType: .emailAddress,
                 autoFocus: true
             )
             Spacer().frame(height: 72)
             CorosFilledButton(
-                text: "下一步",
+                text: appLocalized("auth_next_step"),
                 color: corosButtonRed,
                 enabled: !account.isEmpty,
                 action: verifyAccount
@@ -40,7 +40,7 @@ struct ForgotPasswordView: View {
         if isEmail {
             validationMessage = viewModel.validateEmailAccount(normalizedAccount)
         } else if rawAccount != viewModel.normalizePhoneInput(rawAccount) {
-            validationMessage = "请输入11位手机号"
+            validationMessage = appLocalized("auth_validation_phone_invalid")
         } else {
             validationMessage = viewModel.validatePhoneAccount(normalizedAccount)
         }
@@ -50,7 +50,7 @@ struct ForgotPasswordView: View {
             return
         }
         guard viewModel.hasAccount(normalizedAccount) else {
-            localError = "账号不存在"
+            localError = appLocalized("auth_error_account_not_found")
             return
         }
         router.push(.resetPassword(account: normalizedAccount))

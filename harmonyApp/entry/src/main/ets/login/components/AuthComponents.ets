@@ -14,10 +14,13 @@ import {
   COROS_SHEET_BG,
   COROS_OVERLAY_COLOR,
   COROS_SUBTITLE_COLOR,
+  COROS_LEGAL_TEXT,
   AUTH_TITLE_TOP_PADDING,
   AUTH_TITLE_SIZE
 } from './AuthColors';
 import { LegalParagraph } from './LegalContent';
+import { localizedAuthMessage } from '../../resources/AuthLocalization';
+import { AppColors } from '../../resources/AppResources';
 
 export enum TermsPromptAction {
   None,
@@ -31,11 +34,11 @@ export enum VerifyTargetKind {
   Email
 }
 
-export function verifyCodeMessage(account: string, targetKind: VerifyTargetKind): string {
+export function verifyCodeMessage(account: string, targetKind: VerifyTargetKind): ResourceStr {
   if (targetKind === VerifyTargetKind.Email) {
-    return '验证码已发送至你的邮箱 ' + account + '，有效期60秒';
+    return $r('app.string.auth_verification_sent_email', account);
   }
-  return '验证码已发送至你的手机+86-' + account + '，有效期60秒';
+  return $r('app.string.auth_verification_sent_phone', account);
 }
 
 function disabledColor(color: string): string {
@@ -45,13 +48,13 @@ function disabledColor(color: string): string {
   if (color === COROS_RED) {
     return COROS_RED_DISABLED;
   }
-  return '#1D1D1D';
+  return AppColors.AUTH_DISABLED_BACKGROUND;
 }
 
 // ========== 非交互式 @Builder（无回调，安全） ==========
 
 @Builder
-export function AuthTitle(title: string) {
+export function AuthTitle(title: ResourceStr) {
   Text(title)
     .fontSize(AUTH_TITLE_SIZE)
     .fontWeight(FontWeight.Lighter)
@@ -65,7 +68,7 @@ export struct ErrorText {
 
   build() {
     if (this.message.length > 0) {
-      Text(this.message)
+      Text(localizedAuthMessage(this.message))
         .fontSize(15)
         .fontColor(COROS_RED)
         .margin({ top: 10 })
@@ -80,15 +83,15 @@ export function BlockingLoadingOverlay() {
     LoadingProgress()
       .width(36)
       .height(36)
-      .color('#D8D8DD')
+      .color(AppColors.AUTH_INPUT_TEXT)
       .padding(30)
-      .backgroundColor('#3A3A3C')
+      .backgroundColor(AppColors.AUTH_LOADING)
       .borderRadius(8)
     Blank().layoutWeight(1)
   }
   .width('100%')
   .height('100%')
-  .backgroundColor('#000000B8')
+  .backgroundColor(AppColors.AUTH_OVERLAY_SOFT)
 }
 
 @Builder
@@ -125,7 +128,7 @@ export function LegalDocumentPage(title: string, paragraphs: LegalParagraph[], b
           Text(paragraph.text)
             .fontSize(paragraph.isHeading ? 19 : 18)
             .fontWeight(paragraph.isHeading ? FontWeight.Bold : FontWeight.Regular)
-            .fontColor(paragraph.isHeading ? COROS_WHITE : '#C9C9CC')
+            .fontColor(paragraph.isHeading ? COROS_WHITE : COROS_LEGAL_TEXT)
             .lineHeight(paragraph.isHeading ? 28 : 30)
         }, (paragraph: LegalParagraph) => paragraph.text)
       }
@@ -143,14 +146,14 @@ export function LegalDocumentPage(title: string, paragraphs: LegalParagraph[], b
 
 @Component
 export struct CorosButton {
-  @Prop textValue: string = '';
+  @Prop textValue: ResourceStr = '';
   @Prop color: string = '';
   @Prop enabledValue: boolean = true;
   @Prop loading: boolean = false;
   tapRequested: () => void = () => {};
 
   build() {
-    Button(this.loading ? '处理中' : this.textValue, { type: ButtonType.Normal })
+    Button(this.loading ? $r('app.string.auth_processing') : this.textValue, { type: ButtonType.Normal })
       .fontSize(18)
       .fontColor(this.enabledValue ? COROS_WHITE : COROS_BUTTON_DISABLED_TEXT)
       .width('100%')
@@ -176,7 +179,7 @@ export struct AuthHeader {
   build() {
     Row() {
       if (this.showBack) {
-        Text('‹')
+        Text($r('app.string.common_back'))
           .fontSize(44)
           .fontColor(COROS_WHITE)
           .textAlign(TextAlign.Center)
@@ -186,7 +189,7 @@ export struct AuthHeader {
       }
       Blank()
       if (this.showFeedback) {
-        Text('◔ 建议&反馈')
+        Text($r('app.string.auth_feedback'))
           .fontSize(14)
           .fontColor(COROS_MUTED)
           .onClick(() => { this.feedbackRequested(); })
@@ -200,7 +203,7 @@ export struct AuthHeader {
 
 @Component
 export struct UnderlineInput {
-  @Prop placeholder: string = '';
+  @Prop placeholder: ResourceStr = '';
   @Link textValue: string;
   @Prop inputType: InputType = InputType.Normal;
   @Prop isPassword: boolean = false;
@@ -272,7 +275,7 @@ export struct PhoneInputComp {
         Text(this.countryCode)
           .fontSize(17)
           .fontColor(COROS_WHITE)
-        TextInput({ placeholder: '输入手机号', text: this.phoneValue })
+        TextInput({ placeholder: $r('app.string.auth_phone_placeholder'), text: this.phoneValue })
           .type(InputType.PhoneNumber)
           .maxLength(11)
           .fontSize(17)
@@ -304,7 +307,7 @@ export struct PhoneInputComp {
 @Component
 export struct DisabledUnderlineValue {
   @Prop value: string = '';
-  @Prop placeholder: string = '';
+  @Prop placeholder: ResourceStr = '';
 
   build() {
     Column() {
@@ -348,26 +351,26 @@ export struct AgreementRowComp {
       }
         .width(18)
         .height(18)
-        .border({ width: 1, color: this.accepted ? COROS_RED : '#D0D0D0', radius: 9 })
+        .border({ width: 1, color: this.accepted ? COROS_RED : AppColors.AUTH_CHECKMARK, radius: 9 })
         .backgroundColor(this.accepted ? COROS_RED : COROS_BLACK)
         .margin({ top: 2 })
         .onClick(() => { this.toggleAccepted(); })
 
       Flex({ direction: FlexDirection.Row, wrap: FlexWrap.Wrap }) {
-        Text('我已阅读并同意COROS的 ')
+        Text($r('app.string.auth_terms_inline_prefix'))
           .fontSize(14)
           .fontColor(COROS_WHITE)
           .lineHeight(24)
-        Text('《隐私政策》')
+        Text($r('app.string.auth_privacy_policy_link'))
           .fontSize(14)
           .fontColor(COROS_RED)
           .lineHeight(24)
           .onClick(() => { this.privacyRequested(); })
-        Text(' 和 ')
+        Text($r('app.string.auth_terms_joiner'))
           .fontSize(14)
           .fontColor(COROS_WHITE)
           .lineHeight(24)
-        Text('《服务条款》')
+        Text($r('app.string.auth_service_terms_link'))
           .fontSize(14)
           .fontColor(COROS_RED)
           .lineHeight(24)
@@ -402,7 +405,7 @@ export struct CodeBoxesComp {
             .width('20%')
             .aspectRatio(1)
             .backgroundColor(index === this.codeValue.length ? COROS_CODE_ACTIVE_FIELD : COROS_FIELD)
-            .border({ width: 2, color: this.hasError ? COROS_RED : '#3A3A3D', radius: 12 })
+            .border({ width: 2, color: this.hasError ? COROS_RED : AppColors.AUTH_INPUT_BORDER, radius: 12 })
         }, (index: number) => index.toString())
       }
       .width('100%')
@@ -410,9 +413,9 @@ export struct CodeBoxesComp {
       TextInput({ text: this.codeValue })
         .type(InputType.Number)
         .maxLength(4)
-        .fontColor('#00000000')
-        .caretColor('#00000000')
-        .backgroundColor('#00000000')
+        .fontColor(AppColors.TRANSPARENT)
+        .caretColor(AppColors.TRANSPARENT)
+        .backgroundColor(AppColors.TRANSPARENT)
         .width('100%')
         .height(80)
         .opacity(0.02)
@@ -430,7 +433,7 @@ export struct ThirdPartyAreaComp {
     Column({ space: 24 }) {
       Row({ space: 12 }) {
         Divider().layoutWeight(1).color(COROS_LINE)
-        Text('第三方账号')
+        Text($r('app.string.auth_third_party_account'))
           .fontSize(14)
           .fontColor(COROS_MUTED)
         Divider().layoutWeight(1).color(COROS_LINE)
@@ -445,7 +448,7 @@ export struct ThirdPartyAreaComp {
           .textAlign(TextAlign.Center)
           .width(34)
           .height(34)
-          .border({ width: 1, color: '#303036', radius: 17 })
+          .border({ width: 1, color: AppColors.AUTH_THIRD_PARTY_BORDER, radius: 17 })
           .onClick(() => { this.unavailableRequested(); })
         Text('···')
           .fontSize(20)
@@ -453,7 +456,7 @@ export struct ThirdPartyAreaComp {
           .textAlign(TextAlign.Center)
           .width(34)
           .height(34)
-          .border({ width: 1, color: '#303036', radius: 17 })
+          .border({ width: 1, color: AppColors.AUTH_THIRD_PARTY_BORDER, radius: 17 })
           .onClick(() => { this.unavailableRequested(); })
       }
       .justifyContent(FlexAlign.Center)

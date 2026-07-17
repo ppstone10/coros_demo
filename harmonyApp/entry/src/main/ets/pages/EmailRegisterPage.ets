@@ -27,6 +27,7 @@ import {
 } from '../login/components/AuthComponents';
 import { AuthRoutes } from '../login/AuthRoutes';
 import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
+import { AppColors } from '../resources/AppResources';
 
 @Entry
 @Component
@@ -60,11 +61,11 @@ struct EmailRegisterPage {
           AuthHeader({ showBack: true, showFeedback: true,
             backRequested: () => { navigate(NavOperation.Pop, ''); },
             feedbackRequested: () => { this.showUnavailableFeature(); } });
-          AuthTitle('邮箱注册');
+          AuthTitle($r('app.string.auth_email_register'));
 
           Blank().height(60)
 
-          UnderlineInput({ placeholder: '请输入邮箱', textValue: this.emailInput,
+          UnderlineInput({ placeholder: $r('app.string.auth_email_placeholder'), textValue: this.emailInput,
             inputType: InputType.Email, isPassword: false, passwordVisible: false,
             valueChanged: (value: string) => { this.onEmailChanged(value); } });
 
@@ -77,13 +78,13 @@ struct EmailRegisterPage {
 
           Blank().height(REGISTER_ACTION_TOP_SPACING)
 
-          CorosButton({ textValue: '发送验证码', color: COROS_BUTTON_RED,
+          CorosButton({ textValue: $r('app.string.auth_send_code'), color: COROS_BUTTON_RED,
             enabledValue: this.emailCodeActionEnabled, loading: this.isLoading,
             tapRequested: () => { this.requestEmailVerifyCode(); } });
 
           ErrorText({ message: this.currentError() });
 
-          Text('手机号注册')
+          Text($r('app.string.auth_phone_register'))
             .fontSize(18)
             .fontColor(COROS_RED)
             .width('100%')
@@ -134,18 +135,18 @@ struct EmailRegisterPage {
         .width('100%')
         .justifyContent(FlexAlign.End)
           .onClick(() => { this.termsPromptShown = false; })
-        Text('阅读并同意以下条款，').fontSize(18).fontColor(COROS_WHITE).width('100%')
+        Text($r('app.string.auth_read_terms')).fontSize(18).fontColor(COROS_WHITE).width('100%')
           .textAlign(TextAlign.Center).margin({ top: 12 })
         Row() {
-          Text('《隐私政策》').fontSize(18).fontColor(COROS_RED)
+          Text($r('app.string.auth_privacy_policy_link')).fontSize(18).fontColor(COROS_RED)
             .onClick(() => { this.openLegal(AuthRoutes.PRIVACY_POLICY); })
-          Text(' 和 ').fontSize(18).fontColor(COROS_WHITE)
-          Text('《服务条款》').fontSize(18).fontColor(COROS_RED)
+          Text($r('app.string.auth_terms_joiner')).fontSize(18).fontColor(COROS_WHITE)
+          Text($r('app.string.auth_service_terms_link')).fontSize(18).fontColor(COROS_RED)
             .onClick(() => { this.openLegal(AuthRoutes.SERVICE_TERMS); })
         }
         .width('100%').justifyContent(FlexAlign.Center).margin({ top: 8 })
         Blank().height(42)
-        CorosButton({ textValue: '同意并继续', color: COROS_RED, enabledValue: true, loading: false,
+        CorosButton({ textValue: $r('app.string.auth_agree_and_continue'), color: COROS_RED, enabledValue: true, loading: false,
           tapRequested: () => {
             this.acceptedTerms = true;
             this.termsPromptShown = false;
@@ -154,7 +155,7 @@ struct EmailRegisterPage {
       }
       .width('100%')
       .padding({ left: 22, right: 22, top: 18, bottom: 18 })
-      .backgroundColor('#1A1A1B')
+      .backgroundColor(AppColors.AUTH_SHEET)
       .borderRadius({ topLeft: 12, topRight: 12 })
     }
     .width('100%').height('100%').zIndex(1)
@@ -165,7 +166,7 @@ struct EmailRegisterPage {
   }
 
   private showUnavailableFeature(): void {
-    promptAction.showToast({ message: '该功能还在实现中' });
+    promptAction.showToast({ message: $r('app.string.auth_unavailable') });
   }
 
   private onEmailChanged(value: string): void {
@@ -189,7 +190,7 @@ struct EmailRegisterPage {
       return;
     }
     if (this.viewModel.hasAccount(email)) {
-      this.localError = '账号已存在';
+      this.localError = 'auth_error_account_exists';
       return;
     }
     if (!this.acceptedTerms) {

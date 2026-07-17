@@ -4,7 +4,7 @@ import Shared
 @MainActor
 final class HealthDashboardViewModel: ObservableObject {
     @Published private(set) var cards: [HealthCard] = defaultHealthCards
-    @Published private(set) var dateLabel = AppText.Health.date
+    @Published private(set) var dateLabel = appLocalized("health_demo_date")
     @Published private(set) var steps = 8769
     @Published private(set) var calories = 769
     @Published private(set) var activeMinutes = 69
@@ -20,7 +20,7 @@ final class HealthDashboardViewModel: ObservableObject {
 
     func load() {
         guard let pd = adapter.loadHealthDashboard() else { return }
-        dateLabel = pd.uiState.dateLabel
+        dateLabel = localizedHealthText(pd.uiState.dateLabel)
         selectedScenario = pd.scenario.name
 
         if let ds = pd.uiState.dailySummary {
@@ -38,8 +38,8 @@ final class HealthDashboardViewModel: ObservableObject {
             let t = byID[tn]
             dynamic.append(HealthCard(
                 id: t?.id ?? tn,
-                title: t?.title ?? c.title,
-                summary: c.summary,
+                title: localizedHealthText(c.title),
+                summary: localizedHealthText(c.summary),
                 icon: t?.icon ?? AppImages.Health.heartRate,
                 isRisk: c.status.name == "Risk"
             ))
@@ -75,5 +75,14 @@ final class HealthDashboardViewModel: ObservableObject {
     }
 
     var scenarioNames: [String] { ["Normal", "PartialMissing", "AllEmpty", "Abnormal", "ReadFailure"] }
-    var scenarioDisplayNames: [String] { ["正常数据", "部分数据缺失", "全部数据为空", "异常数据", "数据损坏"] }
+    var scenarioDisplayNames: [String] {
+        ["health_scenario_normal", "health_scenario_partial_missing", "health_scenario_all_empty", "health_scenario_abnormal", "health_scenario_read_failure"]
+            .map { appLocalized($0) }
+    }
+}
+
+private func localizedHealthText(_ spec: LocalizedTextSpec) -> String {
+    let format = appLocalized(spec.key)
+    let arguments: [CVarArg] = spec.arguments.map { $0 as NSString }
+    return String(format: format, arguments: arguments)
 }

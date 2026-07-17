@@ -1,64 +1,80 @@
 import SwiftUI
 import UIKit
 
-enum AppText {
-    enum Common {
-        static let back = "‹"
-        static let save = "保存"
-        static let cancel = "取消"
-        static let confirm = "确认"
-        static let notSet = "未设置"
+enum AppLanguage: String, CaseIterable, Identifiable {
+    case simplifiedChinese = "zh-Hans"
+    case english = "en"
+
+    var id: String { rawValue }
+}
+
+final class AppLanguageStore: ObservableObject {
+    static let shared = AppLanguageStore()
+    private static let preferenceKey = "app_language"
+
+    @Published private(set) var current: AppLanguage
+
+    private init() {
+        let stored = UserDefaults.standard.string(forKey: Self.preferenceKey)
+        current = AppLanguage(rawValue: stored ?? "") ?? .simplifiedChinese
     }
 
-    enum Navigation {
-        static let fitness = "体能"
-        static let records = "记录"
-        static let explore = "探索"
-        static let me = "我"
-
-        static func unavailable(_ name: String) -> String { "\(name) 功能将在后续版本开放" }
+    func select(_ language: AppLanguage) {
+        guard current != language else { return }
+        current = language
+        UserDefaults.standard.set(language.rawValue, forKey: Self.preferenceKey)
     }
 
-    enum Health {
-        static let today = "今天"
-        static let date = "7月14日 星期二"
-        static let editCards = "编辑卡片"
-        static let manageOrder = "管理卡片顺序（最少展示3项）"
-        static let minimumCards = "最少展示三项日常数据"
-        static let moreData = "更多日常数据"
-        static let restoreDefaults = "恢复默认数据"
-        static let steps = "步"
-        static let calories = "Kcal"
-        static let minutes = "Min"
+    var localizedBundle: Bundle {
+        guard let path = Bundle.main.path(forResource: current.rawValue, ofType: "lproj"),
+              let bundle = Bundle(path: path) else {
+            return .main
+        }
+        return bundle
+    }
+}
 
-        static func pending(_ title: String) -> String { "\(title)功能后续实现" }
+func appLocalized(_ key: String) -> String {
+    AppLanguageStore.shared.localizedBundle.localizedString(forKey: key, value: key, table: nil)
+}
+
+func localizedAuthMessage(_ message: String?) -> String? {
+    guard let message, !message.isEmpty else { return message }
+    guard message.hasPrefix("auth_") else { return message }
+    return appLocalized(message)
+}
+
+func countryDisplayName(_ code: String) -> String {
+    switch code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() {
+    case "US": return appLocalized("common_united_states")
+    case "GB", "UK": return appLocalized("common_united_kingdom")
+    case "JP": return appLocalized("common_japan")
+    default: return appLocalized("common_china")
+    }
+}
+
+struct LanguageSelectionButton: View {
+    @EnvironmentObject private var languageStore: AppLanguageStore
+    @State private var showsDialog = false
+
+    var body: some View {
+        Button { showsDialog = true } label: {
+            Image(systemName: "globe")
+                .font(.system(size: 23, weight: .medium))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+        }
+        .accessibilityLabel(appLocalized("language_switch"))
+        .confirmationDialog(appLocalized("language_select_title"), isPresented: $showsDialog, titleVisibility: .visible) {
+            Button(languageLabel(.simplifiedChinese)) { languageStore.select(.simplifiedChinese) }
+            Button(languageLabel(.english)) { languageStore.select(.english) }
+            Button(appLocalized("common_cancel"), role: .cancel) {}
+        }
     }
 
-    enum Profile {
-        static let completionTitle = "完善个人信息"
-        static let completionDescription = "以下信息可以帮助我们对体育科学做出更准确的预测，请仔细填写。"
-        static let personalInfo = "个人信息"
-        static let username = "用户名"
-        static let birthDate = "出生日期"
-        static let height = "身高"
-        static let weight = "体重"
-        static let unit = "公英制"
-        static let phone = "手机"
-        static let country = "国家与地区"
-        static let gender = "性别"
-    }
-
-    enum Account {
-        static let my = "我"
-        static let incomplete = "资料待完善"
-        static let complete = "资料已完善"
-        static let personalInfo = "个人信息"
-        static let accountSection = "账号"
-        static let loginAccount = "登录账号"
-        static let logout = "退出登录"
-        static let delete = "注销账户"
-        static let deleteConfirmation = "是否确认注销账号"
-        static let defaultUser = "COROS 用户"
+    private func languageLabel(_ language: AppLanguage) -> String {
+        let label = language == .simplifiedChinese ? appLocalized("language_chinese") : appLocalized("language_english")
+        return languageStore.current == language ? "✓ \(label)" : label
     }
 }
 
@@ -66,6 +82,28 @@ enum AppColors {
     enum Core {
         static let black = Color.black
         static let white = Color.white
+        static let clear = Color.clear
+        static let snackbar = Color.black.opacity(0.85)
+        static let overlayStrong = Color.black.opacity(0.78)
+        static let overlayLoading = Color.black.opacity(0.72)
+        static let overlayMedium = Color.black.opacity(0.62)
+        static let overlaySoft = Color.black.opacity(0.55)
+    }
+
+    enum Auth {
+        static let entranceBackground = Color(red: 17 / 255, green: 17 / 255, blue: 17 / 255)
+        static let inputText = Color(red: 216 / 255, green: 216 / 255, blue: 221 / 255)
+        static let sheet = Color(red: 27 / 255, green: 27 / 255, blue: 29 / 255)
+        static let dialog = Color(red: 34 / 255, green: 34 / 255, blue: 36 / 255)
+        static let loading = Color(red: 58 / 255, green: 58 / 255, blue: 60 / 255)
+        static let inputBorder = Color(red: 58 / 255, green: 58 / 255, blue: 61 / 255)
+        static let avatarBorder = Color(red: 48 / 255, green: 48 / 255, blue: 54 / 255)
+        static let termsSheet = Color(red: 26 / 255, green: 26 / 255, blue: 27 / 255)
+        static let buttonOverlay = Color.white.opacity(0.26)
+        static let primaryText = Color.white.opacity(0.78)
+        static let placeholderText = Color.white.opacity(0.55)
+        static let checkboxBorder = Color.white.opacity(0.82)
+        static let disabledText = Color.white.opacity(0.42)
     }
 
     enum Health {
@@ -80,6 +118,15 @@ enum AppColors {
         static let addAction = Color(red: 0, green: 223 / 255, blue: 123 / 255)
         static let risk = Color(red: 1, green: 163 / 255, blue: 74 / 255)
         static let divider = Color(red: 48 / 255, green: 48 / 255, blue: 48 / 255)
+        static let editText = Color(red: 221 / 255, green: 221 / 255, blue: 221 / 255)
+        static let date = Color(red: 140 / 255, green: 140 / 255, blue: 140 / 255)
+        static let metricUnit = Color(red: 137 / 255, green: 137 / 255, blue: 137 / 255)
+        static let cardTitle = Color(red: 232 / 255, green: 232 / 255, blue: 232 / 255)
+        static let chevron = Color(red: 102 / 255, green: 102 / 255, blue: 102 / 255)
+        static let warning = Color(red: 255 / 255, green: 75 / 255, blue: 85 / 255)
+        static let editorTitle = Color(red: 236 / 255, green: 236 / 255, blue: 236 / 255)
+        static let removeAction = Color(red: 239 / 255, green: 52 / 255, blue: 63 / 255)
+        static let placeholder = Color(red: 187 / 255, green: 187 / 255, blue: 187 / 255)
     }
 
     enum Account {
@@ -89,12 +136,48 @@ enum AppColors {
         static let incomplete = Color(red: 1, green: 183 / 255, blue: 53 / 255)
         static let destructive = Color(red: 1, green: 64 / 255, blue: 83 / 255)
         static let divider = Color(red: 43 / 255, green: 43 / 255, blue: 45 / 255)
+        static let avatarFallback = Color(red: 48 / 255, green: 48 / 255, blue: 52 / 255)
+        static let value = Color(red: 216 / 255, green: 216 / 255, blue: 220 / 255)
+        static let saveDisabled = Color(red: 95 / 255, green: 0, blue: 28 / 255)
+        static let sheet = Color(red: 26 / 255, green: 26 / 255, blue: 27 / 255)
+    }
+
+    enum Profile {
+        static let description = Color(red: 232 / 255, green: 232 / 255, blue: 236 / 255)
+        static let control = Color(red: 27 / 255, green: 27 / 255, blue: 29 / 255)
+        static let value = Color.white.opacity(0.78)
     }
 
     enum Navigation {
         static let bar = Color(red: 26 / 255, green: 26 / 255, blue: 28 / 255).opacity(0.95)
         static let unselected = Color(red: 133 / 255, green: 134 / 255, blue: 138 / 255)
     }
+}
+
+enum AppTypography {
+    static let caption: CGFloat = 11
+    static let supporting: CGFloat = 12
+    static let label: CGFloat = 13
+    static let action: CGFloat = 14
+    static let editorRow: CGFloat = 15
+    static let cardTitle: CGFloat = 16
+    static let sectionTitle: CGFloat = 19
+    static let heroTitle: CGFloat = 28
+}
+
+enum AppSpacing {
+    static let xSmall: CGFloat = 5
+    static let small: CGFloat = 8
+    static let medium: CGFloat = 10
+    static let captionBottom: CGFloat = 11
+    static let contentVertical: CGFloat = 12
+    static let labelVertical: CGFloat = 14
+    static let cardContent: CGFloat = 15
+    static let screen: CGFloat = 16
+    static let large: CGFloat = 18
+    static let page: CGFloat = 20
+    static let section: CGFloat = 24
+    static let actionHorizontal: CGFloat = 28
 }
 
 enum AppImages {

@@ -124,7 +124,7 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
       this.refreshState();
       this.persistSnapshot();
     } catch (error) {
-      this.state.errorMessage = '提交失败，请重试';
+      this.state.errorMessage = 'auth_submit_failed';
       hilog.error(0x0001, 'demo_persist', 'submit failed');
     }
   }
@@ -325,7 +325,7 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
         currentSession: null,
         isLoading: false,
         isLoggedIn: false,
-        errorMessage: '鸿蒙 KMP 登录状态解析失败'
+        errorMessage: 'auth_submit_failed'
       };
       return fallback;
     }
@@ -340,7 +340,7 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
         type: 'ShowMessage',
         mode: 'Login',
         session: null,
-        message: '鸿蒙 KMP 登录结果解析失败'
+        message: 'auth_submit_failed'
       };
       return fallback;
     }
@@ -385,7 +385,7 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     session.measurementSystem = payload.measurementSystem === undefined ? 'Metric' : payload.measurementSystem;
     session.phone = payload.phone === undefined ? '' : payload.phone;
     session.countryRegion = payload.countryRegion === undefined || payload.countryRegion.length === 0 ?
-      (session.region === 'US' ? '美国' : '中国') : payload.countryRegion;
+      session.region : payload.countryRegion;
     session.gender = payload.gender === undefined ? '' : payload.gender;
     return session;
   }

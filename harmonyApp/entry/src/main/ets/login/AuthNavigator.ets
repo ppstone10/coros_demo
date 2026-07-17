@@ -1,6 +1,7 @@
 import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
 import { AuthRoutes } from './AuthRoutes';
+import { localizedAuthMessage } from '../resources/AuthLocalization';
 
 export enum NavOperation {
   Push,
@@ -58,7 +59,7 @@ export function navigateWithParams(operation: NavOperation, options: router.Rout
 
 export function showToast(message: string): void {
   try {
-    promptAction.showToast({ message: message });
+    promptAction.showToast({ message: localizedAuthMessage(message) });
   } catch (error) {
     console.error('showToast failed');
   }

@@ -64,7 +64,7 @@ struct AuthCoordinator: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            AppColors.Core.black.ignoresSafeArea()
 
             NavigationStack(path: $path) {
                 rootView
@@ -152,27 +152,27 @@ private func handleNavigation(_ effect: LoginEffect, viewModel: LoginViewModel, 
         if effect.mode == AuthMode.register_ {
             let destination: AuthRoute = effect.session.isProfileComplete ? .signedIn : .profileCompletion
             router.resetTo(destination)
-            viewModel.toastMessage = "注册成功"
+            viewModel.toastMessage = appLocalized("auth_register_success")
         } else {
             let destination: AuthRoute = effect.session.isProfileComplete ? .signedIn : .profileCompletion
             router.resetTo(destination)
-            viewModel.toastMessage = "登录成功"
+            viewModel.toastMessage = appLocalized("auth_login_success")
         }
     case _ as LoginEffectNavigateHome:
         router.resetTo(.signedIn)
-        viewModel.toastMessage = "登录成功"
+        viewModel.toastMessage = appLocalized("auth_login_success")
     case _ as LoginEffectProfileSaved:
         router.resetTo(.signedIn)
-        viewModel.toastMessage = "资料已保存"
+        viewModel.toastMessage = appLocalized("profile_saved")
     case _ as LoginEffectLoggedOut:
         router.resetTo(.entrance)
-        viewModel.toastMessage = "已退出登录"
+        viewModel.toastMessage = appLocalized("account_logout_success")
     case _ as LoginEffectAccountDeleted:
         router.resetTo(.entrance)
-        viewModel.toastMessage = "账户已注销"
+        viewModel.toastMessage = appLocalized("account_delete_success")
     case _ as LoginEffectSessionExpired:
         router.resetKeepingEntranceAndPush(.login)
-        viewModel.toastMessage = "会话已失效，请重新登录"
+        viewModel.toastMessage = appLocalized("auth_session_expired")
     case let effect as LoginEffectShowMessage:
         viewModel.toastMessage = effect.message
     default:

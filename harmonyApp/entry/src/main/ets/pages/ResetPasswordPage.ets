@@ -15,6 +15,7 @@ import {
 } from '../login/components/AuthComponents';
 import { AuthRoutes, ResetPasswordParams } from '../login/AuthRoutes';
 import { navigate, NavOperation } from '../login/AuthNavigator';
+import { AppColors } from '../resources/AppResources';
 
 @Entry
 @Component
@@ -44,18 +45,18 @@ struct ResetPasswordPage {
       Column() {
         AuthHeader({ showBack: true, showFeedback: false,
           backRequested: () => { navigate(NavOperation.Pop, ''); } });
-        AuthTitle('设置新密码');
+        AuthTitle($r('app.string.auth_set_new_password'));
 
         Blank().height(42)
 
-        Text('账号').fontSize(14).fontColor('#D8D8DD')
+        Text($r('app.string.auth_account')).fontSize(14).fontColor(AppColors.AUTH_INPUT_TEXT)
         Blank().height(8)
 
-        DisabledUnderlineValue({ value: this.account, placeholder: '账号' });
+        DisabledUnderlineValue({ value: this.account, placeholder: $r('app.string.auth_account') });
 
         Blank().height(42)
 
-        UnderlineInput({ placeholder: '输入新的密码', textValue: this.resetNewPassword,
+        UnderlineInput({ placeholder: $r('app.string.auth_new_password_placeholder'), textValue: this.resetNewPassword,
           inputType: this.resetPasswordVisible ? InputType.Normal : InputType.Password,
           isPassword: true, passwordVisible: this.resetPasswordVisible,
           valueChanged: (value: string) => {
@@ -66,7 +67,7 @@ struct ResetPasswordPage {
 
         Blank().height(42)
 
-        UnderlineInput({ placeholder: '再次输入新密码', textValue: this.resetConfirmPassword,
+        UnderlineInput({ placeholder: $r('app.string.auth_confirm_new_password_placeholder'), textValue: this.resetConfirmPassword,
           inputType: this.resetConfirmVisible ? InputType.Normal : InputType.Password,
           isPassword: true, passwordVisible: this.resetConfirmVisible,
           valueChanged: (value: string) => {
@@ -75,14 +76,14 @@ struct ResetPasswordPage {
           },
           passwordToggleRequested: () => { this.resetConfirmVisible = !this.resetConfirmVisible; } });
 
-        Text('6-20位，必须包含字母和数字')
+        Text($r('app.string.auth_password_rule'))
           .fontSize(14)
-          .fontColor('#D8D8DD')
+          .fontColor(AppColors.AUTH_INPUT_TEXT)
           .margin({ top: 8 })
 
         Blank().height(72)
 
-        CorosButton({ textValue: '完成', color: COROS_BUTTON_RED,
+        CorosButton({ textValue: $r('app.string.common_complete'), color: COROS_BUTTON_RED,
           enabledValue: this.viewModel.canSubmitResetPassword(this.resetNewPassword, this.resetConfirmPassword),
           loading: false,
           tapRequested: () => { this.submitResetPassword(); } });
@@ -113,7 +114,7 @@ struct ResetPasswordPage {
     }
     this.localError = '';
     navigate(NavOperation.ResetKeepingEntranceAndPush, AuthRoutes.LOGIN);
-    this.showMessage('密码已更新');
+    this.showMessage('auth_password_updated');
   }
 
   private showMessage(message: string): void {

@@ -47,15 +47,15 @@ object LoginRules {
         val normalizedAccount = account.trim()
         return when {
             normalizedAccount.isBlank() -> {
-                LoginRuleCheck(isValid = false, message = "请输入账号")
+                LoginRuleCheck(isValid = false, message = AuthMessageKeys.ValidationAccountRequired)
             }
 
             password.isBlank() -> {
-                LoginRuleCheck(isValid = false, message = "请输入密码")
+                LoginRuleCheck(isValid = false, message = AuthMessageKeys.ValidationPasswordRequired)
             }
 
             password.length < PasswordMinLength -> {
-                LoginRuleCheck(isValid = false, message = "密码需要为6-20位")
+                LoginRuleCheck(isValid = false, message = AuthMessageKeys.ValidationPasswordLength)
             }
 
             else -> LoginRuleCheck(isValid = true)
@@ -99,7 +99,7 @@ object LoginRules {
         return if (isPhoneAccountValid(account)) {
             LoginRuleCheck(isValid = true)
         } else {
-            LoginRuleCheck(isValid = false, message = "请输入11位手机号")
+            LoginRuleCheck(isValid = false, message = AuthMessageKeys.ValidationPhoneInvalid)
         }
     }
 
@@ -107,7 +107,7 @@ object LoginRules {
         return if (isEmailAccountValid(email)) {
             LoginRuleCheck(isValid = true)
         } else {
-            LoginRuleCheck(isValid = false, message = "请输入有效邮箱")
+            LoginRuleCheck(isValid = false, message = AuthMessageKeys.ValidationEmailInvalid)
         }
     }
 
@@ -115,26 +115,26 @@ object LoginRules {
         return if (isVerifyCodeComplete(code)) {
             LoginRuleCheck(isValid = true)
         } else {
-            LoginRuleCheck(isValid = false, message = "请输入验证码")
+            LoginRuleCheck(isValid = false, message = AuthMessageKeys.ValidationVerifyCodeRequired)
         }
     }
 
     fun validateRegisterPassword(password: String, confirmPassword: String): LoginRuleCheck {
         return when {
             password.length !in PasswordMinLength..PasswordMaxLength -> {
-                LoginRuleCheck(isValid = false, message = "密码需要为6-20位")
+                LoginRuleCheck(isValid = false, message = AuthMessageKeys.ValidationPasswordLength)
             }
 
             !password.all { it.isDigit() || it in 'A'..'Z' || it in 'a'..'z' } -> {
-                LoginRuleCheck(isValid = false, message = "密码只能包含字母和数字")
+                LoginRuleCheck(isValid = false, message = AuthMessageKeys.ValidationPasswordAlphanumericOnly)
             }
 
             !password.any { it.isLetter() } || !password.any { it.isDigit() } -> {
-                LoginRuleCheck(isValid = false, message = "密码需要包含字母和数字")
+                LoginRuleCheck(isValid = false, message = AuthMessageKeys.ValidationPasswordLetterAndDigit)
             }
 
             password != confirmPassword -> {
-                LoginRuleCheck(isValid = false, message = "两次输入的密码不一致")
+                LoginRuleCheck(isValid = false, message = AuthMessageKeys.ValidationPasswordMismatch)
             }
 
             else -> LoginRuleCheck(isValid = true)

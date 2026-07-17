@@ -1,16 +1,20 @@
 import router from '@ohos.router';
-import { COROS_BLACK, COROS_WHITE } from '../login/components/AuthColors';
-import { LegalParagraph, PRIVACY_POLICY_PARAGRAPHS } from '../login/components/LegalContent';
+import { COROS_BLACK, COROS_LEGAL_TEXT, COROS_WHITE } from '../login/components/AuthColors';
+import { LegalParagraph, parseLegalDocument } from '../login/components/LegalContent';
 import { LegalDocumentParams } from '../login/AuthRoutes';
 import { navigate, NavOperation } from '../login/AuthNavigator';
 
 @Entry
 @Component
 struct PrivacyPolicyPage {
-  @State title: string = '隐私政策';
+  private title: ResourceStr = $r('app.string.auth_privacy_policy');
   private returnPage: string = '';
+  @State private paragraphs: LegalParagraph[] = [];
 
   aboutToAppear(): void {
+    this.paragraphs = parseLegalDocument(
+      getContext(this).resourceManager.getStringSync($r('app.string.legal_privacy_body').id)
+    );
     let params = router.getParams() as LegalDocumentParams;
     if (params !== null && params !== undefined && params.returnPage !== undefined) {
       this.returnPage = params.returnPage;
@@ -26,7 +30,7 @@ struct PrivacyPolicyPage {
     Column() {
       Stack() {
         Row() {
-          Text('‹')
+          Text($r('app.string.common_back'))
             .fontSize(44)
             .fontColor(COROS_WHITE)
             .textAlign(TextAlign.Center)
@@ -51,11 +55,11 @@ struct PrivacyPolicyPage {
 
       Scroll() {
         Column({ space: 12 }) {
-          ForEach(PRIVACY_POLICY_PARAGRAPHS, (paragraph: LegalParagraph) => {
+          ForEach(this.paragraphs, (paragraph: LegalParagraph) => {
             Text(paragraph.text)
               .fontSize(paragraph.isHeading ? 19 : 18)
               .fontWeight(paragraph.isHeading ? FontWeight.Bold : FontWeight.Regular)
-              .fontColor(paragraph.isHeading ? COROS_WHITE : '#C9C9CC')
+              .fontColor(paragraph.isHeading ? COROS_WHITE : COROS_LEGAL_TEXT)
               .lineHeight(paragraph.isHeading ? 28 : 30)
           }, (paragraph: LegalParagraph) => paragraph.text)
         }

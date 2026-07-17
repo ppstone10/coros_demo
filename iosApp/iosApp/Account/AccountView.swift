@@ -4,6 +4,7 @@ import Shared
 
 struct AccountView: View {
     @ObservedObject var viewModel: LoginViewModel
+    @EnvironmentObject private var languageStore: AppLanguageStore
     let router: AuthRouter
     @Binding var isFullscreen: Bool
     @State private var editingProfile = false
@@ -11,6 +12,8 @@ struct AccountView: View {
     @State private var localError: String?
 
     var body: some View {
+        let _ = languageStore.current
+
         if editingProfile {
             PersonalProfileEditView(viewModel: viewModel) {
                 editingProfile = false
@@ -24,14 +27,18 @@ struct AccountView: View {
     private var accountContent: some View {
         let draft = viewModel.currentProfileDraft()
         let session = viewModel.state.currentSession
-        let username = draft.username.isEmpty ? AppText.Account.defaultUser : draft.username
+        let username = draft.username.isEmpty ? appLocalized("account_default_user") : draft.username
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text(AppText.Account.my)
-                    .font(.system(size: 26, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.top, 18).padding(.bottom, 18)
+                HStack {
+                    Text(appLocalized("account_title"))
+                        .font(.system(size: 26, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Spacer()
+                    LanguageSelectionButton()
+                }
+                .padding(.top, 8).padding(.bottom, 8)
 
                 Button {
                     editingProfile = true
@@ -44,7 +51,7 @@ struct AccountView: View {
                             Text(session?.account ?? "").font(.system(size: 12)).foregroundStyle(AppColors.Account.muted).lineLimit(1)
                         }
                         Spacer()
-                        Text(session?.isProfileComplete == true ? AppText.Account.complete : AppText.Account.incomplete)
+                        Text(appLocalized(session?.isProfileComplete == true ? "account_profile_complete" : "account_profile_incomplete"))
                             .font(.system(size: 11))
                             .foregroundStyle(session?.isProfileComplete == true ? AppColors.Account.complete : AppColors.Account.incomplete)
                     }
@@ -54,40 +61,40 @@ struct AccountView: View {
                 }
                 .buttonStyle(.plain)
 
-                AccountSectionTitle(AppText.Account.personalInfo)
+                AccountSectionTitle(appLocalized("account_personal_info"))
                 VStack(spacing: 0) {
-                    AccountValueRow(AppText.Profile.username, username)
-                    AccountValueRow(AppText.Profile.birthDate, draft.birthDate)
-                    AccountValueRow(AppText.Profile.height, draft.heightCm.map { "\($0) cm" } ?? "")
-                    AccountValueRow(AppText.Profile.weight, draft.weightKg.map { String(format: "%.1f kg", $0) } ?? "")
-                    AccountValueRow(AppText.Profile.country, draft.countryRegion)
+                    AccountValueRow(appLocalized("profile_username"), username)
+                    AccountValueRow(appLocalized("profile_birth_date"), draft.birthDate)
+                    AccountValueRow(appLocalized("profile_height"), draft.heightCm.map { "\($0) cm" } ?? "")
+                    AccountValueRow(appLocalized("profile_weight"), draft.weightKg.map { String(format: "%.1f kg", $0) } ?? "")
+                    AccountValueRow(appLocalized("profile_country_region"), countryDisplayName(draft.countryRegion))
                 }
                 .background(AppColors.Account.card)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
-                AccountSectionTitle(AppText.Account.accountSection)
+                AccountSectionTitle(appLocalized("account_section"))
                 VStack(spacing: 0) {
-                    AccountValueRow(AppText.Account.loginAccount, session?.account ?? "")
-                    AccountActionRow(AppText.Account.logout, color: .white) { viewModel.logout() }
-                    AccountActionRow(AppText.Account.delete, color: AppColors.Account.destructive) { showDeleteDialog = true }
+                    AccountValueRow(appLocalized("account_login_account"), session?.account ?? "")
+                    AccountActionRow(appLocalized("account_logout"), color: .white) { viewModel.logout() }
+                    AccountActionRow(appLocalized("account_delete"), color: AppColors.Account.destructive) { showDeleteDialog = true }
                 }
                 .background(AppColors.Account.card)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
                 if let localError {
-                    Text(localError).font(.system(size: 13)).foregroundStyle(Color.red).padding(.top, 18)
+                    Text(localError).font(.system(size: 13)).foregroundStyle(AppColors.Health.warning).padding(.top, 18)
                 }
                 Spacer().frame(height: 30)
             }
             .padding(.horizontal, 18)
         }
         .scrollIndicators(.hidden)
-        .background(Color.black)
-        .confirmationDialog(AppText.Account.deleteConfirmation, isPresented: $showDeleteDialog, titleVisibility: .visible) {
-            Button(AppText.Common.confirm, role: .destructive) {
+        .background(AppColors.Core.black)
+        .confirmationDialog(appLocalized("account_delete_confirmation"), isPresented: $showDeleteDialog, titleVisibility: .visible) {
+            Button(appLocalized("common_confirm"), role: .destructive) {
                 localError = viewModel.deleteCurrentAccountMessage()
             }
-            Button(AppText.Common.cancel, role: .cancel) {}
+            Button(appLocalized("common_cancel"), role: .cancel) {}
         }
     }
 }
@@ -104,7 +111,7 @@ private struct AccountAvatar: View {
                 Text(String(username.prefix(1)).uppercased())
                     .font(.system(size: 23, weight: .medium)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(red: 48 / 255, green: 48 / 255, blue: 52 / 255))
+                    .background(AppColors.Account.avatarFallback)
             }
         }
         .frame(width: 58, height: 58)
@@ -131,7 +138,7 @@ private struct AccountValueRow: View {
         HStack {
             Text(label).font(.system(size: 14)).foregroundStyle(.white)
             Spacer()
-            Text(value.isEmpty ? AppText.Common.notSet : value).font(.system(size: 13)).foregroundStyle(AppColors.Account.muted)
+            Text(value.isEmpty ? appLocalized("common_not_set") : value).font(.system(size: 13)).foregroundStyle(AppColors.Account.muted)
         }
         .padding(.horizontal, 16).frame(height: 52)
         .overlay(alignment: .bottomLeading) {
@@ -180,14 +187,14 @@ private struct PersonalProfileEditView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button(action: onClose) { Text(AppText.Common.back).font(.system(size: 38, weight: .light)) }
+                Button(action: onClose) { Text(appLocalized("common_back")).font(.system(size: 38, weight: .light)) }
                     .frame(width: 64, alignment: .leading)
                 Spacer()
-                Text(AppText.Profile.personalInfo).font(.system(size: 18, weight: .medium))
+                Text(appLocalized("profile_personal_info")).font(.system(size: 18, weight: .medium))
                 Spacer()
-                Button(AppText.Common.save, action: save)
+                Button(appLocalized("common_save"), action: save)
                     .font(.system(size: 14)).frame(width: 64).padding(.vertical, 8)
-                    .background(canSave ? AppColors.Health.action : Color(red: 95 / 255, green: 0, blue: 28 / 255))
+                    .background(canSave ? AppColors.Health.action : AppColors.Account.saveDisabled)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                     .disabled(!canSave)
             }
@@ -210,24 +217,24 @@ private struct PersonalProfileEditView: View {
                     .buttonStyle(.plain).padding(.top, 20).padding(.bottom, 28)
 
                     HStack {
-                        Text(AppText.Profile.username).foregroundStyle(.white)
+                        Text(appLocalized("profile_username")).foregroundStyle(.white)
                         TextField("", text: $draft.username).multilineTextAlignment(.trailing)
-                            .foregroundStyle(Color(red: 216 / 255, green: 216 / 255, blue: 220 / 255)).tint(corosRed)
+                            .foregroundStyle(AppColors.Account.value).tint(corosRed)
                         Image(AppImages.Profile.edit).resizable().scaledToFit().frame(width: 16, height: 16)
                     }
                     .frame(height: 56).overlay(alignment: .bottom) { divider }
 
-                    editRow(AppText.Profile.gender, value: draft.gender?.title ?? "") { activePicker = .gender }
-                    editRow(AppText.Profile.birthDate, value: draft.birthDate) { activePicker = .birthDate }
-                    editRow(AppText.Profile.height, value: draft.heightCm.map { "\($0) cm" } ?? "") { activePicker = .height }
-                    editRow(AppText.Profile.weight, value: draft.weightKg.map { String(format: "%.1f kg", $0) } ?? "") { activePicker = .weight }
-                    editRow(AppText.Profile.country, value: draft.countryRegion) { activePicker = .country }
+                    editRow(appLocalized("profile_gender"), value: draft.gender?.title ?? "") { activePicker = .gender }
+                    editRow(appLocalized("profile_birth_date"), value: draft.birthDate) { activePicker = .birthDate }
+                    editRow(appLocalized("profile_height"), value: draft.heightCm.map { "\($0) cm" } ?? "") { activePicker = .height }
+                    editRow(appLocalized("profile_weight"), value: draft.weightKg.map { String(format: "%.1f kg", $0) } ?? "") { activePicker = .weight }
+                    editRow(appLocalized("profile_country_region"), value: countryDisplayName(draft.countryRegion)) { activePicker = .country }
                 }
                 .padding(.horizontal, 26)
             }
             .scrollIndicators(.hidden)
         }
-        .background(Color.black)
+        .background(AppColors.Core.black)
         .sheet(item: $activePicker) { EditProfilePickerSheet(picker: $0, draft: $draft) }
         .onChange(of: selectedPhoto) { _, item in
             guard let item else { return }
@@ -251,8 +258,8 @@ private struct PersonalProfileEditView: View {
             HStack {
                 Text(label).font(.system(size: 16)).foregroundStyle(.white)
                 Spacer()
-                Text(value.isEmpty ? AppText.Common.notSet : value).font(.system(size: 15))
-                    .foregroundStyle(value.isEmpty ? corosMuted : Color(red: 216 / 255, green: 216 / 255, blue: 220 / 255))
+                Text(value.isEmpty ? appLocalized("common_not_set") : value).font(.system(size: 15))
+                    .foregroundStyle(value.isEmpty ? corosMuted : AppColors.Account.value)
                 Image(AppImages.Profile.next).resizable().scaledToFit().frame(width: 19, height: 19)
             }
             .frame(height: 56).overlay(alignment: .bottom) { divider }
@@ -276,16 +283,16 @@ private struct EditProfilePickerSheet: View {
     @State private var height = 175
     @State private var weightTenths = 600
     @State private var gender: ProfileGender = .male
-    @State private var country = "中国"
+    @State private var country = "CN"
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button(AppText.Common.cancel) { dismiss() }
+                Button(appLocalized("common_cancel")) { dismiss() }
                 Spacer()
                 Text(title).font(.system(size: 19, weight: .semibold))
                 Spacer()
-                Button(AppText.Common.confirm, action: confirm)
+                Button(appLocalized("common_confirm"), action: confirm)
             }
             .foregroundStyle(.white).padding(.horizontal, 20).frame(height: 58)
             Group {
@@ -299,13 +306,17 @@ private struct EditProfilePickerSheet: View {
                 case .weight:
                     Picker("", selection: $weightTenths) { ForEach(300...2000, id: \.self) { Text(String(format: "%.1f", Double($0) / 10)) } }.pickerStyle(.wheel)
                 case .country:
-                    Picker("", selection: $country) { ForEach(["中国", "美国", "英国", "日本"], id: \.self) { Text($0).tag($0) } }.pickerStyle(.wheel)
+                    Picker("", selection: $country) {
+                        ForEach(["CN", "US", "GB", "JP"], id: \.self) { code in
+                            Text(countryDisplayName(code)).tag(code)
+                        }
+                    }.pickerStyle(.wheel)
                 }
             }
             .colorScheme(.dark)
         }
         .presentationDetents([.height(360)]).presentationDragIndicator(.hidden)
-        .background(Color(red: 26 / 255, green: 26 / 255, blue: 27 / 255).ignoresSafeArea())
+        .background(AppColors.Account.sheet.ignoresSafeArea())
         .onAppear {
             height = draft.heightCm ?? 175
             weightTenths = Int(((draft.weightKg ?? 60) * 10).rounded())
@@ -316,11 +327,11 @@ private struct EditProfilePickerSheet: View {
 
     private var title: String {
         switch picker {
-        case .birthDate: return AppText.Profile.birthDate
-        case .gender: return AppText.Profile.gender
-        case .height: return "身高 (cm)"
-        case .weight: return "体重 (kg)"
-        case .country: return AppText.Profile.country
+        case .birthDate: return appLocalized("profile_birth_date")
+        case .gender: return appLocalized("profile_gender")
+        case .height: return appLocalized("profile_height_picker")
+        case .weight: return appLocalized("profile_weight_picker")
+        case .country: return appLocalized("profile_country_region")
         }
     }
 
@@ -328,7 +339,7 @@ private struct EditProfilePickerSheet: View {
         switch picker {
         case .birthDate:
             let value = Calendar.current.dateComponents([.year, .month, .day], from: date)
-            draft.birthDate = "\(value.year ?? 2002)年\(value.month ?? 1)月\(value.day ?? 1)日"
+            draft.birthDate = "\(value.year ?? 2002)\(appLocalized("profile_date_year_suffix"))\(value.month ?? 1)\(appLocalized("profile_date_month_suffix"))\(value.day ?? 1)\(appLocalized("profile_date_day_suffix"))"
         case .gender: draft.gender = gender
         case .height: draft.heightCm = height
         case .weight: draft.weightKg = Double(weightTenths) / 10
@@ -345,7 +356,7 @@ extension LoginViewModel {
                 avatarUri: nil,
                 username: state.currentSession?.resolvedDisplayName ?? state.currentSession?.account ?? "",
                 birthDate: "", heightCm: nil, weightKg: nil, measurementSystem: .metric,
-                phone: "", countryRegion: state.currentSession?.region == "US" ? "美国" : "中国", gender: nil
+                phone: "", countryRegion: state.currentSession?.region ?? "CN", gender: nil
             )
         }
         let genderName = String(describing: profile.gender).lowercased()

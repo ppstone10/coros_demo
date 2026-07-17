@@ -1,6 +1,8 @@
 package com.example.demo.ui.resources
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 object AppColors {
     object Core {
@@ -81,4 +83,31 @@ object AppColors {
         val Unselected = Color(0xFF85868A)
         val Placeholder = Color(0xFFB3B5BA)
     }
+}
+
+/** Reusable visual values. Keep page-specific geometry local until it repeats. */
+object AppTypography {
+    val Caption = 11.sp
+    val Supporting = 12.sp
+    val Label = 13.sp
+    val Action = 14.sp
+    val EditorRow = 15.sp
+    val CardTitle = 16.sp
+    val SectionTitle = 19.sp
+    val HeroTitle = 28.sp
+}
+
+object AppSpacing {
+    val XSmall = 5.dp
+    val Small = 8.dp
+    val Medium = 10.dp
+    val CaptionBottom = 11.dp
+    val ContentVertical = 12.dp
+    val LabelVertical = 14.dp
+    val CardContent = 15.dp
+    val Screen = 16.dp
+    val Large = 18.dp
+    val Page = 20.dp
+    val Section = 24.dp
+    val ActionHorizontal = 28.dp
 }

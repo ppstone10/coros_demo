@@ -39,7 +39,8 @@ import com.example.demo.login.components.ThirdPartyArea
 import com.example.demo.login.components.UnderlineInput
 import com.example.demo.login.components.UnavailableFeatureDialog
 import com.example.demo.login.components.findActivity
-import com.example.demo.ui.resources.AppText
+import androidx.compose.ui.res.stringResource
+import com.example.demo.R
 import com.example.demo.ui.theme.DemoTheme
 import androidx.compose.material3.Text
 
@@ -89,7 +90,7 @@ fun LoginPageScreen(
         onUnavailableClick = { unavailableDialogVisible = true }
     ) {
         Text(
-            text = AppText.Auth.AccountLogin,
+            text = stringResource(R.string.auth_account_login),
             color = CorosWhite,
             fontSize = AuthTitleSize,
             fontWeight = FontWeight.Light,
@@ -98,7 +99,7 @@ fun LoginPageScreen(
         Spacer(modifier = Modifier.height(45.dp))
         UnderlineInput(
             value = state.account,
-            placeholder = AppText.Auth.AccountPlaceholder,
+            placeholder = stringResource(R.string.auth_account_placeholder),
             keyboardType = KeyboardType.Email,
             autoFocus = true,
             onValueChange = {
@@ -109,7 +110,7 @@ fun LoginPageScreen(
         Spacer(modifier = Modifier.height(16.dp))
         UnderlineInput(
             value = state.password,
-            placeholder = AppText.Auth.Password,
+            placeholder = stringResource(R.string.auth_password),
             keyboardType = KeyboardType.Password,
             isPassword = true,
             onValueChange = {
@@ -126,7 +127,7 @@ fun LoginPageScreen(
         )
         Spacer(modifier = Modifier.height(12.dp))
         CorosFilledButton(
-            text = AppText.Auth.Login,
+            text = stringResource(R.string.auth_login),
             color = CorosButtonRed,
             enabled = viewModel.canSubmitLogin(),
             isLoading = state.isLoading,
@@ -135,7 +136,7 @@ fun LoginPageScreen(
         ErrorText(localError ?: state.errorMessage)
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = AppText.Auth.ForgotPassword,
+            text = stringResource(R.string.auth_forgot_password),
             color = CorosMuted,
             fontSize = 14.sp,
             modifier = Modifier.clickable { onForgotPasswordClick() }
@@ -143,7 +144,7 @@ fun LoginPageScreen(
         Spacer(modifier = Modifier.weight(1f))
         ThirdPartyArea(onUnavailableClick = { unavailableDialogVisible = true })
         Text(
-            text = AppText.Auth.Version,
+            text = stringResource(R.string.auth_version),
             color = CorosMuted,
             fontSize = 16.sp,
             modifier = Modifier.fillMaxWidth().padding(top = 22.dp, bottom = 12.dp),

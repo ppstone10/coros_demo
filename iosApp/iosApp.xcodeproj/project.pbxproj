@@ -34,6 +34,7 @@
 		A10000000000000000000025 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* LaunchScreen.storyboard */; };
 		AE27D7404F2070F1294FA366 /* SnackbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8CC165A7902D5C2562B32CC /* SnackbarView.swift */; };
 		C10000000000000000000001 /* AppResources.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000001 /* AppResources.swift */; };
+		D10000000000000000000001 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000001 /* Localizable.xcstrings */; };
 		C10000000000000000000002 /* MainTabsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000002 /* MainTabsView.swift */; };
 		C10000000000000000000003 /* HealthDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000003 /* HealthDashboardView.swift */; };
 		C10000000000000000000004 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000004 /* AccountView.swift */; };
@@ -67,6 +68,7 @@
 		A20000000000000000000025 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		B8CC165A7902D5C2562B32CC /* SnackbarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SnackbarView.swift; sourceTree = "<group>"; };
 		C20000000000000000000001 /* AppResources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppResources.swift; sourceTree = "<group>"; };
+		D20000000000000000000001 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		C20000000000000000000002 /* MainTabsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabsView.swift; sourceTree = "<group>"; };
 		C20000000000000000000003 /* HealthDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDashboardView.swift; sourceTree = "<group>"; };
 		C20000000000000000000004 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
@@ -133,6 +135,7 @@
 			children = (
 				921197FA30087A90008AB802 /* watch_status.json */,
 				C20000000000000000000001 /* AppResources.swift */,
+				D20000000000000000000001 /* Localizable.xcstrings */,
 				A20000000000000000000009 /* home.mp4 */,
 			);
 			path = Resources;
@@ -258,6 +261,7 @@
 				A10000000000000000000009 /* home.mp4 in Resources */,
 				A10000000000000000000025 /* LaunchScreen.storyboard in Resources */,
 				921197FB30087A90008AB802 /* watch_status.json in Resources */,
+				D10000000000000000000001 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -11,20 +11,20 @@ struct ResetPasswordView: View {
 
     var body: some View {
         AuthBlackPage(onBack: { router.pop() }, showFeedback: false) {
-            AuthTitle("设置新密码")
+            AuthTitle(appLocalized("auth_set_new_password"))
             Spacer().frame(height: 42)
-            Text("账号")
-                .foregroundStyle(Color(red: 216 / 255, green: 216 / 255, blue: 221 / 255))
+            Text(appLocalized("auth_account"))
+                .foregroundStyle(AppColors.Auth.inputText)
                 .font(.system(size: 14))
             Spacer().frame(height: 8)
-            DisabledUnderlineValue(value: account, placeholder: "账号")
+            DisabledUnderlineValue(value: account, placeholder: appLocalized("auth_account"))
             Spacer().frame(height: 42)
             UnderlineInput(
                 text: Binding(
                     get: { newPassword },
                     set: { newPassword = viewModel.normalizePasswordInput($0); localError = nil }
                 ),
-                placeholder: "输入新的密码",
+                placeholder: appLocalized("auth_new_password_placeholder"),
                 isPassword: true,
                 autoFocus: true
             )
@@ -34,16 +34,16 @@ struct ResetPasswordView: View {
                     get: { confirmPassword },
                     set: { confirmPassword = viewModel.normalizePasswordInput($0); localError = nil }
                 ),
-                placeholder: "再次输入新密码",
+                placeholder: appLocalized("auth_confirm_new_password_placeholder"),
                 isPassword: true
             )
             Spacer().frame(height: 8)
-            Text("6-20位，必须包含字母和数字")
-                .foregroundStyle(Color(red: 216 / 255, green: 216 / 255, blue: 221 / 255))
+            Text(appLocalized("auth_password_rule"))
+                .foregroundStyle(AppColors.Auth.inputText)
                 .font(.system(size: 14))
             Spacer().frame(height: 72)
             CorosFilledButton(
-                text: "完成",
+                text: appLocalized("common_complete"),
                 color: corosButtonRed,
                 enabled: viewModel.canSubmitResetPassword(newPassword: newPassword, confirmPassword: confirmPassword),
                 action: resetPassword
@@ -63,6 +63,6 @@ struct ResetPasswordView: View {
             return
         }
         router.resetKeepingEntranceAndPush(.login)
-        viewModel.toastMessage = "密码已更新"
+        viewModel.toastMessage = appLocalized("auth_password_updated")
     }
 }

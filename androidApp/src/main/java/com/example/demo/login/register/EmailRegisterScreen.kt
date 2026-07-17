@@ -38,7 +38,9 @@ import com.example.demo.login.components.TermsPromptAction
 import com.example.demo.login.components.UnderlineInput
 import com.example.demo.login.components.UnavailableFeatureDialog
 import com.example.demo.login.components.findActivity
-import com.example.demo.ui.resources.AppText
+import androidx.compose.ui.res.stringResource
+import com.example.demo.R
+import com.example.demo.common.login.AuthMessageKeys
 import com.example.demo.ui.theme.DemoTheme
 import androidx.compose.material3.Text
 
@@ -64,7 +66,7 @@ fun EmailRegisterScreen(
         val validationMessage = viewModel.validateEmailAccount(email)
         when {
             validationMessage != null -> localError = validationMessage
-            viewModel.hasAccount(email) -> localError = "账号已存在"
+            viewModel.hasAccount(email) -> localError = AuthMessageKeys.ErrorAccountExists
             !skipTerms && !acceptedTerms -> termsPromptAction = TermsPromptAction.EmailCode
             else -> {
                 val message = viewModel.requestVerifyCodeMessage(email)
@@ -98,7 +100,7 @@ fun EmailRegisterScreen(
         onUnavailableClick = { unavailableDialogVisible = true }
     ) {
         Text(
-            text = AppText.Auth.EmailRegister,
+            text = stringResource(R.string.auth_email_register),
             color = CorosWhite,
             fontSize = AuthTitleSize,
             fontWeight = FontWeight.Light,
@@ -107,7 +109,7 @@ fun EmailRegisterScreen(
         Spacer(modifier = Modifier.height(60.dp))
         UnderlineInput(
             value = emailInput,
-            placeholder = AppText.Auth.EmailPlaceholder,
+            placeholder = stringResource(R.string.auth_email_placeholder),
             keyboardType = KeyboardType.Email,
             autoFocus = true,
             onValueChange = {
@@ -124,14 +126,14 @@ fun EmailRegisterScreen(
         )
         Spacer(modifier = Modifier.height(RegisterActionTopSpacing))
         CorosFilledButton(
-            text = AppText.Auth.SendCode,
+            text = stringResource(R.string.auth_send_code),
             color = CorosButtonRed,
             enabled = viewModel.canRequestEmailCode(emailInput),
             onClick = { requestEmailVerifyCode() }
         )
         ErrorText(localError ?: state.errorMessage)
         Text(
-            text = AppText.Auth.PhoneRegister,
+            text = stringResource(R.string.auth_phone_register),
             color = CorosRed,
             fontSize = 18.sp,
             textAlign = TextAlign.Center,

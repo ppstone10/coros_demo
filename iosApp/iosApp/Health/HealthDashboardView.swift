@@ -12,24 +12,25 @@ struct HealthCard: Identifiable, Hashable, Codable {
     let isRisk: Bool
 }
 
-let defaultHealthCards: [HealthCard] = [
-    HealthCard(id: "WeeklyPlan", title: "本周计划", summary: "本周无计划", icon: AppImages.Health.weeklyPlan, isRisk: false),
-    HealthCard(id: "TrainingLoad", title: "本周负荷", summary: "本周负荷 526，建议范围 300-700", icon: AppImages.Health.trainingLoad, isRisk: false),
-    HealthCard(id: "TrainingAssessment", title: "训练量评估", summary: "将在第一次运动后 7 天评估您的训练量", icon: AppImages.Health.trainingAssessment, isRisk: false),
-    HealthCard(id: "Recovery", title: "体力恢复", summary: "恢复评分 78，预计 14 小时后恢复", icon: AppImages.Health.recovery, isRisk: false),
-    HealthCard(id: "RunningAbility", title: "跑步能力", summary: "记录一笔 25min 以上的户外跑步运动", icon: AppImages.Health.runningAbility, isRisk: false),
-    HealthCard(id: "CyclingAbility", title: "骑行FTP", summary: "连接功率计，完成一次 20min 以上稳定骑行", icon: AppImages.Health.cyclingAbility, isRisk: false),
-    HealthCard(id: "HeartRate", title: "心率", summary: "佩戴手表记录心率数据", icon: AppImages.Health.heartRate, isRisk: false),
-    HealthCard(id: "Stress", title: "压力", summary: "佩戴手表或进行健康快测获取压力", icon: AppImages.Health.stress, isRisk: false),
-    HealthCard(id: "Sleep", title: "睡眠", summary: "昨夜睡眠 7小时18分，质量 86", icon: AppImages.Health.sleep, isRisk: false),
-    HealthCard(id: "HrvAssessment", title: "HRV评估", summary: "睡觉时佩戴手表获取数据", icon: AppImages.Health.hrv, isRisk: false),
-    HealthCard(id: "RestingHeartRate", title: "静息心率", summary: "睡觉时佩戴手表或进行静息心率测试", icon: AppImages.Health.restingHeartRate, isRisk: false),
-    HealthCard(id: "HealthCheck", title: "健康快测", summary: "使用手表“健康快测”获取数据", icon: AppImages.Health.healthCheck, isRisk: false),
-    HealthCard(id: "BodyManagement", title: "体型管理", summary: "体重 68.2 kg · 本周主要锻炼部位", icon: AppImages.Health.body, isRisk: false)
-]
+var defaultHealthCards: [HealthCard] { [
+    HealthCard(id: "WeeklyPlan", title: appLocalized("health_card_weekly_plan_title"), summary: appLocalized("health_summary_weekly_empty"), icon: AppImages.Health.weeklyPlan, isRisk: false),
+    HealthCard(id: "TrainingLoad", title: appLocalized("health_card_training_load_title"), summary: appLocalized("health_summary_training_load_empty"), icon: AppImages.Health.trainingLoad, isRisk: false),
+    HealthCard(id: "TrainingAssessment", title: appLocalized("health_card_training_assessment_title"), summary: appLocalized("health_summary_training_assessment_empty"), icon: AppImages.Health.trainingAssessment, isRisk: false),
+    HealthCard(id: "Recovery", title: appLocalized("health_card_recovery_title"), summary: appLocalized("health_summary_recovery_empty"), icon: AppImages.Health.recovery, isRisk: false),
+    HealthCard(id: "RunningAbility", title: appLocalized("health_card_running_ability_title"), summary: appLocalized("health_summary_running_empty"), icon: AppImages.Health.runningAbility, isRisk: false),
+    HealthCard(id: "CyclingAbility", title: appLocalized("health_card_cycling_ability_title"), summary: appLocalized("health_summary_cycling_empty"), icon: AppImages.Health.cyclingAbility, isRisk: false),
+    HealthCard(id: "HeartRate", title: appLocalized("health_card_heart_rate_title"), summary: appLocalized("health_summary_heart_rate_empty"), icon: AppImages.Health.heartRate, isRisk: false),
+    HealthCard(id: "Stress", title: appLocalized("health_card_stress_title"), summary: appLocalized("health_summary_stress_empty"), icon: AppImages.Health.stress, isRisk: false),
+    HealthCard(id: "Sleep", title: appLocalized("health_card_sleep_title"), summary: appLocalized("health_summary_sleep_empty"), icon: AppImages.Health.sleep, isRisk: false),
+    HealthCard(id: "HrvAssessment", title: appLocalized("health_card_hrv_assessment_title"), summary: appLocalized("health_summary_hrv_empty"), icon: AppImages.Health.hrv, isRisk: false),
+    HealthCard(id: "RestingHeartRate", title: appLocalized("health_card_resting_heart_rate_title"), summary: appLocalized("health_summary_resting_hr_empty"), icon: AppImages.Health.restingHeartRate, isRisk: false),
+    HealthCard(id: "HealthCheck", title: appLocalized("health_card_health_check_title"), summary: appLocalized("health_summary_health_check_empty"), icon: AppImages.Health.healthCheck, isRisk: false),
+    HealthCard(id: "BodyManagement", title: appLocalized("health_card_body_management_title"), summary: appLocalized("health_summary_body_empty"), icon: AppImages.Health.body, isRisk: false)
+] }
 
 struct HealthDashboardView: View {
     @Binding var isFullscreen: Bool
+    @EnvironmentObject private var languageStore: AppLanguageStore
     @StateObject private var viewModel = HealthDashboardViewModel()
     @State private var editing = false
     @State private var detail: HealthCard?
@@ -60,7 +61,7 @@ struct HealthDashboardView: View {
                             VStack(spacing: 0) {
                                 // Track scroll offset to know when at top
                                 GeometryReader { geo in
-                                    Color.clear.preference(key: ScrollTopKey.self,
+                                    AppColors.Core.clear.preference(key: ScrollTopKey.self,
                                         value: geo.frame(in: .named("scrollSpace")).minY)
                                 }
                                 .frame(height: 0)
@@ -75,23 +76,23 @@ struct HealthDashboardView: View {
                                         detail = card
                                         isFullscreen = true
                                     } label: {
-                                        HStack(spacing: 10) {
+                                        HStack(spacing: AppSpacing.medium) {
                                             Image(card.icon).resizable().scaledToFit().frame(width: 22, height: 22)
-                                            VStack(alignment: .leading, spacing: 5) {
-                                                Text(card.title).font(.system(size: 16, weight: .medium)).foregroundStyle(.white)
-                                                Text(card.summary).font(.system(size: 12)).foregroundStyle(card.isRisk ? AppColors.Health.risk : AppColors.Health.muted).lineLimit(2)
+                                            VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
+                                                Text(card.title).font(.system(size: AppTypography.cardTitle, weight: .medium)).foregroundStyle(.white)
+                                                Text(card.summary).font(.system(size: AppTypography.supporting)).foregroundStyle(card.isRisk ? AppColors.Health.risk : AppColors.Health.muted).lineLimit(2)
                                             }
                                             Spacer(minLength: 8)
-                                            Text("›").font(.system(size: 25, weight: .light)).foregroundStyle(Color.gray)
+                                            Text("›").font(.system(size: 25, weight: .light)).foregroundStyle(AppColors.Health.chevron)
                                         }
-                                        .padding(.horizontal, 15)
+                                        .padding(.horizontal, AppSpacing.cardContent)
                                         .frame(maxWidth: .infinity, minHeight: 76)
                                         .background(AppColors.Health.card)
                                         .clipShape(RoundedRectangle(cornerRadius: 8))
                                     }
                                     .buttonStyle(.plain)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 5)
+                                    .padding(.horizontal, AppSpacing.screen)
+                                    .padding(.vertical, AppSpacing.xSmall)
                                     .offset(y: max(0.0, dragOffset))
                                 }
 
@@ -99,15 +100,15 @@ struct HealthDashboardView: View {
                                     editing = true
                                     isFullscreen = true
                                 } label: {
-                                    Text(AppText.Health.editCards)
-                                        .font(.system(size: 13))
-                                        .foregroundStyle(Color(red: 221 / 255, green: 221 / 255, blue: 221 / 255))
-                                        .padding(.horizontal, 28).padding(.vertical, 10)
+                                    Text(appLocalized("health_edit_cards"))
+                                        .font(.system(size: AppTypography.label))
+                                        .foregroundStyle(AppColors.Health.editText)
+                                        .padding(.horizontal, AppSpacing.actionHorizontal).padding(.vertical, AppSpacing.medium)
                                         .background(AppColors.Health.card)
                                         .clipShape(Capsule())
                                 }
                                 .buttonStyle(.plain)
-                                .padding(18)
+                                .padding(AppSpacing.large)
                                 .offset(y: max(0.0, dragOffset))
                             }
                         }
@@ -142,8 +143,8 @@ struct HealthDashboardView: View {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: AppColors.Health.steps))
                                     .scaleEffect(0.8)
-                                Text("数据同步中")
-                                    .font(.system(size: 12))
+                                Text(appLocalized("health_data_syncing"))
+                                    .font(.system(size: AppTypography.supporting))
                                     .foregroundColor(AppColors.Health.muted)
                             }
                             .padding(.top, 6)
@@ -156,7 +157,12 @@ struct HealthDashboardView: View {
                 .ignoresSafeArea(edges: .top)
             }
         }
-        .background(Color.black)
+        .onChange(of: languageStore.current) { _, _ in
+            detail = nil
+            isFullscreen = false
+            viewModel.load()
+        }
+        .background(AppColors.Core.black)
         .sheet(isPresented: $showScenarioPicker) {
             ScenarioPickerView(viewModel: viewModel)
         }
@@ -194,8 +200,8 @@ private struct HeroTopRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(dateLabel).font(.system(size: 11)).foregroundStyle(Color.gray)
-                Text(AppText.Health.today).font(.system(size: 28, weight: .semibold)).foregroundStyle(.white)
+                Text(dateLabel).font(.system(size: AppTypography.caption)).foregroundStyle(AppColors.Health.date)
+                Text(appLocalized("health_today")).font(.system(size: AppTypography.heroTitle, weight: .semibold)).foregroundStyle(.white)
             }
             Spacer()
             Image(AppImages.Health.calendar).resizable().scaledToFit().frame(width: 23, height: 23)
@@ -227,11 +233,11 @@ private struct HeroArcView: View {
                 .rotationEffect(.degrees(90))
                 .frame(width: 125, height: 125)
             HStack {
-                metricView(icon: AppImages.Health.steps, value: "\(steps)", unit: AppText.Health.steps, color: AppColors.Health.steps)
+                metricView(icon: AppImages.Health.steps, value: "\(steps)", unit: appLocalized("health_unit_steps"), color: AppColors.Health.steps)
                 Spacer()
-                metricView(icon: AppImages.Health.calories, value: "\(calories)", unit: AppText.Health.calories, color: AppColors.Health.calories)
+                metricView(icon: AppImages.Health.calories, value: "\(calories)", unit: appLocalized("health_unit_calories"), color: AppColors.Health.calories)
                 Spacer()
-                metricView(icon: AppImages.Health.active, value: "\(minutes)", unit: AppText.Health.minutes, color: AppColors.Health.active)
+                metricView(icon: AppImages.Health.active, value: "\(minutes)", unit: appLocalized("health_unit_minutes"), color: AppColors.Health.active)
             }
         }
         .frame(height: 128)
@@ -242,7 +248,7 @@ private struct HeroArcView: View {
         VStack(spacing: 3) {
             Image(icon).resizable().renderingMode(.template).scaledToFit().foregroundStyle(color).frame(width: 22, height: 22)
             Text(value).font(.system(size: 28)).foregroundStyle(.white)
-            Text(unit).font(.system(size: 11)).foregroundStyle(Color.gray)
+            Text(unit).font(.system(size: AppTypography.caption)).foregroundStyle(AppColors.Health.metricUnit)
         }
         .frame(width: 82)
     }
@@ -268,10 +274,10 @@ private struct ScenarioPickerView: View {
                 }
                 .listRowBackground(AppColors.Health.card)
             }
-            .scrollContentBackground(.hidden).background(Color.black)
-            .navigationTitle("选择数据场景")
+            .scrollContentBackground(.hidden).background(AppColors.Core.black)
+            .navigationTitle(appLocalized("health_select_scenario"))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(appLocalized("common_cancel")) { dismiss() } } }
         }
     }
 }
@@ -309,17 +315,17 @@ private struct HealthCardEditor: View {
         VStack(spacing: 0) {
             HStack {
                 Button(action: onClose) {
-                    Text(AppText.Common.back).font(.system(size: 38, weight: .light))
+                    Text(appLocalized("common_back")).font(.system(size: 38, weight: .light))
                 }
                 .frame(width: 64, alignment: .leading)
                 Spacer()
-                Text(AppText.Health.editCards).font(.system(size: 19, weight: .medium))
+                Text(appLocalized("health_edit_cards")).font(.system(size: AppTypography.sectionTitle, weight: .medium))
                 Spacer()
                 Button {
                     onSave(active)
                 } label: {
-                    Text(AppText.Common.save)
-                        .font(.system(size: 14))
+                    Text(appLocalized("common_save"))
+                        .font(.system(size: AppTypography.action))
                         .frame(width: 64, height: 30)
                         .background(AppColors.Health.action)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
@@ -330,10 +336,10 @@ private struct HealthCardEditor: View {
             .padding(.horizontal, 18)
             .frame(height: 64)
 
-            Text(AppText.Health.manageOrder).font(.system(size: 13)).foregroundStyle(AppColors.Health.muted)
+            Text(appLocalized("health_manage_cards")).font(.system(size: AppTypography.label)).foregroundStyle(AppColors.Health.muted)
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 22).padding(.bottom, 10)
             if let warning {
-                Text(warning).font(.system(size: 12)).foregroundStyle(Color.red).padding(.bottom, 8)
+                Text(warning).font(.system(size: AppTypography.supporting)).foregroundStyle(AppColors.Health.warning).padding(.bottom, AppSpacing.small)
             }
 
             GeometryReader { geometry in
@@ -349,7 +355,7 @@ private struct HealthCardEditor: View {
                     }
 
                     if !inactive.isEmpty {
-                        Section(AppText.Health.moreData) {
+                        Section(appLocalized("health_more_daily_data")) {
                             ForEach(inactive) { card in
                                 editorRow(
                                     card,
@@ -363,7 +369,7 @@ private struct HealthCardEditor: View {
                         }
                     }
 
-                    Button(AppText.Health.restoreDefaults) {
+                    Button(appLocalized("health_restore_defaults")) {
                         active = defaultHealthCards
                         warning = nil
                     }
@@ -381,7 +387,7 @@ private struct HealthCardEditor: View {
                 .onReceive(dragScrollTicker) { _ in autoScroll() }
             }
         }
-        .background(Color.black)
+        .background(AppColors.Core.black)
         .onDisappear { endDrag() }
     }
 
@@ -412,13 +418,13 @@ private struct HealthCardEditor: View {
                     )
             }
             Image(card.icon).resizable().scaledToFit().frame(width: 22, height: 22)
-            Text(card.title).font(.system(size: 15)).foregroundStyle(.white)
+            Text(card.title).font(.system(size: AppTypography.editorRow)).foregroundStyle(AppColors.Health.editorTitle)
             Spacer()
             Button(action: action) {
                 ZStack {
-                    Circle().fill(isAdd ? AppColors.Health.addAction : Color(red: 239 / 255, green: 52 / 255, blue: 63 / 255))
-                    Rectangle().fill(Color.white).frame(width: 16, height: 2)
-                    if isAdd { Rectangle().fill(Color.white).frame(width: 2, height: 16) }
+                    Circle().fill(isAdd ? AppColors.Health.addAction : AppColors.Health.removeAction)
+                    Rectangle().fill(AppColors.Core.white).frame(width: 16, height: 2)
+                    if isAdd { Rectangle().fill(AppColors.Core.white).frame(width: 2, height: 16) }
                 }
                 .frame(width: 30, height: 30)
             }
@@ -429,7 +435,7 @@ private struct HealthCardEditor: View {
         .offset(y: draggingCardID == card.id ? dragVisualOffset : 0)
         .scaleEffect(draggingCardID == card.id ? 1.015 : 1)
         .shadow(
-            color: draggingCardID == card.id ? Color.black.opacity(0.55) : .clear,
+            color: draggingCardID == card.id ? AppColors.Core.overlaySoft : .clear,
             radius: 10,
             y: 4
         )
@@ -526,7 +532,7 @@ private struct HealthCardEditor: View {
 
     private func remove(_ card: HealthCard) {
         guard active.count > 3 else {
-            warning = AppText.Health.minimumCards
+            warning = appLocalized("health_minimum_cards")
             return
         }
         active.removeAll { $0 == card }
@@ -582,17 +588,17 @@ private struct HealthDetailView: View {
             HStack {
                 Button(action: onBack) { Text("‹").font(.system(size: 38, weight: .light)) }
                     .frame(width: 38)
-                Text(card.title).font(.system(size: 19)).frame(maxWidth: .infinity, alignment: .center)
+                Text(card.title).font(.system(size: AppTypography.sectionTitle)).frame(maxWidth: .infinity, alignment: .center)
                 Spacer().frame(width: 38)
             }
             .foregroundStyle(.white).padding(.horizontal, 18).frame(height: 64)
             Spacer()
             Image(card.icon).resizable().scaledToFit().frame(width: 56, height: 56)
             Spacer().frame(height: 20)
-            Text(AppText.Health.pending(card.title)).foregroundStyle(Color.gray).font(.system(size: 16))
+            Text(String(format: appLocalized("health_pending_feature"), card.title)).foregroundStyle(AppColors.Health.placeholder).font(.system(size: AppTypography.cardTitle))
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
+        .background(AppColors.Core.black)
     }
 }

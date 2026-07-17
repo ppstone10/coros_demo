@@ -10,11 +10,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.demo.R
 import com.example.demo.login.LoginViewModel
 import com.example.demo.login.components.AuthBlackPage
 import com.example.demo.login.components.AuthTitleSize
@@ -26,7 +28,6 @@ import com.example.demo.login.components.DisabledUnderlineValue
 import com.example.demo.login.components.ErrorText
 import com.example.demo.login.components.UnderlineInput
 import com.example.demo.ui.resources.AppColors
-import com.example.demo.ui.resources.AppText
 import com.example.demo.ui.theme.DemoTheme
 
 @Composable
@@ -59,23 +60,23 @@ fun ResetPasswordScreen(
 
     AuthBlackPage(onBack = onBack, showFeedback = false) {
         Text(
-            text = AppText.Auth.SetNewPassword,
+            text = stringResource(R.string.auth_set_new_password),
             color = CorosWhite,
             fontSize = AuthTitleSize,
             fontWeight = FontWeight.Light,
             modifier = Modifier.padding(top = AuthTitleTopPadding)
         )
         Spacer(modifier = Modifier.height(42.dp))
-        Text(text = AppText.Auth.Account, color = AppColors.Auth.InputText, fontSize = 14.sp)
+        Text(text = stringResource(R.string.auth_account), color = AppColors.Auth.InputText, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(8.dp))
         DisabledUnderlineValue(
             value = account,
-            placeholder = AppText.Auth.Account
+            placeholder = stringResource(R.string.auth_account)
         )
         Spacer(modifier = Modifier.height(42.dp))
         UnderlineInput(
             value = newPassword,
-            placeholder = AppText.Auth.NewPasswordPlaceholder,
+            placeholder = stringResource(R.string.auth_new_password_placeholder),
             keyboardType = KeyboardType.Password,
             isPassword = true,
             autoFocus = true,
@@ -87,7 +88,7 @@ fun ResetPasswordScreen(
         Spacer(modifier = Modifier.height(42.dp))
         UnderlineInput(
             value = confirmPassword,
-            placeholder = AppText.Auth.ConfirmNewPasswordPlaceholder,
+            placeholder = stringResource(R.string.auth_confirm_new_password_placeholder),
             keyboardType = KeyboardType.Password,
             isPassword = true,
             onValueChange = {
@@ -96,10 +97,10 @@ fun ResetPasswordScreen(
             }
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = AppText.Auth.PasswordRule, color = AppColors.Auth.InputText, fontSize = 14.sp)
+        Text(text = stringResource(R.string.auth_password_rule), color = AppColors.Auth.InputText, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(72.dp))
         CorosFilledButton(
-            text = AppText.Common.Complete,
+            text = stringResource(R.string.common_complete),
             color = CorosButtonRed,
             enabled = viewModel.canSubmitResetPassword(newPassword, confirmPassword),
             onClick = { resetPassword() }

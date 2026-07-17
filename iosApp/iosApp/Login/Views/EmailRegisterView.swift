@@ -12,11 +12,11 @@ struct EmailRegisterView: View {
 
     var body: some View {
         AuthBlackPage(onBack: { router.pop() }, showFeedback: true, onUnavailableClick: { showUnavailable = true }) {
-            AuthTitle("邮箱注册")
+            AuthTitle(appLocalized("auth_email_register"))
             Spacer().frame(height: 60)
             UnderlineInput(
                 text: $emailInput,
-                placeholder: "请输入邮箱",
+                placeholder: appLocalized("auth_email_placeholder"),
                 keyboardType: .emailAddress,
                 autoFocus: true
             )
@@ -29,7 +29,7 @@ struct EmailRegisterView: View {
             )
             Spacer().frame(height: 28)
             CorosFilledButton(
-                text: "发送验证码",
+                text: appLocalized("auth_send_code"),
                 color: corosButtonRed,
                 enabled: canSendEmailCode,
                 isLoading: viewModel.state.isLoading,
@@ -40,7 +40,7 @@ struct EmailRegisterView: View {
                 viewModel.updateAccount("")
                 router.replaceTop(.phoneRegister)
             }) {
-                Text("手机号注册").foregroundStyle(corosRed).font(.system(size: 18))
+                Text(appLocalized("auth_phone_register")).foregroundStyle(corosRed).font(.system(size: 18))
                     .frame(maxWidth: .infinity).padding(.top, 26)
             }.buttonStyle(.plain)
             Spacer(minLength: 80)
@@ -74,7 +74,7 @@ struct EmailRegisterView: View {
         }
         let email = viewModel.normalizeEmailInput(emailInput)
         if viewModel.hasAccount(email) {
-            localError = "账号已存在"
+            localError = appLocalized("auth_error_account_exists")
             return
         }
         let message = viewModel.requestEmailVerifyCode(email: email)

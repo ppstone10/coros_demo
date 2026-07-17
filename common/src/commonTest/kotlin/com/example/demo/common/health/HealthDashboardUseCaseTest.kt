@@ -23,6 +23,19 @@ class HealthDashboardUseCaseTest {
     @Test fun abnormalSleepIsRisk() = assertEquals(HealthCardStatus.Risk, state(HealthMockScenario.Abnormal).cards.first { it.type == HealthCardType.Sleep }.status)
     @Test fun abnormalTrainingLoadIsRisk() = assertEquals(HealthCardStatus.Risk, state(HealthMockScenario.Abnormal).cards.first { it.type == HealthCardType.TrainingLoad }.status)
     @Test fun riskPriorityIsExplained() = assertTrue(state(HealthMockScenario.Abnormal).cards.first().priorityReason.isNotBlank())
+    @Test fun healthUiModelsExposeLocalizationKeysAndTypedArguments() {
+        val normal = state(HealthMockScenario.Normal)
+        assertEquals("health_today", normal.greeting.key)
+        assertEquals("health_demo_date", normal.dateLabel.key)
+        normal.cards.forEach { card ->
+            assertTrue(card.title.key.startsWith("health_card_"))
+            assertTrue(card.summary.key.startsWith("health_summary_"))
+            assertTrue(card.priorityReason.startsWith("health_reason_"))
+        }
+        val recovery = normal.cards.first { it.type == HealthCardType.Recovery }
+        assertEquals("health_summary_recovery_normal", recovery.summary.key)
+        assertEquals(listOf("78", "14"), recovery.summary.arguments)
+    }
     @Test fun cardsUseStablePriorityOrder() { val cards = state(HealthMockScenario.Normal).cards; assertEquals(cards.map { it.priority }.sorted(), cards.map { it.priority }) }
     @Test fun readFailureIsReturned() = assertEquals(MockError.CorruptedData, assertIs<MockResult.Failure>(useCase().load(HealthMockScenario.ReadFailure)).error)
     @Test fun loggedOutUserIsBlocked() { val repository = repository(false); val result = HealthDashboardUseCase(LocalHealthDashboardDataSource(repository)).load(HealthMockScenario.Normal); assertEquals(MockError.AuthRequired, assertIs<MockResult.Failure>(result).error) }

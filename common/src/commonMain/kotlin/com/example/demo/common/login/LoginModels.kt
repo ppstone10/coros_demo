@@ -47,13 +47,19 @@ data class MockAuthRegion(
 fun MockAuthRegion.toDomain() = AuthRegion(region, displayName, isDefault)
 fun AuthRegion.toMockRegion() = MockAuthRegion(region, displayName, isDefault)
 
-/** 将认证区域转换为资料页展示的国家与地区名称。 */
-fun String.toProfileCountryRegion(): String {
-    return when (uppercase()) {
-        "US" -> "美国"
-        "GB" -> "英国"
-        "JP" -> "日本"
-        else -> "中国"
+/** 将认证区域、国家代码或旧版国家展示名称归一为可持久化的稳定代码。 */
+fun String.toProfileCountryCode(fallback: String = "CN"): String {
+    return when (trim().uppercase()) {
+        "US", "\u7F8E\u56FD", "UNITED STATES", "UNITED STATES OF AMERICA" -> "US"
+        "GB", "UK", "\u82F1\u56FD", "UNITED KINGDOM", "GREAT BRITAIN" -> "GB"
+        "JP", "\u65E5\u672C", "JAPAN" -> "JP"
+        "CN", "\u4E2D\u56FD", "CHINA", "PEOPLE'S REPUBLIC OF CHINA" -> "CN"
+        else -> when (fallback.trim().uppercase()) {
+            "US" -> "US"
+            "GB", "UK" -> "GB"
+            "JP" -> "JP"
+            else -> "CN"
+        }
     }
 }
 
@@ -108,7 +114,7 @@ data class UserProfile(
     val weightKg: Double? = null,
     val measurementSystem: MeasurementSystem = MeasurementSystem.Metric,
     val phone: String = "",
-    val countryRegion: String = "中国",
+    val countryRegion: String = "CN",
     val gender: UserGender? = null
 ) {
     val isRequiredComplete: Boolean
@@ -132,18 +138,18 @@ sealed interface SessionResumeResult {
 }
 
 enum class MockError(val code: String, val message: String) {
-    AuthRequired("AUTH_REQUIRED", "请先登录"),
-    InvalidParam("AUTH_INVALID_PARAM", "请输入完整且有效的信息"),
-    AccountExists("AUTH_ACCOUNT_EXISTS", "账号已存在"),
-    AccountNotFound("AUTH_ACCOUNT_NOT_FOUND", "账号不存在"),
-    PasswordIncorrect("AUTH_PASSWORD_INCORRECT", "密码不正确"),
-    NewPasswordSameAsOld("AUTH_NEW_PASSWORD_SAME_AS_OLD", "新密码不能与旧密码相同"),
-    VerifyCodeInvalid("AUTH_VERIFY_CODE_INVALID", "验证码不正确"),
-    VerifyCodeExpired("AUTH_VERIFY_CODE_EXPIRED", "验证码已过期，请重新获取"),
-    EmptyData("AUTH_EMPTY_DATA", "暂无本地账号数据"),
-    CorruptedData("AUTH_CORRUPTED_DATA", "本地登录数据损坏"),
-    PersistFailed("AUTH_PERSIST_FAILED", "本地登录状态保存失败"),
-    RegionRequired("AUTH_REGION_REQUIRED", "请选择注册地区")
+    AuthRequired("AUTH_REQUIRED", AuthMessageKeys.ErrorAuthRequired),
+    InvalidParam("AUTH_INVALID_PARAM", AuthMessageKeys.ErrorInvalidParam),
+    AccountExists("AUTH_ACCOUNT_EXISTS", AuthMessageKeys.ErrorAccountExists),
+    AccountNotFound("AUTH_ACCOUNT_NOT_FOUND", AuthMessageKeys.ErrorAccountNotFound),
+    PasswordIncorrect("AUTH_PASSWORD_INCORRECT", AuthMessageKeys.ErrorPasswordIncorrect),
+    NewPasswordSameAsOld("AUTH_NEW_PASSWORD_SAME_AS_OLD", AuthMessageKeys.ErrorNewPasswordSameAsOld),
+    VerifyCodeInvalid("AUTH_VERIFY_CODE_INVALID", AuthMessageKeys.ErrorVerifyCodeInvalid),
+    VerifyCodeExpired("AUTH_VERIFY_CODE_EXPIRED", AuthMessageKeys.ErrorVerifyCodeExpired),
+    EmptyData("AUTH_EMPTY_DATA", AuthMessageKeys.ErrorEmptyData),
+    CorruptedData("AUTH_CORRUPTED_DATA", AuthMessageKeys.ErrorCorruptedData),
+    PersistFailed("AUTH_PERSIST_FAILED", AuthMessageKeys.ErrorPersistFailed),
+    RegionRequired("AUTH_REGION_REQUIRED", AuthMessageKeys.ErrorRegionRequired)
 }
 
 /** 对应 auth_mock.proto 的 MockErrorMessage；错误只在内存中传递，不作为登录态持久化。 */

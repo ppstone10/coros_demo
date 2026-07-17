@@ -25,6 +25,7 @@ import {
 import { AuthRoutes, PasswordSetupParams } from '../login/AuthRoutes';
 import { navigate, NavOperation } from '../login/AuthNavigator';
 import { handleAuthEffect } from '../login/AuthEffectHandler';
+import { AppColors } from '../resources/AppResources';
 
 @Entry
 @Component
@@ -41,14 +42,22 @@ struct PasswordSetupPage {
   @State selectedRegion: string = 'CN';
   @State regionPickerVisible: boolean = false;
   @State regionPickerIndex: number = 0;
-  private regionCountries: string[] = ['中国', '美国'];
+  private regionCountries: string[] = [];
 
   aboutToAppear(): void {
+    this.regionCountries = [
+      this.localized($r('app.string.common_china')),
+      this.localized($r('app.string.common_united_states'))
+    ];
     let params = router.getParams() as PasswordSetupParams;
     if (params !== null && params !== undefined) {
       this.targetKind = params.targetKind as VerifyTargetKind;
     }
     this.syncState();
+  }
+
+  private localized(resource: Resource): string {
+    return getContext(this).resourceManager.getStringSync(resource.id);
   }
 
   onBackPress(): boolean {
@@ -66,11 +75,11 @@ struct PasswordSetupPage {
             const target = this.targetKind === VerifyTargetKind.Email ? AuthRoutes.EMAIL_REGISTER : AuthRoutes.PHONE_REGISTER
             navigate(NavOperation.ResetKeepingEntranceAndPush, target);
           } });
-        AuthTitle('设置登录密码');
+        AuthTitle($r('app.string.auth_set_login_password'));
 
         Blank().height(60)
 
-        UnderlineInput({ placeholder: '输入新的密码', textValue: this.setupPassword,
+        UnderlineInput({ placeholder: $r('app.string.auth_new_password_placeholder'), textValue: this.setupPassword,
           inputType: this.setupPasswordVisible ? InputType.Normal : InputType.Password,
           isPassword: true, passwordVisible: this.setupPasswordVisible,
           valueChanged: (value: string) => {
@@ -82,7 +91,7 @@ struct PasswordSetupPage {
 
         Blank().height(48)
 
-        UnderlineInput({ placeholder: '再次输入密码', textValue: this.confirmPassword,
+        UnderlineInput({ placeholder: $r('app.string.auth_confirm_password_placeholder'), textValue: this.confirmPassword,
           inputType: this.confirmPasswordVisible ? InputType.Normal : InputType.Password,
           isPassword: true, passwordVisible: this.confirmPasswordVisible,
           valueChanged: (value: string) => {
@@ -92,21 +101,21 @@ struct PasswordSetupPage {
           },
           passwordToggleRequested: () => { this.confirmPasswordVisible = !this.confirmPasswordVisible; } });
 
-        Text('6-20位必须包含字母和数字')
+        Text($r('app.string.auth_password_rule'))
           .fontSize(14)
-          .fontColor('#D8D8DD')
+          .fontColor(AppColors.AUTH_INPUT_TEXT)
           .margin({ top: 8 })
 
         Blank().height(12)
 
         Row() {
-          Text('国家与地区')
+          Text($r('app.string.profile_country_region'))
             .fontSize(19)
             .fontColor(COROS_WHITE)
           Blank().layoutWeight(1)
-          Text(this.selectedRegion === 'US' ? '美国' : '中国')
+          Text(this.selectedRegion === 'US' ? $r('app.string.common_united_states') : $r('app.string.common_china'))
             .fontSize(19)
-            .fontColor('#DADAE0')
+            .fontColor(AppColors.PROFILE_VALUE)
           Image($r('app.media.right_more'))
             .width(24)
             .height(24)
@@ -114,7 +123,7 @@ struct PasswordSetupPage {
         }
         .width('100%')
         .height(66)
-        .border({ width: { bottom: 1 }, color: '#303034' })
+        .border({ width: { bottom: 1 }, color: AppColors.ACCOUNT_AVATAR })
         .onClick(() => {
           this.regionPickerIndex = this.selectedRegion === 'US' ? 1 : 0;
           this.regionPickerVisible = true;
@@ -122,7 +131,7 @@ struct PasswordSetupPage {
 
         Blank().height(44)
 
-        CorosButton({ textValue: '注册', color: COROS_BUTTON_RED,
+        CorosButton({ textValue: $r('app.string.auth_register'), color: COROS_BUTTON_RED,
           enabledValue: this.registerActionEnabled, loading: this.isLoading,
           tapRequested: () => { this.submitRegister(); } });
 
@@ -142,22 +151,22 @@ struct PasswordSetupPage {
         Column()
           .width('100%')
           .height('100%')
-          .backgroundColor('#B8000000')
+          .backgroundColor(AppColors.AUTH_OVERLAY_SOFT)
           .onClick(() => { this.regionPickerVisible = false; })
 
         Column() {
           Row() {
-            Text('取消')
+            Text($r('app.string.common_cancel'))
               .fontSize(18)
               .fontColor(COROS_WHITE)
               .onClick(() => { this.regionPickerVisible = false; })
             Blank().layoutWeight(1)
-            Text('国家与地区')
+            Text($r('app.string.profile_country_region'))
               .fontSize(20)
               .fontWeight(FontWeight.Medium)
               .fontColor(COROS_WHITE)
             Blank().layoutWeight(1)
-            Text('确定')
+            Text($r('app.string.common_confirm'))
               .fontSize(18)
               .fontColor(COROS_WHITE)
               .onClick(() => {
@@ -176,8 +185,8 @@ struct PasswordSetupPage {
             .defaultPickerItemHeight(54)
             .canLoop(true)
             .selectedTextStyle({ color: COROS_WHITE, font: { size: 28, weight: FontWeight.Medium } })
-            .textStyle({ color: '#CFCFD4', font: { size: 23, weight: FontWeight.Normal } })
-            .divider({ strokeWidth: 1, color: '#34343A', startMargin: 14, endMargin: 14 })
+            .textStyle({ color: AppColors.PROFILE_WHEEL_NEAR, font: { size: 23, weight: FontWeight.Normal } })
+            .divider({ strokeWidth: 1, color: AppColors.PROFILE_WHEEL_BORDER, startMargin: 14, endMargin: 14 })
             .onChange((value: string | string[], index: number | number[]) => {
               this.regionPickerIndex = typeof index === 'number' ? index : 0;
             })
@@ -185,7 +194,7 @@ struct PasswordSetupPage {
           Blank().height(28)
         }
         .width('100%')
-        .backgroundColor('#1A1A1B')
+        .backgroundColor(AppColors.AUTH_SHEET)
         .borderRadius({ topLeft: 14, topRight: 14 })
         .align(Alignment.Bottom)
       }
@@ -218,7 +227,7 @@ struct PasswordSetupPage {
         verifyCode: '', displayName: '', region: this.selectedRegion
       });
     } catch (error) {
-      this.localError = '提交失败，请重试';
+      this.localError = 'auth_submit_failed';
       return;
     }
     this.syncState();

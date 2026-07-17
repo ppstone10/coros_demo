@@ -1,28 +1,3 @@
-export class AppText {
-  static readonly NAV_FITNESS: string = '体能';
-  static readonly NAV_RECORDS: string = '记录';
-  static readonly NAV_EXPLORE: string = '探索';
-  static readonly NAV_ME: string = '我';
-  static readonly TODAY: string = '今天';
-  static readonly DATE: string = '7月14日 星期二';
-  static readonly EDIT_CARDS: string = '编辑卡片';
-  static readonly MANAGE_CARDS: string = '管理卡片顺序（最少展示3项）';
-  static readonly MINIMUM_CARDS: string = '最少展示三项日常数据';
-  static readonly MORE_DATA: string = '更多日常数据';
-  static readonly RESTORE_DEFAULTS: string = '恢复默认数据';
-  static readonly NOT_SET: string = '未设置';
-  static readonly PERSONAL_INFO: string = '个人信息';
-  static readonly USERNAME: string = '用户名';
-  static readonly BIRTH_DATE: string = '出生日期';
-  static readonly HEIGHT: string = '身高';
-  static readonly WEIGHT: string = '体重';
-  static readonly COUNTRY: string = '国家与地区';
-  static readonly ACCOUNT: string = '账号';
-  static readonly LOGIN_ACCOUNT: string = '登录账号';
-  static readonly LOGOUT: string = '退出登录';
-  static readonly DELETE_ACCOUNT: string = '注销账户';
-}
-
 export class AppColors {
   static readonly BLACK: string = '#000000';
   static readonly WHITE: string = '#FFFFFF';
@@ -37,11 +12,77 @@ export class AppColors {
   static readonly ADD_ACTION: string = '#00DF7B';
   static readonly RISK: string = '#FFA34A';
   static readonly DIVIDER: string = '#303030';
+  static readonly HEALTH_EDIT_TEXT: string = '#DDDDDD';
+  static readonly HEALTH_DATE: string = '#8C8C8C';
+  static readonly HEALTH_METRIC_UNIT: string = '#898989';
+  static readonly HEALTH_CARD_TITLE: string = '#E8E8E8';
+  static readonly HEALTH_CHEVRON: string = '#666666';
+  static readonly HEALTH_WARNING: string = '#FF4B55';
+  static readonly HEALTH_EDITOR_TITLE: string = '#ECECEC';
+  static readonly HEALTH_PLACEHOLDER: string = '#BBBBBB';
   static readonly COMPLETE: string = '#19C875';
   static readonly INCOMPLETE: string = '#FFB735';
   static readonly DESTRUCTIVE: string = '#FF4053';
   static readonly NAV_BAR: string = '#F21A1A1C';
   static readonly NAV_UNSELECTED: string = '#85868A';
+  static readonly TRANSPARENT: string = '#00000000';
+  static readonly AUTH_DISABLED_BACKGROUND: string = '#1D1D1D';
+  static readonly AUTH_ENTRANCE_BUTTON: string = '#424242';
+  static readonly AUTH_INPUT_TEXT: string = '#D8D8DD';
+  static readonly AUTH_LOADING: string = '#3A3A3C';
+  static readonly AUTH_DIALOG: string = '#222224';
+  static readonly AUTH_INPUT_BORDER: string = '#3A3A3D';
+  static readonly AUTH_THIRD_PARTY_BORDER: string = '#303036';
+  static readonly AUTH_CHECKMARK: string = '#D0D0D0';
+  static readonly AUTH_OVERLAY_SOFT: string = '#B8000000';
+  static readonly AUTH_SHEET: string = '#1A1A1B';
+  static readonly AUTH_LEGAL_TEXT: string = '#C9C9CC';
+  static readonly PROFILE_DESCRIPTION: string = '#E8E8EC';
+  static readonly PROFILE_AVATAR: string = '#171719';
+  static readonly PROFILE_VALUE: string = '#DADAE0';
+  static readonly PROFILE_CONTROL: string = '#19191B';
+  static readonly PROFILE_SELECTED_BORDER: string = '#38383C';
+  static readonly PROFILE_WHEEL_NEAR: string = '#CFCFD4';
+  static readonly PROFILE_WHEEL_FAR: string = '#77777D';
+  static readonly PROFILE_WHEEL_BORDER: string = '#34343A';
+  static readonly PROFILE_ACTION_SHEET: string = '#18181A';
+  static readonly PROFILE_ACTION_DIVIDER: string = '#101012';
+  static readonly PROFILE_SAVE_DISABLED: string = '#5F001C';
+  static readonly ACCOUNT_AVATAR: string = '#303034';
+  static readonly ACCOUNT_DIVIDER: string = '#2B2B2D';
+  static readonly ACCOUNT_DIALOG: string = '#202023';
+  static readonly ACCOUNT_DIALOG_SECONDARY: string = '#343438';
+  static readonly NAV_PLACEHOLDER: string = '#B3B5BA';
+  static readonly OVERLAY_60: string = '#99000000';
+  static readonly OVERLAY_62: string = '#0000009E';
+  static readonly OVERLAY_42: string = '#6B000000';
+  static readonly DIALOG_ALT: string = '#222225';
+}
+
+export class AppTypography {
+  static readonly CAPTION: number = 11;
+  static readonly SUPPORTING: number = 12;
+  static readonly LABEL: number = 13;
+  static readonly ACTION: number = 14;
+  static readonly EDITOR_ROW: number = 15;
+  static readonly CARD_TITLE: number = 16;
+  static readonly SECTION_TITLE: number = 19;
+  static readonly HERO_TITLE: number = 28;
+}
+
+export class AppSpacing {
+  static readonly X_SMALL: number = 5;
+  static readonly SMALL: number = 8;
+  static readonly MEDIUM: number = 10;
+  static readonly CAPTION_BOTTOM: number = 11;
+  static readonly CONTENT_VERTICAL: number = 12;
+  static readonly LABEL_VERTICAL: number = 14;
+  static readonly CARD_CONTENT: number = 15;
+  static readonly SCREEN: number = 16;
+  static readonly LARGE: number = 18;
+  static readonly PAGE: number = 20;
+  static readonly SECTION: number = 24;
+  static readonly ACTION_HORIZONTAL: number = 28;
 }
 
 export class AppImages {

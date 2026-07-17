@@ -10,19 +10,27 @@ import { AuthRoutes } from '../login/AuthRoutes';
 import { handleAuthEffect } from '../login/AuthEffectHandler';
 import { getService } from '../login/HarmonyServiceProvider';
 import { saveStoreSnapshot } from '../login/StorePersister';
-import { AppColors, AppImages, AppText } from '../resources/AppResources';
+import { AppColors, AppImages, AppSpacing, AppTypography } from '../resources/AppResources';
+import { localizedAuthMessage } from '../resources/AuthLocalization';
+import { healthResource } from '../resources/HealthLocalization';
+import {
+  APP_LANGUAGE_CHINESE,
+  APP_LANGUAGE_ENGLISH,
+  selectAppLanguage
+} from '../resources/AppLanguage';
 import lottie, { AnimationItem } from '@ohos/lottie';
 
 interface CardEntry {
   type: string;
-  title: string;
-  summary: string;
+  titleKey: string;
+  summaryKey: string;
+  summaryArgs: string[];
   isRisk: boolean;
 }
 
 interface HealthSnapshot {
   scenario: string;
-  dateLabel: string;
+  dateLabelKey: string;
   steps: number;
   calories: number;
   activeMinutes: number;
@@ -32,12 +40,12 @@ interface HealthSnapshot {
 
 class HealthCardModel {
   id: string;
-  title: string;
-  summary: string;
+  title: ResourceStr;
+  summary: ResourceStr;
   iconIndex: number;
   isRisk: boolean;
 
-  constructor(id: string, title: string, summary: string, iconIndex: number, isRisk: boolean = false) {
+  constructor(id: string, title: ResourceStr, summary: ResourceStr, iconIndex: number, isRisk: boolean = false) {
     this.id = id;
     this.title = title;
     this.summary = summary;
@@ -48,19 +56,19 @@ class HealthCardModel {
 
 function createDefaultHealthCards(): HealthCardModel[] {
   return [
-    new HealthCardModel('WeeklyPlan', '本周计划', '本周无计划', 0),
-    new HealthCardModel('TrainingLoad', '本周负荷', '本周负荷 526，建议范围 300-700', 1),
-    new HealthCardModel('TrainingAssessment', '训练量评估', '将在第一次运动后 7 天评估您的训练量', 2),
-    new HealthCardModel('Recovery', '体力恢复', '恢复评分 78，预计 14 小时后恢复', 3),
-    new HealthCardModel('RunningAbility', '跑步能力', '记录一笔 25min 以上的户外跑步运动', 4),
-    new HealthCardModel('CyclingAbility', '骑行FTP', '连接功率计，完成一次 20min 以上稳定骑行', 5),
-    new HealthCardModel('HeartRate', '心率', '佩戴手表记录心率数据', 6),
-    new HealthCardModel('Stress', '压力', '佩戴手表或进行健康快测获取压力', 7),
-    new HealthCardModel('Sleep', '睡眠', '昨夜睡眠 7小时18分，质量 86', 8),
-    new HealthCardModel('HrvAssessment', 'HRV评估', '睡觉时佩戴手表获取数据', 9),
-    new HealthCardModel('RestingHeartRate', '静息心率', '睡觉时佩戴手表或进行静息心率测试', 10),
-    new HealthCardModel('HealthCheck', '健康快测', '使用手表"健康快测"获取数据', 11),
-    new HealthCardModel('BodyManagement', '体型管理', '体重 68.2 kg · 本周主要锻炼部位', 12)
+    new HealthCardModel('WeeklyPlan', $r('app.string.health_card_weekly_plan_title'), $r('app.string.health_summary_weekly_empty'), 0),
+    new HealthCardModel('TrainingLoad', $r('app.string.health_card_training_load_title'), $r('app.string.health_summary_training_load_empty'), 1),
+    new HealthCardModel('TrainingAssessment', $r('app.string.health_card_training_assessment_title'), $r('app.string.health_summary_training_assessment_empty'), 2),
+    new HealthCardModel('Recovery', $r('app.string.health_card_recovery_title'), $r('app.string.health_summary_recovery_empty'), 3),
+    new HealthCardModel('RunningAbility', $r('app.string.health_card_running_ability_title'), $r('app.string.health_summary_running_empty'), 4),
+    new HealthCardModel('CyclingAbility', $r('app.string.health_card_cycling_ability_title'), $r('app.string.health_summary_cycling_empty'), 5),
+    new HealthCardModel('HeartRate', $r('app.string.health_card_heart_rate_title'), $r('app.string.health_summary_heart_rate_empty'), 6),
+    new HealthCardModel('Stress', $r('app.string.health_card_stress_title'), $r('app.string.health_summary_stress_empty'), 7),
+    new HealthCardModel('Sleep', $r('app.string.health_card_sleep_title'), $r('app.string.health_summary_sleep_empty'), 8),
+    new HealthCardModel('HrvAssessment', $r('app.string.health_card_hrv_assessment_title'), $r('app.string.health_summary_hrv_empty'), 9),
+    new HealthCardModel('RestingHeartRate', $r('app.string.health_card_resting_heart_rate_title'), $r('app.string.health_summary_resting_hr_empty'), 10),
+    new HealthCardModel('HealthCheck', $r('app.string.health_card_health_check_title'), $r('app.string.health_summary_health_check_empty'), 11),
+    new HealthCardModel('BodyManagement', $r('app.string.health_card_body_management_title'), $r('app.string.health_summary_body_empty'), 12)
   ];
 }
 
@@ -92,12 +100,12 @@ struct SignedInPage {
   @State dragOffset: number = 0;
   @State showScenarioPicker: boolean = false;
   @State scenarioName: string = 'Normal';
-  @State scenarioDisplayText: string = '正常数据';
+  @State scenarioDisplayText: ResourceStr = $r('app.string.health_scenario_normal');
   private scenarios: string[] = ['Normal','PartialMissing','AllEmpty','Abnormal','ReadFailure'];
   @State healthSteps: string = '8769';
   @State healthCalories: string = '769';
   @State healthMinutes: string = '69';
-  @State healthDateLabel: string = AppText.DATE;
+  @State healthDateLabel: ResourceStr = $r('app.string.health_demo_date');
   @State dashboardVersion: number = 0;
   @State dashboardVisible: boolean = true;
   private lottieCanvasCtx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true));
@@ -114,6 +122,9 @@ struct SignedInPage {
   @State weightText: string = '';
   @State countryRegion: string = '';
   @State profileComplete: boolean = false;
+  @StorageLink('app_language') appLanguage: string = APP_LANGUAGE_CHINESE;
+  @StorageLink('app_language_version') languageVersion: number = 0;
+  @State showLanguageDialog: boolean = false;
 
   aboutToAppear(): void {
     this.loadSavedCardOrder();
@@ -169,6 +180,9 @@ struct SignedInPage {
       if (this.showScenarioPicker) {
         this.ScenarioPicker();
       }
+      if (this.showLanguageDialog) {
+        this.LanguageDialog();
+      }
     }
     .width('100%')
     .height('100%')
@@ -190,13 +204,14 @@ struct SignedInPage {
               this.DashboardCard(card);
             }, (card: HealthCardModel) => `${card.id}_v${this.dashboardVersion}`)
 
-            Text(AppText.EDIT_CARDS)
-              .fontSize(13)
-              .fontColor('#DDDDDD')
-              .padding({ left: 28, right: 28, top: 10, bottom: 10 })
+            Text($r('app.string.health_edit_cards'))
+              .fontSize(AppTypography.LABEL)
+              .fontColor(AppColors.HEALTH_EDIT_TEXT)
+              .padding({ left: AppSpacing.ACTION_HORIZONTAL, right: AppSpacing.ACTION_HORIZONTAL,
+                top: AppSpacing.MEDIUM, bottom: AppSpacing.MEDIUM })
               .backgroundColor(AppColors.HEALTH_CARD)
               .borderRadius(22)
-              .margin({ top: 18, bottom: 42 })
+              .margin({ top: AppSpacing.LARGE, bottom: 42 })
               .onClick(() => { this.beginCardEditing(); })
           }
           .width('100%')
@@ -222,15 +237,15 @@ struct SignedInPage {
   HeroTopRow() {
     Row() {
       Column() {
-        Text(this.healthDateLabel).fontSize(11).fontColor('#8C8C8C')
-        Text(AppText.TODAY).fontSize(28).fontColor(AppColors.WHITE).fontWeight(FontWeight.Medium)
+        Text(this.healthDateLabel).fontSize(AppTypography.CAPTION).fontColor(AppColors.HEALTH_DATE)
+        Text($r('app.string.health_today')).fontSize(AppTypography.HERO_TITLE).fontColor(AppColors.WHITE).fontWeight(FontWeight.Medium)
       }
       .alignItems(HorizontalAlign.Start).layoutWeight(1)
       Image(AppImages.calendar()).width(23).height(23).objectFit(ImageFit.Contain)
       Blank().width(18)
       Canvas(this.lottieCanvasCtx)
         .width(30).height(30)
-        .backgroundColor('#00000000')
+        .backgroundColor(AppColors.TRANSPARENT)
         .onReady(() => {
           if (this.lottieItem !== null) {
             this.lottieItem.destroy('lottieWatch');
@@ -263,13 +278,13 @@ struct SignedInPage {
       Progress({ value: 78, total: 100, type: ProgressType.Ring })
         .width(126).height(126).color(AppColors.GAUGE).style({ strokeWidth: 5 })
       Row() {
-        MetricComp({ icon: AppImages.steps(), value: this.healthSteps, unit: '步' })
+        MetricComp({ icon: AppImages.steps(), value: this.healthSteps, unit: $r('app.string.health_unit_steps') })
           .id(`metricSteps_${this.dashboardVersion}`)
         Blank().layoutWeight(1)
-        MetricComp({ icon: AppImages.calories(), value: this.healthCalories, unit: 'Kcal' })
+        MetricComp({ icon: AppImages.calories(), value: this.healthCalories, unit: $r('app.string.health_unit_calories') })
           .id(`metricCal_${this.dashboardVersion}`)
         Blank().layoutWeight(1)
-        MetricComp({ icon: AppImages.activeDuration(), value: this.healthMinutes, unit: 'Min' })
+        MetricComp({ icon: AppImages.activeDuration(), value: this.healthMinutes, unit: $r('app.string.health_unit_minutes') })
           .id(`metricMin_${this.dashboardVersion}`)
       }
       .width('100%')
@@ -294,21 +309,21 @@ struct SignedInPage {
   CardEditor() {
     Column() {
       Row() {
-        Text('‹').fontSize(38).fontColor(AppColors.WHITE).width(64)
+        Text($r('app.string.common_back')).fontSize(38).fontColor(AppColors.WHITE).width(64)
           .onClick(() => { this.cancelCardEditing(); })
-        Text(AppText.EDIT_CARDS).fontSize(19).fontColor(AppColors.WHITE).fontWeight(FontWeight.Medium)
+        Text($r('app.string.health_edit_cards')).fontSize(AppTypography.SECTION_TITLE).fontColor(AppColors.WHITE).fontWeight(FontWeight.Medium)
           .layoutWeight(1).textAlign(TextAlign.Center)
-        Text('保存').fontSize(14).fontColor(AppColors.WHITE).width(64).height(30).textAlign(TextAlign.Center)
+        Text($r('app.string.common_save')).fontSize(AppTypography.ACTION).fontColor(AppColors.WHITE).width(64).height(30).textAlign(TextAlign.Center)
           .backgroundColor(AppColors.ACTION).borderRadius(6)
           .onClick(() => { this.commitCardEditing(); })
       }
       .width('100%').height(64).padding({ left: 18, right: 18 }).margin({ top: 32 })
       .alignItems(VerticalAlign.Center)
 
-      Text(AppText.MANAGE_CARDS).fontSize(13).fontColor(AppColors.MUTED)
+      Text($r('app.string.health_manage_cards')).fontSize(AppTypography.LABEL).fontColor(AppColors.MUTED)
         .width('100%').padding({ left: 22, right: 22, bottom: 10 })
       if (this.warning.length > 0) {
-        Text(this.warning).fontSize(12).fontColor('#FF4B55').margin({ bottom: 8 })
+        Text(this.warning).fontSize(AppTypography.SUPPORTING).fontColor(AppColors.HEALTH_WARNING).margin({ bottom: AppSpacing.SMALL })
       }
 
       Scroll(this.cardEditorScroller) {
@@ -318,14 +333,14 @@ struct SignedInPage {
           }, (card: HealthCardModel) => card.id)
 
           if (this.inactiveCards().length > 0) {
-            Text(AppText.MORE_DATA).fontSize(13).fontColor(AppColors.MUTED)
+            Text($r('app.string.health_more_daily_data')).fontSize(AppTypography.LABEL).fontColor(AppColors.MUTED)
               .width('100%').margin({ top: 24, bottom: 11, left: 6 })
             ForEach(this.inactiveCards(), (card: HealthCardModel) => {
               this.AddCardRow(card);
             }, (card: HealthCardModel) => card.id)
           }
 
-          Text(AppText.RESTORE_DEFAULTS).fontSize(14).fontColor(AppColors.ACTION)
+          Text($r('app.string.health_restore_defaults')).fontSize(AppTypography.ACTION).fontColor(AppColors.ACTION)
             .width('100%').padding({ left: 18, right: 18, top: 17, bottom: 17 })
             .margin({ top: 24, bottom: 32 })
             .backgroundColor(AppColors.HEALTH_CARD).borderRadius(8)
@@ -352,7 +367,7 @@ struct SignedInPage {
       Blank().width(10)
       Image(AppImages.healthIcon(card.iconIndex)).width(22).height(22).objectFit(ImageFit.Contain)
       Blank().width(10)
-      Text(card.title).fontSize(15).fontColor('#ECECEC').layoutWeight(1)
+      Text(card.title).fontSize(AppTypography.EDITOR_ROW).fontColor(AppColors.HEALTH_EDITOR_TITLE).layoutWeight(1)
       Image(AppImages.editorRemove()).width(30).height(30).objectFit(ImageFit.Contain)
         .onClick(() => { this.removeCard(card.id); })
     }
@@ -365,7 +380,7 @@ struct SignedInPage {
     })
     .shadow(this.draggingCardId === card.id ? {
       radius: 12,
-      color: '#99000000',
+      color: AppColors.OVERLAY_60,
       offsetY: 5
     } : { radius: 0 })
     .opacity(this.draggingCardId === card.id ? 0.94 : 1)
@@ -393,7 +408,7 @@ struct SignedInPage {
     Row() {
       Image(AppImages.healthIcon(card.iconIndex)).width(22).height(22).objectFit(ImageFit.Contain)
       Blank().width(10)
-      Text(card.title).fontSize(15).fontColor('#ECECEC').layoutWeight(1)
+      Text(card.title).fontSize(AppTypography.EDITOR_ROW).fontColor(AppColors.HEALTH_EDITOR_TITLE).layoutWeight(1)
       Stack({ alignContent: Alignment.Center }) {
         Text('+').fontSize(24).fontColor(AppColors.WHITE).fontWeight(FontWeight.Lighter)
       }
@@ -414,7 +429,7 @@ struct SignedInPage {
       Row() {
         Text('‹').fontSize(38).fontColor(AppColors.WHITE).width(48)
           .onClick(() => { this.detailCardId = ''; })
-        Text(this.detailCard().title).fontSize(19).fontColor(AppColors.WHITE)
+        Text(this.detailCard().title).fontSize(AppTypography.SECTION_TITLE).fontColor(AppColors.WHITE)
           .layoutWeight(1).textAlign(TextAlign.Center)
         Blank().width(48)
       }
@@ -422,7 +437,8 @@ struct SignedInPage {
       .alignItems(VerticalAlign.Center)
       Column({ space: 20 }) {
         Image(AppImages.healthIcon(this.detailCard().iconIndex)).width(56).height(56).objectFit(ImageFit.Contain)
-        Text(`${this.detailCard().title}功能后续实现`).fontSize(16).fontColor('#BBBBBB')
+        Text(this.localizedHealthText('health_pending_feature', [this.resourceText(this.detailCard().title)]))
+          .fontSize(AppTypography.CARD_TITLE).fontColor(AppColors.HEALTH_PLACEHOLDER)
       }
       .layoutWeight(1).justifyContent(FlexAlign.Center)
     }
@@ -433,8 +449,15 @@ struct SignedInPage {
   AccountOverview() {
     Scroll() {
       Column() {
-        Text(AppText.NAV_ME).fontSize(26).fontColor(AppColors.WHITE).fontWeight(FontWeight.Medium)
-          .width('100%').margin({ top: 52, bottom: 18 })
+        Row() {
+          Text($r('app.string.account_title')).fontSize(26).fontColor(AppColors.WHITE).fontWeight(FontWeight.Medium)
+          Blank().layoutWeight(1)
+          SymbolGlyph($r('sys.symbol.worldclock'))
+            .fontSize(26).fontColor([AppColors.WHITE]).width(44).height(44)
+            .accessibilityText($r('app.string.language_switch'))
+            .onClick(() => { this.showLanguageDialog = true; })
+        }
+        .width('100%').margin({ top: 42, bottom: 8 })
 
         Row() {
           if (this.profileAvatarUri.length > 0) {
@@ -444,7 +467,7 @@ struct SignedInPage {
               Text(this.displayName.substring(0, Math.min(1, this.displayName.length)).toUpperCase())
                 .fontSize(23).fontColor(AppColors.WHITE)
             }
-            .width(58).height(58).borderRadius(29).backgroundColor('#303034')
+            .width(58).height(58).borderRadius(29).backgroundColor(AppColors.ACCOUNT_AVATAR)
           }
           Blank().width(14)
           Column({ space: 5 }) {
@@ -452,36 +475,36 @@ struct SignedInPage {
             Text(this.sessionAccount).fontSize(12).fontColor(AppColors.ACCOUNT_MUTED).maxLines(1)
           }
           .alignItems(HorizontalAlign.Start).layoutWeight(1)
-          Text(this.profileComplete ? '资料已完善' : '资料待完善').fontSize(11)
+          Text(this.profileComplete ? $r('app.string.account_profile_complete') : $r('app.string.account_profile_incomplete')).fontSize(11)
             .fontColor(this.profileComplete ? AppColors.COMPLETE : AppColors.INCOMPLETE)
         }
         .width('100%').padding(18).backgroundColor(AppColors.HEALTH_CARD).borderRadius(10)
         .onClick(() => { navigateWithParams(NavOperation.Push, AuthRoutes.toProfileEdit()); })
 
-        this.SectionTitle(AppText.PERSONAL_INFO);
+        this.SectionTitle($r('app.string.account_personal_info'));
         Column() {
-          this.ValueRow(AppText.USERNAME, this.displayName);
-          this.ValueRow(AppText.BIRTH_DATE, this.birthDate);
-          this.ValueRow(AppText.HEIGHT, this.heightText);
-          this.ValueRow(AppText.WEIGHT, this.weightText);
-          this.ValueRow(AppText.COUNTRY, this.countryRegion);
+          this.ValueRow($r('app.string.profile_username'), this.displayName);
+          this.ValueRow($r('app.string.profile_birth_date'), this.birthDate);
+          this.ValueRow($r('app.string.profile_height'), this.heightText);
+          this.ValueRow($r('app.string.profile_weight'), this.weightText);
+          this.ValueRow($r('app.string.profile_country_region'), this.localizedCountryName(this.countryRegion));
         }
         .width('100%').backgroundColor(AppColors.HEALTH_CARD).borderRadius(10)
 
-        this.SectionTitle(AppText.ACCOUNT);
+        this.SectionTitle($r('app.string.account_section'));
         Column() {
-          this.ValueRow(AppText.LOGIN_ACCOUNT, this.sessionAccount);
-          Text(AppText.LOGOUT).fontSize(14).fontColor(AppColors.WHITE)
+          this.ValueRow($r('app.string.account_login_account'), this.sessionAccount);
+          Text($r('app.string.account_logout')).fontSize(14).fontColor(AppColors.WHITE)
             .width('100%').height(52).padding({ left: 16 }).textAlign(TextAlign.Start)
             .onClick(() => { this.logout(); })
-          Text(AppText.DELETE_ACCOUNT).fontSize(14).fontColor(AppColors.DESTRUCTIVE)
+          Text($r('app.string.account_delete')).fontSize(14).fontColor(AppColors.DESTRUCTIVE)
             .width('100%').height(52).padding({ left: 16 }).textAlign(TextAlign.Start)
             .onClick(() => { this.showDeleteDialog = true; })
         }
         .width('100%').backgroundColor(AppColors.HEALTH_CARD).borderRadius(10)
 
         if (this.localError.length > 0) {
-          Text(this.localError).fontSize(13).fontColor('#FF4B55').margin({ top: 18 })
+          Text(localizedAuthMessage(this.localError)).fontSize(AppTypography.LABEL).fontColor(AppColors.HEALTH_WARNING).margin({ top: AppSpacing.LARGE })
         }
         Blank().height(30)
       }
@@ -491,27 +514,27 @@ struct SignedInPage {
   }
 
   @Builder
-  SectionTitle(title: string) {
+  SectionTitle(title: ResourceStr) {
     Text(title).fontSize(13).fontColor(AppColors.ACCOUNT_MUTED)
       .width('100%').margin({ top: 24, bottom: 10, left: 4 })
   }
 
   @Builder
-  ValueRow(label: string, value: string) {
+  ValueRow(label: ResourceStr, value: string) {
     Row() {
       Text(label).fontSize(14).fontColor(AppColors.WHITE)
       Blank().layoutWeight(1)
-      Text(value.length > 0 ? value : AppText.NOT_SET).fontSize(13).fontColor(AppColors.ACCOUNT_MUTED)
+      Text(value.length > 0 ? value : $r('app.string.common_not_set')).fontSize(13).fontColor(AppColors.ACCOUNT_MUTED)
     }
     .width('100%').height(52).padding({ left: 16, right: 16 })
-    .border({ width: { bottom: 1 }, color: '#2B2B2D' })
+    .border({ width: { bottom: 1 }, color: AppColors.ACCOUNT_DIVIDER })
   }
 
   @Builder
   Placeholder() {
     Column() {
-      Text(`${this.selectedTab === 1 ? AppText.NAV_RECORDS : AppText.NAV_EXPLORE} 功能将在后续版本开放`)
-        .fontSize(16).fontColor('#B3B5BA').textAlign(TextAlign.Center)
+      Text($r('app.string.nav_unavailable', this.selectedTab === 1 ? $r('app.string.nav_records') : $r('app.string.nav_explore')))
+        .fontSize(16).fontColor(AppColors.NAV_PLACEHOLDER).textAlign(TextAlign.Center)
     }
     .layoutWeight(1).width('100%').justifyContent(FlexAlign.Center)
   }
@@ -519,17 +542,17 @@ struct SignedInPage {
   @Builder
   BottomNavigation() {
     Row() {
-      this.NavItem(0, AppText.NAV_FITNESS);
-      this.NavItem(1, AppText.NAV_RECORDS);
-      this.NavItem(2, AppText.NAV_EXPLORE);
-      this.NavItem(3, AppText.NAV_ME);
+      this.NavItem(0, $r('app.string.nav_fitness'));
+      this.NavItem(1, $r('app.string.nav_records'));
+      this.NavItem(2, $r('app.string.nav_explore'));
+      this.NavItem(3, $r('app.string.nav_me'));
     }
     .width('100%').height(66).padding({ top: 7, bottom: 5 })
     .backgroundColor(AppColors.NAV_BAR)
   }
 
   @Builder
-  NavItem(index: number, title: string) {
+  NavItem(index: number, title: ResourceStr) {
     Column({ space: 2 }) {
       if (this.selectedTab === index) {
         Image(AppImages.navigationSelected(index)).width(27).height(27).objectFit(ImageFit.Contain)
@@ -553,21 +576,54 @@ struct SignedInPage {
     Column() {
       Blank().layoutWeight(1)
       Column({ space: 24 }) {
-        Text('是否确认注销账号').fontSize(18).fontColor(AppColors.WHITE).textAlign(TextAlign.Center)
+        Text($r('app.string.account_delete_confirmation')).fontSize(18).fontColor(AppColors.WHITE).textAlign(TextAlign.Center)
         Row({ space: 14 }) {
-          Button('取消', { type: ButtonType.Normal }).fontSize(16).fontColor(AppColors.WHITE)
-            .layoutWeight(1).height(44).borderRadius(8).backgroundColor('#343438')
+          Button($r('app.string.common_cancel'), { type: ButtonType.Normal }).fontSize(16).fontColor(AppColors.WHITE)
+            .layoutWeight(1).height(44).borderRadius(8).backgroundColor(AppColors.ACCOUNT_DIALOG_SECONDARY)
             .onClick(() => { this.showDeleteDialog = false; })
-          Button('确认', { type: ButtonType.Normal }).fontSize(16).fontColor(AppColors.WHITE)
-            .layoutWeight(1).height(44).borderRadius(8).backgroundColor('#B80035')
+          Button($r('app.string.common_confirm'), { type: ButtonType.Normal }).fontSize(16).fontColor(AppColors.WHITE)
+            .layoutWeight(1).height(44).borderRadius(8).backgroundColor(AppColors.ACTION)
             .onClick(() => { this.confirmDeleteAccount(); })
         }
       }
       .padding({ left: 24, right: 24, top: 22, bottom: 22 })
-      .backgroundColor('#202023').borderRadius(12).margin({ left: 42, right: 42 })
+      .backgroundColor(AppColors.ACCOUNT_DIALOG).borderRadius(12).margin({ left: 42, right: 42 })
       Blank().layoutWeight(1)
     }
-    .width('100%').height('100%').backgroundColor('#0000009E')
+    .width('100%').height('100%').backgroundColor(AppColors.OVERLAY_62)
+  }
+
+  @Builder
+  LanguageDialog() {
+    Column() {
+      Column({ space: 4 }) {
+        Text($r('app.string.language_select_title'))
+          .fontSize(19).fontColor(AppColors.WHITE).fontWeight(FontWeight.Medium)
+          .width('100%').padding({ left: 20, right: 20, top: 16, bottom: 10 })
+        this.LanguageOption($r('app.string.language_chinese'), APP_LANGUAGE_CHINESE);
+        this.LanguageOption($r('app.string.language_english'), APP_LANGUAGE_ENGLISH);
+      }
+      .width('84%').padding({ bottom: 12 }).backgroundColor(AppColors.ACCOUNT_DIALOG).borderRadius(14)
+    }
+    .width('100%').height('100%').justifyContent(FlexAlign.Center).backgroundColor(AppColors.OVERLAY_62)
+  }
+
+  @Builder
+  LanguageOption(label: ResourceStr, language: string) {
+    Row() {
+      Text(label).fontSize(16).fontColor(AppColors.WHITE)
+      Blank().layoutWeight(1)
+      if (this.appLanguage === language) {
+        Text('✓').fontSize(18).fontColor(AppColors.COMPLETE)
+      }
+    }
+    .width('100%').height(52).padding({ left: 22, right: 22 })
+    .onClick(() => {
+      selectAppLanguage(language);
+      this.loadHealthDataFromKMP();
+      this.dashboardVersion++;
+      this.showLanguageDialog = false;
+    })
   }
 
   @Builder
@@ -590,9 +646,9 @@ struct SignedInPage {
           })
         }, (scenario: string) => scenario)
       }
-      .borderRadius(10).backgroundColor('#222225').padding(12).margin({ left: 24, right: 24 })
+      .borderRadius(10).backgroundColor(AppColors.DIALOG_ALT).padding(12).margin({ left: 24, right: 24 })
     }
-    .width('100%').height('100%').backgroundColor('#0000009E').justifyContent(FlexAlign.Center)
+    .width('100%').height('100%').backgroundColor(AppColors.OVERLAY_62).justifyContent(FlexAlign.Center)
     .onClick(() => { this.showScenarioPicker = false; })
   }
 
@@ -603,13 +659,13 @@ struct SignedInPage {
     this.lottieItem?.goToAndStop(0, true);
   }
 
-  private scenarioLabel(name: string): string {
+  private scenarioLabel(name: string): ResourceStr {
     switch (name) {
-      case 'Normal': return '正常数据';
-      case 'PartialMissing': return '部分数据缺失';
-      case 'AllEmpty': return '全部数据为空';
-      case 'Abnormal': return '异常数据';
-      case 'ReadFailure': return '数据损坏';
+      case 'Normal': return $r('app.string.health_scenario_normal');
+      case 'PartialMissing': return $r('app.string.health_scenario_partial_missing');
+      case 'AllEmpty': return $r('app.string.health_scenario_all_empty');
+      case 'Abnormal': return $r('app.string.health_scenario_abnormal');
+      case 'ReadFailure': return $r('app.string.health_scenario_read_failure');
       default: return name;
     }
   }
@@ -621,7 +677,7 @@ struct SignedInPage {
       let data: HealthSnapshot = JSON.parse(json) as HealthSnapshot;
       if (!data || !data.cards || data.cards.length === 0) return;
       this.scenarioName = data.scenario || 'Normal';
-      this.healthDateLabel = data.dateLabel || AppText.DATE;
+      this.healthDateLabel = this.localizedHealthText(data.dateLabelKey || 'health_demo_date', []);
       this.healthSteps = String(data.steps || 0);
       this.healthCalories = String(data.calories || 0);
       this.healthMinutes = String(data.activeMinutes || 0);
@@ -629,7 +685,13 @@ struct SignedInPage {
       for (let i = 0; i < data.cards.length; i++) {
         let c: CardEntry = data.cards[i];
         let idx: number = this.cardIconIndex(c.type);
-        cards.push(new HealthCardModel(c.type, c.title, c.summary, idx, c.isRisk));
+        cards.push(new HealthCardModel(
+          c.type,
+          this.localizedHealthText(c.titleKey, []),
+          this.localizedHealthText(c.summaryKey, c.summaryArgs || []),
+          idx,
+          c.isRisk
+        ));
       }
       this.healthCards = cards;
     } catch (e) {
@@ -655,6 +717,20 @@ struct SignedInPage {
       case 'TodayActivity': return 6;
       default: return 6;
     }
+  }
+
+  private localizedHealthText(key: string, args: string[]): string {
+    let resource: Resource = healthResource(key);
+    let manager = getContext(this).resourceManager;
+    if (args.length === 0) return manager.getStringSync(resource.id);
+    if (args.length === 1) return manager.getStringSync(resource.id, args[0]);
+    if (args.length === 2) return manager.getStringSync(resource.id, args[0], args[1]);
+    return manager.getStringSync(resource.id, args[0], args[1], args[2]);
+  }
+
+  private resourceText(value: ResourceStr): string {
+    if (typeof value === 'string') return value;
+    return getContext(this).resourceManager.getStringSync(value.id);
   }
 
   private beginCardEditing(): void {
@@ -818,7 +894,7 @@ struct SignedInPage {
 
   private removeCard(id: string): void {
     if (this.editingHealthCards.length <= 3) {
-      this.warning = AppText.MINIMUM_CARDS;
+      this.warning = this.localizedHealthText('health_minimum_cards', []);
       return;
     }
     this.editingHealthCards = this.editingHealthCards.filter((card: HealthCardModel) => card.id !== id);
@@ -857,19 +933,29 @@ struct SignedInPage {
     this.countryRegion = state.currentSession.countryRegion;
     this.profileComplete = state.currentSession.isProfileComplete;
   }
+
+  private localizedCountryName(code: string): string {
+    switch (code.trim().toUpperCase()) {
+      case 'US': return getContext(this).resourceManager.getStringSync($r('app.string.common_united_states').id);
+      case 'GB':
+      case 'UK': return getContext(this).resourceManager.getStringSync($r('app.string.common_united_kingdom').id);
+      case 'JP': return getContext(this).resourceManager.getStringSync($r('app.string.common_japan').id);
+      default: return getContext(this).resourceManager.getStringSync($r('app.string.common_china').id);
+    }
+  }
 }
 
 @Component
 struct MetricComp {
   @Prop icon: Resource;
   @Prop value: string;
-  @Prop unit: string;
+  @Prop unit: ResourceStr;
 
   build() {
     Column({ space: 3 }) {
       Image(this.icon).width(22).height(22).objectFit(ImageFit.Contain)
-      Text(this.value).fontSize(28).fontColor('#FFFFFF')
-      Text(this.unit).fontSize(11).fontColor('#898989')
+      Text(this.value).fontSize(AppTypography.HERO_TITLE).fontColor(AppColors.WHITE)
+      Text(this.unit).fontSize(AppTypography.CAPTION).fontColor(AppColors.HEALTH_METRIC_UNIT)
     }
     .width(82)
   }
@@ -885,12 +971,12 @@ struct DashboardCardComp {
       Image(AppImages.healthIcon(this.card.iconIndex)).width(22).height(22).objectFit(ImageFit.Contain)
       Blank().width(10)
       Column({ space: 5 }) {
-        Text(this.card.title).fontSize(16).fontColor('#E8E8E8').fontWeight(FontWeight.Medium)
-        Text(this.card.summary).fontSize(12).fontColor(this.card.isRisk ? AppColors.RISK : AppColors.MUTED)
+        Text(this.card.title).fontSize(AppTypography.CARD_TITLE).fontColor(AppColors.HEALTH_CARD_TITLE).fontWeight(FontWeight.Medium)
+        Text(this.card.summary).fontSize(AppTypography.SUPPORTING).fontColor(this.card.isRisk ? AppColors.RISK : AppColors.MUTED)
           .maxLines(2).textOverflow({ overflow: TextOverflow.Ellipsis })
       }
       .alignItems(HorizontalAlign.Start).layoutWeight(1)
-      Text('›').fontSize(25).fontColor('#666666')
+      Text('›').fontSize(25).fontColor(AppColors.HEALTH_CHEVRON)
     }
     .width('calc(100% - 32vp)')
     .constraintSize({ minHeight: 76 })

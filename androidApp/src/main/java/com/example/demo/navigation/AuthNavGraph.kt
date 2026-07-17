@@ -13,6 +13,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -24,11 +25,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.example.demo.R
 import com.example.demo.common.login.AuthMode
 import com.example.demo.common.login.LoginEffect
 import com.example.demo.common.login.VerifyTarget
 import com.example.demo.login.components.rememberLoginViewModel
 import com.example.demo.login.components.findActivity
+import com.example.demo.login.components.localizedAuthMessage
 import com.example.demo.login.entrance.EntranceScreen
 import com.example.demo.login.legal.PrivacyPolicyScreen
 import com.example.demo.login.legal.ServiceTermsScreen
@@ -74,6 +77,7 @@ fun AuthNavGraph() {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val view = LocalView.current
+    val resources = LocalResources.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(Unit) {
@@ -106,7 +110,7 @@ fun AuthNavGraph() {
         }
     }
 
-    LaunchedEffect(viewModel.effect) {
+    LaunchedEffect(viewModel.effect, resources) {
         when (val effect = viewModel.effect) {
             is LoginEffect.AuthSucceeded -> {
                 if (effect.mode == AuthMode.Register) {
@@ -116,7 +120,7 @@ fun AuthNavGraph() {
                         ProfileCompletionRoute
                     }
                     navController.navigateWithOperation(destination, NavOperation.ResetTo)
-                    snackbarHostState.showSnackbar("注册成功")
+                    snackbarHostState.showSnackbar(resources.getString(R.string.auth_register_success))
                 } else {
                     val destination = if (effect.session.isProfileComplete) {
                         SignedInRoute
@@ -124,37 +128,37 @@ fun AuthNavGraph() {
                         ProfileCompletionRoute
                     }
                     navController.navigateWithOperation(destination, NavOperation.ResetTo)
-                    snackbarHostState.showSnackbar("登录成功")
+                    snackbarHostState.showSnackbar(resources.getString(R.string.auth_login_success))
                 }
                 viewModel.onEffectConsumed()
             }
             is LoginEffect.NavigateHome -> {
                 navController.navigateWithOperation(SignedInRoute, NavOperation.ResetTo)
-                snackbarHostState.showSnackbar("登录成功")
+                snackbarHostState.showSnackbar(resources.getString(R.string.auth_login_success))
                 viewModel.onEffectConsumed()
             }
             is LoginEffect.ProfileSaved -> {
                 navController.navigateWithOperation(SignedInRoute, NavOperation.ResetTo)
-                snackbarHostState.showSnackbar("资料已保存")
+                snackbarHostState.showSnackbar(resources.getString(R.string.profile_saved))
                 viewModel.onEffectConsumed()
             }
             LoginEffect.LoggedOut -> {
                 navController.navigateWithOperation(EntranceRoute, NavOperation.ResetTo)
-                snackbarHostState.showSnackbar("已退出登录")
+                snackbarHostState.showSnackbar(resources.getString(R.string.account_logout_success))
                 viewModel.onEffectConsumed()
             }
             LoginEffect.AccountDeleted -> {
                 navController.navigateWithOperation(EntranceRoute, NavOperation.ResetTo)
-                snackbarHostState.showSnackbar("账户已注销")
+                snackbarHostState.showSnackbar(resources.getString(R.string.account_delete_success))
                 viewModel.onEffectConsumed()
             }
             LoginEffect.SessionExpired -> {
                 navController.navigateWithOperation(LoginRoute, NavOperation.ResetKeepingEntranceAndPush)
-                snackbarHostState.showSnackbar("会话已失效，请重新登录")
+                snackbarHostState.showSnackbar(resources.getString(R.string.auth_session_expired))
                 viewModel.onEffectConsumed()
             }
             is LoginEffect.ShowMessage -> {
-                snackbarHostState.showSnackbar(effect.message)
+                snackbarHostState.showSnackbar(resources.localizedAuthMessage(effect.message).orEmpty())
                 viewModel.onEffectConsumed()
             }
             null -> {}
@@ -299,7 +303,7 @@ fun AuthNavGraph() {
                     onResetSuccess = {
                         navController.navigateWithOperation(LoginRoute, NavOperation.ResetKeepingEntranceAndPush)
                         coroutineScope.launch {
-                            snackbarHostState.showSnackbar("密码已更新")
+                            snackbarHostState.showSnackbar(resources.getString(R.string.auth_password_updated))
                         }
                     }
                 )

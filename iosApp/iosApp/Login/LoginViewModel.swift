@@ -178,7 +178,7 @@ final class LoginViewModel: ObservableObject {
         submitProfile(profile)
         guard let effect = consumeEffect() else { return state.errorMessage }
         if effect is LoginEffectProfileSaved {
-            toastMessage = "资料已保存"
+            toastMessage = appLocalized("profile_saved")
             return nil
         }
         if let messageEffect = effect as? LoginEffectShowMessage {
@@ -251,8 +251,8 @@ enum ProfileGender: String, CaseIterable, Hashable {
 
     var title: String {
         switch self {
-        case .female: return "女"
-        case .male: return "男"
+        case .female: return appLocalized("common_female")
+        case .male: return appLocalized("common_male")
         }
     }
 
@@ -270,8 +270,8 @@ enum ProfileMeasurementSystem: String, CaseIterable, Hashable {
 
     var title: String {
         switch self {
-        case .metric: return "公制（km/m/cm/kg）"
-        case .imperial: return "英制（mi/ft/inch/lb）"
+        case .metric: return appLocalized("profile_unit_metric")
+        case .imperial: return appLocalized("profile_unit_imperial")
         }
     }
 }

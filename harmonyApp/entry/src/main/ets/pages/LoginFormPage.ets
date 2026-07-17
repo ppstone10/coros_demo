@@ -31,6 +31,7 @@ import {
 import { AuthRoutes } from '../login/AuthRoutes';
 import { navigate, NavOperation } from '../login/AuthNavigator';
 import { handleAuthEffect } from '../login/AuthEffectHandler';
+import { AppColors } from '../resources/AppResources';
 
 @Entry
 @Component
@@ -77,17 +78,17 @@ struct LoginFormPage {
           AuthHeader({ showBack: true, showFeedback: true,
             backRequested: () => { navigate(NavOperation.Pop, ''); },
             feedbackRequested: () => { this.showUnavailableFeature(); } });
-          AuthTitle('账号登录');
+          AuthTitle($r('app.string.auth_account_login'));
 
           Blank().height(45)
 
-          UnderlineInput({ placeholder: '输入手机号或邮箱', textValue: this.username,
+          UnderlineInput({ placeholder: $r('app.string.auth_account_placeholder'), textValue: this.username,
             inputType: InputType.Email, isPassword: false, passwordVisible: false,
             valueChanged: (value: string) => { this.onUsernameChanged(value); } });
 
           Blank().height(16)
 
-          UnderlineInput({ placeholder: '密码', textValue: this.password,
+          UnderlineInput({ placeholder: $r('app.string.auth_password'), textValue: this.password,
             inputType: this.loginPasswordVisible ? InputType.Normal : InputType.Password,
             isPassword: true, passwordVisible: this.loginPasswordVisible,
             valueChanged: (value: string) => { this.onPasswordChanged(value); },
@@ -102,13 +103,13 @@ struct LoginFormPage {
 
           Blank().height(12)
 
-          CorosButton({ textValue: '登录', color: COROS_BUTTON_RED,
+          CorosButton({ textValue: $r('app.string.auth_login'), color: COROS_BUTTON_RED,
             enabledValue: this.loginActionEnabled, loading: this.isLoading,
             tapRequested: () => { this.submitLogin(); } });
 
           ErrorText({ message: this.currentError() });
 
-          Text('忘记密码?')
+          Text($r('app.string.auth_forgot_password'))
             .fontSize(14)
             .fontColor(COROS_MUTED)
             .margin({ top: 16 })
@@ -160,18 +161,18 @@ struct LoginFormPage {
         .width('100%')
         .justifyContent(FlexAlign.End)
           .onClick(() => { this.termsPromptShown = false; })
-        Text('阅读并同意以下条款，').fontSize(18).fontColor(COROS_WHITE).width('100%')
+        Text($r('app.string.auth_read_terms')).fontSize(18).fontColor(COROS_WHITE).width('100%')
           .textAlign(TextAlign.Center).margin({ top: 12 })
         Row() {
-          Text('《隐私政策》').fontSize(18).fontColor(COROS_RED)
+          Text($r('app.string.auth_privacy_policy_link')).fontSize(18).fontColor(COROS_RED)
             .onClick(() => { this.openLegal(AuthRoutes.PRIVACY_POLICY); })
-          Text(' 和 ').fontSize(18).fontColor(COROS_WHITE)
-          Text('《服务条款》').fontSize(18).fontColor(COROS_RED)
+          Text($r('app.string.auth_terms_joiner')).fontSize(18).fontColor(COROS_WHITE)
+          Text($r('app.string.auth_service_terms_link')).fontSize(18).fontColor(COROS_RED)
             .onClick(() => { this.openLegal(AuthRoutes.SERVICE_TERMS); })
         }
         .width('100%').justifyContent(FlexAlign.Center).margin({ top: 8 })
         Blank().height(42)
-        CorosButton({ textValue: '同意并继续', color: COROS_RED, enabledValue: true, loading: false,
+        CorosButton({ textValue: $r('app.string.auth_agree_and_continue'), color: COROS_RED, enabledValue: true, loading: false,
           tapRequested: () => {
             this.acceptedTerms = true;
             this.termsPromptShown = false;
@@ -180,7 +181,7 @@ struct LoginFormPage {
       }
       .width('100%')
       .padding({ left: 22, right: 22, top: 18, bottom: 18 })
-      .backgroundColor('#1A1A1B')
+      .backgroundColor(AppColors.AUTH_SHEET)
       .borderRadius({ topLeft: 12, topRight: 12 })
     }
     .width('100%').height('100%').zIndex(1)
@@ -191,7 +192,7 @@ struct LoginFormPage {
   }
 
   private showUnavailableFeature(): void {
-    promptAction.showToast({ message: '该功能还在实现中' });
+    promptAction.showToast({ message: $r('app.string.auth_unavailable') });
   }
 
   private onUsernameChanged(value: string): void {

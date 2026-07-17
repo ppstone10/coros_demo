@@ -11,11 +11,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.demo.R
 import com.example.demo.common.login.AuthMode
 import com.example.demo.common.login.LoginEffect
 import com.example.demo.login.LoginViewModel
@@ -29,11 +31,11 @@ import com.example.demo.login.components.ErrorText
 import com.example.demo.login.components.UnderlineInput
 import com.example.demo.ui.theme.DemoTheme
 import androidx.compose.material3.Text
-import com.example.demo.common.login.toProfileCountryRegion
+import com.example.demo.common.login.toProfileCountryCode
 import com.example.demo.login.profile.OptionSheet
 import com.example.demo.login.profile.ProfilePickerRow
 import com.example.demo.ui.resources.AppColors
-import com.example.demo.ui.resources.AppText
+import com.example.demo.ui.language.countryDisplayName
 
 @Composable
 fun PasswordSetupScreen(
@@ -46,7 +48,7 @@ fun PasswordSetupScreen(
     var confirmPassword by rememberSaveable { mutableStateOf("") }
     var localError by rememberSaveable { mutableStateOf<String?>(null) }
     var showRegionSheet by rememberSaveable { mutableStateOf(false) }
-    val selectedCountryRegion = state.selectedRegion.toProfileCountryRegion()
+    val selectedCountryRegion = countryDisplayName(state.selectedRegion.toProfileCountryCode())
 
     BackHandler(onBack = onBack)
 
@@ -70,7 +72,7 @@ fun PasswordSetupScreen(
 
     AuthBlackPage(onBack = onBack, showFeedback = false) {
         Text(
-            text = AppText.Auth.SetLoginPassword,
+            text = stringResource(R.string.auth_set_login_password),
             color = CorosWhite,
             fontSize = AuthTitleSize,
             fontWeight = FontWeight.Light,
@@ -79,7 +81,7 @@ fun PasswordSetupScreen(
         Spacer(modifier = Modifier.height(60.dp))
         UnderlineInput(
             value = password,
-            placeholder = AppText.Auth.NewPasswordPlaceholder,
+            placeholder = stringResource(R.string.auth_new_password_placeholder),
             keyboardType = KeyboardType.Password,
             isPassword = true,
             autoFocus = true,
@@ -91,7 +93,7 @@ fun PasswordSetupScreen(
         Spacer(modifier = Modifier.height(48.dp))
         UnderlineInput(
             value = confirmPassword,
-            placeholder = AppText.Auth.ConfirmPasswordPlaceholder,
+            placeholder = stringResource(R.string.auth_confirm_password_placeholder),
             keyboardType = KeyboardType.Password,
             isPassword = true,
             onValueChange = {
@@ -100,18 +102,18 @@ fun PasswordSetupScreen(
             }
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = AppText.Auth.PasswordRule, color = AppColors.Auth.InputText, fontSize = 14.sp)
+        Text(text = stringResource(R.string.auth_password_rule), color = AppColors.Auth.InputText, fontSize = 14.sp)
         Spacer(modifier = Modifier.height(12.dp))
         ProfilePickerRow(
-            label = AppText.Profile.CountryRegion,
+            label = stringResource(R.string.profile_country_region),
             required = false,
             value = selectedCountryRegion,
-            placeholder = AppText.Common.China,
+            placeholder = stringResource(R.string.common_china),
             onClick = { showRegionSheet = true }
         )
         Spacer(modifier = Modifier.height(44.dp))
         CorosFilledButton(
-            text = AppText.Auth.Register,
+            text = stringResource(R.string.auth_register),
             color = CorosButtonRed,
             enabled = viewModel.canRegisterWithPassword(password, confirmPassword),
             isLoading = state.isLoading,
@@ -123,8 +125,8 @@ fun PasswordSetupScreen(
 
     if (showRegionSheet) {
         OptionSheet(
-            title = AppText.Profile.CountryRegion,
-            options = state.regions.map { it.region to it.region.toProfileCountryRegion() },
+            title = stringResource(R.string.profile_country_region),
+            options = state.regions.map { it.region to countryDisplayName(it.region) },
             selected = state.selectedRegion,
             onDismiss = { showRegionSheet = false },
             onConfirm = { region ->

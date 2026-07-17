@@ -44,7 +44,7 @@ struct ProfileCompletionView: View {
                 weightKg: nil,
                 measurementSystem: .metric,
                 phone: "",
-                countryRegion: session?.region == "US" ? "美国" : "中国",
+                countryRegion: session?.region ?? "CN",
                 gender: nil
             )
         )
@@ -52,11 +52,11 @@ struct ProfileCompletionView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            AppColors.Core.black.ignoresSafeArea()
             VStack(spacing: 0) {
                 HStack {
                     Button(action: backToEntrance) {
-                        Text("‹")
+                        Text(appLocalized("common_back"))
                             .foregroundStyle(.white)
                             .font(.system(size: 44, weight: .light))
                     }
@@ -69,12 +69,12 @@ struct ProfileCompletionView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         Spacer().frame(height: 14)
-                        Text("完善个人信息")
+                        Text(appLocalized("profile_completion_title"))
                             .foregroundStyle(.white)
                             .font(.system(size: 28, weight: .light))
                         Spacer().frame(height: 8)
-                        Text("以下信息可以帮助我们对体育科学做出更准确的预测，请仔细填写。")
-                            .foregroundStyle(Color(red: 232 / 255, green: 232 / 255, blue: 236 / 255))
+                        Text(appLocalized("profile_completion_description"))
+                            .foregroundStyle(AppColors.Profile.description)
                             .font(.system(size: 14))
                             .lineSpacing(3)
                         Spacer().frame(height: 20)
@@ -85,57 +85,57 @@ struct ProfileCompletionView: View {
                         .frame(maxWidth: .infinity)
                         Spacer().frame(height: 20)
                         ProfileTextRow(
-                            label: "用户名",
+                            label: appLocalized("profile_username"),
                             required: true,
                             value: Binding(
                                 get: { draft.username },
                                 set: { draft.username = String($0.prefix(20)); localError = nil }
                             ),
-                            placeholder: "输入用户名"
+                            placeholder: appLocalized("profile_username_placeholder")
                         )
                         ProfileActionRow(
-                            label: "出生日期",
+                            label: appLocalized("profile_birth_date"),
                             required: true,
                             value: draft.birthDate,
-                            placeholder: "去填写",
+                            placeholder: appLocalized("profile_fill_in"),
                             onTap: { activePicker = .birthDate }
                         )
                         ProfileActionRow(
-                            label: "身高",
+                            label: appLocalized("profile_height"),
                             required: true,
                             value: draft.heightCm.map { "\($0) cm" } ?? "",
-                            placeholder: "去填写",
+                            placeholder: appLocalized("profile_fill_in"),
                             onTap: { activePicker = .height }
                         )
                         ProfileActionRow(
-                            label: "体重",
+                            label: appLocalized("profile_weight"),
                             required: true,
                             value: draft.weightKg.map { String(format: "%.1f kg", $0) } ?? "",
-                            placeholder: "去填写",
+                            placeholder: appLocalized("profile_fill_in"),
                             onTap: { activePicker = .weight }
                         )
                         ProfileActionRow(
-                            label: "公英制",
+                            label: appLocalized("profile_measurement"),
                             required: false,
                             value: draft.measurementSystem.title,
                             placeholder: "",
                             onTap: { activePicker = .unit }
                         )
                         ProfileTextRow(
-                            label: "手机",
+                            label: appLocalized("profile_phone"),
                             required: false,
                             value: Binding(
                                 get: { draft.phone },
                                 set: { draft.phone = String($0.filter { $0.isNumber || $0 == "+" || $0 == "-" }.prefix(20)) }
                             ),
-                            placeholder: "输入手机号",
+                            placeholder: appLocalized("profile_phone_placeholder"),
                             keyboardType: .phonePad
                         )
                         ProfileActionRow(
-                            label: "国家与地区",
+                            label: appLocalized("profile_country_region"),
                             required: false,
-                            value: draft.countryRegion,
-                            placeholder: "中国",
+                            value: countryDisplayName(draft.countryRegion),
+                            placeholder: appLocalized("common_china"),
                             onTap: { activePicker = .country }
                         )
                         ProfileGenderRow(selected: draft.gender) {
@@ -151,7 +151,7 @@ struct ProfileCompletionView: View {
                 VStack(spacing: 8) {
                     ErrorText(localError ?? viewModel.state.errorMessage)
                     CorosFilledButton(
-                        text: "完成",
+                        text: appLocalized("common_complete"),
                         color: corosButtonRed,
                         enabled: viewModel.canSubmitProfile(draft),
                         isLoading: viewModel.state.isLoading,
@@ -162,7 +162,7 @@ struct ProfileCompletionView: View {
                 .padding(.horizontal, 18)
                 .padding(.top, 8)
                 .padding(.bottom, 10)
-                .background(Color.black)
+                .background(AppColors.Core.black)
             }
         }
         .sheet(item: $activePicker) { picker in
@@ -257,7 +257,7 @@ private struct ProfileActionRow: View {
                 RequiredLabel(label: label, required: required)
                 Spacer(minLength: 16)
                 Text(value.isEmpty ? placeholder : value)
-                    .foregroundStyle(value.isEmpty ? corosMuted : Color.white.opacity(0.78))
+                    .foregroundStyle(value.isEmpty ? corosMuted : AppColors.Profile.value)
                     .font(.system(size: 15))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -292,7 +292,7 @@ private struct ProfileGenderRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            RequiredLabel(label: "性别", required: true)
+            RequiredLabel(label: appLocalized("profile_gender"), required: true)
             Spacer()
             ForEach(ProfileGender.allCases, id: \.self) { gender in
                 Button(action: { onSelected(gender) }) {
@@ -306,7 +306,7 @@ private struct ProfileGenderRow: View {
                     .foregroundStyle(selected == gender ? corosRed : .white)
                     .font(.system(size: 16))
                     .frame(width: 72, height: 40)
-                    .background(Color(red: 27 / 255, green: 27 / 255, blue: 29 / 255))
+                    .background(AppColors.Profile.control)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(selected == gender ? corosRed : .clear, lineWidth: 1)
@@ -329,7 +329,7 @@ private struct ProfilePickerSheet: View {
     @State private var height = 175
     @State private var weightTenths = 600
     @State private var unit: ProfileMeasurementSystem = .metric
-    @State private var country = "中国"
+    @State private var country = "CN"
 
     var body: some View {
         VStack(spacing: 0) {
@@ -384,14 +384,16 @@ private struct ProfilePickerSheet: View {
                 .colorScheme(.dark)
             case .country:
                 Picker("", selection: $country) {
-                    ForEach(["中国", "美国", "英国", "日本"], id: \.self) { Text($0).tag($0) }
+                    ForEach(["CN", "US", "GB", "JP"], id: \.self) { code in
+                        Text(countryDisplayName(code)).tag(code)
+                    }
                 }
                 .pickerStyle(.wheel)
                 .colorScheme(.dark)
             }
             Spacer(minLength: 0)
         }
-        .background(Color(red: 27 / 255, green: 27 / 255, blue: 29 / 255).ignoresSafeArea())
+        .background(AppColors.Profile.control.ignoresSafeArea())
         .onAppear {
             height = draft.heightCm ?? 175
             weightTenths = Int(((draft.weightKg ?? 60.0) * 10).rounded())
@@ -402,11 +404,11 @@ private struct ProfilePickerSheet: View {
 
     private var title: String {
         switch picker {
-        case .birthDate: return "出生日期"
-        case .height: return "身高 (cm)"
-        case .weight: return "体重 (kg)"
-        case .unit: return "公英制"
-        case .country: return "国家与地区"
+        case .birthDate: return appLocalized("profile_birth_date")
+        case .height: return appLocalized("profile_height_picker")
+        case .weight: return appLocalized("profile_weight_picker")
+        case .unit: return appLocalized("profile_measurement")
+        case .country: return appLocalized("profile_country_region")
         }
     }
 
@@ -414,7 +416,7 @@ private struct ProfilePickerSheet: View {
         switch picker {
         case .birthDate:
             let components = Calendar.current.dateComponents([.year, .month, .day], from: date)
-            draft.birthDate = "\(components.year ?? 2002)年\(components.month ?? 1)月\(components.day ?? 1)日"
+            draft.birthDate = "\(components.year ?? 2002)\(appLocalized("profile_date_year_suffix"))\(components.month ?? 1)\(appLocalized("profile_date_month_suffix"))\(components.day ?? 1)\(appLocalized("profile_date_day_suffix"))"
         case .height:
             draft.heightCm = height
         case .weight:

@@ -37,7 +37,9 @@ import com.example.demo.login.components.TermsConsentSheet
 import com.example.demo.login.components.TermsPromptAction
 import com.example.demo.login.components.UnavailableFeatureDialog
 import com.example.demo.login.components.findActivity
-import com.example.demo.ui.resources.AppText
+import androidx.compose.ui.res.stringResource
+import com.example.demo.R
+import com.example.demo.common.login.AuthMessageKeys
 import com.example.demo.ui.theme.DemoTheme
 import androidx.compose.material3.Text
 
@@ -61,7 +63,7 @@ fun PhoneRegisterScreen(
         val validationMessage = viewModel.validatePhoneAccount(state.account)
         when {
             validationMessage != null -> localError = validationMessage
-            viewModel.hasAccount(state.account) -> localError = "账号已存在"
+            viewModel.hasAccount(state.account) -> localError = AuthMessageKeys.ErrorAccountExists
             !skipTerms && !acceptedTerms -> termsPromptAction = TermsPromptAction.PhoneCode
             else -> {
                 val message = viewModel.requestVerifyCodeMessage(state.account)
@@ -95,7 +97,7 @@ fun PhoneRegisterScreen(
         onUnavailableClick = { unavailableDialogVisible = true }
     ) {
         Text(
-            text = AppText.Auth.PhoneRegister,
+            text = stringResource(R.string.auth_phone_register),
             color = CorosWhite,
             fontSize = AuthTitleSize,
             fontWeight = FontWeight.Light,
@@ -119,7 +121,7 @@ fun PhoneRegisterScreen(
         )
         Spacer(modifier = Modifier.height(RegisterActionTopSpacing))
         CorosFilledButton(
-            text = AppText.Auth.SendCode,
+            text = stringResource(R.string.auth_send_code),
             color = CorosButtonRed,
             enabled = viewModel.canRequestPhoneCode(),
             isLoading = state.isLoading,
@@ -127,7 +129,7 @@ fun PhoneRegisterScreen(
         )
         ErrorText(localError ?: state.errorMessage)
         Text(
-            text = AppText.Auth.EmailRegister,
+            text = stringResource(R.string.auth_email_register),
             color = CorosRed,
             fontSize = 18.sp,
             textAlign = TextAlign.Center,

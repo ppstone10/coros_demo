@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -37,14 +38,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
-import com.example.demo.common.login.toProfileCountryRegion
+import com.example.demo.R
+import com.example.demo.common.login.toProfileCountryCode
 import com.example.demo.login.LoginViewModel
 import com.example.demo.login.components.CorosButtonRed
 import com.example.demo.login.components.CorosWhite
 import com.example.demo.login.components.ErrorText
 import com.example.demo.login.profile.PersonalProfileEditScreen
 import com.example.demo.ui.resources.AppColors
-import com.example.demo.ui.resources.AppText
+import com.example.demo.ui.language.LanguageIconButton
+import com.example.demo.ui.language.countryDisplayName
 import com.example.demo.ui.theme.DemoTheme
 
 private val ProfileCardColor = AppColors.Account.Card
@@ -61,7 +64,8 @@ fun SignedInScreen(
     val state = viewModel.state
     val session = state.currentSession
     val profile = session?.profile
-    val username = session?.resolvedDisplayName?.takeIf { it.isNotBlank() } ?: AppText.Account.DefaultUser
+    val username = session?.resolvedDisplayName?.takeIf { it.isNotBlank() }
+        ?: stringResource(R.string.account_default_user)
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var localError by rememberSaveable { mutableStateOf<String?>(null) }
     var editingProfile by rememberSaveable { mutableStateOf(false) }
@@ -89,15 +93,21 @@ fun SignedInScreen(
                 .statusBarsPadding()
                 .padding(horizontal = 18.dp)
         ) {
-            Text(
-                text = AppText.Account.My,
-                color = CorosWhite,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.SemiBold,
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 18.dp, bottom = 18.dp)
-            )
+                    .padding(top = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.account_title),
+                    color = CorosWhite,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                )
+                LanguageIconButton()
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -126,7 +136,13 @@ fun SignedInScreen(
                     )
                 }
                 Text(
-                    text = if (session?.isProfileComplete == true) AppText.Account.Complete else AppText.Account.Incomplete,
+                    text = stringResource(
+                        if (session?.isProfileComplete == true) {
+                            R.string.account_profile_complete
+                        } else {
+                            R.string.account_profile_incomplete
+                        }
+                    ),
                     color = if (session?.isProfileComplete == true) {
                         AppColors.Account.Complete
                     } else {
@@ -140,37 +156,39 @@ fun SignedInScreen(
                 )
             }
 
-            ProfileSectionTitle(AppText.Account.PersonalInfo)
+            ProfileSectionTitle(stringResource(R.string.account_personal_info))
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
                     .background(ProfileCardColor)
             ) {
-                ProfileValueRow(AppText.Profile.Username, username)
-                ProfileValueRow(AppText.Profile.BirthDate, profile?.birthDate.orEmpty().ifBlank { AppText.Common.NotSet })
-                ProfileValueRow(AppText.Profile.Height, profile?.heightCm?.let { "$it cm" } ?: AppText.Common.NotSet)
-                ProfileValueRow(AppText.Profile.Weight, profile?.weightKg?.let { "$it kg" } ?: AppText.Common.NotSet)
+                ProfileValueRow(stringResource(R.string.profile_username), username)
+                ProfileValueRow(stringResource(R.string.profile_birth_date), profile?.birthDate.orEmpty())
+                ProfileValueRow(stringResource(R.string.profile_height), profile?.heightCm?.let { "$it cm" }.orEmpty())
+                ProfileValueRow(stringResource(R.string.profile_weight), profile?.weightKg?.let { "$it kg" }.orEmpty())
                 ProfileValueRow(
-                    AppText.Profile.CountryRegion,
-                    profile?.countryRegion?.takeIf { it.isNotBlank() }
-                        ?: session?.region?.toProfileCountryRegion().orEmpty()
+                    stringResource(R.string.profile_country_region),
+                    countryDisplayName(
+                        profile?.countryRegion?.takeIf { it.isNotBlank() }
+                            ?: session?.region?.toProfileCountryCode().orEmpty()
+                    )
                 )
             }
 
-            ProfileSectionTitle(AppText.Account.AccountSection)
+            ProfileSectionTitle(stringResource(R.string.account_section))
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
                     .background(ProfileCardColor)
             ) {
-                ProfileValueRow(AppText.Account.LoginAccount, session?.account.orEmpty())
-                ProfileActionRow(AppText.Account.Logout, CorosWhite) {
+                ProfileValueRow(stringResource(R.string.account_login_account), session?.account.orEmpty())
+                ProfileActionRow(stringResource(R.string.account_logout), CorosWhite) {
                     viewModel.onLogout()
                     onLogout()
                 }
-                ProfileActionRow(AppText.Account.DeleteAccount, AppColors.Account.Destructive) {
+                ProfileActionRow(stringResource(R.string.account_delete), AppColors.Account.Destructive) {
                     showDeleteDialog = true
                 }
             }
@@ -250,7 +268,7 @@ private fun ProfileValueRow(label: String, value: String) {
     ) {
         Text(label, color = CorosWhite, fontSize = 14.sp)
         Spacer(Modifier.weight(1f))
-        Text(value.ifBlank { AppText.Common.NotSet }, color = ProfileMuted, fontSize = 13.sp)
+        Text(value.ifBlank { stringResource(R.string.common_not_set) }, color = ProfileMuted, fontSize = 13.sp)
     }
     Box(
         Modifier
@@ -297,7 +315,7 @@ private fun DeleteAccountDialog(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = AppText.Account.DeleteConfirmation,
+                text = stringResource(R.string.account_delete_confirmation),
                 color = CorosWhite,
                 fontSize = 18.sp,
                 textAlign = TextAlign.Center
@@ -308,14 +326,14 @@ private fun DeleteAccountDialog(
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 DialogActionButton(
-                    text = AppText.Common.Cancel,
+                    text = stringResource(R.string.common_cancel),
                     color = AppColors.Account.DialogSecondary,
                     textColor = CorosWhite,
                     modifier = Modifier.weight(1f),
                     onClick = onCancel
                 )
                 DialogActionButton(
-                    text = AppText.Common.Confirm,
+                    text = stringResource(R.string.common_confirm),
                     color = CorosButtonRed,
                     textColor = CorosWhite,
                     modifier = Modifier.weight(1f),

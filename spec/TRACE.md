@@ -32,7 +32,7 @@
 | `DOC-005` | 资源源文件保护 | `./tools/check-docs.sh`：两组源资源目录存在 | 两个 `*_resources/` 目录及映射文档 | ✅ |
 | `DOC-006` | 契约与工具去占位 | `./tools/check-docs.sh`：实际契约保留、空占位消失 | `contract/README.md`、`tools/README.md` | ✅ |
 | `DOC-007` | 平台说明就近维护 | 当前引用扫描 + `git diff --name-only` | `iosApp/README.md`、`harmonyApp/README.md`、`harmony-kmp-bridge/README.md` | ✅ |
-| `DOC-008` | 测试事实同步 | `tools/check-docs.sh` 动态核对 `@Test`：29/7/4/15，合计 55 | `TEST_REPORT.md`、本文件 | ✅ |
+| `DOC-008` | 测试事实同步 | `tools/check-docs.sh` 动态核对 `@Test`：29/8/4/16，合计 57 | `TEST_REPORT.md`、本文件 | ✅ |
 | `DOC-009` | 可执行文档门禁 | 首次 31 项红灯；最终 `bash -n`、`check-docs`、`check-sdd`、`git diff --check` 通过 | `tools/check-docs.sh` | ✅ |
 | `DOC-010` | 误删文档完整恢复 | `tools/check-docs.sh`：10份目标文件 SHA-256 与 Git 恢复源逐一一致 | `docs/reference/`、`docs/archive/harmonyos-kmp/` | ✅ |
 | `DOC-011` | 恢复后的目录归类 | `find docs` + 分类导航检查 | `docs/README.md`、三个分类 README | ✅ |
@@ -81,7 +81,7 @@
 | **实现范围 - UI model** | `HealthDashboardModels.kt:51-59`（HealthCardUiModel） | ✅ |
 | **实现范围 - mock 场景** | `HealthDashboardModels.kt:3`（HealthMockScenario）；`HealthDashboardUseCase.kt:22-73`（sample 各场景数据） | ✅ |
 | **验收标准** | 参见下方测试追溯 | ✅ |
-| **测试要求 - 12 条以上** | `HealthDashboardUseCaseTest.kt` → **15 条测试** | ✅ |
+| **测试要求 - 12 条以上** | `HealthDashboardUseCaseTest.kt` → **16 条测试** | ✅ |
 | 测试：全量数据 | `HealthDashboardUseCaseTest.kt:17`（normalScenarioShowsCompleteCardCatalog） | ✅ |
 | 测试：睡眠缺失 | `HealthDashboardUseCaseTest.kt:19`（partialMissingShowsSleepEmptyCard） | ✅ |
 | 测试：今日运动缺失 | `HealthDashboardUseCaseTest.kt:20`（partialMissingKeepsAvailableTodayActivity） | ✅ |
@@ -108,15 +108,60 @@
 
 ---
 
+## resource-localization.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `RES-LOC-001` | 共享认证层输出稳定语义键 | `LoginRulesTest.validationFailuresExposeStableLocalizationKeys`；`./gradlew :common:check` | `AuthMessageKeys.kt`、`LoginModels.kt`、`LoginRules.kt`、`LoginUseCase.kt`、`LoginStore.kt` | ✅ |
+| `RES-LOC-002` | Android 原生字符串资源解析 | `./tools/check-resources.sh`；`./gradlew :androidApp:assembleDebug` | `values/strings.xml`、`values-en/strings.xml`、`AuthLocalization.kt`、认证错误与 Snackbar 展示入口 | ✅ |
+| `RES-LOC-003` | iOS String Catalog 解析 | `./tools/check-resources.sh`；iOS simulator `xcodebuild` | `Localizable.xcstrings`、`AppResources.swift`、认证错误与 Snackbar 展示入口、Xcode Resources phase | ✅ |
+| `RES-LOC-004` | HarmonyOS 限定词资源解析 | `./tools/check-resources.sh`；`hvigorw assembleApp --no-daemon` | `base/element/string.json`、`en_US/element/string.json`、`AuthLocalization.ets`、认证错误与 Toast 展示入口 | ✅ |
+| `RES-LOC-005` | 资源一致性门禁 | 实现前首次运行失败；认证静态键加入后门禁先因误判“未映射”红灯，修正职责边界后通过：23 个共享消息键完整、三端全部 `auth_*` 资源集合一致 | `tools/check-resources.sh`、`tools/README.md` | ✅ |
+| `RES-LOC-006` | 设计源与运行资源边界不变 | `./tools/check-docs.sh`；`git diff --name-only` 人工核对 | `docs/resource-management.md`；两组设计源和既有图片/视频/Lottie 路径未迁移 | ✅ |
+
+---
+
+## resource-maintainability.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `RES-MAINT-001` | 全资源机器可读清单 | `./tools/check-resource-maintainability.sh`：JSON 格式、重复集合检查 | `tools/resource-inventory.json`、`docs/resource-inventory.md` | ✅ |
+| `RES-MAINT-002` | 共享图片跨端存在性 | 门禁扫描 Android drawable/mipmap、iOS imageset、HarmonyOS media | 37 个共享语义图片名 | ✅ |
+| `RES-MAINT-003` | 共享 Raw 内容一致 | 门禁校验三端 `home.mp4`、`watch_status.json` SHA-256 | 三端原生 Raw/Bundle 目录 | ✅ |
+| `RES-MAINT-004` | 硬编码资源债务只降不升 | 门禁核对 4 组文案、3 组颜色计数不高于基线 | 生产源码三端文案/颜色上限均为 0；common 国家领域值上限为 7；Token 定义和 HarmonyOS 非发布调试页使用精确路径排除 | ✅ |
+| `RES-MAINT-005` | 消除纯硬编码资源包装 | 资源清单扩展时先因 81 个键缺失红灯；`AppText` 引用扫描、三端构建及最终门禁通过 | 三端 192 个共享文字键已接入原生资源；认证、资料、账户、导航、健康和法律生产模块不再依赖纯硬编码文字包装 | ✅ |
+| `RES-MAINT-006` | 可执行资源维护门禁 | 首次因清单缺失红灯；实现后 `./tools/check-resource-maintainability.sh` 绿灯 | `tools/check-resource-maintainability.sh`、`tools/README.md` | ✅ |
+| `RES-MAINT-007` | 法律正文结构化内容资源 | 资源键缺失红灯；三端资源一致性门禁与平台构建通过 | `legal_privacy_body`、`legal_service_terms_body`；三端 `LegalContent` 轻量结构解析器和法律页面 | ✅ |
+| `RES-MAINT-008` | 健康结构化本地化契约 | `HealthDashboardUseCaseTest.healthUiModelsExposeLocalizationKeysAndTypedArguments` 先因 `key/arguments` 缺失红灯，实施后通过；三端构建通过 | `LocalizedTextSpec`、`HealthDashboardUseCase`、三端 `HealthLocalization` 展示入口、KNOI 健康 JSON 桥接 | ✅ |
+| `RES-MAINT-009` | 调试资源与生产债务分离 | `./tools/check-resource-maintainability.sh` 校验唯一调试排除路径；HarmonyOS Debug 构建仍通过 | `resource-inventory.json.debtExclusions`；`DebugStatePage.ets` 原样保留且不进入共享资源 | ✅ |
+| `RES-MAINT-010` | 有限语义视觉 Token | 直接颜色扫描降至 Android/iOS/HarmonyOS 生产源码均为 0；三端构建通过 | Android `AppColors/AppTypography/AppSpacing`、iOS `AppColors/AppTypography/AppSpacing`、HarmonyOS `AppColors/AppTypography/AppSpacing` | ✅ |
+
+---
+
+## app-language-switching.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `APP-LANG-001` | 应用语言状态统一且持久化 | `./tools/check-resources.sh`；三端构建 | Android `AppLanguage.kt`、iOS `AppLanguageStore`、HarmonyOS `AppLanguage.ets`；均默认 `zh-Hans` 并使用原生偏好存储 | ✅ |
+| `APP-LANG-002` | Entrance 与“我”页共享语言选择行为 | 资源门禁静态入口检查；三端构建 | Android `LanguageSelection.kt`、iOS `LanguageSelectionButton`、HarmonyOS 两页 `LanguageDialog`；平台原生地球图标 | ✅ |
+| `APP-LANG-003` | 选择后全应用即时刷新 | Android/iOS/HarmonyOS 构建；运行时人工点击与重启待设备验收 | Android CompositionLocal 资源上下文、iOS selected Bundle + ObservableObject、HarmonyOS preferred language + StorageLink version | ✅（人工运行待验收） |
+| `APP-LANG-004` | 国家与地区持久化稳定代码 | `LoginRulesTest.registrationRegionAndLegacyNamesNormalizeToCountryCodes` 首次因符号缺失红灯，实施后通过；`LoginUseCaseTest.mockStoreJsonReadsLegacyAndroidSnakeCaseSnapshot` | `toProfileCountryCode`、`MockAuthStoreJson`、`AuthRepository.saveProfile`；三端资料选择器保存代码、展示资源名称 | ✅ |
+| `APP-LANG-005` | 三端资源集合继续一致 | `check-resources.sh`、`check-resource-maintainability.sh`、三端构建 | 共享文字清单 196 键；新增 4 个 `language_*` 键；common 中文债务 0 | ✅ |
+| `APP-LANG-006` | iOS 当前页面即时响应语言状态 | `./tools/check-resources.sh` 首次准确报告 Entrance/“我”页/底部导航缺少观察契约，实施后通过；iOS simulator `xcodebuild` 通过；运行时两入口人工点击待复验 | iOS `EntranceView`、`AccountView`、`MainTabsView` 观察并读取同一 `AppLanguageStore.current`，不重建协调器或导航树 | ✅（运行时待验） |
+| `APP-LANG-007` | Entrance 语言入口跨端位置对齐 | `./tools/check-resources.sh` 首次准确报告两端顶部栏契约缺失，实施后通过；iOS/HarmonyOS 构建通过；最终截图人工对比待复验 | iOS `EntranceTopBar` + 36pt 底部留白；HarmonyOS `EntranceTopBar` 全宽 Logo/尾部语言按钮布局 | ✅（截图待验） |
+| `APP-LANG-008` | Android Compose 资源读取响应配置变化 | `./gradlew :androidApp:lintDebug` 红灯：1 个 `LocalContextConfigurationRead`、8 个 `LocalContextGetResourceValueCall`；实施后 `lintDebug` 与 `assembleDebug` 均通过 | `AppLanguage.kt` 使用 `LocalConfiguration`；`AuthNavGraph.kt`、`AuthComponents.kt` 与 `AuthLocalization.kt` 使用 `LocalResources`/`Resources` | ✅ |
+
+---
+
 ## 测试总览
 
 | 测试类 | 测试数 | 所属 Spec |
 |--------|--------|-----------|
-| `LoginRulesTest.kt` | 7 | auth-mock-spec §7, §8, §9 |
+| `LoginRulesTest.kt` | 8 | auth-mock-spec §7, §8, §9；RES-LOC-001 |
 | `LoginUseCaseTest.kt` | 29 | auth-mock-spec §14 |
 | `BusinessMockDataSourceTest.kt` | 4 | auth-mock-spec §10, §11, §14 |
-| `HealthDashboardUseCaseTest.kt` | 15 | health-dashboard-cards 测试要求 |
-| **合计** | **55** | |
+| `HealthDashboardUseCaseTest.kt` | 16 | health-dashboard-cards 测试要求；RES-MAINT-008 |
+| **合计** | **57** | |
 
 ---
 

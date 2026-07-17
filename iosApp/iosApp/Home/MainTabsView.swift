@@ -5,10 +5,10 @@ private enum MainTab: CaseIterable {
 
     var label: String {
         switch self {
-        case .fitness: return AppText.Navigation.fitness
-        case .records: return AppText.Navigation.records
-        case .explore: return AppText.Navigation.explore
-        case .me: return AppText.Navigation.me
+        case .fitness: return appLocalized("nav_fitness")
+        case .records: return appLocalized("nav_records")
+        case .explore: return appLocalized("nav_explore")
+        case .me: return appLocalized("nav_me")
         }
     }
 
@@ -24,11 +24,14 @@ private enum MainTab: CaseIterable {
 
 struct MainTabsView: View {
     @ObservedObject var viewModel: LoginViewModel
+    @EnvironmentObject private var languageStore: AppLanguageStore
     let router: AuthRouter
     @State private var selected: MainTab = .fitness
     @State private var contentFullscreen = false
 
     var body: some View {
+        let _ = languageStore.current
+
         VStack(spacing: 0) {
             Group {
                 switch selected {
@@ -37,10 +40,10 @@ struct MainTabsView: View {
                 case .me:
                     AccountView(viewModel: viewModel, router: router, isFullscreen: $contentFullscreen)
                 case .records, .explore:
-                    Text(AppText.Navigation.unavailable(selected.label))
+                    Text(String(format: appLocalized("nav_unavailable"), selected.label))
                         .foregroundStyle(AppColors.Navigation.unselected)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.black)
+                        .background(AppColors.Core.black)
                 }
             }
 
@@ -69,6 +72,6 @@ struct MainTabsView: View {
                 .background(AppColors.Navigation.bar.ignoresSafeArea(edges: .bottom))
             }
         }
-        .background(Color.black)
+        .background(AppColors.Core.black)
     }
 }

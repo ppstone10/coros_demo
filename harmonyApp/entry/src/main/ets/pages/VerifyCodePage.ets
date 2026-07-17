@@ -23,6 +23,7 @@ import {
 } from '../login/components/AuthComponents';
 import { AuthRoutes, VerifyCodeParams } from '../login/AuthRoutes';
 import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
+import { AppColors } from '../resources/AppResources';
 
 @Entry
 @Component
@@ -71,11 +72,11 @@ struct VerifyCodePage {
         Column() {
           AuthHeader({ showBack: true, showFeedback: false,
             backRequested: () => { navigate(NavOperation.Pop, ''); } });
-          AuthTitle('输入验证码');
+          AuthTitle($r('app.string.auth_verification_code'));
 
           Text(verifyCodeMessage(this.account, this.targetKind))
             .fontSize(16)
-            .fontColor('#D8D8DD')
+            .fontColor(AppColors.AUTH_INPUT_TEXT)
             .lineHeight(24)
             .margin({ top: 14 })
 
@@ -96,16 +97,16 @@ struct VerifyCodePage {
 
           Row() {
             if (this.countdown > 0) {
-              Text('重新发送').fontSize(16).fontColor(COROS_MUTED)
-              Text('（' + this.countdown + 's）').fontSize(16).fontColor(COROS_RED)
+              Text($r('app.string.auth_resend')).fontSize(16).fontColor(COROS_MUTED)
+              Text($r('app.string.auth_resend_countdown', this.countdown)).fontSize(16).fontColor(COROS_RED)
             } else {
-              Text('获取验证码')
+              Text($r('app.string.auth_get_code'))
                 .fontSize(16)
                 .fontColor(COROS_RED)
                 .onClick(() => { this.resendVerifyCode(); })
             }
             Blank()
-            Text('收不到验证码?')
+            Text($r('app.string.auth_code_help'))
               .fontSize(16)
               .fontColor(COROS_MUTED)
               .onClick(() => { this.showUnavailableFeature(); })
@@ -133,7 +134,7 @@ struct VerifyCodePage {
   }
 
   private showUnavailableFeature(): void {
-    promptAction.showToast({ message: '该功能还在实现中' });
+    promptAction.showToast({ message: $r('app.string.auth_unavailable') });
   }
 
   private submitCode(): void {

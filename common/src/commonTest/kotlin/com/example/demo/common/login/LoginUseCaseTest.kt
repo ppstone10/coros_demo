@@ -202,7 +202,7 @@ class LoginUseCaseTest {
             birthDate = "1998年7月14日",
             heightCm = 178,
             weightKg = 63.5,
-            countryRegion = "中国",
+            countryRegion = "CN",
             gender = UserGender.Male
         )
 
@@ -487,6 +487,7 @@ class LoginUseCaseTest {
 
         assertEquals("Legacy Runner", decoded.accounts.first().displayName)
         assertEquals("Legacy Runner", decoded.accounts.first().profile?.username)
+        assertEquals("CN", decoded.accounts.first().profile?.countryRegion)
         assertEquals("Legacy Runner", decoded.currentSession?.displayName)
         assertEquals(61000L, decoded.verifyCodes.first().expireAtEpochMs)
         assertEquals(true, decoded.defaultAccountsInitialized)
@@ -534,7 +535,7 @@ class LoginUseCaseTest {
     @Test
     fun persistFailedOnRegisterReturnsError() {
         var saveCallCount = 0
-        var stored: MockAuthStore = MockAuthStore()
+        var stored = MockAuthStore()
         val failingDataSource = object : AuthStoreDataSource {
             override fun load(): MockAuthStore = stored
             override fun save(store: MockAuthStore): Boolean {

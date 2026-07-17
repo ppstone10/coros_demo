@@ -47,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -55,10 +56,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.example.demo.R
 import com.example.demo.common.login.MeasurementSystem
 import com.example.demo.common.login.UserGender
 import com.example.demo.common.login.UserProfile
-import com.example.demo.common.login.toProfileCountryRegion
+import com.example.demo.common.login.toProfileCountryCode
 import com.example.demo.login.LoginViewModel
 import com.example.demo.login.components.CorosBlack
 import com.example.demo.login.components.CorosButtonRed
@@ -70,10 +72,10 @@ import com.example.demo.login.components.CorosWhite
 import com.example.demo.login.components.ErrorText
 import com.example.demo.login.components.ModalScrim
 import com.example.demo.ui.resources.AppColors
+import com.example.demo.ui.language.countryDisplayName
 import com.example.demo.ui.resources.AppImage
 import com.example.demo.ui.resources.AppImageAsset
 import com.example.demo.ui.resources.AppImages
-import com.example.demo.ui.resources.AppText
 import com.example.demo.ui.theme.DemoTheme
 import java.io.File
 import java.io.FileOutputStream
@@ -107,11 +109,12 @@ fun ProfileCompletionScreen(
         mutableStateOf(savedProfile?.measurementSystem ?: MeasurementSystem.Metric)
     }
     var phone by rememberSaveable(savedProfile?.phone) { mutableStateOf(savedProfile?.phone.orEmpty()) }
-    val registeredCountryRegion = state.currentSession?.region?.toProfileCountryRegion().orEmpty()
+    val registeredCountryRegion = state.currentSession?.region?.toProfileCountryCode().orEmpty()
+    val defaultCountry = "CN"
     var countryRegion by rememberSaveable(savedProfile?.countryRegion, registeredCountryRegion) {
         mutableStateOf(
             savedProfile?.countryRegion?.takeIf { it.isNotBlank() }
-                ?: registeredCountryRegion.ifBlank { "中国" }
+                ?: registeredCountryRegion.ifBlank { defaultCountry }
         )
     }
     var gender by rememberSaveable(savedProfile?.gender) { mutableStateOf(savedProfile?.gender) }
@@ -152,7 +155,7 @@ fun ProfileCompletionScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = AppText.Common.Back,
+                    text = stringResource(R.string.common_back),
                     color = CorosWhite,
                     fontSize = 44.sp,
                     modifier = Modifier.clickable(onClick = onBack)
@@ -166,7 +169,7 @@ fun ProfileCompletionScreen(
             ) {
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(
-                    text = AppText.Profile.CompletionTitle,
+                    text = stringResource(R.string.profile_completion_title),
                     color = CorosWhite,
                     fontSize = 28.sp,
                     lineHeight = 34.sp,
@@ -174,7 +177,7 @@ fun ProfileCompletionScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = AppText.Profile.CompletionDescription,
+                    text = stringResource(R.string.profile_completion_description),
                     color = AppColors.Profile.Description,
                     fontSize = 14.sp,
                     lineHeight = 20.sp
@@ -187,54 +190,54 @@ fun ProfileCompletionScreen(
                 )
                 Spacer(modifier = Modifier.height(20.dp))
                 ProfileTextRow(
-                    label = AppText.Profile.Username,
+                    label = stringResource(R.string.profile_username),
                     required = true,
                     value = username,
-                    placeholder = AppText.Profile.UsernamePlaceholder,
+                    placeholder = stringResource(R.string.profile_username_placeholder),
                     keyboardType = KeyboardType.Text,
                     onValueChange = { username = it.take(20) }
                 )
                 ProfilePickerRow(
-                    label = AppText.Profile.BirthDate,
+                    label = stringResource(R.string.profile_birth_date),
                     required = true,
                     value = birthDate,
-                    placeholder = AppText.Profile.FillIn,
+                    placeholder = stringResource(R.string.profile_fill_in),
                     onClick = { picker = ProfilePicker.BirthDate }
                 )
                 ProfilePickerRow(
-                    label = AppText.Profile.Height,
+                    label = stringResource(R.string.profile_height),
                     required = true,
                     value = heightCm?.let { "$it cm" }.orEmpty(),
-                    placeholder = AppText.Profile.FillIn,
+                    placeholder = stringResource(R.string.profile_fill_in),
                     onClick = { picker = ProfilePicker.Height }
                 )
                 ProfilePickerRow(
-                    label = AppText.Profile.Weight,
+                    label = stringResource(R.string.profile_weight),
                     required = true,
                     value = weightKg?.let { String.format("%.1f kg", it) }.orEmpty(),
-                    placeholder = AppText.Profile.FillIn,
+                    placeholder = stringResource(R.string.profile_fill_in),
                     onClick = { picker = ProfilePicker.Weight }
                 )
                 ProfilePickerRow(
-                    label = AppText.Profile.Measurement,
+                    label = stringResource(R.string.profile_measurement),
                     required = false,
                     value = measurementSystem.displayText(),
                     placeholder = "",
                     onClick = { picker = ProfilePicker.Unit }
                 )
                 ProfileTextRow(
-                    label = AppText.Profile.Phone,
+                    label = stringResource(R.string.profile_phone),
                     required = false,
                     value = phone,
-                    placeholder = AppText.Profile.PhonePlaceholder,
+                    placeholder = stringResource(R.string.profile_phone_placeholder),
                     keyboardType = KeyboardType.Phone,
                     onValueChange = { phone = it.filter { char -> char.isDigit() || char == '+' || char == '-' }.take(20) }
                 )
                 ProfilePickerRow(
-                    label = AppText.Profile.CountryRegion,
+                    label = stringResource(R.string.profile_country_region),
                     required = false,
-                    value = countryRegion,
-                    placeholder = AppText.Common.China,
+                    value = countryDisplayName(countryRegion),
+                    placeholder = stringResource(R.string.common_china),
                     onClick = { picker = ProfilePicker.Country }
                 )
                 GenderRow(selected = gender, onSelected = { gender = it })
@@ -249,7 +252,7 @@ fun ProfileCompletionScreen(
                 ErrorText(state.errorMessage)
                 Spacer(modifier = Modifier.height(5.dp))
                 CorosFilledButton(
-                    text = AppText.Common.Complete,
+                    text = stringResource(R.string.common_complete),
                     color = CorosButtonRed,
                     enabled = viewModel.canSubmitProfile(profile),
                     isLoading = state.isLoading,
@@ -285,7 +288,7 @@ fun ProfileCompletionScreen(
                 }
             )
             ProfilePicker.Unit -> OptionSheet(
-                title = AppText.Profile.Measurement,
+                title = stringResource(R.string.profile_measurement),
                 options = listOf(
                     MeasurementSystem.Metric to MeasurementSystem.Metric.displayText(),
                     MeasurementSystem.Imperial to MeasurementSystem.Imperial.displayText()
@@ -298,8 +301,8 @@ fun ProfileCompletionScreen(
                 }
             )
             ProfilePicker.Country -> OptionSheet(
-                title = AppText.Profile.CountryRegion,
-                options = listOf("中国" to "中国", "美国" to "美国", "英国" to "英国", "日本" to "日本"),
+                title = stringResource(R.string.profile_country_region),
+                options = localizedCountryOptions(),
                 selected = countryRegion,
                 onDismiss = { picker = null },
                 onConfirm = {
@@ -343,7 +346,7 @@ internal fun ProfileAvatar(
         if (avatarUri.isNullOrBlank()) {
             AppImage(
                 asset = AppImages.Profile.Camera,
-                contentDescription = AppText.Profile.AddAvatar,
+                contentDescription = stringResource(R.string.profile_add_avatar),
                 modifier = Modifier.fillMaxSize()
             )
         } else {
@@ -447,18 +450,18 @@ private fun GenderRow(selected: UserGender?, onSelected: (UserGender) -> Unit) {
         modifier = Modifier.fillMaxWidth().height(62.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RequiredLabel(text = AppText.Profile.Gender, required = true)
+        RequiredLabel(text = stringResource(R.string.profile_gender), required = true)
         Spacer(modifier = Modifier.weight(1f))
         GenderButton(
             icon = AppImages.Profile.Female,
-            text = AppText.Common.Female,
+            text = stringResource(R.string.common_female),
             selected = selected == UserGender.Female,
             onClick = { onSelected(UserGender.Female) }
         )
         Spacer(modifier = Modifier.width(10.dp))
         GenderButton(
             icon = AppImages.Profile.Male,
-            text = AppText.Common.Male,
+            text = stringResource(R.string.common_male),
             selected = selected == UserGender.Male,
             onClick = { onSelected(UserGender.Male) }
         )
@@ -507,8 +510,11 @@ internal fun BirthDateSheet(
     var year by rememberSaveable(current) { mutableIntStateOf(parsed.first) }
     var month by rememberSaveable(current) { mutableIntStateOf(parsed.second) }
     var day by rememberSaveable(current) { mutableIntStateOf(parsed.third) }
-    PickerSheet(title = AppText.Profile.BirthDate, onDismiss = onDismiss, onConfirm = {
-        onConfirm("${year}年${month}月${day}日")
+    val yearSuffix = stringResource(R.string.profile_date_year_suffix)
+    val monthSuffix = stringResource(R.string.profile_date_month_suffix)
+    val daySuffix = stringResource(R.string.profile_date_day_suffix)
+    PickerSheet(title = stringResource(R.string.profile_birth_date), onDismiss = onDismiss, onConfirm = {
+        onConfirm("$year$yearSuffix$month$monthSuffix$day$daySuffix")
     }) {
         Row(
             modifier = Modifier.fillMaxWidth().height(240.dp),
@@ -519,7 +525,7 @@ internal fun BirthDateSheet(
                 value = year,
                 min = 1950,
                 max = 2026,
-                displayedSuffix = "年",
+                displayedSuffix = yearSuffix,
                 modifier = Modifier.weight(1f),
                 onValueChange = { year = it }
             )
@@ -527,7 +533,7 @@ internal fun BirthDateSheet(
                 value = month,
                 min = 1,
                 max = 12,
-                displayedSuffix = "月",
+                displayedSuffix = monthSuffix,
                 modifier = Modifier.weight(1f),
                 onValueChange = { month = it }
             )
@@ -535,7 +541,7 @@ internal fun BirthDateSheet(
                 value = day,
                 min = 1,
                 max = 31,
-                displayedSuffix = "日",
+                displayedSuffix = daySuffix,
                 modifier = Modifier.weight(1f),
                 onValueChange = { day = it }
             )
@@ -550,7 +556,7 @@ internal fun HeightSheet(
     onConfirm: (Int) -> Unit
 ) {
     var height by rememberSaveable(current) { mutableIntStateOf(current.coerceIn(100, 230)) }
-    PickerSheet(title = AppText.Profile.HeightPicker, onDismiss = onDismiss, onConfirm = { onConfirm(height) }) {
+    PickerSheet(title = stringResource(R.string.profile_height_picker), onDismiss = onDismiss, onConfirm = { onConfirm(height) }) {
         Box(modifier = Modifier.fillMaxWidth().height(240.dp), contentAlignment = Alignment.Center) {
             WheelNumberPicker(value = height, min = 100, max = 230, onValueChange = { height = it })
         }
@@ -567,7 +573,7 @@ internal fun WeightSheet(
     var decimalPart by rememberSaveable(current) {
         mutableIntStateOf(((current - current.toInt()) * 10).toInt().coerceIn(0, 9))
     }
-    PickerSheet(title = AppText.Profile.WeightPicker, onDismiss = onDismiss, onConfirm = {
+    PickerSheet(title = stringResource(R.string.profile_weight_picker), onDismiss = onDismiss, onConfirm = {
         onConfirm(integerPart + decimalPart / 10.0)
     }) {
         Row(
@@ -647,7 +653,7 @@ private fun PickerSheet(
             Box(modifier = Modifier.fillMaxWidth().height(70.dp)) {
                 AppImage(
                     asset = AppImages.Profile.Close,
-                    contentDescription = AppText.Profile.Close,
+                    contentDescription = stringResource(R.string.profile_close),
                     modifier = Modifier
                         .align(Alignment.CenterStart)
                         .padding(start = 22.dp)
@@ -663,7 +669,7 @@ private fun PickerSheet(
                 )
                 AppImage(
                     asset = AppImages.Profile.Confirm,
-                    contentDescription = AppText.Common.Confirm,
+                    contentDescription = stringResource(R.string.common_confirm),
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
                         .padding(end = 26.dp)
@@ -773,11 +779,11 @@ internal fun AvatarActionSheet(
                 .background(AppColors.Profile.ActionSheet)
                 .navigationBarsPadding()
         ) {
-            SheetAction(text = AppText.Profile.TakePhoto, onClick = onCamera)
+            SheetAction(text = stringResource(R.string.profile_take_photo), onClick = onCamera)
             Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(CorosLine))
-            SheetAction(text = AppText.Profile.Album, onClick = onAlbum)
+            SheetAction(text = stringResource(R.string.profile_album), onClick = onAlbum)
             Box(modifier = Modifier.fillMaxWidth().height(8.dp).background(AppColors.Profile.ActionSheetDivider))
-            SheetAction(text = AppText.Common.Cancel, onClick = onDismiss)
+            SheetAction(text = stringResource(R.string.common_cancel), onClick = onDismiss)
         }
     }
 }
@@ -792,12 +798,21 @@ private fun SheetAction(text: String, onClick: () -> Unit) {
     }
 }
 
+@Composable
 private fun MeasurementSystem.displayText(): String {
     return when (this) {
-        MeasurementSystem.Metric -> "公制（km/m/cm/kg）"
-        MeasurementSystem.Imperial -> "英制（mi/ft/inch/lb）"
+        MeasurementSystem.Metric -> stringResource(R.string.profile_unit_metric)
+        MeasurementSystem.Imperial -> stringResource(R.string.profile_unit_imperial)
     }
 }
+
+@Composable
+private fun localizedCountryOptions(): List<Pair<String, String>> = listOf(
+    "CN" to stringResource(R.string.common_china),
+    "US" to stringResource(R.string.common_united_states),
+    "GB" to stringResource(R.string.common_united_kingdom),
+    "JP" to stringResource(R.string.common_japan)
+)
 
 private fun parseBirthDate(value: String): Triple<Int, Int, Int> {
     val numbers = Regex("\\d+").findAll(value).map { it.value.toIntOrNull() ?: 0 }.toList()

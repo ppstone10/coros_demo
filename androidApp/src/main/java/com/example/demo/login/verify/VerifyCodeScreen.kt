@@ -17,10 +17,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.demo.R
 import com.example.demo.common.login.AuthMode
 import com.example.demo.login.LoginViewModel
 import com.example.demo.login.components.AuthTitleSize
@@ -36,7 +38,6 @@ import com.example.demo.login.components.UnavailableFeatureDialog
 import com.example.demo.common.login.VerifyTarget
 import com.example.demo.login.components.verifyCodeMessage
 import com.example.demo.ui.resources.AppColors
-import com.example.demo.ui.resources.AppText
 import com.example.demo.ui.theme.DemoTheme
 import androidx.compose.material3.Text
 import kotlinx.coroutines.delay
@@ -89,7 +90,7 @@ fun VerifyCodeScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         AuthBlackPage(onBack = onBack, showFeedback = false) {
             Text(
-                text = AppText.Auth.VerificationCode,
+                text = stringResource(R.string.auth_verification_code),
                 color = CorosWhite,
                 fontSize = AuthTitleSize,
                 fontWeight = FontWeight.Light,
@@ -115,11 +116,11 @@ fun VerifyCodeScreen(
             Spacer(modifier = Modifier.height(58.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (countdown > 0) {
-                    Text(text = AppText.Auth.Resend, color = CorosMuted, fontSize = 16.sp)
-                    Text(text = "（${countdown}s）", color = CorosRed, fontSize = 16.sp)
+                    Text(text = stringResource(R.string.auth_resend), color = CorosMuted, fontSize = 16.sp)
+                    Text(text = stringResource(R.string.auth_resend_countdown, countdown), color = CorosRed, fontSize = 16.sp)
                 } else {
                     Text(
-                        text = AppText.Auth.GetCode,
+                        text = stringResource(R.string.auth_get_code),
                         color = CorosRed,
                         fontSize = 16.sp,
                         modifier = Modifier.clickable {
@@ -141,7 +142,7 @@ fun VerifyCodeScreen(
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = AppText.Auth.CodeHelp,
+                    text = stringResource(R.string.auth_code_help),
                     color = CorosMuted,
                     fontSize = 16.sp,
                     modifier = Modifier.clickable { unavailableDialogVisible = true }

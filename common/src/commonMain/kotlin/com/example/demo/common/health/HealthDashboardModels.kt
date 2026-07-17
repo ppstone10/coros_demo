@@ -31,6 +31,12 @@ data class RestingHeartRate(val value: Int?)
 data class HealthCheck(val overallScore: Int?, val lastCheckDays: Int?)
 data class BodyManagement(val weightKg: Double?, val bodyFat: Double?, val bmi: Double?)
 
+/** 平台无关的本地化内容契约；最终句子由各端原生资源系统生成。 */
+data class LocalizedTextSpec(
+    val key: String,
+    val arguments: List<String> = emptyList()
+)
+
 data class HealthDashboardData(
     val dailySummary: DailySummary?,
     val sleepSummary: SleepSummary?,
@@ -50,8 +56,8 @@ data class HealthDashboardData(
 
 data class HealthCardUiModel(
     val type: HealthCardType,
-    val title: String,
-    val summary: String,
+    val title: LocalizedTextSpec,
+    val summary: LocalizedTextSpec,
     val status: HealthCardStatus,
     val action: HealthCardAction,
     val priority: Int,
@@ -59,8 +65,8 @@ data class HealthCardUiModel(
 )
 
 data class DashboardUiState(
-    val greeting: String,
-    val dateLabel: String,
+    val greeting: LocalizedTextSpec,
+    val dateLabel: LocalizedTextSpec,
     val dailySummary: DailySummary?,
     val cards: List<HealthCardUiModel>
 )

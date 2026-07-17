@@ -7,6 +7,8 @@
 - `build-shared-harmony.sh`：安装 KuiklyBase-Kotlin/KNOI 生成的 HarmonyOS shared native module，并验证 `harmonyApp`。
 - `check-sdd.sh`：检查 SDD 核心入口、Spec 模板、TRACE 规范 ID、Worklog 固定章节和文件名一致性。
 - `check-docs.sh`：保护实现目录和历史 worklog，检查权威文档、过时路径、旧引用及测试计数同步。
+- `check-resources.sh`：检查 23 个共享认证消息语义键、三端全部 `auth_*` 默认/英文资源集合、应用语言持久化契约、Entrance/“我”页语言入口，以及 iOS 当前页面即时刷新和 iOS/HarmonyOS Entrance 顶部栏静态契约；认证页面静态键不要求映射进共享错误解析器。
+- `check-resource-maintainability.sh`：检查全资源清单、三端共享图片/Raw 一致性，并以只降不升基线约束硬编码文案和直接颜色债务。
 
 这些脚本应该都可以从仓库根目录安全执行。
 

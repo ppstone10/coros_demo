@@ -241,7 +241,7 @@ object MockAuthStoreJson {
             weightKg = weightStr?.takeUnless { it == "null" }?.toDoubleOrNull(),
             measurementSystem = measureSys.toMeasurementSystem(),
             phone = phone,
-            countryRegion = countryRegion.ifBlank { "中国" },
+            countryRegion = countryRegion.toProfileCountryCode(),
             gender = genderStr
                 ?.trim('"')
                 ?.takeUnless { it == "null" || it.isBlank() }

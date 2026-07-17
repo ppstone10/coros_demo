@@ -48,7 +48,7 @@ struct AuthBlackPage<Content: View>: View {
                         Spacer()
                         if showFeedback {
                             Button(action: onUnavailableClick) {
-                                Text("◔ 建议&反馈")
+                                Text(appLocalized("auth_feedback"))
                                     .foregroundStyle(corosMuted)
                                     .font(.system(size: 14))
                             }
@@ -62,7 +62,7 @@ struct AuthBlackPage<Content: View>: View {
                 .padding(.horizontal, 20)
             }
             .scrollIndicators(.hidden)
-            .background(Color.black.ignoresSafeArea())
+            .background(AppColors.Core.black.ignoresSafeArea())
         }
     }
 }
@@ -152,7 +152,7 @@ struct PhoneInput: View {
                 Text("+86").foregroundStyle(.white).font(.system(size: 17))
                 ZStack(alignment: .leading) {
                     if displayText.isEmpty {
-                        Text("输入手机号").foregroundStyle(corosMuted).font(.system(size: 17))
+                        Text(appLocalized("auth_phone_placeholder")).foregroundStyle(corosMuted).font(.system(size: 17))
                     }
                     TextField("", text: $displayText)
                         .keyboardType(.phonePad)
@@ -192,7 +192,7 @@ struct DisabledUnderlineValue: View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 Text(value.isEmpty ? placeholder : value)
-                    .foregroundStyle(value.isEmpty ? corosMuted : Color.white.opacity(0.55))
+                    .foregroundStyle(value.isEmpty ? corosMuted : AppColors.Auth.placeholderText)
                     .font(.system(size: 17))
                 Spacer(minLength: 0)
             }
@@ -232,13 +232,16 @@ struct AgreementRow: View {
     }
 
     private var agreementText: AttributedString {
-        var text = AttributedString("我已阅读并同意COROS的 《隐私政策》 和 《服务条款》")
+        let privacy = appLocalized("auth_privacy_policy_link")
+        let terms = appLocalized("auth_service_terms_link")
+        let content = appLocalized("auth_terms_inline_prefix") + privacy + appLocalized("auth_terms_joiner") + terms
+        var text = AttributedString(content)
         text.foregroundColor = .white
-        if let privacyRange = text.range(of: "《隐私政策》") {
+        if let privacyRange = text.range(of: privacy) {
             text[privacyRange].foregroundColor = corosRed
             text[privacyRange].link = URL(string: "coros-auth://privacy")
         }
-        if let termsRange = text.range(of: "《服务条款》") {
+        if let termsRange = text.range(of: terms) {
             text[termsRange].foregroundColor = corosRed
             text[termsRange].link = URL(string: "coros-auth://terms")
         }
@@ -251,7 +254,7 @@ struct AgreementCheck: View {
     var body: some View {
         ZStack {
             Circle().fill(accepted ? corosRed : .clear).frame(width: agreementCheckVisualSize, height: agreementCheckVisualSize)
-            Circle().stroke(accepted ? corosRed : Color.white.opacity(0.82), lineWidth: 1).frame(width: agreementCheckVisualSize, height: agreementCheckVisualSize)
+            Circle().stroke(accepted ? corosRed : AppColors.Auth.checkboxBorder, lineWidth: 1).frame(width: agreementCheckVisualSize, height: agreementCheckVisualSize)
             if accepted { Image(systemName: "checkmark").font(.system(size: 7, weight: .bold)).foregroundStyle(.white) }
         }
     }
@@ -270,7 +273,7 @@ struct CorosFilledButton: View {
         Button(action: action) {
             ZStack {
                 if isLoading { ProgressView().tint(.white) }
-                else { Text(text).foregroundStyle(Color.white.opacity(enabled ? 1 : 0.42)).font(.system(size: textSize)) }
+                else { Text(text).foregroundStyle(enabled ? AppColors.Core.white : AppColors.Auth.disabledText).font(.system(size: textSize)) }
             }
             .frame(maxWidth: .infinity).frame(height: buttonHeight)
             .background(color.opacity(enabled ? 1 : 0.45))
@@ -322,7 +325,7 @@ struct CodeBoxCell: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(isActive ? corosCodeActiveField : .black)
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(hasError ? corosRed : Color(red: 58 / 255, green: 58 / 255, blue: 61 / 255), lineWidth: 2))
+                    .stroke(hasError ? corosRed : AppColors.Auth.inputBorder, lineWidth: 2))
             if let digit { Text(digit).foregroundStyle(.white).font(.system(size: 30)) }
             else if isActive { BlinkingCursor() }
         }
@@ -374,7 +377,7 @@ struct ThirdPartyArea: View {
         VStack(spacing: 24) {
             HStack(spacing: 12) {
                 Rectangle().fill(corosLine).frame(height: 1)
-                Text("第三方账号").foregroundStyle(corosMuted).font(.system(size: 14)).fixedSize()
+                Text(appLocalized("auth_third_party_account")).foregroundStyle(corosMuted).font(.system(size: 14)).fixedSize()
                 Rectangle().fill(corosLine).frame(height: 1)
             }
             HStack(spacing: 54) {
@@ -392,7 +395,7 @@ struct ThirdPartyCircle: View {
         Button(action: onClick) {
             Text(text).foregroundStyle(.white).font(.system(size: 20))
                 .frame(width: 34, height: 34)
-                .overlay(Circle().stroke(Color(red: 48 / 255, green: 48 / 255, blue: 54 / 255), lineWidth: 1))
+                .overlay(Circle().stroke(AppColors.Auth.avatarBorder, lineWidth: 1))
         }.buttonStyle(.plain)
     }
 }
@@ -402,7 +405,8 @@ struct ErrorText: View {
     init(_ message: String?) { self.message = message }
     var body: some View {
         if let message, !message.isEmpty {
-            Text(message).foregroundStyle(corosRed).font(.system(size: 15)).padding(.top, 10)
+            Text(localizedAuthMessage(message) ?? message)
+                .foregroundStyle(corosRed).font(.system(size: 15)).padding(.top, 10)
         }
     }
 }
@@ -414,24 +418,24 @@ struct TermsConsentSheet: View {
     let onAgree: () -> Void
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.black.opacity(0.78).ignoresSafeArea()
+            AppColors.Core.overlayStrong.ignoresSafeArea()
             VStack(spacing: 0) {
                 Button(action: onDismiss) {
                     Text("×").foregroundStyle(.white).font(.system(size: 34, weight: .light))
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }.buttonStyle(.plain)
                 Spacer().frame(height: 12)
-                Text("阅读并同意以下条款，").foregroundStyle(.white).font(.system(size: 18)).multilineTextAlignment(.center)
+                Text(appLocalized("auth_read_terms")).foregroundStyle(.white).font(.system(size: 18)).multilineTextAlignment(.center)
                 HStack(spacing: 0) {
-                    Button(action: onPrivacyClick) { Text("《隐私政策》").foregroundStyle(corosRed) }.buttonStyle(.plain)
-                    Text(" 和 ").foregroundStyle(.white)
-                    Button(action: onServiceTermsClick) { Text("《服务条款》").foregroundStyle(corosRed) }.buttonStyle(.plain)
+                    Button(action: onPrivacyClick) { Text(appLocalized("auth_privacy_policy_link")).foregroundStyle(corosRed) }.buttonStyle(.plain)
+                    Text(appLocalized("auth_terms_joiner")).foregroundStyle(.white)
+                    Button(action: onServiceTermsClick) { Text(appLocalized("auth_service_terms_link")).foregroundStyle(corosRed) }.buttonStyle(.plain)
                 }.font(.system(size: 18)).padding(.top, 8)
                 Spacer().frame(height: 42)
-                CorosFilledButton(text: "同意并继续", color: corosRed, action: onAgree)
+                CorosFilledButton(text: appLocalized("auth_agree_and_continue"), color: corosRed, action: onAgree)
             }
             .padding(.horizontal, 22).padding(.top, 18).padding(.bottom, 18)
-            .background(Color(red: 26 / 255, green: 26 / 255, blue: 27 / 255))
+            .background(AppColors.Auth.termsSheet)
             .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, topTrailingRadius: 12))
         }
     }
@@ -441,13 +445,13 @@ struct UnavailableFeatureDialog: View {
     let onDismiss: () -> Void
     var body: some View {
         ZStack {
-            Color.black.opacity(0.62).ignoresSafeArea().onTapGesture(perform: onDismiss)
+            AppColors.Core.overlayMedium.ignoresSafeArea().onTapGesture(perform: onDismiss)
             VStack(spacing: 20) {
-                Text("抱歉，该功能还在实现中").foregroundStyle(.white).font(.system(size: 16)).multilineTextAlignment(.center)
-                Button(action: onDismiss) { Text("知道了").foregroundStyle(corosRed).font(.system(size: 16)) }.buttonStyle(.plain)
+                Text(appLocalized("auth_unavailable")).foregroundStyle(.white).font(.system(size: 16)).multilineTextAlignment(.center)
+                Button(action: onDismiss) { Text(appLocalized("auth_got_it")).foregroundStyle(corosRed).font(.system(size: 16)) }.buttonStyle(.plain)
             }
             .padding(.horizontal, 28).padding(.vertical, 24)
-            .background(Color(red: 34 / 255, green: 34 / 255, blue: 36 / 255))
+            .background(AppColors.Auth.dialog)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .padding(.horizontal, 42)
         }
@@ -457,11 +461,11 @@ struct UnavailableFeatureDialog: View {
 struct BlockingLoadingOverlay: View {
     var body: some View {
         ZStack {
-            Color.black.opacity(0.72).ignoresSafeArea()
+            AppColors.Core.overlayLoading.ignoresSafeArea()
             ProgressView()
-                .tint(Color(red: 216 / 255, green: 216 / 255, blue: 221 / 255))
+                .tint(AppColors.Auth.inputText)
                 .frame(width: 96, height: 96)
-                .background(Color(red: 58 / 255, green: 58 / 255, blue: 60 / 255))
+                .background(AppColors.Auth.loading)
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
     }
@@ -495,7 +499,7 @@ struct LegalDocumentPage: View {
             }
             .scrollIndicators(.visible)
         }
-        .background(Color.black.ignoresSafeArea())
+        .background(AppColors.Core.black.ignoresSafeArea())
     }
 }
 
@@ -563,6 +567,6 @@ final class LoopingVideoView: UIView {
 #else
 struct LoopingVideoBackground: View {
     let videoName: String
-    var body: some View { Color(red: 17 / 255, green: 17 / 255, blue: 17 / 255) }
+    var body: some View { AppColors.Auth.entranceBackground }
 }
 #endif

@@ -58,6 +58,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +69,7 @@ import androidx.compose.ui.zIndex
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.rememberLottieComposition
+import com.example.demo.R
 import com.example.demo.common.health.DashboardUiState
 import com.example.demo.common.health.DailySummary
 import com.example.demo.common.health.DefaultHealthCardOrder
@@ -75,6 +77,7 @@ import com.example.demo.common.health.HealthCardStatus
 import com.example.demo.common.health.HealthCardType
 import com.example.demo.common.health.HealthCardUiModel
 import com.example.demo.common.health.HealthMockScenario
+import com.example.demo.common.health.LocalizedTextSpec
 import com.example.demo.common.login.MockError
 import com.example.demo.common.login.MockResult
 import com.example.demo.login.LoginViewModel
@@ -82,7 +85,8 @@ import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppImage
 import com.example.demo.ui.resources.AppImageAsset
 import com.example.demo.ui.resources.AppImages
-import com.example.demo.ui.resources.AppText
+import com.example.demo.ui.resources.AppSpacing
+import com.example.demo.ui.resources.AppTypography
 import com.example.demo.ui.theme.DemoTheme
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
@@ -155,7 +159,7 @@ fun HealthDashboardScreen(
     ) {
         // Part 1: 固定顶部，不上滑
         HeroTopRow(
-            dateLabel = state?.dateLabel ?: "",
+            dateLabel = state?.dateLabel?.let { localizedHealthText(it) }.orEmpty(),
             isSyncing = isRefreshing,
             onLongPressWatch = { showScenarioPicker = true }
         )
@@ -232,7 +236,7 @@ fun HealthDashboardScreen(
                         isAuthError -> {
                             item {
                                 Box(Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
-                                    Text(AppText.Health.DataUnavailable, color = AppColors.Core.White)
+                                    Text(stringResource(R.string.health_data_unavailable), color = AppColors.Core.White)
                                 }
                             }
                         }
@@ -240,11 +244,11 @@ fun HealthDashboardScreen(
                             item { Spacer(Modifier.height(46.dp)) }
                             item {
                                 Column(
-                                    Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                                    Modifier.fillMaxWidth().padding(horizontal = AppSpacing.Page),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Spacer(Modifier.height(80.dp))
-                                    Text("数据已损坏，下拉尝试重新同步", color = AppColors.Health.Risk, fontSize = 14.sp)
+                                    Text(stringResource(R.string.health_data_corrupted), color = AppColors.Health.Risk, fontSize = AppTypography.Action)
                                 }
                             }
                         }
@@ -262,19 +266,19 @@ fun HealthDashboardScreen(
                             }
                             item {
                                 Text(
-                                    text = AppText.Health.EditCards,
+                                    text = stringResource(R.string.health_edit_cards),
                                     color = AppColors.Health.EditText,
-                                    fontSize = 13.sp,
+                                    fontSize = AppTypography.Label,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(18.dp)
+                                        .padding(AppSpacing.Large)
                                         .clip(RoundedCornerShape(22.dp))
                                         .background(CardBlack)
                                         .clickable {
                                             editing = true
                                             onFullscreenChange(true)
                                         }
-                                        .padding(horizontal = 28.dp, vertical = 10.dp)
+                                        .padding(horizontal = AppSpacing.ActionHorizontal, vertical = AppSpacing.Medium)
                                 )
                             }
                             item { Spacer(Modifier.height(24.dp)) }
@@ -287,7 +291,7 @@ fun HealthDashboardScreen(
                         Modifier
                             .fillMaxWidth()
                             .align(Alignment.TopCenter)
-                            .padding(top = 20.dp),
+                            .padding(top = AppSpacing.Page),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -297,7 +301,7 @@ fun HealthDashboardScreen(
                             strokeWidth = 2.dp
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("数据同步中", color = Muted, fontSize = 12.sp)
+                        Text(stringResource(R.string.health_data_syncing), color = Muted, fontSize = AppTypography.Supporting)
                     }
                 }
             }
@@ -315,7 +319,7 @@ private fun HeroTopRow(
     onLongPressWatch: () -> Unit
 ) {
     val composition by rememberLottieComposition(
-        LottieCompositionSpec.RawRes(com.example.demo.R.raw.watch_status)
+        LottieCompositionSpec.RawRes(R.raw.watch_status)
     )
     val progressAnim = remember { Animatable(0f) }
 
@@ -334,22 +338,22 @@ private fun HeroTopRow(
             .fillMaxWidth()
             .background(PageBlack)
             .statusBarsPadding()
-            .padding(start = 20.dp, end = 20.dp, top = 10.dp),
+            .padding(start = AppSpacing.Page, end = AppSpacing.Page, top = AppSpacing.Medium),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
             Text(
                 if (dateLabel.isBlank()) " " else dateLabel,
-                color = AppColors.Health.Date, fontSize = 11.sp
+                color = AppColors.Health.Date, fontSize = AppTypography.Caption
             )
             Text(
-                AppText.Health.Today,
-                color = AppColors.Core.White, fontSize = 28.sp, fontWeight = FontWeight.SemiBold
+                stringResource(R.string.health_today),
+                color = AppColors.Core.White, fontSize = AppTypography.HeroTitle, fontWeight = FontWeight.SemiBold
             )
         }
         AppImage(
             asset = AppImages.Health.Calendar,
-            contentDescription = AppText.Health.Calendar,
+            contentDescription = stringResource(R.string.health_calendar),
             modifier = Modifier.size(23.dp)
         )
         Spacer(Modifier.width(18.dp))
@@ -408,15 +412,15 @@ private fun ArcAndMetrics(state: DashboardUiState) {
         ) {
             Metric(
                 state.dailySummary?.steps ?: 0,
-                AppText.Health.StepsUnit, AppImages.Health.Steps, AppColors.Health.Steps
+                stringResource(R.string.health_unit_steps), AppImages.Health.Steps, AppColors.Health.Steps
             )
             Metric(
                 state.dailySummary?.calories ?: 0,
-                AppText.Health.CaloriesUnit, AppImages.Health.Calories, AppColors.Health.Calories
+                stringResource(R.string.health_unit_calories), AppImages.Health.Calories, AppColors.Health.Calories
             )
             Metric(
                 state.dailySummary?.activeMinutes ?: 0,
-                AppText.Health.MinutesUnit, AppImages.Health.ActiveDuration, AppColors.Health.ActiveDuration
+                stringResource(R.string.health_unit_minutes), AppImages.Health.ActiveDuration, AppColors.Health.ActiveDuration
             )
         }
     }
@@ -427,7 +431,7 @@ private fun Metric(value: Int, unit: String, icon: AppImageAsset, iconColor: Col
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(82.dp)) {
         AppImage(asset = icon, contentDescription = null, colorFilter = ColorFilter.tint(iconColor), modifier = Modifier.size(22.dp))
         Text(text = value.toString(), color = AppColors.Core.White, fontSize = 26.sp, letterSpacing = 1.sp)
-        Text(text = unit, color = AppColors.Health.MetricUnit, fontSize = 11.sp)
+        Text(text = unit, color = AppColors.Health.MetricUnit, fontSize = AppTypography.Caption)
     }
 }
 
@@ -439,7 +443,7 @@ private fun ScenarioPickerDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("选择数据场景", color = AppColors.Core.White) },
+        title = { Text(stringResource(R.string.health_select_scenario), color = AppColors.Core.White) },
         text = {
             Column {
                 HealthMockScenario.entries.forEach { scenario ->
@@ -453,49 +457,50 @@ private fun ScenarioPickerDialog(
                             colors = RadioButtonDefaults.colors(selectedColor = AppColors.Health.Steps, unselectedColor = Muted)
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text(scenario.displayName(), color = AppColors.Core.White, fontSize = 14.sp)
+                        Text(scenario.displayName(), color = AppColors.Core.White, fontSize = AppTypography.Action)
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("取消", color = AppColors.Health.Steps) } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel), color = AppColors.Health.Steps) } },
         containerColor = CardBlack
     )
 }
 
-private fun HealthMockScenario.displayName() = when (this) {
-    HealthMockScenario.Normal -> "正常数据"
-    HealthMockScenario.PartialMissing -> "部分数据缺失"
-    HealthMockScenario.AllEmpty -> "全部数据为空"
-    HealthMockScenario.Abnormal -> "异常数据"
-    HealthMockScenario.ReadFailure -> "数据损坏"
-}
+@Composable
+private fun HealthMockScenario.displayName() = stringResource(when (this) {
+    HealthMockScenario.Normal -> R.string.health_scenario_normal
+    HealthMockScenario.PartialMissing -> R.string.health_scenario_partial_missing
+    HealthMockScenario.AllEmpty -> R.string.health_scenario_all_empty
+    HealthMockScenario.Abnormal -> R.string.health_scenario_abnormal
+    HealthMockScenario.ReadFailure -> R.string.health_scenario_read_failure
+})
 
 @Composable
 private fun DashboardCard(card: HealthCardUiModel, onClick: () -> Unit) {
     Row(
         modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 5.dp)
+            .padding(horizontal = AppSpacing.Screen, vertical = AppSpacing.XSmall)
             .fillMaxWidth()
             .heightIn(min = 76.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(CardBlack)
             .clickable(onClick = onClick)
-            .padding(horizontal = 15.dp, vertical = 12.dp),
+            .padding(horizontal = AppSpacing.CardContent, vertical = AppSpacing.ContentVertical),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AppImage(iconOf(card.type), null, Modifier.size(22.dp))
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(card.title, color = AppColors.Health.CardTitle, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            Text(localizedHealthText(card.title), color = AppColors.Health.CardTitle, fontSize = 15.sp, fontWeight = FontWeight.Medium)
             Spacer(Modifier.height(5.dp))
             Text(
-                card.summary,
+                localizedHealthText(card.summary),
                 color = if (card.status == HealthCardStatus.Risk) AppColors.Health.Risk else Muted,
-                fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis
+                fontSize = AppTypography.Supporting, maxLines = 2, overflow = TextOverflow.Ellipsis
             )
         }
-        Text(AppText.Common.Next, color = AppColors.Health.Chevron, fontSize = 24.sp)
+        Text(stringResource(R.string.common_next), color = AppColors.Health.Chevron, fontSize = 24.sp)
     }
 }
 
@@ -511,20 +516,21 @@ private fun CardEditor(
     var nonAnimatedType by remember { mutableStateOf<HealthCardType?>(null) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
     var warning by remember { mutableStateOf<String?>(null) }
+    val minimumCardsWarning = stringResource(R.string.health_minimum_cards)
     val inactive = DefaultHealthCardOrder.filterNot(active::contains)
     Column(Modifier.fillMaxSize().background(PageBlack).statusBarsPadding()) {
-        Row(Modifier.fillMaxWidth().height(62.dp).padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(AppText.Common.Back, color = AppColors.Core.White, fontSize = 34.sp, modifier = Modifier.clickable(onClick = onClose))
-            Text(AppText.Health.EditCards, color = AppColors.Core.White, fontSize = 18.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+        Row(Modifier.fillMaxWidth().height(62.dp).padding(horizontal = AppSpacing.Large), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.common_back), color = AppColors.Core.White, fontSize = 34.sp, modifier = Modifier.clickable(onClick = onClose))
+            Text(stringResource(R.string.health_edit_cards), color = AppColors.Core.White, fontSize = 18.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
             Box(Modifier.width(64.dp).height(30.dp).clip(RoundedCornerShape(6.dp)).background(AppColors.Health.Action).clickable { onSave(active.toList()) }, contentAlignment = Alignment.Center) {
-                Text(AppText.Common.Save, color = AppColors.Core.White, fontSize = 14.sp)
+                Text(stringResource(R.string.common_save), color = AppColors.Core.White, fontSize = AppTypography.Action)
             }
         }
-        Text(AppText.Health.ManageOrder, color = Muted, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 24.dp, vertical = 14.dp))
-        warning?.let { Text(it, color = AppColors.Health.Warning, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)) }
+        Text(stringResource(R.string.health_manage_cards), color = Muted, fontSize = AppTypography.Label, modifier = Modifier.padding(horizontal = AppSpacing.Section, vertical = AppSpacing.LabelVertical))
+        warning?.let { Text(it, color = AppColors.Health.Warning, fontSize = AppTypography.Supporting, modifier = Modifier.padding(horizontal = AppSpacing.Section, vertical = 4.dp)) }
         LazyColumn(
             state = listState,
-            modifier = Modifier.weight(1f).padding(horizontal = 16.dp).pointerInput(Unit) {
+            modifier = Modifier.weight(1f).padding(horizontal = AppSpacing.Screen).pointerInput(Unit) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = { position ->
                         val item = listState.layoutInfo.visibleItemsInfo.firstOrNull {
@@ -566,19 +572,19 @@ private fun CardEditor(
                 EditorRow(type, false, idx == 0, idx == active.lastIndex,
                     modifier = if (nonAnimatedType == type) Modifier else Modifier.animateItem(fadeInSpec = null, placementSpec = tween(140), fadeOutSpec = null),
                     dragModifier = Modifier.zIndex(if (draggedType == type) 1f else 0f).graphicsLayer { translationY = if (draggedType == type) dragOffset else 0f; shadowElevation = if (draggedType == type) 10.dp.toPx() else 0f; alpha = if (draggedType == type) .92f else 1f },
-                    onAction = { if (active.size > 3) { active.remove(type); warning = null } else warning = AppText.Health.MinimumCards }
+                    onAction = { if (active.size > 3) { active.remove(type); warning = null } else warning = minimumCardsWarning }
                 )
             }
             if (inactive.isNotEmpty()) {
-                item { Text(AppText.Health.MoreDailyData, color = Muted, fontSize = 13.sp, modifier = Modifier.padding(6.dp, 24.dp, 6.dp, 11.dp)) }
+                item { Text(stringResource(R.string.health_more_daily_data), color = Muted, fontSize = AppTypography.Label, modifier = Modifier.padding(6.dp, AppSpacing.Section, 6.dp, AppSpacing.CaptionBottom)) }
                 itemsIndexed(inactive, key = { _, t -> "more_${t.name}" }) { _, type ->
                     EditorRow(type, true, false, false, dragModifier = Modifier) { active.add(type); warning = null }
                 }
             }
             item {
-                Text(AppText.Health.RestoreDefaults, color = AppColors.Health.Action, fontSize = 14.sp,
-                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 32.dp).clip(RoundedCornerShape(8.dp)).background(CardBlack)
-                        .clickable { active.clear(); active.addAll(DefaultHealthCardOrder); warning = null }.padding(horizontal = 18.dp, vertical = 17.dp))
+                Text(stringResource(R.string.health_restore_defaults), color = AppColors.Health.Action, fontSize = AppTypography.Action,
+                    modifier = Modifier.fillMaxWidth().padding(top = AppSpacing.Section, bottom = 32.dp).clip(RoundedCornerShape(8.dp)).background(CardBlack)
+                        .clickable { active.clear(); active.addAll(DefaultHealthCardOrder); warning = null }.padding(horizontal = AppSpacing.Large, vertical = 17.dp))
             }
         }
     }
@@ -588,41 +594,45 @@ private fun CardEditor(
 private fun EditorRow(type: HealthCardType, isAdd: Boolean, roundTop: Boolean, roundBottom: Boolean, modifier: Modifier = Modifier, dragModifier: Modifier, onAction: () -> Unit) {
     val shape = RoundedCornerShape(if (roundTop) 8.dp else 0.dp, if (roundTop) 8.dp else 0.dp, if (roundBottom) 8.dp else 0.dp, if (roundBottom) 8.dp else 0.dp)
     Column(modifier.fillMaxWidth().background(CardBlack, shape)) {
-        Row(Modifier.fillMaxWidth().then(dragModifier).height(56.dp).padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (!isAdd) { Text(AppText.Health.DragHandle, color = AppColors.Health.Muted, fontSize = 18.sp); Spacer(Modifier.width(10.dp)) }
+        Row(Modifier.fillMaxWidth().then(dragModifier).height(56.dp).padding(horizontal = AppSpacing.Large), verticalAlignment = Alignment.CenterVertically) {
+            if (!isAdd) { Text("⠿", color = AppColors.Health.Muted, fontSize = 18.sp); Spacer(Modifier.width(10.dp)) }
             AppImage(iconOf(type), null, Modifier.size(22.dp)); Spacer(Modifier.width(10.dp))
             Text(titleOf(type), color = AppColors.Health.EditorTitle, fontSize = 15.sp, modifier = Modifier.weight(1f))
             if (isAdd) Box(Modifier.size(30.dp).clip(CircleShape).background(AppColors.Health.AddAction).clickable(onClick = onAction), contentAlignment = Alignment.Center) {
                 Text("+", color = AppColors.Core.White, fontSize = 24.sp, lineHeight = 24.sp, fontWeight = FontWeight.Light)
-            } else AppImage(AppImages.Health.EditorRemove, AppText.Health.Remove, Modifier.size(30.dp).clickable(onClick = onAction))
+            } else AppImage(AppImages.Health.EditorRemove, stringResource(R.string.health_remove), Modifier.size(30.dp).clickable(onClick = onAction))
         }
-        if (!roundBottom) Box(Modifier.padding(start = 18.dp).fillMaxWidth().height(1.dp).background(AppColors.Health.EditorDivider))
+        if (!roundBottom) Box(Modifier.padding(start = AppSpacing.Large).fillMaxWidth().height(1.dp).background(AppColors.Health.EditorDivider))
     }
 }
 
 @Composable
 private fun DetailPlaceholder(card: HealthCardUiModel, onBack: () -> Unit) {
+    val title = localizedHealthText(card.title)
     Column(Modifier.fillMaxSize().background(PageBlack).statusBarsPadding()) {
-        Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(AppText.Common.Back, color = AppColors.Core.White, fontSize = 38.sp, modifier = Modifier.clickable(onClick = onBack))
-            Text(card.title, color = AppColors.Core.White, fontSize = 19.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+        Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = AppSpacing.Large), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.common_back), color = AppColors.Core.White, fontSize = 38.sp, modifier = Modifier.clickable(onClick = onBack))
+            Text(title, color = AppColors.Core.White, fontSize = AppTypography.SectionTitle, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
             Spacer(Modifier.width(28.dp))
         }
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             AppImage(iconOf(card.type), null, Modifier.size(56.dp)); Spacer(Modifier.height(20.dp))
-            Text(AppText.Health.pendingFeature(card.title), color = AppColors.Health.Placeholder, fontSize = 16.sp)
+            Text(stringResource(R.string.health_pending_feature, title), color = AppColors.Health.Placeholder, fontSize = AppTypography.CardTitle)
         }
     }
 }
 
-private fun titleOf(type: HealthCardType) = when (type) {
-    HealthCardType.WeeklyPlan -> AppText.Health.WeeklyPlan; HealthCardType.TodayActivity -> AppText.Health.TodayActivity
-    HealthCardType.TrainingLoad -> AppText.Health.TrainingLoad; HealthCardType.TrainingAssessment -> AppText.Health.TrainingAssessment
-    HealthCardType.Recovery -> AppText.Health.Recovery; HealthCardType.RunningAbility -> AppText.Health.RunningAbility
-    HealthCardType.CyclingAbility -> AppText.Health.CyclingAbility; HealthCardType.HeartRate -> AppText.Health.HeartRate
-    HealthCardType.Stress -> AppText.Health.Stress; HealthCardType.Sleep -> AppText.Health.Sleep
-    HealthCardType.HrvAssessment -> AppText.Health.HrvAssessment; HealthCardType.RestingHeartRate -> AppText.Health.RestingHeartRate
-    HealthCardType.HealthCheck -> AppText.Health.HealthCheck; HealthCardType.BodyManagement -> AppText.Health.BodyManagement
+@Composable
+private fun titleOf(type: HealthCardType) = localizedHealthText(LocalizedTextSpec("health_card_${type.resourceName()}_title"))
+
+private fun HealthCardType.resourceName() = when (this) {
+    HealthCardType.WeeklyPlan -> "weekly_plan"; HealthCardType.TodayActivity -> "today_activity"
+    HealthCardType.TrainingLoad -> "training_load"; HealthCardType.TrainingAssessment -> "training_assessment"
+    HealthCardType.Recovery -> "recovery"; HealthCardType.RunningAbility -> "running_ability"
+    HealthCardType.CyclingAbility -> "cycling_ability"; HealthCardType.HeartRate -> "heart_rate"
+    HealthCardType.Stress -> "stress"; HealthCardType.Sleep -> "sleep"
+    HealthCardType.HrvAssessment -> "hrv_assessment"; HealthCardType.RestingHeartRate -> "resting_heart_rate"
+    HealthCardType.HealthCheck -> "health_check"; HealthCardType.BodyManagement -> "body_management"
 }
 
 private fun iconOf(type: HealthCardType) = when (type) {
@@ -640,8 +650,8 @@ private fun iconOf(type: HealthCardType) = when (type) {
 private fun HealthDashboardScreenPreview() {
     DemoTheme {
         Column(Modifier.fillMaxSize().background(PageBlack)) {
-            HeroTopRow("7月15日 星期三", isSyncing = false, onLongPressWatch = {})
-            ArcAndMetricsSection(DashboardUiState("今天", "7月15日 星期三", DailySummary(8769, 769, 69), emptyList()))
+            HeroTopRow(stringResource(R.string.health_demo_date), isSyncing = false, onLongPressWatch = {})
+            ArcAndMetricsSection(DashboardUiState(LocalizedTextSpec("health_today"), LocalizedTextSpec("health_demo_date"), DailySummary(8769, 769, 69), emptyList()))
         }
     }
 }

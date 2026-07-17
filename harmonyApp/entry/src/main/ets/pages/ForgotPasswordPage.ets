@@ -33,11 +33,11 @@ struct ForgotPasswordPage {
       Column() {
         AuthHeader({ showBack: true, showFeedback: false,
           backRequested: () => { navigate(NavOperation.Pop, ''); } });
-        AuthTitle('找回密码');
+        AuthTitle($r('app.string.auth_find_password'));
 
         Blank().height(60)
 
-        UnderlineInput({ placeholder: '输入手机号或邮箱', textValue: this.forgotAccount,
+        UnderlineInput({ placeholder: $r('app.string.auth_account_placeholder'), textValue: this.forgotAccount,
           inputType: InputType.Email, isPassword: false, passwordVisible: false,
           valueChanged: (value: string) => {
             this.forgotAccount = value.trim();
@@ -46,7 +46,7 @@ struct ForgotPasswordPage {
 
         Blank().height(72)
 
-        CorosButton({ textValue: '下一步', color: COROS_BUTTON_RED,
+        CorosButton({ textValue: $r('app.string.auth_next_step'), color: COROS_BUTTON_RED,
           enabledValue: this.forgotAccount.trim().length > 0, loading: false,
           tapRequested: () => { this.verifyForgotAccount(); } });
 
@@ -71,7 +71,7 @@ struct ForgotPasswordPage {
     if (isEmail) {
       validationMessage = this.viewModel.validateEmailAccount(normalizedAccount);
     } else if (account !== this.viewModel.normalizePhoneInput(account)) {
-      validationMessage = '请输入11位手机号';
+      validationMessage = 'auth_validation_phone_invalid';
     } else {
       validationMessage = this.viewModel.validatePhoneAccount(normalizedAccount);
     }
@@ -80,7 +80,7 @@ struct ForgotPasswordPage {
       return;
     }
     if (!this.viewModel.hasAccount(normalizedAccount)) {
-      this.localError = '账号不存在';
+      this.localError = 'auth_error_account_not_found';
       return;
     }
     navigateWithParams(NavOperation.Push, AuthRoutes.toResetPassword(normalizedAccount));

@@ -9,13 +9,13 @@ struct SnackbarView: View {
             Spacer()
             if isPresented {
                 HStack {
-                    Text(message)
+                    Text(localizedAuthMessage(message) ?? message)
                         .foregroundColor(.white)
                         .font(.system(size: 14))
                     Spacer()
                 }
                 .padding(16)
-                .background(Color.black.opacity(0.85))
+                .background(AppColors.Core.snackbar)
                 .cornerRadius(8)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 32)

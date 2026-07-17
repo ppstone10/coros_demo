@@ -62,8 +62,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.AnnotatedString
@@ -89,7 +91,6 @@ import com.example.demo.R
 import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppImage
 import com.example.demo.ui.resources.AppImages
-import com.example.demo.ui.resources.AppText
 import com.example.demo.login.LoginViewModel
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
@@ -109,11 +110,12 @@ fun Context.findActivity(): Activity? {
     }
 }
 
+@Composable
 fun verifyCodeMessage(account: String, targetKind: VerifyTarget): String {
     return if (targetKind == VerifyTarget.Email) {
-        "验证码已发送至你的邮箱 $account，有效期60秒"
+        stringResource(R.string.auth_verification_sent_email, account)
     } else {
-        "验证码已发送至你的手机+86-$account，有效期60秒"
+        stringResource(R.string.auth_verification_sent_phone, account)
     }
 }
 
@@ -190,7 +192,7 @@ fun AuthBlackPage(
         ) {
             if (showBack) {
                 Text(
-                    text = AppText.Common.Back,
+                    text = stringResource(R.string.common_back),
                     color = CorosWhite,
                     fontSize = 44.sp,
                     modifier = Modifier.clickable(onClick = onBack)
@@ -199,7 +201,7 @@ fun AuthBlackPage(
             Spacer(modifier = Modifier.weight(1f))
             if (showFeedback) {
                 Text(
-                    text = AppText.Auth.Feedback,
+                    text = stringResource(R.string.auth_feedback),
                     color = CorosMuted,
                     fontSize = 14.sp,
                     modifier = Modifier.clickable(onClick = onUnavailableClick)
@@ -219,7 +221,7 @@ fun CorosLogo(modifier: Modifier = Modifier) {
     ) {
         AppImage(
             asset = AppImages.Auth.Logo,
-            contentDescription = AppText.Auth.Logo,
+            contentDescription = stringResource(R.string.auth_logo),
             modifier = Modifier.width(260.dp).height(48.dp)
         )
     }
@@ -395,7 +397,7 @@ fun PhoneInput(value: String, autoFocus: Boolean = false, onValueChange: (String
         }
     }
     Row(modifier = Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(text = AppText.Auth.ChinaDialingCode, color = CorosWhite, fontSize = 17.sp)
+        Text(text = stringResource(R.string.auth_china_dialing_code), color = CorosWhite, fontSize = 17.sp)
         Spacer(modifier = Modifier.width(24.dp))
         BasicTextField(
             value = value,
@@ -407,7 +409,7 @@ fun PhoneInput(value: String, autoFocus: Boolean = false, onValueChange: (String
             modifier = Modifier.weight(1f).focusRequester(focusRequester),
             decorationBox = { innerTextField ->
                 Box(contentAlignment = Alignment.CenterStart) {
-                    if (value.isBlank()) Text(text = AppText.Auth.PhonePlaceholder, color = CorosMuted, fontSize = 17.sp)
+                    if (value.isBlank()) Text(text = stringResource(R.string.auth_phone_placeholder), color = CorosMuted, fontSize = 17.sp)
                     innerTextField()
                 }
             }
@@ -421,10 +423,10 @@ fun PhoneInput(value: String, autoFocus: Boolean = false, onValueChange: (String
 fun AgreementRow(accepted: Boolean, onToggle: () -> Unit, onPrivacyClick: () -> Unit, onServiceTermsClick: () -> Unit) {
     val linkStyle = TextLinkStyles(style = SpanStyle(color = CorosRed))
     val agreementText = buildAnnotatedString {
-        append("我已阅读并同意COROS的 ")
-        withLink(LinkAnnotation.Clickable(tag = "privacy", styles = linkStyle) { onPrivacyClick() }) { append("《隐私政策》") }
-        append(" 和 ")
-        withLink(LinkAnnotation.Clickable(tag = "terms", styles = linkStyle) { onServiceTermsClick() }) { append("《服务条款》") }
+        append(stringResource(R.string.auth_terms_inline_prefix))
+        withLink(LinkAnnotation.Clickable(tag = "privacy", styles = linkStyle) { onPrivacyClick() }) { append(stringResource(R.string.auth_privacy_policy_link)) }
+        append(stringResource(R.string.auth_terms_joiner))
+        withLink(LinkAnnotation.Clickable(tag = "terms", styles = linkStyle) { onServiceTermsClick() }) { append(stringResource(R.string.auth_service_terms_link)) }
     }
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         AgreementCheck(accepted = accepted, modifier = Modifier.padding(top = 6.dp).size(AgreementCheckTouchSize).clickable(onClick = onToggle))
@@ -523,7 +525,7 @@ fun ClearInputButton(visible: Boolean, onClick: () -> Unit) {
         if (visible) {
             AppImage(
                 asset = AppImages.Auth.ClearInput,
-                contentDescription = AppText.Auth.ClearInput,
+                contentDescription = stringResource(R.string.auth_clear_input),
                 modifier = Modifier.size(28.dp).clickable(onClick = onClick).padding(4.dp)
             )
         }
@@ -534,7 +536,7 @@ fun ClearInputButton(visible: Boolean, onClick: () -> Unit) {
 fun PasswordVisibilityButton(passwordVisible: Boolean, onClick: () -> Unit) {
     AppImage(
         asset = AppImages.Auth.PasswordHidden,
-        contentDescription = if (passwordVisible) AppText.Auth.HidePassword else AppText.Auth.ShowPassword,
+        contentDescription = if (passwordVisible) stringResource(R.string.auth_hide_password) else stringResource(R.string.auth_show_password),
         modifier = Modifier.size(34.dp).alpha(if (passwordVisible) 0.45f else 1f).clickable(onClick = onClick).padding(3.dp)
     )
 }
@@ -556,7 +558,7 @@ fun ThirdPartyArea(onUnavailableClick: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(width = 120.dp, height = 1.dp).background(CorosLine))
-            Text(text = AppText.Auth.ThirdPartyAccount, color = CorosMuted, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 12.dp))
+            Text(text = stringResource(R.string.auth_third_party_account), color = CorosMuted, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 12.dp))
             Box(modifier = Modifier.size(width = 120.dp, height = 1.dp).background(CorosLine))
         }
         Spacer(modifier = Modifier.height(24.dp))
@@ -580,7 +582,8 @@ fun ThirdPartyCircle(text: String, onClick: () -> Unit) {
 @Composable
 fun ErrorText(message: String?) {
     if (!message.isNullOrBlank()) {
-        Text(text = message, color = CorosRed, fontSize = 15.sp, modifier = Modifier.padding(top = 10.dp))
+        val localizedMessage = LocalResources.current.localizedAuthMessage(message).orEmpty()
+        Text(text = localizedMessage, color = CorosRed, fontSize = 15.sp, modifier = Modifier.padding(top = 10.dp))
     }
 }
 
@@ -618,14 +621,14 @@ fun TermsConsentSheet(onDismiss: () -> Unit, onPrivacyClick: () -> Unit, onServi
         ) {
             Text(text = "×", color = CorosWhite, fontSize = 34.sp, modifier = Modifier.align(Alignment.End).clickable(onClick = onDismiss))
             Spacer(modifier = Modifier.height(12.dp))
-            Text(text = AppText.Auth.ReadTerms, color = CorosWhite, fontSize = 18.sp, textAlign = TextAlign.Center)
+            Text(text = stringResource(R.string.auth_read_terms), color = CorosWhite, fontSize = 18.sp, textAlign = TextAlign.Center)
             Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "《${AppText.Auth.PrivacyPolicy}》", color = CorosRed, fontSize = 18.sp, modifier = Modifier.clickable(onClick = onPrivacyClick))
-                Text(text = " 和 ", color = CorosWhite, fontSize = 18.sp)
-                Text(text = "《${AppText.Auth.ServiceTerms}》", color = CorosRed, fontSize = 18.sp, modifier = Modifier.clickable(onClick = onServiceTermsClick))
+                Text(text = stringResource(R.string.auth_privacy_policy_link), color = CorosRed, fontSize = 18.sp, modifier = Modifier.clickable(onClick = onPrivacyClick))
+                Text(text = stringResource(R.string.auth_terms_joiner), color = CorosWhite, fontSize = 18.sp)
+                Text(text = stringResource(R.string.auth_service_terms_link), color = CorosRed, fontSize = 18.sp, modifier = Modifier.clickable(onClick = onServiceTermsClick))
             }
             Spacer(modifier = Modifier.height(42.dp))
-            CorosFilledButton(text = AppText.Auth.AgreeAndContinue, color = CorosRed, onClick = onAgree)
+            CorosFilledButton(text = stringResource(R.string.auth_agree_and_continue), color = CorosRed, onClick = onAgree)
         }
     }
 }
@@ -638,9 +641,9 @@ fun UnavailableFeatureDialog(onDismiss: () -> Unit) {
                 .background(AppColors.Auth.Dialog).padding(horizontal = 28.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = AppText.Auth.Unavailable, color = CorosWhite, fontSize = 16.sp, textAlign = TextAlign.Center)
+            Text(text = stringResource(R.string.auth_unavailable), color = CorosWhite, fontSize = 16.sp, textAlign = TextAlign.Center)
             Spacer(modifier = Modifier.height(20.dp))
-            Text(text = AppText.Auth.GotIt, color = CorosRed, fontSize = 16.sp, modifier = Modifier.clickable(onClick = onDismiss))
+            Text(text = stringResource(R.string.auth_got_it), color = CorosRed, fontSize = 16.sp, modifier = Modifier.clickable(onClick = onDismiss))
         }
     }
 }
@@ -679,7 +682,7 @@ fun LegalDocumentPage(title: String, paragraphs: List<LegalParagraph>, onBack: (
     val scrollState = rememberScrollState()
     Column(modifier = Modifier.fillMaxSize().background(CorosBlack).statusBarsPadding().padding(horizontal = 20.dp)) {
         Box(modifier = Modifier.fillMaxWidth().height(52.dp), contentAlignment = Alignment.Center) {
-            Text(text = AppText.Common.Back, color = CorosWhite, fontSize = 44.sp, modifier = Modifier.align(Alignment.CenterStart).clickable(onClick = onBack))
+            Text(text = stringResource(R.string.common_back), color = CorosWhite, fontSize = 44.sp, modifier = Modifier.align(Alignment.CenterStart).clickable(onClick = onBack))
             Text(text = title, color = CorosWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         }
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {

@@ -23,7 +23,9 @@ import com.example.demo.login.components.CorosFilledButton
 import com.example.demo.login.components.CorosWhite
 import com.example.demo.login.components.ErrorText
 import com.example.demo.login.components.UnderlineInput
-import com.example.demo.ui.resources.AppText
+import androidx.compose.ui.res.stringResource
+import com.example.demo.R
+import com.example.demo.common.login.AuthMessageKeys
 import com.example.demo.ui.theme.DemoTheme
 
 @Composable
@@ -46,20 +48,20 @@ fun ForgotPasswordScreen(
         val validationMessage = if (isEmail) {
             viewModel.validateEmailAccount(normalizedAccount)
         } else if (rawAccount != viewModel.normalizePhoneInput(rawAccount)) {
-            "请输入11位手机号"
+            AuthMessageKeys.ValidationPhoneInvalid
         } else {
             viewModel.validatePhoneAccount(normalizedAccount)
         }
         when {
             validationMessage != null -> localError = validationMessage
-            !viewModel.hasAccount(normalizedAccount) -> localError = "账号不存在"
+            !viewModel.hasAccount(normalizedAccount) -> localError = AuthMessageKeys.ErrorAccountNotFound
             else -> onAccountVerified(normalizedAccount)
         }
     }
 
     AuthBlackPage(onBack = onBack, showFeedback = false) {
         Text(
-            text = AppText.Auth.FindPassword,
+            text = stringResource(R.string.auth_find_password),
             color = CorosWhite,
             fontSize = AuthTitleSize,
             fontWeight = FontWeight.Light,
@@ -68,7 +70,7 @@ fun ForgotPasswordScreen(
         Spacer(modifier = Modifier.height(60.dp))
         UnderlineInput(
             value = account,
-            placeholder = AppText.Auth.AccountPlaceholder,
+            placeholder = stringResource(R.string.auth_account_placeholder),
             keyboardType = KeyboardType.Email,
             autoFocus = true,
             onValueChange = {
@@ -78,7 +80,7 @@ fun ForgotPasswordScreen(
         )
         Spacer(modifier = Modifier.height(72.dp))
         CorosFilledButton(
-            text = AppText.Auth.NextStep,
+            text = stringResource(R.string.auth_next_step),
             color = CorosButtonRed,
             enabled = account.isNotBlank(),
             onClick = { verifyAccount() }

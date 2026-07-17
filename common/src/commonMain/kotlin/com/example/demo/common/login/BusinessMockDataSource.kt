@@ -6,7 +6,8 @@ package com.example.demo.common.login
 data class MockBusinessSummary(
     val userId: String,
     val displayName: String,
-    val greeting: String,
+    val greetingKey: String,
+    val greetingArguments: List<String>,
     val weeklyTrainingMinutes: Int
 )
 
@@ -25,7 +26,8 @@ class LocalBusinessMockDataSource(
                     MockBusinessSummary(
                         userId = session.userId,
                         displayName = session.resolvedDisplayName,
-                        greeting = "欢迎回来，${session.resolvedDisplayName}",
+                        greetingKey = "business_welcome_back",
+                        greetingArguments = listOf(session.resolvedDisplayName),
                         weeklyTrainingMinutes = 0
                     )
                 )

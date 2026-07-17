@@ -141,16 +141,16 @@ class LocalMockAuthRepository(
     }
 
     override fun saveProfile(profile: UserProfile): MockResult<AuthSession> {
+        val session = currentSession() ?: return MockResult.Failure(MockError.AuthRequired)
         val cleanProfile = profile.copy(
             username = profile.username.trim(),
             phone = profile.phone.trim(),
-            countryRegion = profile.countryRegion.trim().ifBlank { "中国" }
+            countryRegion = profile.countryRegion.toProfileCountryCode(session.region)
         )
         if (!cleanProfile.isRequiredComplete) {
             return MockResult.Failure(MockError.InvalidParam)
         }
 
-        val session = currentSession() ?: return MockResult.Failure(MockError.AuthRequired)
         val store = loadStore()
         val updatedAccounts = store.accounts.map { account ->
             if (account.userId == session.userId) {

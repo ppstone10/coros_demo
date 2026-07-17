@@ -24,6 +24,7 @@ import {
 } from '../login/components/AuthComponents';
 import { AuthRoutes, ProfilePageParams } from '../login/AuthRoutes';
 import { handleAuthEffect } from '../login/AuthEffectHandler';
+import { AppColors } from '../resources/AppResources';
 
 
 function pcBuildNumberRange(min: number, max: number, suffix: string = ''): string[] {
@@ -59,7 +60,7 @@ function pcParseBirthDate(value: string): number[] {
 
 @Component
 struct PickerSheetHeaderComponent {
-  @Prop title: string = '';
+  @Prop title: ResourceStr = '';
   onDismiss: () => void = () => {};
   onConfirm: () => void = () => {};
 
@@ -107,16 +108,23 @@ struct NumberWheelPickerComponent {
   @Link value: number;
   @Prop min: number = 0;
   @Prop max: number = 100;
-  @Prop suffix: string = '';
+  @Prop suffix: ResourceStr = '';
   @Prop pickerWidth: number = 140;
 
   private syncValue(index: number | number[]): void {
     this.value = this.min + pcPickerIndex(index);
   }
 
+  private suffixText(): string {
+    if (typeof this.suffix === 'string') {
+      return this.suffix;
+    }
+    return getContext(this).resourceManager.getStringSync(this.suffix.id);
+  }
+
   build() {
     TextPicker({
-      range: pcBuildNumberRange(this.min, this.max, this.suffix),
+      range: pcBuildNumberRange(this.min, this.max, this.suffixText()),
       selected: pcClamp(this.value, this.min, this.max) - this.min
     })
       .width(this.pickerWidth)
@@ -124,9 +132,9 @@ struct NumberWheelPickerComponent {
       .defaultPickerItemHeight(54)
       .canLoop(false)
       .selectedTextStyle({ color: COROS_WHITE, font: { size: 28, weight: FontWeight.Medium } })
-      .textStyle({ color: '#CFCFD4', font: { size: 23, weight: FontWeight.Normal } })
-      .disappearTextStyle({ color: '#77777D', font: { size: 18, weight: FontWeight.Normal } })
-      .divider({ strokeWidth: 1, color: '#34343A', startMargin: 14, endMargin: 14 })
+      .textStyle({ color: AppColors.PROFILE_WHEEL_NEAR, font: { size: 23, weight: FontWeight.Normal } })
+      .disappearTextStyle({ color: AppColors.PROFILE_WHEEL_FAR, font: { size: 18, weight: FontWeight.Normal } })
+      .divider({ strokeWidth: 1, color: AppColors.PROFILE_WHEEL_BORDER, startMargin: 14, endMargin: 14 })
       .onChange((value: string | string[], index: number | number[]) => {
         this.syncValue(index);
       })
@@ -149,29 +157,35 @@ struct BirthDatePickerSheetComponent {
     this.day = values[2];
   }
 
+  private localized(resource: Resource): string {
+    return getContext(this).resourceManager.getStringSync(resource.id);
+  }
+
   build() {
     Stack() {
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor('#B8000000')
+        .backgroundColor(AppColors.AUTH_OVERLAY_SOFT)
         .onClick(() => { this.onDismiss(); })
 
       Column() {
         PickerSheetHeaderComponent({
-          title: '出生日期',
+          title: $r('app.string.profile_birth_date'),
           onDismiss: () => { this.onDismiss(); },
           onConfirm: () => {
-            this.onConfirm(`${this.year}年${this.month}月${this.day}日`);
+            this.onConfirm(`${this.year}${this.localized($r('app.string.profile_date_year_suffix'))}` +
+              `${this.month}${this.localized($r('app.string.profile_date_month_suffix'))}` +
+              `${this.day}${this.localized($r('app.string.profile_date_day_suffix'))}`);
           }
         });
 
         Row() {
-          NumberWheelPickerComponent({ value: $year, min: 1950, max: 2026, suffix: '年', pickerWidth: 110 })
+          NumberWheelPickerComponent({ value: $year, min: 1950, max: 2026, suffix: $r('app.string.profile_date_year_suffix'), pickerWidth: 110 })
             .layoutWeight(1)
-          NumberWheelPickerComponent({ value: $month, min: 1, max: 12, suffix: '月', pickerWidth: 110 })
+          NumberWheelPickerComponent({ value: $month, min: 1, max: 12, suffix: $r('app.string.profile_date_month_suffix'), pickerWidth: 110 })
             .layoutWeight(1)
-          NumberWheelPickerComponent({ value: $day, min: 1, max: 31, suffix: '日', pickerWidth: 110 })
+          NumberWheelPickerComponent({ value: $day, min: 1, max: 31, suffix: $r('app.string.profile_date_day_suffix'), pickerWidth: 110 })
             .layoutWeight(1)
         }
         .width('100%')
@@ -182,7 +196,7 @@ struct BirthDatePickerSheetComponent {
         Blank().height(28)
       }
       .width('100%')
-      .backgroundColor('#1A1A1B')
+      .backgroundColor(AppColors.AUTH_SHEET)
       .borderRadius({ topLeft: 14, topRight: 14 })
       .align(Alignment.Bottom)
     }
@@ -207,12 +221,12 @@ struct HeightPickerSheetComponent {
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor('#B8000000')
+        .backgroundColor(AppColors.AUTH_OVERLAY_SOFT)
         .onClick(() => { this.onDismiss(); })
 
       Column() {
         PickerSheetHeaderComponent({
-          title: '身高 (cm)',
+          title: $r('app.string.profile_height_picker'),
           onDismiss: () => { this.onDismiss(); },
           onConfirm: () => { this.onConfirm(this.heightCm); }
         });
@@ -228,7 +242,7 @@ struct HeightPickerSheetComponent {
         Blank().height(28)
       }
       .width('100%')
-      .backgroundColor('#1A1A1B')
+      .backgroundColor(AppColors.AUTH_SHEET)
       .borderRadius({ topLeft: 14, topRight: 14 })
       .align(Alignment.Bottom)
     }
@@ -258,12 +272,12 @@ struct WeightPickerSheetComponent {
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor('#B8000000')
+        .backgroundColor(AppColors.AUTH_OVERLAY_SOFT)
         .onClick(() => { this.onDismiss(); })
 
       Column() {
         PickerSheetHeaderComponent({
-          title: '体重 (kg)',
+          title: $r('app.string.profile_weight_picker'),
           onDismiss: () => { this.onDismiss(); },
           onConfirm: () => {
             this.onConfirm(this.integerPart + this.decimalPart / 10.0);
@@ -288,7 +302,7 @@ struct WeightPickerSheetComponent {
         Blank().height(28)
       }
       .width('100%')
-      .backgroundColor('#1A1A1B')
+      .backgroundColor(AppColors.AUTH_SHEET)
       .borderRadius({ topLeft: 14, topRight: 14 })
       .align(Alignment.Bottom)
     }
@@ -309,7 +323,7 @@ struct UnitPickerSheetComponent {
   }
 
   @Builder
-  OptionRow(textValue: string, value: string) {
+  OptionRow(textValue: ResourceStr, value: string) {
     Row() {
       Text(textValue)
         .fontSize(this.selected === value ? 22 : 18)
@@ -321,7 +335,7 @@ struct UnitPickerSheetComponent {
     .margin({ left: 20, right: 20 })
     .border({
       width: this.selected === value ? 1 : 0,
-      color: this.selected === value ? '#38383C' : '#00000000',
+      color: this.selected === value ? AppColors.PROFILE_SELECTED_BORDER : AppColors.TRANSPARENT,
       radius: 8
     })
     .onClick(() => { this.selected = value; })
@@ -332,19 +346,19 @@ struct UnitPickerSheetComponent {
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor('#B8000000')
+        .backgroundColor(AppColors.AUTH_OVERLAY_SOFT)
         .onClick(() => { this.onDismiss(); })
 
       Column() {
         PickerSheetHeaderComponent({
-          title: '公英制',
+          title: $r('app.string.profile_measurement'),
           onDismiss: () => { this.onDismiss(); },
           onConfirm: () => { this.onConfirm(this.selected); }
         });
 
         Column() {
-          this.OptionRow('公制（km/m/cm/kg）', 'Metric');
-          this.OptionRow('英制（mi/ft/inch/lb）', 'Imperial');
+          this.OptionRow($r('app.string.profile_unit_metric'), 'Metric');
+          this.OptionRow($r('app.string.profile_unit_imperial'), 'Imperial');
         }
         .width('100%')
         .height(240)
@@ -353,7 +367,7 @@ struct UnitPickerSheetComponent {
         Blank().height(28)
       }
       .width('100%')
-      .backgroundColor('#1A1A1B')
+      .backgroundColor(AppColors.AUTH_SHEET)
       .borderRadius({ topLeft: 14, topRight: 14 })
       .align(Alignment.Bottom)
     }
@@ -364,32 +378,36 @@ struct UnitPickerSheetComponent {
 
 @Component
 struct CountryPickerSheetComponent {
-  @Prop current: string = '中国';
-  @State selected: string = '中国';
+  @Prop current: string = '';
+  @State selected: string = '';
   onDismiss: () => void = () => {};
   onConfirm: (value: string) => void = (_: string) => {};
 
   aboutToAppear(): void {
-    this.selected = this.current.length > 0 ? this.current : '中国';
+    this.selected = this.current.length > 0 ? this.current : 'CN';
+  }
+
+  private localized(resource: Resource): string {
+    return getContext(this).resourceManager.getStringSync(resource.id);
   }
 
   @Builder
-  OptionRow(textValue: string) {
+  OptionRow(textValue: ResourceStr, value: string) {
     Row() {
       Text(textValue)
-        .fontSize(this.selected === textValue ? 22 : 18)
-        .fontColor(this.selected === textValue ? COROS_WHITE : COROS_MUTED)
+        .fontSize(this.selected === value ? 22 : 18)
+        .fontColor(this.selected === value ? COROS_WHITE : COROS_MUTED)
     }
     .width('100%')
     .height(56)
     .justifyContent(FlexAlign.Center)
     .margin({ left: 20, right: 20 })
     .border({
-      width: this.selected === textValue ? 1 : 0,
-      color: this.selected === textValue ? '#38383C' : '#00000000',
+      width: this.selected === value ? 1 : 0,
+      color: this.selected === value ? AppColors.PROFILE_SELECTED_BORDER : AppColors.TRANSPARENT,
       radius: 8
     })
-    .onClick(() => { this.selected = textValue; })
+    .onClick(() => { this.selected = value; })
   }
 
   build() {
@@ -397,21 +415,21 @@ struct CountryPickerSheetComponent {
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor('#B8000000')
+        .backgroundColor(AppColors.AUTH_OVERLAY_SOFT)
         .onClick(() => { this.onDismiss(); })
 
       Column() {
         PickerSheetHeaderComponent({
-          title: '国家与地区',
+          title: $r('app.string.profile_country_region'),
           onDismiss: () => { this.onDismiss(); },
           onConfirm: () => { this.onConfirm(this.selected); }
         });
 
         Column() {
-          this.OptionRow('中国');
-          this.OptionRow('美国');
-          this.OptionRow('英国');
-          this.OptionRow('日本');
+          this.OptionRow($r('app.string.common_china'), 'CN');
+          this.OptionRow($r('app.string.common_united_states'), 'US');
+          this.OptionRow($r('app.string.common_united_kingdom'), 'GB');
+          this.OptionRow($r('app.string.common_japan'), 'JP');
         }
         .width('100%')
         .height(240)
@@ -420,7 +438,7 @@ struct CountryPickerSheetComponent {
         Blank().height(28)
       }
       .width('100%')
-      .backgroundColor('#1A1A1B')
+      .backgroundColor(AppColors.AUTH_SHEET)
       .borderRadius({ topLeft: 14, topRight: 14 })
       .align(Alignment.Bottom)
     }
@@ -433,7 +451,7 @@ struct CountryPickerSheetComponent {
 
 @Component
 struct RequiredLabelComponent {
-  @Prop label: string = '';
+  @Prop label: ResourceStr = '';
   @Prop required: boolean = false;
 
   build() {
@@ -449,10 +467,10 @@ struct RequiredLabelComponent {
 
 @Component
 struct ProfilePickerRowComponent {
-  @Prop label: string = '';
+  @Prop label: ResourceStr = '';
   @Prop required: boolean = false;
   @Prop value: string = '';
-  @Prop placeholder: string = '';
+  @Prop placeholder: ResourceStr = '';
   tapRequested: () => void = () => {};
 
   build() {
@@ -462,7 +480,7 @@ struct ProfilePickerRowComponent {
         Blank().layoutWeight(1)
         Text(this.value.length > 0 ? this.value : this.placeholder)
           .fontSize(15)
-          .fontColor(this.value.length > 0 ? '#DADAE0' : COROS_MUTED)
+          .fontColor(this.value.length > 0 ? AppColors.PROFILE_VALUE : COROS_MUTED)
           .textAlign(TextAlign.End)
         Image($r('app.media.right_more'))
           .width(19)
@@ -483,9 +501,9 @@ struct ProfilePickerRowComponent {
 
 @Component
 struct ProfileTextRowComponent {
-  @Prop label: string = '';
+  @Prop label: ResourceStr = '';
   @Prop required: boolean = false;
-  @Prop placeholder: string = '';
+  @Prop placeholder: ResourceStr = '';
   @Link value: string;
   valueChanged: (value: string) => string = (value: string) => value;
 
@@ -543,7 +561,7 @@ struct ProfileAvatarComponent {
     .width(76)
     .height(76)
     .borderRadius(38)
-    .backgroundColor('#171719')
+    .backgroundColor(AppColors.PROFILE_AVATAR)
     .clip(true)
     .alignSelf(ItemAlign.Center)
     .onClick(() => { this.tapRequested(); })
@@ -562,7 +580,7 @@ struct ProfileGenderRowComponent {
 
   build() {
     Row() {
-      RequiredLabelComponent({ label: '性别', required: true });
+      RequiredLabelComponent({ label: $r('app.string.profile_gender'), required: true });
       Blank().layoutWeight(1)
       Row() {
         Row() {
@@ -571,9 +589,9 @@ struct ProfileGenderRowComponent {
             .height(18)
             .objectFit(ImageFit.Contain)
           Blank().width(8)
-          Text('女')
+          Text($r('app.string.common_female'))
             .fontSize(16)
-            .fontColor(this.gender === 'Female' ? COROS_RED : '#D8D8DD')
+            .fontColor(this.gender === 'Female' ? COROS_RED : AppColors.AUTH_INPUT_TEXT)
             .fontWeight(FontWeight.Medium)
         }
         .width(72)
@@ -581,10 +599,10 @@ struct ProfileGenderRowComponent {
         .justifyContent(FlexAlign.Center)
         .border({
           width: this.gender === 'Female' ? 1 : 0,
-          color: this.gender === 'Female' ? COROS_RED : '#00000000',
+          color: this.gender === 'Female' ? COROS_RED : AppColors.TRANSPARENT,
           radius: 9
         })
-        .backgroundColor('#19191B')
+        .backgroundColor(AppColors.PROFILE_CONTROL)
         .onClick(() => { this.selectGender('Female'); })
 
         Blank().width(10)
@@ -595,9 +613,9 @@ struct ProfileGenderRowComponent {
             .height(18)
             .objectFit(ImageFit.Contain)
           Blank().width(8)
-          Text('男')
+          Text($r('app.string.common_male'))
             .fontSize(16)
-            .fontColor(this.gender === 'Male' ? COROS_RED : '#D8D8DD')
+            .fontColor(this.gender === 'Male' ? COROS_RED : AppColors.AUTH_INPUT_TEXT)
             .fontWeight(FontWeight.Medium)
         }
         .width(72)
@@ -605,10 +623,10 @@ struct ProfileGenderRowComponent {
         .justifyContent(FlexAlign.Center)
         .border({
           width: this.gender === 'Male' ? 1 : 0,
-          color: this.gender === 'Male' ? COROS_RED : '#00000000',
+          color: this.gender === 'Male' ? COROS_RED : AppColors.TRANSPARENT,
           radius: 9
         })
-        .backgroundColor('#19191B')
+        .backgroundColor(AppColors.PROFILE_CONTROL)
         .onClick(() => { this.selectGender('Male'); })
       }
     }
@@ -629,7 +647,7 @@ struct AvatarActionSheetComponent {
   }
 
   @Builder
-  SheetAction(textValue: string, tapRequested: () => void) {
+  SheetAction(textValue: ResourceStr, tapRequested: () => void) {
     Row() {
       Text(textValue)
         .fontSize(20)
@@ -647,26 +665,26 @@ struct AvatarActionSheetComponent {
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor('#6B000000')
+        .backgroundColor(AppColors.OVERLAY_42)
         .onClick(() => { this.dismiss(); })
 
       Column() {
-        this.SheetAction('拍照片', () => {
+        this.SheetAction($r('app.string.profile_take_photo'), () => {
           this.dismiss();
           this.photoRequested();
         });
         Divider().color(COROS_LINE)
-        this.SheetAction('相册', () => {
+        this.SheetAction($r('app.string.profile_album'), () => {
           this.dismiss();
           this.albumRequested();
         });
-        Blank().width('100%').height(8).backgroundColor('#101012')
-        this.SheetAction('取消', () => {
+        Blank().width('100%').height(8).backgroundColor(AppColors.PROFILE_ACTION_DIVIDER)
+        this.SheetAction($r('app.string.common_cancel'), () => {
           this.dismiss();
         });
       }
       .width('100%')
-      .backgroundColor('#18181A')
+      .backgroundColor(AppColors.PROFILE_ACTION_SHEET)
       .borderRadius({ topLeft: 10, topRight: 10 })
       .align(Alignment.Bottom)
     }
@@ -683,19 +701,19 @@ struct UnavailableFeatureDialogComponent {
     Column() {
       Blank().layoutWeight(1)
       Column({ space: 20 }) {
-        Text('抱歉，该功能还在实现中').fontSize(16).fontColor(COROS_WHITE).textAlign(TextAlign.Center)
-        Text('知道了').fontSize(16).fontColor(COROS_RED)
+        Text($r('app.string.auth_unavailable')).fontSize(16).fontColor(COROS_WHITE).textAlign(TextAlign.Center)
+        Text($r('app.string.auth_got_it')).fontSize(16).fontColor(COROS_RED)
           .onClick(() => { this.visible = false; })
       }
       .padding({ left: 28, right: 28, top: 24, bottom: 24 })
-      .backgroundColor('#222224')
+      .backgroundColor(AppColors.AUTH_DIALOG)
       .borderRadius(12)
       .margin({ left: 42, right: 42 })
       Blank().layoutWeight(1)
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#0000009E')
+    .backgroundColor(AppColors.OVERLAY_62)
     .onClick(() => { this.visible = false; })
   }
 }
@@ -719,8 +737,14 @@ struct BirthDatePickerSheetV2 {
     this.activePicker = '';
   }
 
+  private localized(resource: Resource): string {
+    return getContext(this).resourceManager.getStringSync(resource.id);
+  }
+
   private confirm(): void {
-    this.profileBirthDate = `${this.year}年${this.month}月${this.day}日`;
+    this.profileBirthDate = `${this.year}${this.localized($r('app.string.profile_date_year_suffix'))}` +
+      `${this.month}${this.localized($r('app.string.profile_date_month_suffix'))}` +
+      `${this.day}${this.localized($r('app.string.profile_date_day_suffix'))}`;
     this.activePicker = '';
   }
 
@@ -729,22 +753,22 @@ struct BirthDatePickerSheetV2 {
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor('#B8000000')
+        .backgroundColor(AppColors.AUTH_OVERLAY_SOFT)
         .onClick(() => { this.close(); })
 
       Column() {
         PickerSheetHeaderComponent({
-          title: '出生日期',
+          title: $r('app.string.profile_birth_date'),
           onDismiss: () => { this.close(); },
           onConfirm: () => { this.confirm(); }
         })
 
         Row() {
-          NumberWheelPickerComponent({ value: $year, min: 1950, max: 2026, suffix: '年', pickerWidth: 110 })
+          NumberWheelPickerComponent({ value: $year, min: 1950, max: 2026, suffix: $r('app.string.profile_date_year_suffix'), pickerWidth: 110 })
             .layoutWeight(1)
-          NumberWheelPickerComponent({ value: $month, min: 1, max: 12, suffix: '月', pickerWidth: 110 })
+          NumberWheelPickerComponent({ value: $month, min: 1, max: 12, suffix: $r('app.string.profile_date_month_suffix'), pickerWidth: 110 })
             .layoutWeight(1)
-          NumberWheelPickerComponent({ value: $day, min: 1, max: 31, suffix: '日', pickerWidth: 110 })
+          NumberWheelPickerComponent({ value: $day, min: 1, max: 31, suffix: $r('app.string.profile_date_day_suffix'), pickerWidth: 110 })
             .layoutWeight(1)
         }
         .width('100%')
@@ -755,7 +779,7 @@ struct BirthDatePickerSheetV2 {
         Blank().height(28)
       }
       .width('100%')
-      .backgroundColor('#1A1A1B')
+      .backgroundColor(AppColors.AUTH_SHEET)
       .borderRadius({ topLeft: 14, topRight: 14 })
       .align(Alignment.Bottom)
     }
@@ -789,12 +813,12 @@ struct HeightPickerSheetV2 {
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor('#B8000000')
+        .backgroundColor(AppColors.AUTH_OVERLAY_SOFT)
         .onClick(() => { this.close(); })
 
       Column() {
         PickerSheetHeaderComponent({
-          title: '身高 (cm)',
+          title: $r('app.string.profile_height_picker'),
           onDismiss: () => { this.close(); },
           onConfirm: () => { this.confirm(); }
         })
@@ -810,7 +834,7 @@ struct HeightPickerSheetV2 {
         Blank().height(28)
       }
       .width('100%')
-      .backgroundColor('#1A1A1B')
+      .backgroundColor(AppColors.AUTH_SHEET)
       .borderRadius({ topLeft: 14, topRight: 14 })
       .align(Alignment.Bottom)
     }
@@ -851,12 +875,12 @@ struct WeightPickerSheetV2 {
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor('#B8000000')
+        .backgroundColor(AppColors.AUTH_OVERLAY_SOFT)
         .onClick(() => { this.close(); })
 
       Column() {
         PickerSheetHeaderComponent({
-          title: '体重 (kg)',
+          title: $r('app.string.profile_weight_picker'),
           onDismiss: () => { this.close(); },
           onConfirm: () => { this.confirm(); }
         })
@@ -879,7 +903,7 @@ struct WeightPickerSheetV2 {
         Blank().height(28)
       }
       .width('100%')
-      .backgroundColor('#1A1A1B')
+      .backgroundColor(AppColors.AUTH_SHEET)
       .borderRadius({ topLeft: 14, topRight: 14 })
       .align(Alignment.Bottom)
     }
@@ -893,11 +917,19 @@ struct UnitPickerSheetV2 {
   @Link profileMeasurementSystem: string;
   @Link activePicker: string;
   @State selectedIndex: number = 0;
-  private labels: string[] = ['公制（km/m/cm/kg）', '英制（mi/ft/inch/lb）'];
+  private labels: string[] = [];
   private values: string[] = ['Metric', 'Imperial'];
 
   aboutToAppear(): void {
+    this.labels = [
+      this.localized($r('app.string.profile_unit_metric')),
+      this.localized($r('app.string.profile_unit_imperial'))
+    ];
     this.selectedIndex = this.profileMeasurementSystem === 'Imperial' ? 1 : 0;
+  }
+
+  private localized(resource: Resource): string {
+    return getContext(this).resourceManager.getStringSync(resource.id);
   }
 
   private close(): void {
@@ -918,12 +950,12 @@ struct UnitPickerSheetV2 {
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor('#B8000000')
+        .backgroundColor(AppColors.AUTH_OVERLAY_SOFT)
         .onClick(() => { this.close(); })
 
       Column() {
         PickerSheetHeaderComponent({
-          title: '公英制',
+          title: $r('app.string.profile_measurement'),
           onDismiss: () => { this.close(); },
           onConfirm: () => { this.confirm(); }
         })
@@ -935,9 +967,9 @@ struct UnitPickerSheetV2 {
             .defaultPickerItemHeight(54)
             .canLoop(true)
             .selectedTextStyle({ color: COROS_WHITE, font: { size: 24, weight: FontWeight.Medium } })
-            .textStyle({ color: '#CFCFD4', font: { size: 20, weight: FontWeight.Normal } })
-            .disappearTextStyle({ color: '#77777D', font: { size: 18, weight: FontWeight.Normal } })
-            .divider({ strokeWidth: 1, color: '#34343A', startMargin: 14, endMargin: 14 })
+            .textStyle({ color: AppColors.PROFILE_WHEEL_NEAR, font: { size: 20, weight: FontWeight.Normal } })
+            .disappearTextStyle({ color: AppColors.PROFILE_WHEEL_FAR, font: { size: 18, weight: FontWeight.Normal } })
+            .divider({ strokeWidth: 1, color: AppColors.PROFILE_WHEEL_BORDER, startMargin: 14, endMargin: 14 })
             .onChange((value: string | string[], index: number | number[]) => {
               this.sync(index);
             })
@@ -950,7 +982,7 @@ struct UnitPickerSheetV2 {
         Blank().height(28)
       }
       .width('100%')
-      .backgroundColor('#1A1A1B')
+      .backgroundColor(AppColors.AUTH_SHEET)
       .borderRadius({ topLeft: 14, topRight: 14 })
       .align(Alignment.Bottom)
     }
@@ -964,11 +996,22 @@ struct CountryPickerSheetV2 {
   @Link profileCountry: string;
   @Link activePicker: string;
   @State selectedIndex: number = 0;
-  private countries: string[] = ['中国', '美国', '英国', '日本'];
+  private countryCodes: string[] = ['CN', 'US', 'GB', 'JP'];
+  private countries: string[] = [];
 
   aboutToAppear(): void {
-    let index: number = this.countries.indexOf(this.profileCountry);
+    this.countries = [
+      this.localized($r('app.string.common_china')),
+      this.localized($r('app.string.common_united_states')),
+      this.localized($r('app.string.common_united_kingdom')),
+      this.localized($r('app.string.common_japan'))
+    ];
+    let index: number = this.countryCodes.indexOf(this.profileCountry);
     this.selectedIndex = index >= 0 ? index : 0;
+  }
+
+  private localized(resource: Resource): string {
+    return getContext(this).resourceManager.getStringSync(resource.id);
   }
 
   private close(): void {
@@ -976,7 +1019,7 @@ struct CountryPickerSheetV2 {
   }
 
   private confirm(): void {
-    this.profileCountry = this.countries[this.selectedIndex];
+    this.profileCountry = this.countryCodes[this.selectedIndex];
     this.activePicker = '';
   }
 
@@ -989,12 +1032,12 @@ struct CountryPickerSheetV2 {
       Column()
         .width('100%')
         .height('100%')
-        .backgroundColor('#B8000000')
+        .backgroundColor(AppColors.AUTH_OVERLAY_SOFT)
         .onClick(() => { this.close(); })
 
       Column() {
         PickerSheetHeaderComponent({
-          title: '国家与地区',
+          title: $r('app.string.profile_country_region'),
           onDismiss: () => { this.close(); },
           onConfirm: () => { this.confirm(); }
         })
@@ -1006,9 +1049,9 @@ struct CountryPickerSheetV2 {
             .defaultPickerItemHeight(54)
             .canLoop(true)
             .selectedTextStyle({ color: COROS_WHITE, font: { size: 28, weight: FontWeight.Medium } })
-            .textStyle({ color: '#CFCFD4', font: { size: 23, weight: FontWeight.Normal } })
-            .disappearTextStyle({ color: '#77777D', font: { size: 18, weight: FontWeight.Normal } })
-            .divider({ strokeWidth: 1, color: '#34343A', startMargin: 14, endMargin: 14 })
+            .textStyle({ color: AppColors.PROFILE_WHEEL_NEAR, font: { size: 23, weight: FontWeight.Normal } })
+            .disappearTextStyle({ color: AppColors.PROFILE_WHEEL_FAR, font: { size: 18, weight: FontWeight.Normal } })
+            .divider({ strokeWidth: 1, color: AppColors.PROFILE_WHEEL_BORDER, startMargin: 14, endMargin: 14 })
             .onChange((value: string | string[], index: number | number[]) => {
               this.sync(index);
             })
@@ -1021,7 +1064,7 @@ struct CountryPickerSheetV2 {
         Blank().height(28)
       }
       .width('100%')
-      .backgroundColor('#1A1A1B')
+      .backgroundColor(AppColors.AUTH_SHEET)
       .borderRadius({ topLeft: 14, topRight: 14 })
       .align(Alignment.Bottom)
     }
@@ -1035,12 +1078,20 @@ struct GenderPickerSheetV2 {
   @Link profileGender: string;
   @Link activePicker: string;
   @State selectedIndex: number = 0;
-  private labels: string[] = ['女', '男'];
+  private labels: string[] = [];
   private values: string[] = ['Female', 'Male'];
 
   aboutToAppear(): void {
+    this.labels = [
+      this.localized($r('app.string.common_female')),
+      this.localized($r('app.string.common_male'))
+    ];
     let index: number = this.values.indexOf(this.profileGender);
     this.selectedIndex = index >= 0 ? index : 0;
+  }
+
+  private localized(resource: Resource): string {
+    return getContext(this).resourceManager.getStringSync(resource.id);
   }
 
   private close(): void {
@@ -1054,27 +1105,27 @@ struct GenderPickerSheetV2 {
 
   build() {
     Stack() {
-      Column().width('100%').height('100%').backgroundColor('#B8000000')
+      Column().width('100%').height('100%').backgroundColor(AppColors.AUTH_OVERLAY_SOFT)
         .onClick(() => { this.close(); })
 
       Column() {
         PickerSheetHeaderComponent({
-          title: '性别',
+          title: $r('app.string.profile_gender'),
           onDismiss: () => { this.close(); },
           onConfirm: () => { this.confirm(); }
         })
         TextPicker({ range: this.labels, selected: this.selectedIndex })
           .width('90%').height(240).defaultPickerItemHeight(54).canLoop(false)
           .selectedTextStyle({ color: COROS_WHITE, font: { size: 28, weight: FontWeight.Medium } })
-          .textStyle({ color: '#CFCFD4', font: { size: 23, weight: FontWeight.Normal } })
-          .disappearTextStyle({ color: '#77777D', font: { size: 18, weight: FontWeight.Normal } })
-          .divider({ strokeWidth: 1, color: '#34343A', startMargin: 14, endMargin: 14 })
+          .textStyle({ color: AppColors.PROFILE_WHEEL_NEAR, font: { size: 23, weight: FontWeight.Normal } })
+          .disappearTextStyle({ color: AppColors.PROFILE_WHEEL_FAR, font: { size: 18, weight: FontWeight.Normal } })
+          .divider({ strokeWidth: 1, color: AppColors.PROFILE_WHEEL_BORDER, startMargin: 14, endMargin: 14 })
           .onChange((_value: string | string[], index: number | number[]) => {
             this.selectedIndex = pcClamp(pcPickerIndex(index), 0, this.values.length - 1);
           })
         Blank().height(28)
       }
-      .width('100%').backgroundColor('#1A1A1B')
+      .width('100%').backgroundColor(AppColors.AUTH_SHEET)
       .borderRadius({ topLeft: 14, topRight: 14 }).align(Alignment.Bottom)
     }
     .width('100%').height('100%')
@@ -1096,7 +1147,7 @@ struct ProfileCompletionPage {
   @State profileWeightKg: string = '';
   @State profileGender: string = '';
   @State profileMeasurementSystem: string = 'Metric';
-  @State profileCountry: string = '中国';
+  @State profileCountry: string = '';
   @State profilePhone: string = '';
   @State unavailableDialogVisible: boolean = false;
   @State avatarSheetVisible: boolean = false;
@@ -1129,13 +1180,13 @@ struct ProfileCompletionPage {
           Column() {
             if (this.editMode) {
               Row() {
-                Text('‹').fontSize(34).fontColor(COROS_WHITE).width(64)
+                Text($r('app.string.common_back')).fontSize(34).fontColor(COROS_WHITE).width(64)
                   .onClick(() => { this.handleProfileBack(); })
-                Text('个人信息').fontSize(18).fontColor(COROS_WHITE).fontWeight(FontWeight.Medium)
+                Text($r('app.string.profile_personal_info')).fontSize(18).fontColor(COROS_WHITE).fontWeight(FontWeight.Medium)
                   .layoutWeight(1).textAlign(TextAlign.Center)
-                Text('保存').fontSize(14).fontColor(COROS_WHITE).width(64).textAlign(TextAlign.Center)
+                Text($r('app.string.common_save')).fontSize(14).fontColor(COROS_WHITE).width(64).textAlign(TextAlign.Center)
                   .padding({ top: 8, bottom: 8 })
-                  .backgroundColor(this.isProfileActionEnabled() ? '#F0003C' : '#5F001C')
+                  .backgroundColor(this.isProfileActionEnabled() ? AppColors.ACTION : AppColors.PROFILE_SAVE_DISABLED)
                   .borderRadius(6)
                   .enabled(this.isProfileActionEnabled())
                   .onClick(() => {
@@ -1150,7 +1201,7 @@ struct ProfileCompletionPage {
 
               Blank().height(14)
 
-              Text('完善个人信息')
+              Text($r('app.string.profile_completion_title'))
                 .fontSize(28)
                 .fontColor(COROS_WHITE)
                 .lineHeight(34)
@@ -1158,9 +1209,9 @@ struct ProfileCompletionPage {
 
               Blank().height(8)
 
-              Text('以下信息可以帮助我们对体育科学做出更准确的预测，请仔细填写。')
+              Text($r('app.string.profile_completion_description'))
                 .fontSize(14)
-                .fontColor('#E8E8EC')
+                .fontColor(AppColors.PROFILE_DESCRIPTION)
                 .lineHeight(20)
 
               Blank().height(20)
@@ -1174,67 +1225,67 @@ struct ProfileCompletionPage {
             Blank().height(20)
 
             ProfileTextRowComponent({
-              label: '用户名',
+              label: $r('app.string.profile_username'),
               required: true,
               value: $profileUsername,
-              placeholder: '输入用户名',
+              placeholder: $r('app.string.profile_username_placeholder'),
               valueChanged: (value: string) => {
                 return value.substring(0, 20);
               }
             });
             if (this.editMode) {
               ProfilePickerRowComponent({
-                label: '性别',
+                label: $r('app.string.profile_gender'),
                 required: true,
                 value: this.genderLabel(),
-                placeholder: '去填写',
+                placeholder: $r('app.string.profile_fill_in'),
                 tapRequested: () => { this.activePicker = 'Gender'; }
               });
             }
             ProfilePickerRowComponent({
-              label: '出生日期',
+              label: $r('app.string.profile_birth_date'),
               required: true,
               value: this.profileBirthDate,
-              placeholder: '去填写',
+              placeholder: $r('app.string.profile_fill_in'),
               tapRequested: () => { this.activePicker = 'BirthDate'; }
             });
             ProfilePickerRowComponent({
-              label: '身高',
+              label: $r('app.string.profile_height'),
               required: true,
               value: this.profileHeightCm.length > 0 ? `${this.profileHeightCm} cm` : '',
-              placeholder: '去填写',
+              placeholder: $r('app.string.profile_fill_in'),
               tapRequested: () => { this.activePicker = 'Height'; }
             });
             ProfilePickerRowComponent({
-              label: '体重',
+              label: $r('app.string.profile_weight'),
               required: true,
               value: this.profileWeightKg.length > 0 ? `${this.formatWeightText(this.profileWeightKg)} kg` : '',
-              placeholder: '去填写',
+              placeholder: $r('app.string.profile_fill_in'),
               tapRequested: () => { this.activePicker = 'Weight'; }
             });
             if (!this.editMode) {
               ProfilePickerRowComponent({
-                label: '公英制',
+                label: $r('app.string.profile_measurement'),
                 required: false,
                 value: this.measurementLabel(),
                 placeholder: '',
                 tapRequested: () => { this.activePicker = 'Unit'; }
               });
               ProfileTextRowComponent({
-                label: '手机',
+                label: $r('app.string.profile_phone'),
                 required: false,
                 value: $profilePhone,
-                placeholder: '输入手机号',
+                placeholder: $r('app.string.profile_phone_placeholder'),
                 valueChanged: (value: string) => {
                   return value.replace(/[^0-9+\-]/g, '').substring(0, 20);
                 }
               });
             }
             ProfilePickerRowComponent({
-              label: '国家与地区',
+              label: $r('app.string.profile_country_region'),
               required: false,
-              value: this.profileCountry,
-              placeholder: '中国',
+              value: this.countryLabel(this.profileCountry),
+              placeholder: $r('app.string.common_china'),
               tapRequested: () => { this.activePicker = 'Country'; }
             });
             if (!this.editMode) {
@@ -1255,7 +1306,7 @@ struct ProfileCompletionPage {
           Column() {
             ErrorText({ message: this.localError });
             Blank().height(5)
-            CorosButton({ textValue: '完成', color: COROS_BUTTON_RED,
+            CorosButton({ textValue: $r('app.string.common_complete'), color: COROS_BUTTON_RED,
               enabledValue: this.isProfileActionEnabled(), loading: this.isLoading,
               tapRequested: () => { this.submitProfile(); } });
           }
@@ -1333,7 +1384,7 @@ struct ProfileCompletionPage {
     let effect: LoginEffect | null = this.viewModel.consumeEffect();
     if (effect !== null) {
       if (this.editMode && effect.type === LoginEffectType.ProfileSaved) {
-        showToast('资料已保存');
+        showToast('profile_saved');
         navigate(NavOperation.Pop, '');
       } else {
         handleAuthEffect(effect);
@@ -1367,25 +1418,27 @@ struct ProfileCompletionPage {
         }
       }).catch((error: Error) => {
         console.error(`pickAvatarFromAlbum failed: ${JSON.stringify(error)}`);
-        this.showMessage('选择头像失败');
+        this.showMessage('profile_avatar_selection_failed');
       });
     } catch (error) {
       console.error(`pickAvatarFromAlbum failed: ${JSON.stringify(error)}`);
-      this.showMessage('选择头像失败');
+      this.showMessage('profile_avatar_selection_failed');
     }
   }
 
   private takeAvatarPhoto(): void {
-    this.showMessage('拍照功能待接入系统相机');
+    this.showMessage('profile_camera_pending');
   }
 
   private measurementLabel(): string {
-    return this.profileMeasurementSystem === 'Imperial' ? '英制（mi/ft/inch/lb）' : '公制（km/m/cm/kg）';
+    return this.profileMeasurementSystem === 'Imperial'
+      ? this.localized($r('app.string.profile_unit_imperial'))
+      : this.localized($r('app.string.profile_unit_metric'));
   }
 
   private genderLabel(): string {
-    if (this.profileGender === 'Female') return '女';
-    if (this.profileGender === 'Male') return '男';
+    if (this.profileGender === 'Female') return this.localized($r('app.string.common_female'));
+    if (this.profileGender === 'Male') return this.localized($r('app.string.common_male'));
     return '';
   }
 
@@ -1402,7 +1455,7 @@ struct ProfileCompletionPage {
       this.profileMeasurementSystem = state.currentSession.measurementSystem;
       this.profilePhone = state.currentSession.phone;
       this.profileCountry = state.currentSession.countryRegion.length > 0 ? state.currentSession.countryRegion :
-        (state.currentSession.region === 'US' ? '美国' : '中国');
+        (state.currentSession.region === 'US' ? 'US' : 'CN');
       this.profileGender = state.currentSession.gender;
     }
   }
@@ -1428,10 +1481,20 @@ struct ProfileCompletionPage {
   }
 
   private showMessage(message: string): void {
-    try {
-      promptAction.showToast({ message: message });
-    } catch (error) {
-      console.error('showToast failed');
+    showToast(message);
+  }
+
+  private localized(resource: Resource): string {
+    return getContext(this).resourceManager.getStringSync(resource.id);
+  }
+
+  private countryLabel(code: string): string {
+    switch (code.trim().toUpperCase()) {
+      case 'US': return this.localized($r('app.string.common_united_states'));
+      case 'GB':
+      case 'UK': return this.localized($r('app.string.common_united_kingdom'));
+      case 'JP': return this.localized($r('app.string.common_japan'));
+      default: return this.localized($r('app.string.common_china'));
     }
   }
 }

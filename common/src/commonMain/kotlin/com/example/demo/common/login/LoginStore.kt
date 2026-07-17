@@ -182,9 +182,9 @@ class LoginStore(
     private fun submit() {
         if (!state.canSubmit) {
             val message = if (state.mode == AuthMode.Register) {
-                "请输入账号、密码、区域和验证码"
+                AuthMessageKeys.ValidationRegisterIncomplete
             } else {
-                "请输入账号和密码"
+                AuthMessageKeys.ValidationLoginIncomplete
             }
             state = state.copy(errorMessage = message)
             pendingEffect = LoginEffect.ShowMessage(message)

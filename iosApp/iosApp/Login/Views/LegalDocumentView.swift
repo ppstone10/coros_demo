@@ -3,13 +3,21 @@ import SwiftUI
 struct PrivacyPolicyView: View {
     let router: AuthRouter
     var body: some View {
-        LegalDocumentPage(title: "隐私政策", paragraphs: privacyPolicyParagraphs, onBack: { router.pop() })
+        LegalDocumentPage(
+            title: appLocalized("auth_privacy_policy"),
+            paragraphs: parseLegalDocument(appLocalized("legal_privacy_body")),
+            onBack: { router.pop() }
+        )
     }
 }
 
 struct ServiceTermsView: View {
     let router: AuthRouter
     var body: some View {
-        LegalDocumentPage(title: "服务条款", paragraphs: serviceTermsParagraphs, onBack: { router.pop() })
+        LegalDocumentPage(
+            title: appLocalized("auth_service_terms"),
+            paragraphs: parseLegalDocument(appLocalized("legal_service_terms_body")),
+            onBack: { router.pop() }
+        )
     }
 }

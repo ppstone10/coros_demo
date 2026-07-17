@@ -9,6 +9,7 @@
 | [`architecture.md`](architecture.md) | 五个实现目录的职责、KMP 边界和跨端调用关系 |
 | [`development-workflow.md`](development-workflow.md) | SDD 之后的构建、修改和平台验证命令 |
 | [`resource-management.md`](resource-management.md) | 当前三端资源位置、设计源、导入与验收规则 |
+| [`resource-inventory.md`](resource-inventory.md) | 三端共享图片/Raw 清单、平台专属边界和硬编码债务基线 |
 | [`proto与domain model之间的关系.md`](proto与domain%20model之间的关系.md) | Proto 字段契约、存储镜像、JSON 与 domain model 的边界 |
 
 ## 参考资料

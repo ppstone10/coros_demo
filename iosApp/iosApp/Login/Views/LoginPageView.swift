@@ -12,18 +12,18 @@ struct LoginPageView: View {
 
     var body: some View {
         AuthBlackPage(onBack: { router.pop() }, showFeedback: true, onUnavailableClick: { showUnavailable = true }) {
-            AuthTitle("账号登录")
+            AuthTitle(appLocalized("auth_account_login"))
             Spacer().frame(height: 45)
             UnderlineInput(
                 text: Binding(get: { viewModel.state.account }, set: { viewModel.updateAccount($0) }),
-                placeholder: "输入手机号或邮箱",
+                placeholder: appLocalized("auth_account_placeholder"),
                 keyboardType: .emailAddress,
                 autoFocus: true
             )
             Spacer().frame(height: 16)
             UnderlineInput(
                 text: Binding(get: { viewModel.state.password }, set: { viewModel.updatePassword($0) }),
-                placeholder: "密码",
+                placeholder: appLocalized("auth_password"),
                 isPassword: true
             )
             Spacer().frame(height: 59)
@@ -35,7 +35,7 @@ struct LoginPageView: View {
             )
             Spacer().frame(height: 12)
             CorosFilledButton(
-                text: "登录",
+                text: appLocalized("auth_login"),
                 color: corosButtonRed,
                 enabled: canLogin,
                 isLoading: viewModel.state.isLoading,
@@ -43,11 +43,11 @@ struct LoginPageView: View {
             )
             ErrorText(localError ?? viewModel.state.errorMessage)
             Button(action: { router.push(.forgotPassword) }) {
-                Text("忘记密码?").foregroundStyle(corosMuted).font(.system(size: 14)).padding(.top, 16)
+                Text(appLocalized("auth_forgot_password")).foregroundStyle(corosMuted).font(.system(size: 14)).padding(.top, 16)
             }.buttonStyle(.plain)
             Spacer(minLength: 40)
             ThirdPartyArea(onUnavailableClick: { showUnavailable = true })
-            Text("V4.8.1.14").foregroundStyle(corosMuted).font(.system(size: 16))
+            Text(appLocalized("auth_version")).foregroundStyle(corosMuted).font(.system(size: 16))
                 .frame(maxWidth: .infinity).padding(.top, 22).padding(.bottom, 12)
         }
         .overlay {

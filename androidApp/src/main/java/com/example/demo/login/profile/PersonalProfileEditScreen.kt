@@ -38,12 +38,14 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.demo.R
 import com.example.demo.common.login.MeasurementSystem
 import com.example.demo.common.login.UserGender
 import com.example.demo.common.login.UserProfile
@@ -55,9 +57,9 @@ import com.example.demo.login.components.CorosRed
 import com.example.demo.login.components.CorosWhite
 import com.example.demo.login.components.ErrorText
 import com.example.demo.ui.resources.AppColors
+import com.example.demo.ui.language.countryDisplayName
 import com.example.demo.ui.resources.AppImage
 import com.example.demo.ui.resources.AppImages
-import com.example.demo.ui.resources.AppText
 import com.example.demo.ui.theme.DemoTheme
 
 private enum class PersonalProfilePicker {
@@ -155,8 +157,11 @@ fun PersonalProfileEditScreen(
                 }
             )
             PersonalProfilePicker.Gender -> OptionSheet(
-                title = AppText.Profile.Gender,
-                options = listOf(UserGender.Female to AppText.Common.Female, UserGender.Male to AppText.Common.Male),
+                title = stringResource(R.string.profile_gender),
+                options = listOf(
+                    UserGender.Female to stringResource(R.string.common_female),
+                    UserGender.Male to stringResource(R.string.common_male)
+                ),
                 selected = gender ?: UserGender.Male,
                 onDismiss = { picker = null },
                 onConfirm = {
@@ -181,9 +186,9 @@ fun PersonalProfileEditScreen(
                 }
             )
             PersonalProfilePicker.Country -> OptionSheet(
-                title = AppText.Profile.CountryRegion,
-                options = listOf("中国" to "中国", "美国" to "美国", "英国" to "英国", "日本" to "日本"),
-                selected = countryRegion.ifBlank { AppText.Common.China },
+                title = stringResource(R.string.profile_country_region),
+                options = localizedPersonalCountryOptions(),
+                selected = countryRegion.ifBlank { "CN" },
                 onDismiss = { picker = null },
                 onConfirm = {
                     countryRegion = it
@@ -240,7 +245,7 @@ private fun PersonalProfileEditContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = AppText.Common.Back,
+                text = stringResource(R.string.common_back),
                 color = CorosWhite,
                 fontSize = 34.sp,
                 modifier = Modifier
@@ -248,7 +253,7 @@ private fun PersonalProfileEditContent(
                     .clickable(onClick = onBack)
             )
             Text(
-                text = AppText.Profile.PersonalInfo,
+                text = stringResource(R.string.profile_personal_info),
                 color = CorosWhite,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium,
@@ -256,7 +261,7 @@ private fun PersonalProfileEditContent(
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = AppText.Common.Save,
+                text = stringResource(R.string.common_save),
                 color = CorosWhite,
                 fontSize = 14.sp,
                 modifier = Modifier
@@ -289,28 +294,28 @@ private fun PersonalProfileEditContent(
                 onValueChange = onUsernameChange
             )
             PersonalProfileValueRow(
-                label = AppText.Profile.Gender,
+                label = stringResource(R.string.profile_gender),
                 value = profile.gender.displayText(),
                 onClick = onGenderClick
             )
             PersonalProfileValueRow(
-                label = AppText.Profile.BirthDate,
+                label = stringResource(R.string.profile_birth_date),
                 value = profile.birthDate,
                 onClick = onBirthDateClick
             )
             PersonalProfileValueRow(
-                label = AppText.Profile.Height,
+                label = stringResource(R.string.profile_height),
                 value = profile.heightCm?.let { "$it cm" }.orEmpty(),
                 onClick = onHeightClick
             )
             PersonalProfileValueRow(
-                label = AppText.Profile.Weight,
+                label = stringResource(R.string.profile_weight),
                 value = profile.weightKg?.let { String.format("%.1f kg", it) }.orEmpty(),
                 onClick = onWeightClick
             )
             PersonalProfileValueRow(
-                label = AppText.Profile.CountryRegion,
-                value = profile.countryRegion,
+                label = stringResource(R.string.profile_country_region),
+                value = countryDisplayName(profile.countryRegion),
                 onClick = onCountryClick
             )
             Spacer(Modifier.height(16.dp))
@@ -336,7 +341,7 @@ private fun EditableNameRow(
             .height(56.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(AppText.Profile.Username, color = CorosWhite, fontSize = 16.sp)
+        Text(stringResource(R.string.profile_username), color = CorosWhite, fontSize = 16.sp)
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
@@ -361,7 +366,7 @@ private fun EditableNameRow(
         ) {
             AppImage(
                 asset = AppImages.Profile.Edit,
-                contentDescription = AppText.Profile.EditUsername,
+                contentDescription = stringResource(R.string.profile_edit_username),
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -381,7 +386,7 @@ private fun PersonalProfileValueRow(label: String, value: String, onClick: () ->
         Text(label, color = CorosWhite, fontSize = 16.sp)
         Spacer(Modifier.weight(1f))
         Text(
-            text = value.ifBlank { AppText.Common.NotSet },
+            text = value.ifBlank { stringResource(R.string.common_not_set) },
             color = if (value.isBlank()) CorosMuted else AppColors.Profile.EditedValue,
             fontSize = 15.sp
         )
@@ -405,13 +410,22 @@ private fun ProfileDivider() {
     )
 }
 
+@Composable
 private fun UserGender?.displayText(): String {
     return when (this) {
-        UserGender.Female -> "女"
-        UserGender.Male -> "男"
+        UserGender.Female -> stringResource(R.string.common_female)
+        UserGender.Male -> stringResource(R.string.common_male)
         null -> ""
     }
 }
+
+@Composable
+private fun localizedPersonalCountryOptions(): List<Pair<String, String>> = listOf(
+    "CN" to stringResource(R.string.common_china),
+    "US" to stringResource(R.string.common_united_states),
+    "GB" to stringResource(R.string.common_united_kingdom),
+    "JP" to stringResource(R.string.common_japan)
+)
 
 @Preview(showBackground = true, backgroundColor = 0xFF000000)
 @Composable
@@ -420,11 +434,11 @@ private fun PersonalProfileEditScreenPreview() {
         PersonalProfileEditContent(
             profile = UserProfile(
                 username = "pplove",
-                birthDate = "1998年7月14日",
+                birthDate = "1998-07-14",
                 heightCm = 175,
                 weightKg = 60.0,
                 measurementSystem = MeasurementSystem.Metric,
-                countryRegion = "中国",
+                countryRegion = "CN",
                 gender = UserGender.Male
             ),
             errorMessage = null,

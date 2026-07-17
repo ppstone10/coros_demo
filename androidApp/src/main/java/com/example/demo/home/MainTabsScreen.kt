@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,23 +24,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.example.demo.R
 import com.example.demo.health.HealthDashboardScreen
 import com.example.demo.login.LoginViewModel
 import com.example.demo.login.signedin.SignedInScreen
 import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppImage
 import com.example.demo.ui.resources.AppImages
-import com.example.demo.ui.resources.AppText
 import com.example.demo.ui.resources.SelectableImageAssets
 
 private enum class HomeTab(
-    val label: String,
+    @param:StringRes val labelRes: Int,
     val icons: SelectableImageAssets
 ) {
-    Fitness(AppText.Navigation.Fitness, AppImages.Navigation.Fitness),
-    Records(AppText.Navigation.Records, AppImages.Navigation.Records),
-    Explore(AppText.Navigation.Explore, AppImages.Navigation.Explore),
-    Me(AppText.Navigation.Me, AppImages.Navigation.Me)
+    Fitness(R.string.nav_fitness, AppImages.Navigation.Fitness),
+    Records(R.string.nav_records, AppImages.Navigation.Records),
+    Explore(R.string.nav_explore, AppImages.Navigation.Explore),
+    Me(R.string.nav_me, AppImages.Navigation.Me)
 }
 
 @Composable
@@ -60,7 +62,7 @@ fun MainTabsScreen(viewModel: LoginViewModel) {
                     onAccountDeleted = {},
                     onFullscreenChange = { contentFullscreen = it }
                 )
-                HomeTab.Records, HomeTab.Explore -> Placeholder(tab.label)
+                HomeTab.Records, HomeTab.Explore -> Placeholder(tab.labelRes)
             }
         }
         if (!contentFullscreen) {
@@ -74,6 +76,7 @@ fun MainTabsScreen(viewModel: LoginViewModel) {
             ) {
                 HomeTab.entries.forEach { item ->
                     val selected = tab == item
+                    val label = stringResource(item.labelRes)
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -82,11 +85,11 @@ fun MainTabsScreen(viewModel: LoginViewModel) {
                     ) {
                         AppImage(
                             asset = if (selected) item.icons.selected else item.icons.normal,
-                            contentDescription = item.label,
+                            contentDescription = label,
                             modifier = Modifier.size(27.dp)
                         )
                         Text(
-                            text = item.label,
+                            text = label,
                             color = if (selected) AppColors.Core.White else AppColors.Navigation.Unselected,
                             fontSize = 11.sp,
                             fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
@@ -99,13 +102,13 @@ fun MainTabsScreen(viewModel: LoginViewModel) {
 }
 
 @Composable
-private fun Placeholder(name: String) {
+private fun Placeholder(@StringRes nameRes: Int) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = AppText.Navigation.unavailable(name),
+            text = stringResource(R.string.nav_unavailable, stringResource(nameRes)),
             color = AppColors.Navigation.Placeholder,
             textAlign = TextAlign.Center
         )
