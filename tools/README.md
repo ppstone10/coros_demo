@@ -5,7 +5,8 @@
 - `build-shared.sh`：构建并测试 KMP 共享模块。
 - `build-shared-xcframework.sh`：生成 iOS 使用的 `Shared.xcframework`。
 - `build-shared-harmony.sh`：安装 KuiklyBase-Kotlin/KNOI 生成的 HarmonyOS shared native module，并验证 `harmonyApp`。
-- `generate-contracts.sh`：预留脚本（当前无代码生成计划，数据模型以 `common` 为准）。
+- `check-sdd.sh`：检查 SDD 核心入口、Spec 模板、TRACE 规范 ID、Worklog 固定章节和文件名一致性。
+- `check-docs.sh`：保护实现目录和历史 worklog，检查权威文档、过时路径、旧引用及测试计数同步。
 
 这些脚本应该都可以从仓库根目录安全执行。
 

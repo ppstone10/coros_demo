@@ -1,45 +1,65 @@
-# 架构说明
+# 项目架构
 
-本项目采用 KMP + 原生 UI：
+本项目采用 KMP 共享业务层 + 三端原生 UI：Android 使用 Compose，iOS 使用 SwiftUI，HarmonyOS 使用 ArkUI。
 
-- Android：Kotlin + Jetpack Compose。
-- iOS：Swift + SwiftUI。
-- HarmonyOS：ArkTS + ArkUI 原生开发。
-- 共享模块：`common` KMP 模块共享平台无关业务逻辑；Android/iOS 直接接入，HarmonyOS 通过 KuiklyBase-Kotlin + KNOI bridge 接入。
-
-## 模块职责
+## 实现目录职责
 
 | 目录 | 职责 |
-| --- | --- |
-| `common` | KMP 共享模块。只放平台无关业务逻辑、DTO、状态机、UseCase、Repository 接口、Mapper、Result 和存储抽象；当前认证模块不包含网络实现。 |
-| `androidApp` | Android 原生 UI。Compose 页面、Activity、Android 平台服务实现。 |
-| `iosApp` | iOS 原生 UI。SwiftUI 页面、ViewModel、KMP 框架适配器。 |
-| `harmonyApp` | HarmonyOS 原生 ArkTS + ArkUI。UI 不走 KuiklyUI；登录业务通过 `LoginLogicAdapter` 接 KNOI native bridge，不保留 ArkTS 登录业务 fallback。 |
-| `contract` | 埋点事件与后续业务契约预留。认证数据模型与错误场景由 `common` 定义。 |
-| `docs` | 架构、边界、集成和工作流说明。 |
-| `tools` | 构建、代码生成和验证脚本。 |
-| `experimental/harmony-kmp` | HarmonyOS 复用 KMP 能力的实验区，不接入主线构建。 |
+|------|------|
+| `common/` | 平台无关模型、规则、UseCase、Repository 抽象、本地 mock、Proto 镜像、状态容器和共享测试 |
+| `androidApp/` | Compose UI、Android ViewModel、导航、生命周期和 Android 存储适配 |
+| `iosApp/` | SwiftUI、iOS ViewModel、导航、UserDefaults 适配和 KMP framework 调用 |
+| `harmony-kmp-bridge/` | 独立 KuiklyBase-Kotlin/KNOI 构建，包装共享 facade 并生成 `libkn.so` 与 ArkTS API |
+| `harmonyApp/` | ArkTS + ArkUI UI、HarmonyOS 生命周期/Preferences 和 KNOI adapter |
 
-## 登录示例流
+根 Gradle 只包含 `:common` 和 `:androidApp`。`harmony-kmp-bridge` 使用独立 Gradle wrapper 和锁定工具链，避免 HarmonyOS 非标准编译链影响 Android/iOS 主线。
 
-1. UI 层收集用户名和密码。
-2. ViewModel 将用户操作映射为 `LoginAction`。
-3. 状态容器或门面类根据动作更新 `LoginState`。
-4. `LoginUseCase` 调用 `AuthRepository`。
-5. 结果转换为新的 `LoginState` 和一次性 `LoginEffect`。
+## commonMain 边界
 
-Android/iOS 使用 `common` 中的登录逻辑。HarmonyOS 保留 ArkUI 原生页面，通过独立 `harmony-kmp-bridge` 生成的 `libkn.so` 调用 `HarmonyLoginService`；该 service 编译并复用 `common/src/commonMain` 的 `LoginFacade`、`LoginStore` 与 mock auth 业务逻辑。缺少 KNOI 生成模块时，鸿蒙构建或运行应直接失败。
+允许放入：
 
-## 平台接入原则
+- domain/data model、UI state、Action、Effect、Result 与错误枚举。
+- 纯业务 UseCase、Validator、Mapper、状态机和排序/聚合规则。
+- Repository、存储、时间、日志等平台能力抽象。
+- 受 `.proto` 字段契约约束的本地 mock 与集中编解码。
 
-- Android 是 Kotlin 侧调用方，可以直接使用 `common` 的 `LoginStore`、`LoginRules`、`LoginAction` 和 `LoginEffect`；不要为了形式统一强制绕一层 facade。
-- iOS 和 HarmonyOS 是跨语言调用方，优先通过 `LoginFacade`、KNOI service 或平台 adapter 暴露 primitive-friendly API。
-- 平台 ViewModel 只做原生 UI 状态、导航、提示和平台系统能力适配；登录规则、状态迁移、mock auth 流程继续放在 `common`。
-- 当前不引入 DI 框架。mock 数据和本地持久化场景使用集中构造点即可；如未来出现多环境或复杂替换策略，再评估 DI。
+禁止放入：
 
-## HarmonyOS 维护约束
+- Android `Context`、Activity、Compose 或 Android SDK 类型。
+- Swift、SwiftUI、UIKit、Foundation 平台对象。
+- ArkTS、ArkUI、HarmonyOS SDK 或 KNOI runtime 类型。
+- KuiklyUI 或其他共享 UI 实现。
 
-- `HarmonyLoginService` 只做 KNOI API 暴露和 `LoginFacade` 调用；JSON snapshot 编解码集中在 `HarmonyLoginJson`。
-- `KnoiLoginAdapter.ets` 只做 bridge 调用、状态/effect 映射和持久化触发，不复写登录、注册、验证码、密码或 profile 业务规则。
-- 成功改变 Kotlin Store 的 HarmonyOS 调用必须触发 `saveStoreSnapshot()`；恢复失败时保留错误日志并不将损坏快照作为有效会话。
-- `DebugStatePage` 仅用于开发期诊断，不应在首屏或正式导航中暴露。
+需要平台能力时，先在共享层定义最小接口，再由对应平台注入实现。
+
+## 调用关系
+
+```text
+Android Compose ───────────────┐
+                              ├─ common：Rules / UseCase / Store / Repository
+iOS SwiftUI → LoginFacade ────┤
+                              │
+HarmonyOS ArkUI               │
+  → KnoiLoginAdapter          │
+  → HarmonyLoginService ──────┘
+```
+
+Android 与共享层同为 Kotlin，可直接调用 `LoginStore`、规则和 UseCase。iOS 与 HarmonyOS 跨语言调用时，通过 primitive-friendly facade、service 或稳定 JSON snapshot 限制边界复杂度。
+
+## 数据与持久化
+
+- `.proto` 定义认证、健康 mock 和状态保存的字段契约。
+- Kotlin `Mock*` 类是当前手工维护的 Proto 镜像；项目未运行 protoc 生成 Kotlin Message。
+- `MockAuthStoreJson` 等集中编解码器负责 protobuf JSON 命名约束，平台只提供字符串读写。
+- Android 使用 SharedPreferences，iOS 使用 UserDefaults，HarmonyOS 使用 Preferences；共享业务不依赖平台存储 API。
+- 业务 mock 数据读取必须经过认证门禁，UI 不自行拼装登录判断。
+
+详细映射见 [`proto与domain model之间的关系.md`](proto与domain%20model之间的关系.md)。
+
+## 平台维护原则
+
+- ViewModel/adapter 只做 UI 状态、导航、提示、生命周期和平台能力适配，不复制业务规则。
+- HarmonyOS `HarmonyLoginService` 只暴露 KNOI API 并调用共享 facade；集中 JSON 映射不散落到 service 方法。
+- 改变 HarmonyOS Kotlin Store 的成功操作必须触发 ArkTS 持久化快照保存。
+- 缺少 `libkn.so` 或生成的 `provider.ets` 时 HarmonyOS 构建应失败，不能回退到 ArkTS 业务复写。
+- 当前不引入 DI 框架；复杂度确实增长后再评估。

@@ -1,5 +1,26 @@
 # 开发工作流
 
+## SDD 主流程
+
+本文件补充各平台开发与验证命令；SDD 权威规则位于根目录 `AGENTS.md` 和 `spec/sdd-workflow.md`。
+
+每轮行为变更必须按以下顺序执行：
+
+1. 阅读 `LEARNINGS.md`、`spec/TRACE.md` 和相关 Spec。
+2. 先新增或更新 Spec，并使用稳定规范 ID。
+3. 在 `spec/TRACE.md` 预留 `⏳` 映射。
+4. 先写测试并运行红灯。
+5. 写最小实现并运行相关测试。
+6. 更新 TRACE、`Codex_worklog.md`，并按需提炼 `LEARNINGS.md`。
+
+关闭任务前运行 SDD 文档门禁：
+
+```bash
+./tools/check-sdd.sh
+```
+
+该脚本只检查 SDD 框架完整性，不能替代业务单测或平台构建。
+
 ## 日常开发
 
 Android/iOS 共享逻辑：
@@ -64,6 +85,9 @@ env NODE_HOME=/Applications/DevEco-Studio.app/Contents/tools/node \
 - 对对象或数组状态优先整体替换引用；不要依赖修改普通对象的嵌套字段触发刷新。
 - Picker 兼容当前 SDK 时优先用 `onChange` 同步选中值，避免使用高版本才支持的事件导致兼容警告。
 
-## 实验规则
+## 文档与资源修改
 
-HarmonyOS KMP/KNOI 工具链相关实验只能放在 `experimental/harmony-kmp`，并记录到 `docs/harmonyos-kmp-experiment.md`。实验目录不加入根 Gradle 主线，不影响 Android/iOS 交付。不要引入 KuiklyUI 共享 UI 路线。
+- 跨模块说明更新 `docs/` 中已有权威文档；平台专属说明更新对应实现目录 README。
+- `docs/worklog/` 只允许新增归档，不修改或删除既有历史文件。
+- 设计源位于 `login_register_resources/` 与 `health_dashboard_resources/`，平台运行时不能直接读取这些目录。
+- 文档变更后运行 `./tools/check-docs.sh`；资源变更还需运行受影响平台构建并人工检查视觉状态。

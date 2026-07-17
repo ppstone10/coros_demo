@@ -1,22 +1,40 @@
 # iosApp
 
-这是登录示例的 iOS SwiftUI 原生应用壳，用于接入 KMP 共享逻辑。
+iOS 使用 SwiftUI 原生 UI，并通过 KMP `Shared.framework` 调用 `common` 共享业务。
 
-正式接入路径：
+## 当前接入
 
-1. Xcode 构建时会先执行 `Build Shared KMP Framework` phase。
-2. 该 phase 调用 `./gradlew :common:embedAndSignAppleFrameworkForXcode` 生成当前 SDK/架构对应的 `Shared.framework`。
-3. SwiftUI 视图和 iOS 平台服务保留在本目录。
-4. `SharedLoginAdapter` 强制 `import Shared` 并通过 KMP `LoginFacade` 调用共享业务逻辑。
+- SwiftUI 页面、iOS ViewModel、导航和平台服务保留在本目录。
+- `SharedLoginAdapter` 强制 `import Shared`，通过 `LoginFacade` 调用注册、登录、资料、会话和健康业务，不提供 Swift 业务 fallback。
+- 认证与健康 JSON 编解码仍由 common 集中处理；adapter 只注入 `UserDefaults.standard` 字符串读写。
+- 图片使用 `iosApp/Assets.xcassets`，视频、Lottie JSON 与资源语义入口位于 `iosApp/Resources`。
 
-本目录会刻意将 iOS UI 代码与 `common/commonMain` 隔离。
+## 构建
 
-## 在 Xcode 中打开
-
-打开：
+用 Xcode 打开：
 
 ```text
 iosApp/iosApp.xcodeproj
 ```
 
-不要把仓库根目录作为 Xcode 工程打开。仓库根目录是 Android/KMP 的 Gradle 工作区，`iosApp` 才是 iOS 原生应用壳。
+不要用 Xcode 打开仓库根目录。Xcode target 的 `Build Shared KMP Framework` phase 会在 Swift 编译前执行：
+
+```bash
+cd "$SRCROOT/.."
+./gradlew :common:embedAndSignAppleFrameworkForXcode
+```
+
+工程的 framework 搜索路径覆盖模拟器与真机的 debug/release 输出；`ENABLE_USER_SCRIPT_SANDBOXING` 必须保持为 `NO`，否则 Gradle Run Script 会被拦截。
+
+需要独立 XCFramework 时，从仓库根目录执行：
+
+```bash
+./tools/build-shared-xcframework.sh
+```
+
+## 维护边界
+
+- SwiftUI 页面不拼装共享业务规则。
+- 对 Swift 不友好的 sealed class、泛型或集合，优先在 common 提供简单 facade，不在 Swift 复制模型规则。
+- Apple 生命周期、权限、Keychain、推送和系统 SDK 只留在 iOS 层。
+- 共享接口或模型变化后，先构建 KMP framework，再用 Xcode 验证 Swift 编译和链接。

@@ -1,10 +1,8 @@
 # contract
 
-埋点事件定义与后续业务契约预留目录。
+这里仅保存三端共用的埋点事件契约：
 
-当前为空壳骨架，实际数据模型已在 `common` 中定义。
+- `analytics/events.json`：机器可读的事件名称与载荷字段。
+- `analytics/events.md`：事件用途和字段说明。
 
-- `openapi/`：后端 API 契约预留。注册登录培训模块只使用本地 mock，不在此目录维护认证接口、HTTP 路径、响应结构或 token 字段。
-- `analytics/`：埋点事件名称和载荷定义。三端统一，`common` 不参与。
-
-状态模型（`LoginState`、`LoginAction`、`LoginEffect`）和错误码由 `common` 模块作为单一事实来源，`contract` 不再维护。
+认证与健康数据字段、状态模型和错误场景由 `common/src/commonMain/proto/` 与 common 模型作为单一事实来源。本项目不接入真实服务，因此不维护 OpenAPI、HTTP 路径、请求/响应或 token 契约。
