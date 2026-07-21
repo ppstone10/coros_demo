@@ -153,6 +153,16 @@
 
 ---
 
+## android-profile-activity-result.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/配置 | 状态 |
+|---------|------|-----------|-----------|------|
+| `ANDROID-PROFILE-AR-001` | `MainActivity` Composition 提供 Activity Result owner，资料页 launcher 可注册 | `ProfileActivityResultOwnerTest.profileActivityResultLaunchersCanRegisterInMainActivityComposition`：实施前在两台模拟器精确红灯，实施后两台均通过 | `ProvideAppLanguage` 捕获并透传 `LocalActivityResultRegistryOwner` | ✅ |
+| `ANDROID-PROFILE-AR-002` | 本地化 Context 显式透传 Activity Result owner，不影响共享层和其他端 | `./gradlew :common:check :androidApp:assembleDebug` 通过；Activity Compose 版本保持不变 | Android `AppLanguage.kt`；`common`、iOS、HarmonyOS 无实现或依赖变更 | ✅ |
+| `ANDROID-PROFILE-AR-003` | “我”页资料区域进入编辑页且无崩溃 | emulator-5556 使用本地 mock 账号点击“我”→“资料已完善”，编辑页显示且进程存活；清空后的 `AndroidRuntime` 日志无新崩溃 | `SignedInScreen`、`PersonalProfileEditScreen` 既有行为保持 | ✅ |
+
+---
+
 ## 测试总览
 
 | 测试类 | 测试数 | 所属 Spec |
@@ -162,6 +172,21 @@
 | `BusinessMockDataSourceTest.kt` | 4 | auth-mock-spec §10, §11, §14 |
 | `HealthDashboardUseCaseTest.kt` | 16 | health-dashboard-cards 测试要求；RES-MAINT-008 |
 | **合计** | **57** | |
+
+---
+
+---
+
+## health-maintainability.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `HLTH-MAINT-001` | 最少卡片数验证在 common 层统一执行 | `HealthDashboardUseCaseTest.cardSaveRejectsMinimumConfig` / `cardSaveAcceptsSufficientConfig` | `HealthDashboardUseCase.kt:286-301` `saveCardConfiguration` | ✅ |
+| `HLTH-MAINT-002` | `LoginFacade` 暴露卡片保存错误消息 | 人工验收：三端减少卡片到 <3 张时显示错误提示 | `LoginFacade.kt:257-268` `saveHealthCardConfiguration` / `healthCardSaveError` | ✅ |
+| `HLTH-MAINT-003` | 场景名和展示键由 common 提供 | `HealthDashboardUseCaseTest.healthScenariosMatchMockEntries` | `HealthDashboardModels.kt:81-90` `HealthScenarios` | ✅ |
+| `HLTH-MAINT-004` | iOS 移除 `HealthCard` 和 `defaultHealthCards` | 人工验收：iOS 构建通过 + 健康仪表盘展示一致 | `HealthDashboardView.swift`（精简 `HealthCard`） / `HealthDashboardViewModel.swift`（直接映射） | ✅ |
+| `HLTH-MAINT-005` | HarmonyOS `SignedInPage.ets` 按职责拆分 | 人工验收：HarmonyOS 构建通过 + 页面交互无差异 | `health/HealthDashboardTypes.ets` / `SignedInPage.ets`（精简） | ✅ |
+| `HLTH-MAINT-006` | 登录后导航规则由 `LoginEffect` 携带 | `LoginUseCaseTest.loginSuccessCarriesSignedInRouteWhenProfileComplete` / `loginSuccessCarriesProfileCompletionRouteWhenProfileIncomplete` | `LoginModels.kt` `PostLoginRoute` + `LoginEffect.AuthSucceeded.nextRoute`；三端导航文件已更新 | ✅ |
 
 ---
 

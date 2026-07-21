@@ -45,6 +45,7 @@ interface LoginEffectPayload {
   mode: string;
   session: AuthSessionPayload | null;
   message: string;
+  nextRoute?: string;
 }
 
 export class KnoiLoginAdapter implements LoginLogicAdapter {
@@ -55,26 +56,41 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     this.refreshState();
   }
 
-  loadHealthDashboard(): object | null {
+  loadHealthDashboard(): Record<string, Object> | null {
     try {
-      const json = this.harmonyLoginService.loadHealthSnapshot();
-      return JSON.parse(json);
+      const json: string = this.harmonyLoginService.loadHealthSnapshot();
+      return JSON.parse(json) as Record<string, Object>;
     } catch (e) { return null; }
   }
 
-  selectHealthScenario(name: string): object | null {
+  selectHealthScenario(name: string): Record<string, Object> | null {
     try {
-      const json = this.harmonyLoginService.selectHealthScene(name);
-      return JSON.parse(json);
+      const json: string = this.harmonyLoginService.selectHealthScene(name);
+      return JSON.parse(json) as Record<string, Object>;
     } catch (e) { return null; }
   }
 
-  saveCardConfiguration(typeNamesCsv: string): object | null {
+  saveCardConfiguration(typeNamesCsv: string): Record<string, Object> | null {
     try {
-      const json = this.harmonyLoginService.saveCardConfig(typeNamesCsv);
-      return JSON.parse(json);
+      const json: string = this.harmonyLoginService.saveCardConfig(typeNamesCsv);
+      const parsed: Record<string, Object> = JSON.parse(json) as Record<string, Object>;
+      const err: Object | undefined = parsed['error'];
+      if (err !== undefined) {
+        this._lastSaveError = err as string;
+        return null;
+      }
+      this._lastSaveError = '';
+      return parsed;
     } catch (e) { return null; }
   }
+
+  healthCardSaveError(): string {
+    const err: string = this._lastSaveError;
+    this._lastSaveError = '';
+    return err;
+  }
+
+  private _lastSaveError: string = '';
 
   getState(): LoginState {
     this.refreshState();
@@ -275,6 +291,8 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
       effect.session = this.mapSession(payload.session);
     }
 
+    effect.nextRoute = payload.nextRoute || 'SignedIn';
+
     if (payload.type === 'AuthSucceeded') {
       effect.type = LoginEffectType.AuthSucceeded;
     } else if (payload.type === 'ProfileSaved') {
@@ -351,7 +369,8 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
       type: payload.type,
       mode: payload.mode === undefined ? 'Login' : payload.mode,
       session: payload.session === undefined ? null : payload.session,
-      message: payload.message === undefined ? '' : payload.message
+      message: payload.message === undefined ? '' : payload.message,
+      nextRoute: payload.nextRoute === undefined ? 'SignedIn' : payload.nextRoute
     };
     return normalized;
   }

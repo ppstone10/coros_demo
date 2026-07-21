@@ -2,6 +2,7 @@ package com.example.demo.ui.language
 
 import android.content.Context
 import android.content.res.Configuration
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +43,7 @@ private const val LanguageKey = "app_language"
 fun ProvideAppLanguage(content: @Composable () -> Unit) {
     val baseContext = LocalContext.current
     val baseConfiguration = LocalConfiguration.current
+    val activityResultRegistryOwner = LocalActivityResultRegistryOwner.current
 
     var language by remember {
         mutableStateOf(
@@ -72,7 +74,15 @@ fun ProvideAppLanguage(content: @Composable () -> Unit) {
         LocalContext provides localizedContext,
         LocalConfiguration provides localizedContext.resources.configuration,
         LocalResources provides localizedContext.resources,
-        LocalAppLanguageController provides controller,
-        content = content
-    )
+        LocalAppLanguageController provides controller
+    ) {
+        if (activityResultRegistryOwner != null) {
+            CompositionLocalProvider(
+                LocalActivityResultRegistryOwner provides activityResultRegistryOwner,
+                content = content
+            )
+        } else {
+            content()
+        }
+    }
 }

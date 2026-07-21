@@ -257,8 +257,19 @@ class LoginFacade(
     fun saveHealthCardConfiguration(typeNames: List<String>): PersistedDashboard? {
         val types = typeNames.mapNotNull { n -> HealthCardType.entries.firstOrNull { it.name == n } }
         val result = store.saveHealthCardConfiguration(types)
-        return if (result is MockResult.Success<*>) result.data as? PersistedDashboard else null
+        return if (result is MockResult.Success<*>) result.data as? PersistedDashboard else {
+            lastHealthCardError = (result as? MockResult.Failure)?.error?.message
+            null
+        }
     }
+
+    fun healthCardSaveError(): String? {
+        val error = lastHealthCardError
+        lastHealthCardError = null
+        return error
+    }
+
+    private var lastHealthCardError: String? = null
 
     private fun String.toMeasurementSystemOrDefault(): MeasurementSystem {
         return when (this) {

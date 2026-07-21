@@ -78,6 +78,15 @@ data class HealthDashboardSnapshot(
     val enabledCardTypes: List<HealthCardType> = DefaultHealthCardOrder
 )
 
+object HealthScenarios {
+    val names: List<String> = HealthMockScenario.entries.map { it.name }
+    val displayKeys: List<String> = listOf(
+        "health_scenario_normal", "health_scenario_partial_missing",
+        "health_scenario_all_empty", "health_scenario_abnormal",
+        "health_scenario_read_failure"
+    )
+}
+
 val DefaultHealthCardOrder = listOf(
     HealthCardType.WeeklyPlan, HealthCardType.TrainingLoad, HealthCardType.TrainingAssessment,
     HealthCardType.Recovery, HealthCardType.RunningAbility, HealthCardType.CyclingAbility,

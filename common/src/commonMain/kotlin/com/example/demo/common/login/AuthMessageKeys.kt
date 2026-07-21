@@ -31,4 +31,5 @@ object AuthMessageKeys {
     const val ValidationPasswordMismatch = "auth_validation_password_mismatch"
     const val ValidationRegisterIncomplete = "auth_validation_register_incomplete"
     const val ValidationLoginIncomplete = "auth_validation_login_incomplete"
+    const val ErrorMinimumCardsRequired = "health_error_minimum_cards_required"
 }

@@ -21,7 +21,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
@@ -62,7 +61,8 @@ fun MainTabsScreen(viewModel: LoginViewModel) {
                     onAccountDeleted = {},
                     onFullscreenChange = { contentFullscreen = it }
                 )
-                HomeTab.Records, HomeTab.Explore -> Placeholder(tab.labelRes)
+                HomeTab.Records -> RecordsPlaceholderScreen()
+                HomeTab.Explore -> ExplorePlaceholderScreen()
             }
         }
         if (!contentFullscreen) {
@@ -101,16 +101,4 @@ fun MainTabsScreen(viewModel: LoginViewModel) {
     }
 }
 
-@Composable
-private fun Placeholder(@StringRes nameRes: Int) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = stringResource(R.string.nav_unavailable, stringResource(nameRes)),
-            color = AppColors.Navigation.Placeholder,
-            textAlign = TextAlign.Center
-        )
-    }
-}
+

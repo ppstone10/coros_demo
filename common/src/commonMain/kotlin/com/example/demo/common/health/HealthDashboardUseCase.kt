@@ -281,15 +281,19 @@ class HealthDashboardStore(
         }
     }
 
-    fun saveCardConfiguration(types: List<HealthCardType>): MockResult<PersistedDashboard> = when (val access = authRepository.verifyBusinessAccess()) {
-        is MockResult.Failure -> MockResult.Failure(access.error)
-        is MockResult.Success -> {
-            val old = stateDataSource.load(access.data.userId) ?: HealthDashboardSnapshot(access.data.userId)
-            val clean = types.distinct().takeIf { it.size >= 3 } ?: old.enabledCardTypes
-            if (!stateDataSource.save(old.copy(enabledCardTypes = clean))) MockResult.Failure(MockError.PersistFailed)
-            else when (val dashboard = useCase.load(old.scenario)) {
-                is MockResult.Failure -> MockResult.Failure(dashboard.error)
-                is MockResult.Success -> MockResult.Success(PersistedDashboard(old.scenario, dashboard.data.copy(cards = ordered(dashboard.data.cards, clean)), clean))
+    fun saveCardConfiguration(types: List<HealthCardType>): MockResult<PersistedDashboard> {
+        val access = authRepository.verifyBusinessAccess()
+        return when (access) {
+            is MockResult.Failure -> MockResult.Failure(access.error)
+            is MockResult.Success -> {
+                val clean = types.distinct()
+                if (clean.size < 3) return MockResult.Failure(MockError.MinimumCardsRequired)
+                val old = stateDataSource.load(access.data.userId) ?: HealthDashboardSnapshot(access.data.userId)
+                if (!stateDataSource.save(old.copy(enabledCardTypes = clean))) MockResult.Failure(MockError.PersistFailed)
+                else when (val dashboard = useCase.load(old.scenario)) {
+                    is MockResult.Failure -> MockResult.Failure(dashboard.error)
+                    is MockResult.Success -> MockResult.Success(PersistedDashboard(old.scenario, dashboard.data.copy(cards = ordered(dashboard.data.cards, clean)), clean))
+                }
             }
         }
     }

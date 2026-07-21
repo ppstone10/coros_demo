@@ -28,6 +28,7 @@ import androidx.navigation.toRoute
 import com.example.demo.R
 import com.example.demo.common.login.AuthMode
 import com.example.demo.common.login.LoginEffect
+import com.example.demo.common.login.PostLoginRoute
 import com.example.demo.common.login.VerifyTarget
 import com.example.demo.login.components.rememberLoginViewModel
 import com.example.demo.login.components.findActivity
@@ -113,23 +114,14 @@ fun AuthNavGraph() {
     LaunchedEffect(viewModel.effect, resources) {
         when (val effect = viewModel.effect) {
             is LoginEffect.AuthSucceeded -> {
-                if (effect.mode == AuthMode.Register) {
-                    val destination = if (effect.session.isProfileComplete) {
-                        SignedInRoute
-                    } else {
-                        ProfileCompletionRoute
-                    }
-                    navController.navigateWithOperation(destination, NavOperation.ResetTo)
-                    snackbarHostState.showSnackbar(resources.getString(R.string.auth_register_success))
-                } else {
-                    val destination = if (effect.session.isProfileComplete) {
-                        SignedInRoute
-                    } else {
-                        ProfileCompletionRoute
-                    }
-                    navController.navigateWithOperation(destination, NavOperation.ResetTo)
-                    snackbarHostState.showSnackbar(resources.getString(R.string.auth_login_success))
+                val destination = when (effect.nextRoute) {
+                    PostLoginRoute.SignedIn -> SignedInRoute
+                    PostLoginRoute.ProfileCompletion -> ProfileCompletionRoute
                 }
+                navController.navigateWithOperation(destination, NavOperation.ResetTo)
+                val msg = if (effect.mode == AuthMode.Register)
+                    R.string.auth_register_success else R.string.auth_login_success
+                snackbarHostState.showSnackbar(resources.getString(msg))
                 viewModel.onEffectConsumed()
             }
             is LoginEffect.NavigateHome -> {

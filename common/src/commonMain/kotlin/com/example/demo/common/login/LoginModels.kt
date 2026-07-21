@@ -149,7 +149,8 @@ enum class MockError(val code: String, val message: String) {
     EmptyData("AUTH_EMPTY_DATA", AuthMessageKeys.ErrorEmptyData),
     CorruptedData("AUTH_CORRUPTED_DATA", AuthMessageKeys.ErrorCorruptedData),
     PersistFailed("AUTH_PERSIST_FAILED", AuthMessageKeys.ErrorPersistFailed),
-    RegionRequired("AUTH_REGION_REQUIRED", AuthMessageKeys.ErrorRegionRequired)
+    RegionRequired("AUTH_REGION_REQUIRED", AuthMessageKeys.ErrorRegionRequired),
+    MinimumCardsRequired("HEALTH_MINIMUM_CARDS", AuthMessageKeys.ErrorMinimumCardsRequired)
 }
 
 /** 对应 auth_mock.proto 的 MockErrorMessage；错误只在内存中传递，不作为登录态持久化。 */
@@ -169,6 +170,7 @@ fun MockError.toProtoMessage() = MockErrorMessage(
         MockError.NewPasswordSameAsOld -> "NEW_PASSWORD_SAME_AS_OLD"
         MockError.EmptyData -> "EMPTY_DATA"
         MockError.CorruptedData -> "CORRUPTED_DATA"
+        MockError.MinimumCardsRequired -> "HEALTH_MINIMUM_CARDS"
     },
     message = message
 )
@@ -235,9 +237,16 @@ sealed interface LoginAction {
     data object EffectConsumed : LoginAction
 }
 
+enum class PostLoginRoute {
+    SignedIn,
+    ProfileCompletion
+}
+
 sealed interface LoginEffect {
     data class NavigateHome(val user: UserDto) : LoginEffect
-    data class AuthSucceeded(val session: AuthSession, val mode: AuthMode) : LoginEffect
+    data class AuthSucceeded(val session: AuthSession, val mode: AuthMode, val nextRoute: PostLoginRoute) : LoginEffect {
+        val isNextRouteSignedIn: Boolean get() = nextRoute == PostLoginRoute.SignedIn
+    }
     data class ProfileSaved(val session: AuthSession) : LoginEffect
     data object LoggedOut : LoginEffect
     data object AccountDeleted : LoginEffect

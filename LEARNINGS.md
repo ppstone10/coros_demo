@@ -38,6 +38,7 @@
 | ArkUI `@Builder` 函数的基本类型参数是值传递一次性快照，不建立响应式绑定 | 交互组件必须用 `@Component struct` + `@Prop`（`CorosButton`、`UnderlineInput`、`ErrorText` 等已改造） |
 | SwiftUI 全局本地化函数直接读取单例 Bundle 不会自动让同级页面订阅语言变化 | 提供语言切换入口的页面及同屏导航必须通过 `@EnvironmentObject` 观察并读取 `AppLanguageStore.current`，触发局部 body 重算；不要用根视图 `.id(language)` 强制重建，否则可能丢失导航或页面状态 |
 | Compose 中通过 `LocalContext.current.resources.configuration` 或 `Context.getString()` 查询资源会被新版 Lint 判为 Error | Composable 配置使用 `LocalConfiguration.current`；字符串等资源使用 `LocalResources.current`，协程副作用把 Resources 纳入 key；资源消息解析器以 `Resources` 为接收者，保证语言/Configuration 变化触发重组 |
+| Compose 本地化层用 `createConfigurationContext` 覆盖 `LocalContext` 后，`rememberLauncherForActivityResult` 找不到 Activity owner 并在组合时崩溃 | 覆盖前读取 `LocalActivityResultRegistryOwner.current`，覆盖 Context 后在子树显式继续提供；预览等 owner 为空的宿主保持可组合。仅升级 `activity-compose` 不能修复，因为当前实现仍从 `LocalContext` 查找该 owner |
 | iOS KMP 导出：`AuthMode.Register` 在 Swift 中为 `AuthMode.register_`（尾随下划线） | 适配层需使用正确的导出名 |
 | HarmonyOS KNOI `@ServiceProvider` 实例模型不确定是 singleton 还是 factory | 持久化操作前需确认 service 实例一致性；`restoreStoreSnapshot` 后需同步 adapter 状态 |
 | `LoginFacade` 在 Android IDE 中显示 unused warning | 保留 `@Suppress("unused")`，它是给 iOS/HarmonyOS 用的跨语言导出 API |
@@ -87,3 +88,4 @@
 - `spec/resource-localization.md` — 三端认证资源本地化基础、语义键边界和一致性门禁
 - `spec/resource-maintainability.md` — 全模块资源清单、跨端一致性和分批债务收敛规范
 - `spec/app-language-switching.md` — 应用内中英文切换、平台持久化与国家代码化规范
+- `spec/android-profile-activity-result.md` — Android 本地化 Context 与资料头像 Activity Result 宿主兼容性规范

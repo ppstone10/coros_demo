@@ -45,6 +45,8 @@ internal object HarmonyLoginJson {
                 append(',')
                 append("\"session\":")
                 append(sessionSnapshot(effect.session))
+                append(',')
+                appendJsonField("nextRoute", effect.nextRoute.name)
                 append('}')
             }
 

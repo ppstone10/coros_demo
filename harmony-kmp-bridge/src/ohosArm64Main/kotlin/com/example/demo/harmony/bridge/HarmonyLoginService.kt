@@ -241,7 +241,9 @@ open class HarmonyLoginService {
     fun saveCardConfig(typeNamesCsv: String): String {
         val names = typeNamesCsv.split(",").map { it.trim() }.filter { it.isNotBlank() }
         val pd = facade.saveHealthCardConfiguration(names)
-        return if (pd != null) healthSnapshotJson(pd) else "{}"
+        if (pd != null) return healthSnapshotJson(pd)
+        val error = facade.healthCardSaveError()
+        return if (error != null) "{\"error\":\"$error\"}" else "{}"
     }
 
     fun exportHealthSnapshot(): String {

@@ -1,6 +1,6 @@
 {
   "string": [
-    { "name": "app_name", "value": "COROS_Demo" },
+    { "name": "app_name", "value": "COROS_DEMO" },
     { "name": "module_desc", "value": "HarmonyOS login sample" },
     { "name": "entryability_desc", "value": "Entry ability" },
     { "name": "account_default_user", "value": "用户" },

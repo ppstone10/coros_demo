@@ -54,6 +54,27 @@ class HealthDashboardUseCaseTest {
         HealthDashboardStore(first, persistence).selectScenario(HealthMockScenario.AllEmpty)
         assertEquals(HealthMockScenario.Normal, assertIs<MockResult.Success<PersistedDashboard>>(HealthDashboardStore(second, persistence).load()).data.scenario)
     }
+    @Test fun cardSaveRejectsMinimumConfig() {
+        val persistence = InMemoryHealthDashboardStateDataSource()
+        val repository = repository(true)
+        val store = HealthDashboardStore(repository, persistence)
+        val twoCards = listOf(HealthCardType.Sleep, HealthCardType.Stress)
+        val result = store.saveCardConfiguration(twoCards)
+        val failure = assertIs<MockResult.Failure>(result)
+        assertEquals(MockError.MinimumCardsRequired, failure.error)
+    }
+    @Test fun cardSaveAcceptsSufficientConfig() {
+        val persistence = InMemoryHealthDashboardStateDataSource()
+        val repository = repository(true)
+        val store = HealthDashboardStore(repository, persistence)
+        val threeCards = listOf(HealthCardType.Sleep, HealthCardType.Stress, HealthCardType.HeartRate)
+        val result = store.saveCardConfiguration(threeCards)
+        assertIs<MockResult.Success<PersistedDashboard>>(result)
+    }
+    @Test fun healthScenariosMatchMockEntries() {
+        assertEquals(HealthMockScenario.entries.map { it.name }, HealthScenarios.names)
+        assertEquals(HealthMockScenario.entries.size, HealthScenarios.displayKeys.size)
+    }
     @Test fun cardSelectionAndOrderPersist() {
         val persistence = InMemoryHealthDashboardStateDataSource()
         val repository = repository(true)

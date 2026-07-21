@@ -149,15 +149,9 @@ struct AuthCoordinator: View {
 private func handleNavigation(_ effect: LoginEffect, viewModel: LoginViewModel, router: AuthRouter) {
     switch effect {
     case let effect as LoginEffectAuthSucceeded:
-        if effect.mode == AuthMode.register_ {
-            let destination: AuthRoute = effect.session.isProfileComplete ? .signedIn : .profileCompletion
-            router.resetTo(destination)
-            viewModel.toastMessage = appLocalized("auth_register_success")
-        } else {
-            let destination: AuthRoute = effect.session.isProfileComplete ? .signedIn : .profileCompletion
-            router.resetTo(destination)
-            viewModel.toastMessage = appLocalized("auth_login_success")
-        }
+        let destination: AuthRoute = effect.isNextRouteSignedIn ? .signedIn : .profileCompletion
+        router.resetTo(destination)
+        viewModel.toastMessage = appLocalized(effect.mode == .register_ ? "auth_register_success" : "auth_login_success")
     case _ as LoginEffectNavigateHome:
         router.resetTo(.signedIn)
         viewModel.toastMessage = appLocalized("auth_login_success")

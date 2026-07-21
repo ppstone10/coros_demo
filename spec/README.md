@@ -12,6 +12,8 @@
 | `SESSION_START.md` | 无法自动读取 `AGENTS.md` 时的手动会话提示 | 权威流程变化后同步摘要 |
 | `<feature>.md` | 某个功能域的目标、边界、行为和验收 | 对应行为变化之前 |
 
+当前 Android 资料编辑页的 Activity Result 宿主与依赖兼容性规范见 `android-profile-activity-result.md`。
+
 `AGENTS.md` 是 AI 自动入口，`spec/sdd-workflow.md` 是完整流程规范；`SESSION_START.md` 仅是便携摘要，不单独发明规则。
 
 ## 生命周期
@@ -43,4 +45,3 @@
 - `🚫`：人工决定不实现，必须保留原因。
 
 复制 `TEMPLATE.md` 创建新 Spec，并删除不适用的提示文字。不要复制历史功能 Spec 后保留无关约束。
-

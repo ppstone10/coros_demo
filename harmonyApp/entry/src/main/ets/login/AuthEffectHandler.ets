@@ -4,19 +4,13 @@ import { navigate, NavOperation, showToast } from './AuthNavigator';
 
 export function handleAuthEffect(effect: LoginEffect): void {
   switch (effect.type) {
-    case LoginEffectType.AuthSucceeded:
-      if (effect.mode === AuthMode.Register) {
-        const target = effect.session.isProfileComplete
-          ? AuthRoutes.SIGNED_IN : AuthRoutes.PROFILE_COMPLETION;
-        navigate(NavOperation.ResetTo, target);
-        showToast('auth_register_success');
-      } else {
-        const target = effect.session.isProfileComplete
-          ? AuthRoutes.SIGNED_IN : AuthRoutes.PROFILE_COMPLETION;
-        navigate(NavOperation.ResetTo, target);
-        showToast('auth_login_success');
-      }
+    case LoginEffectType.AuthSucceeded: {
+      const target = effect.nextRoute === 'SignedIn'
+        ? AuthRoutes.SIGNED_IN : AuthRoutes.PROFILE_COMPLETION;
+      navigate(NavOperation.ResetTo, target);
+      showToast(effect.mode === AuthMode.Register ? 'auth_register_success' : 'auth_login_success');
       break;
+    }
     case LoginEffectType.NavigateHome:
       navigate(NavOperation.ResetTo, AuthRoutes.SIGNED_IN);
       showToast('auth_login_success');

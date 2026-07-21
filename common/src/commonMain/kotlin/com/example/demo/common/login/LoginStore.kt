@@ -215,7 +215,9 @@ class LoginStore(
                     password = "",
                     verifyCode = ""
                 )
-                pendingEffect = LoginEffect.AuthSucceeded(result.session, state.mode)
+                val nextRoute = if (result.session.isProfileComplete) PostLoginRoute.SignedIn
+                    else PostLoginRoute.ProfileCompletion
+                pendingEffect = LoginEffect.AuthSucceeded(result.session, state.mode, nextRoute)
             }
 
             is LoginResult.Failure -> {

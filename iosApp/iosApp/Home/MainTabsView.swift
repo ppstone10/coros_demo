@@ -2,7 +2,6 @@ import SwiftUI
 
 private enum MainTab: CaseIterable {
     case fitness, records, explore, me
-
     var label: String {
         switch self {
         case .fitness: return appLocalized("nav_fitness")
@@ -11,7 +10,6 @@ private enum MainTab: CaseIterable {
         case .me: return appLocalized("nav_me")
         }
     }
-
     var images: (String, String) {
         switch self {
         case .fitness: return AppImages.Navigation.fitness
@@ -31,22 +29,15 @@ struct MainTabsView: View {
 
     var body: some View {
         let _ = languageStore.current
-
         VStack(spacing: 0) {
             Group {
                 switch selected {
-                case .fitness:
-                    HealthDashboardView(isFullscreen: $contentFullscreen)
-                case .me:
-                    AccountView(viewModel: viewModel, router: router, isFullscreen: $contentFullscreen)
-                case .records, .explore:
-                    Text(String(format: appLocalized("nav_unavailable"), selected.label))
-                        .foregroundStyle(AppColors.Navigation.unselected)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(AppColors.Core.black)
+                case .fitness: HealthDashboardView(isFullscreen: $contentFullscreen)
+                case .me: AccountView(viewModel: viewModel, router: router, isFullscreen: $contentFullscreen)
+                case .records: RecordsPlaceholderView()
+                case .explore: ExplorePlaceholderView()
                 }
             }
-
             if !contentFullscreen {
                 HStack(spacing: 0) {
                     ForEach(MainTab.allCases, id: \.self) { tab in
@@ -54,21 +45,14 @@ struct MainTabsView: View {
                             selected = tab
                         } label: {
                             VStack(spacing: 2) {
-                                Image(selected == tab ? tab.images.1 : tab.images.0)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 27, height: 27)
-                                Text(tab.label)
-                                    .font(.system(size: 11, weight: selected == tab ? .medium : .regular))
+                                Image(selected == tab ? tab.images.1 : tab.images.0).resizable().scaledToFit().frame(width: 27, height: 27)
+                                Text(tab.label).font(.system(size: 11, weight: selected == tab ? .medium : .regular))
                                     .foregroundStyle(selected == tab ? .white : AppColors.Navigation.unselected)
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.plain)
+                            }.frame(maxWidth: .infinity)
+                        }.buttonStyle(.plain)
                     }
                 }
-                .padding(.top, 7)
-                .padding(.bottom, 5)
+                .padding(.top, 7).padding(.bottom, 5)
                 .background(AppColors.Navigation.bar.ignoresSafeArea(edges: .bottom))
             }
         }

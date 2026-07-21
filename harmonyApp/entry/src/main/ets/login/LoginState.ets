@@ -69,4 +69,5 @@ export class LoginEffect {
   mode: AuthMode = AuthMode.Login;
   session: AuthSession = new AuthSession();
   message: string = '';
+  nextRoute: string = 'SignedIn';
 }

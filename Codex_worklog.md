@@ -290,3 +290,80 @@
 
 ## 人工修正点
 - [APP-LANG-008] 发现用户已先在 `AppLanguage.kt` 加入 `LocalConfiguration.current`，本轮保留该并行修改，仅统一 `remember` 参数格式并补齐其余 Resources 调用链。
+
+# 2026-07-21 13:36 — Android 资料编辑页 Activity Result owner 闪退修复
+
+## 采纳内容
+- [ANDROID-PROFILE-AR-001][ANDROID-PROFILE-AR-002] `ProvideAppLanguage` 在用 `ConfigurationContext` 覆盖 `LocalContext` 前捕获宿主 `LocalActivityResultRegistryOwner`，并在本地化子树显式继续提供；无 owner 的预览宿主仍可正常组合。
+- [ANDROID-PROFILE-AR-003] 保持“我”页、个人资料编辑页、头像相册/相机入口及 KMP 资料模型现有行为，不修改 iOS、HarmonyOS 或共享业务实现。
+- [ANDROID-PROFILE-AR-002] 实测确认升级 `activity-compose` 至 `1.13.0` 仍无法解决该 Context owner 丢失问题，因此撤回试验性版本改动，最终依赖版本保持原样，避免扩大 Android 依赖图风险。
+
+## 人工审查点
+- [ANDROID-PROFILE-AR-003] 自动化覆盖两个 launcher 的注册与真实资料编辑入口；相册选择器和相机应用的最终拍摄/返回结果未在本轮自动提交媒体，后续发布验收可各执行一次系统应用往返。
+- [ANDROID-PROFILE-AR-002] 本轮只处理已复现的 Activity Result owner；若未来本地化层新增其他依赖 Activity Context 查找的 Compose API，应按同一宿主边界补充定向测试，不应假设 `ConfigurationContext` 等价于 Activity。
+
+## 验证结果
+- [ANDROID-PROFILE-AR-001] 红灯验证：当前实现下在 `ProvideAppLanguage` 子树注册 `GetContent` 与 `TakePicturePreview` launcher，两台 API 36.1 模拟器均精确抛出 `No ActivityResultRegistryOwner was provided via LocalActivityResultRegistryOwner`；实施后同一 `connectedDebugAndroidTest` 在两台模拟器均通过。
+- [ANDROID-PROFILE-AR-002] `./gradlew :common:check :androidApp:assembleDebug` 通过，共享层 57 条测试通过且 Android Debug APK 构建成功。
+- [ANDROID-PROFILE-AR-003] emulator-5556 安装修复 APK 后，使用项目内置 mock 账号完成资料，点击“我”页“资料已完善”区域成功显示个人信息编辑页；`com.example.demo` 进程存活，清空后的 `AndroidRuntime` 日志无新崩溃。
+
+## 人工修正点
+- [ANDROID-PROFILE-AR-001] 首版测试使用 Compose Rule 时先暴露旧 Espresso 与当前模拟器 API 的 `InputManager.getInstance` 不兼容，改用不依赖 Espresso 的 `ActivityScenario` 后才获得目标异常红灯。
+- [ANDROID-PROFILE-AR-002] 最初按依赖失配方向试升 `activity-compose 1.13.0`，同一回归测试仍精确失败；据源码与测试证据修正规格和实现方向，并撤回版本升级，最终以 owner 透传完成最小修复。
+
+# 2026-07-21 18:00 — 健康仪表盘维护性提升 P0+P1+P2
+
+## 采纳内容
+- [HLTH-MAINT-001] `HealthDashboardStore.saveCardConfiguration` 对 `types.size < 3` 返回 `MockResult.Failure(MinimumCardsRequired)` 而非静默回退。
+- [HLTH-MAINT-001] 新增 `MockError.MinimumCardsRequired` 枚举项及对应 `AuthMessageKeys.ErrorMinimumCardsRequired` 键。
+- [HLTH-MAINT-002] `LoginFacade` 新增 `healthCardSaveError()` 方法，iOS `SharedLoginAdapterProtocol` 和 HarmonyOS `KnoiLoginAdapter` 同步暴露。
+- [HLTH-MAINT-003] 新增 `HealthScenarios` 对象（`names` + `displayKeys`）到 `HealthDashboardModels.kt`。
+- [HLTH-MAINT-004] iOS 移除 `defaultHealthCards` 全局变量和 `HealthCard` 的 `Codable` 实现；`HealthDashboardViewModel.load()` 直接从 `PersistedDashboard.uiState.cards` 映射；`remove()` 改为通过 `saveCardConfiguration` 让 common 验证。
+- [HLTH-MAINT-005] HarmonyOS 提取 `health/HealthDashboardTypes.ets`（CardEntry、HealthSnapshot、HealthCardModel、`createDefaultHealthCards`、`cardIconIndex`、`localizedHealthText`、`resourceText`）；`SignedInPage.ets` 精简约 50 行类型定义。
+- [HLTH-MAINT-006] 新增 `PostLoginRoute` 枚举（`SignedIn` / `ProfileCompletion`）；`LoginEffect.AuthSucceeded` 新增 `nextRoute` 字段；三端导航文件（`AuthNavGraph.kt`、`AuthCoordinator.swift`、`AuthEffectHandler.ets`）从检查 `isProfileComplete` 改为消费 `nextRoute`。
+- [HLTH-MAINT-006] HarmonyOS KNOI 桥接 `HarmonyLoginJson.kt` 和 `KnoiLoginAdapter.ets` 同步携带 `nextRoute` 字段。
+
+## 人工审查点
+- [HLTH-MAINT-004] iOS `HealthDashboardViewModel.swift` 重构后需人工用 Xcode 构建验证健康仪表盘展示与之前一致。
+- [HLTH-MAINT-005] HarmonyOS `SignedInPage.ets` 拆分后需 `hvigorw assembleHap` 构建通过，验证仪表盘、卡片编辑器、账户页交互无差异。
+- [HLTH-MAINT-002] 三端最少卡片数错误提示文案需业务确认：当前 `MockError.MinimumCardsRequired.message` 使用 `health_error_minimum_cards_required` 键，三端需确保该字符串资源存在。
+- iOS `PostLoginRoute` 枚举在 Swift 中的导出名称需人工确认（KMP 导出规则可能加尾随下划线）。
+
+## 验证结果
+- [HLTH-MAINT-001][HLTH-MAINT-003][HLTH-MAINT-006] `./gradlew :common:check` 通过：62 条测试全部通过（新增 5 条：`cardSaveRejectsMinimumConfig`、`cardSaveAcceptsSufficientConfig`、`healthScenariosMatchMockEntries`、`loginSuccessCarriesSignedInRouteWhenProfileComplete`、`loginSuccessCarriesProfileCompletionRouteWhenProfileIncomplete`）。
+- `bash ./tools/check-sdd.sh` 通过：SDD 框架校验全部 PASS。
+
+## 人工修正点
+- [HLTH-MAINT-004] iOS 需要 Xcode 运行验证健康仪表盘展示。
+- [HLTH-MAINT-005] HarmonyOS 需要 DevEco 构建验证。
+- 三端本地化资源文件 (`strings.xml` / `xcstrings` / `string.json`) 需增加 `health_error_minimum_cards_required` 键的文案。
+- 后续新建健康相关功能时，规则优先放入 `common` 而非三端 UI 各写一套。
+
+## 下轮交接
+- **已完成**：`spec/health-maintainability.md` 规范创建 → TRACE 映射 → 测试先行红灯 → common 实现绿灯 → 三端 UI 代码更新 → SDD 门禁通过。
+- **未完成 / 阻塞项**：iOS/HarmonyOS 的构建验证需人工执行（无对应 CI 环境）。
+- **下轮起步建议**：阅读 `spec/health-maintainability.md` 和 `spec/TRACE.md` 中 `HLTH-MAINT-*` 条目；优先在 Xcode/DevEco 中验证 iOS/HarmonyOS 构建。
+
+# 2026-07-21 18:30 — 三端主页 Tab 子页面解耦与 iOS 编译修复
+
+## 采纳内容
+- **Android**：`health/` 目录从单文件 657 行拆分为 7 个独立文件：`HeroTopRow.kt`、`ArcAndMetrics.kt`、`DashboardCard.kt`、`CardEditor.kt`、`ScenarioPickerDialog.kt`、`DetailPlaceholder.kt`，每文件附带 `@Preview`；`MainTabsScreen.kt` 的 Records/Explore 占位页提取为独立 `RecordsPlaceholderScreen.kt` / `ExplorePlaceholderScreen.kt`。
+- **iOS**：`Health/` 目录拆分为 9 个文件：`HealthCard.swift`、`HeroTopRow.swift`、`HeroArcView.swift`、`HealthCardEditor.swift`、`ScenarioPickerView.swift`、`HealthDetailView.swift`、`ScrollViewAccessor.swift`、`HealthDashboardViewModel.swift`、`HealthDashboardView.swift`（主编排）；`Home/` 新增 `RecordsPlaceholderView.swift` / `ExplorePlaceholderView.swift`。
+- **HarmonyOS**：`SignedInPage.ets` 中 `HeroTopRow`、`ScenarioPicker`、`HealthDetail` 提取为独立 `@Component` 文件（`health/HeroTopRowComp.ets`、`health/ScenarioPickerComp.ets`、`health/HealthDetailComp.ets`）；底部导航提取为 `pages/BottomNavBarComp.ets`；Lottie 管理移至 `HeroTopRowComp` 内，清理 SignedInPage 中失效的 lottie 状态。SignedInPage 从 912 行降至约 580 行。
+- **iOS 编译修复**：`HealthCard` 结构体移入独立 `HealthCard.swift`；`HealthDashboardView.swift` 中子视图改为 `import` 方式而非 `private struct` 内联；`AppLanguageStore()` 因 `private init` 改为 `AppLanguageStore.shared`；key path 表达式 `\.id` 改为 `{ $0.id }` 以修复类型推断失败。
+
+## 人工审查点
+- iOS 新建的 9 个 `.swift` 文件需人工拖入 Xcode Project Navigator 并加入 Compile Sources，否则编译时找不到类型。
+- HarmonyOS `account/AccountOverviewComp.ets` 通过 `@Prop` 接收父组件的 10+ 参数，若后续新增字段需同步更新调用方。
+- Android `HeroTopRow.kt` 的 Lottie 相关 import 需确认无重复或缺失（此前曾因重复 import 导致编译失败）。
+
+## 验证结果
+- `./gradlew :common:check` 通过：62 条测试全部通过。
+- `./gradlew :androidApp:assembleDebug` 通过：Android Debug APK 构建成功。
+- `bash ./tools/check-sdd.sh` 通过：SDD 框架校验全部 PASS。
+
+## 人工修正点
+- iOS 需在 Xcode 中将新增文件加入 Compile Sources 后验证健康仪表盘展示与编辑器拖拽功能。
+- HarmonyOS 需在 DevEco 中构建验证 `SignedInPage.ets` 精简后页面交互无差异。
+- 三端本地化资源文件需增加 `health_error_minimum_cards_required` 键的文案。
+- iOS 提取的子视图文件（`HealthCardEditor.swift`、`HeroTopRow.swift` 等）目前引用同一模块类型无需 import，若后续迁移到独立 framework 则需补充 import。

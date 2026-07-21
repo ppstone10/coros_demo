@@ -149,6 +149,52 @@ class LoginUseCaseTest {
     }
 
     @Test
+    fun loginSuccessCarriesSignedInRouteWhenProfileComplete() {
+        val repository = repository()
+        register(repository, account = "complete-profile@example.com")
+        repository.saveProfile(
+            UserProfile(
+                username = "Complete User",
+                birthDate = "2000年01月01日",
+                heightCm = 175,
+                weightKg = 70.0,
+                gender = UserGender.Male
+            )
+        )
+
+        val store = LoginStore.create(repository)
+        store.dispatch(LoginAction.UsernameChanged("complete-profile@example.com"))
+        store.dispatch(LoginAction.PasswordChanged("password1"))
+        store.dispatch(LoginAction.SubmitClicked)
+
+        val effect = store.consumeEffect()
+        val authSucceeded = assertIs<LoginEffect.AuthSucceeded>(effect)
+        assertEquals(PostLoginRoute.SignedIn, authSucceeded.nextRoute)
+    }
+
+    @Test
+    fun loginSuccessCarriesProfileCompletionRouteWhenProfileIncomplete() {
+        val repository = repository()
+        repository.requestVerifyCode("no-profile@example.com")
+        RegisterUseCase(repository).execute(
+            account = "no-profile@example.com",
+            password = "password1",
+            verifyCode = LocalMockAuthRepository.DefaultVerifyCode,
+            region = "CN",
+            displayName = null
+        )
+
+        val store = LoginStore.create(repository)
+        store.dispatch(LoginAction.UsernameChanged("no-profile@example.com"))
+        store.dispatch(LoginAction.PasswordChanged("password1"))
+        store.dispatch(LoginAction.SubmitClicked)
+
+        val effect = store.consumeEffect()
+        val authSucceeded = assertIs<LoginEffect.AuthSucceeded>(effect)
+        assertEquals(PostLoginRoute.ProfileCompletion, authSucceeded.nextRoute)
+    }
+
+    @Test
     fun businessAccessSucceedsAfterLogin() {
         val repository = repository()
         register(repository, account = "business-access@example.com")
