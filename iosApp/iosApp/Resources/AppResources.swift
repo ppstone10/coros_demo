@@ -127,6 +127,18 @@ enum AppColors {
         static let editorTitle = Color(red: 236 / 255, green: 236 / 255, blue: 236 / 255)
         static let removeAction = Color(red: 239 / 255, green: 52 / 255, blue: 63 / 255)
         static let placeholder = Color(red: 187 / 255, green: 187 / 255, blue: 187 / 255)
+        static let visualGreen = steps
+        static let visualYellow = calories
+        static let visualOrange = Color(red: 1, green: 159 / 255, blue: 48 / 255)
+        static let visualPurple = Color(red: 183 / 255, green: 105 / 255, blue: 1)
+        static let visualBlue = Color(red: 66 / 255, green: 165 / 255, blue: 245 / 255)
+        static let visualCyan = Color(red: 45 / 255, green: 205 / 255, blue: 211 / 255)
+        static let visualPink = Color(red: 232 / 255, green: 45 / 255, blue: 138 / 255)
+        static let visualDeepBlue = Color(red: 49 / 255, green: 86 / 255, blue: 184 / 255)
+        static let visualBar = Color(red: 98 / 255, green: 98 / 255, blue: 98 / 255)
+        static let rangeTrack = Color(red: 69 / 255, green: 69 / 255, blue: 69 / 255)
+        static let gaugeTrack = Color(red: 51 / 255, green: 51 / 255, blue: 51 / 255)
+        static let activityTile = Color(red: 34 / 255, green: 60 / 255, blue: 50 / 255)
     }
 
     enum Account {
@@ -195,7 +207,13 @@ enum AppImages {
         static let active = "sport_time_icon"
         static let add = "data_screen_edit_add"
         static let remove = "delete"
+        static let activityMap = "health_activity_map"
+        static let todayHeader = "health_today_header"
+        static let todayRunner = "health_today_runner"
+        static let bodyFront = "health_body_front"
+        static let bodyBack = "health_body_back"
         static let weeklyPlan = "icon_small_plan"
+        static let todayActivity = "icon_small_training_effect"
         static let trainingLoad = "icon_small_training_load"
         static let trainingAssessment = "icon_small_training_effect"
         static let recovery = "icon_recovery_sports"

@@ -30,12 +30,14 @@ final class HealthDashboardViewModel: ObservableObject {
         cards = pd.uiState.cards.map { c in
             HealthCard(id: c.type.name, title: localizedHealthText(c.title),
                        summary: localizedHealthText(c.summary),
-                       icon: iconForCardType(c.type.name), isRisk: c.status.name == "Risk")
+                       icon: iconForCardType(c.type.name), isRisk: c.status.name == "Risk", visual: c.visual)
         }
     }
 
     func selectScenario(_ name: String) {
-        selectedScenario = name; _ = adapter.selectHealthScenario(name)
+        selectedScenario = name
+        _ = adapter.selectHealthScenario(name)
+        load()
     }
 
     func saveCardConfiguration(_ typeIDs: [String]) -> String? {
@@ -51,7 +53,7 @@ final class HealthDashboardViewModel: ObservableObject {
     }
 }
 
-private func localizedHealthText(_ spec: LocalizedTextSpec) -> String {
+func localizedHealthText(_ spec: LocalizedTextSpec) -> String {
     let format = appLocalized(spec.key)
     let arguments: [CVarArg] = spec.arguments.map { $0 as NSString }
     return String(format: format, arguments: arguments)
@@ -59,6 +61,7 @@ private func localizedHealthText(_ spec: LocalizedTextSpec) -> String {
 
 func iconForCardType(_ name: String) -> String {
     switch name {
+    case "TodayActivity": return AppImages.Health.todayActivity
     case "WeeklyPlan": return AppImages.Health.weeklyPlan
     case "TrainingLoad": return AppImages.Health.trainingLoad
     case "TrainingAssessment": return AppImages.Health.trainingAssessment

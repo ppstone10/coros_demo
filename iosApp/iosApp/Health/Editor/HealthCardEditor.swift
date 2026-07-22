@@ -2,6 +2,7 @@ import SwiftUI
 
 private let editorRowHeight: CGFloat = 56
 private let allCardTypes: [(String, String)] = [
+    ("TodayActivity", AppImages.Health.todayActivity),
     ("WeeklyPlan", AppImages.Health.weeklyPlan), ("TrainingLoad", AppImages.Health.trainingLoad),
     ("TrainingAssessment", AppImages.Health.trainingAssessment), ("Recovery", AppImages.Health.recovery),
     ("RunningAbility", AppImages.Health.runningAbility), ("CyclingAbility", AppImages.Health.cyclingAbility),
@@ -10,6 +11,30 @@ private let allCardTypes: [(String, String)] = [
     ("RestingHeartRate", AppImages.Health.restingHeartRate), ("HealthCheck", AppImages.Health.healthCheck),
     ("BodyManagement", AppImages.Health.body),
 ]
+
+private func cardTitleKey(_ typeID: String) -> String {
+    switch typeID {
+    case "TodayActivity": "health_card_today_activity_title"
+    case "WeeklyPlan": "health_card_weekly_plan_title"
+    case "TrainingLoad": "health_card_training_load_title"
+    case "TrainingAssessment": "health_card_training_assessment_title"
+    case "Recovery": "health_card_recovery_title"
+    case "RunningAbility": "health_card_running_ability_title"
+    case "CyclingAbility": "health_card_cycling_ability_title"
+    case "HeartRate": "health_card_heart_rate_title"
+    case "Stress": "health_card_stress_title"
+    case "Sleep": "health_card_sleep_title"
+    case "HrvAssessment": "health_card_hrv_assessment_title"
+    case "RestingHeartRate": "health_card_resting_heart_rate_title"
+    case "HealthCheck": "health_card_health_check_title"
+    case "BodyManagement": "health_card_body_management_title"
+    default: "health_data_unavailable"
+    }
+}
+
+private func editorCard(typeID: String, icon: String) -> HealthCard {
+    HealthCard(id: typeID, title: appLocalized(cardTitleKey(typeID)), summary: "", icon: icon, isRisk: false)
+}
 
 struct HealthCardEditor: View {
     @State var active: [HealthCard]
@@ -32,7 +57,7 @@ struct HealthCardEditor: View {
 
     private var inactive: [HealthCard] {
         let activeIDs = Set(active.map(\.id))
-        return allCardTypes.filter { !activeIDs.contains($0.0) }.map { HealthCard(id: $0.0, title: "", summary: "", icon: $0.1, isRisk: false) }
+        return allCardTypes.filter { !activeIDs.contains($0.0) }.map { editorCard(typeID: $0.0, icon: $0.1) }
     }
 
     var body: some View {
@@ -69,7 +94,7 @@ struct HealthCardEditor: View {
                         }
                     }
                     Button(appLocalized("health_restore_defaults")) {
-                        active = allCardTypes.map { HealthCard(id: $0.0, title: "", summary: "", icon: $0.1, isRisk: false) }; warning = nil
+                        active = allCardTypes.map { editorCard(typeID: $0.0, icon: $0.1) }; warning = nil
                     }.foregroundStyle(AppColors.Health.action)
                 }
                 .scrollContentBackground(.hidden).listStyle(.insetGrouped)

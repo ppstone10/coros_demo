@@ -367,3 +367,148 @@
 - HarmonyOS 需在 DevEco 中构建验证 `SignedInPage.ets` 精简后页面交互无差异。
 - 三端本地化资源文件需增加 `health_error_minimum_cards_required` 键的文案。
 - iOS 提取的子视图文件（`HealthCardEditor.swift`、`HeroTopRow.swift` 等）目前引用同一模块类型无需 import，若后续迁移到独立 framework 则需补充 import。
+
+# 2026-07-21 17:02 — Figma 2031 健康数据卡三端扩充
+
+## 采纳内容
+- 新增 `spec/health-dashboard-visual-cards.md` 与 `HLTH-VIS-001~007` 追溯；先扩充 `health_dashboard_mock.proto`，再同步 domain/mock mapper 和 `HealthCardVisualData` 类型化 UI 契约。
+- 正常场景补齐今日运动、七日计划/负荷、训练评估、恢复/能力仪表、心率/压力趋势、睡眠阶段、HRV/静息心率区间、健康快测及体型管理数据；默认目录把 `TodayActivity` 放在 `WeeklyPlan` 前。
+- Android Compose、iOS SwiftUI、HarmonyOS ArkUI 按 visual kind 原生渲染 11 类卡片模板；HarmonyOS KNOI JSON bridge 同步传递图表、范围、指标和睡眠阶段。
+- 从 Figma 节点 `16:8245`、`16:8294` 下载人体正反面 SVG，并以相同 PNG 资产写入三端资源；新增视觉文案的中英文资源与解析入口。
+
+## 人工审查点
+- Figma 使用的 `COROSAPP` / `COROS-number` 字体未随设计提供授权文件，本轮沿用三端平台字体；需设计人工核对字宽、数值基线和 114/122/178/180/188/206 级卡片高度。
+- Figma 节点 motion inventory 为空，因此图表直接渲染终态，没有臆造入场或循环动画；若后续提供正式动效稿，需要另立 Spec 校准时间线、缓动与 Reduce Motion。
+- 当前活动卡地图区域使用本地 mock 色块与已有运动图标，不声称为真实地图；业务若需要轨迹图，需另补脱敏本地矢量数据契约。
+
+## 验证结果
+- 测试先行红灯：首次运行 `./gradlew :common:testAndroidHostTest --tests '*HealthDashboardUseCaseTest*'` 因 `visual` / `HealthCardVisualKind` 缺失编译失败；实现后同命令通过 22 条测试。
+- `./gradlew :common:check :androidApp:assembleDebug` 通过；`xcodebuild -quiet -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build` 通过；`hvigorw assembleApp --no-daemon` 通过（未配置签名，仅生成未签名包）。
+- `./tools/check-sdd.sh` 与 `git diff --check` 通过；三端人体正面 PNG SHA-256 均为 `651396...e23e4b`，背面均为 `ce1814...b2ded2`。
+- `./tools/check-resources.sh` 未通过，唯一报告为既存 `HarmonyOS Me is missing the language selector entry point`；`./tools/check-docs.sh` 初次因测试统计陈旧失败，更新为 Login 31、Health 22、common 65 后复跑通过。
+- 图表颜色收口到三端 `AppColors` 后，`./tools/check-resource-maintainability.sh` 通过：三端新增直写颜色债务均为 0；收口后 Android、iOS、HarmonyOS 再次构建通过。
+
+## 人工修正点
+- ArkUI 初次编译发现 `RowAttribute` 不支持 `.fontSize/.fontColor`，已把样式下沉到两个 `Text` 节点并复跑通过。
+- Android `HealthCardUiModel` 预览补齐必填 `visual`；iOS `HealthCard` 以 id 自定义 Hashable，视觉对象不参与编辑器排序相等性。
+- 资源门禁的 HarmonyOS 语言入口属于本轮外既存问题，未越权修改账户/语言入口；需后续按应用语言 Spec 单独处理。
+
+# 2026-07-21 17:28 — Android 健康首页裸百分号启动闪退修复
+
+## 采纳内容
+- [HLTH-VIS-008] 定位到健康首页恢复卡片渲染百分比单位时，`stringResource(id, *emptyArray())` 仍进入 Android 格式化重载，裸 `%` 被解释为未完成的格式符并抛出 `UnknownFormatConversionException`。
+- [HLTH-VIS-008] `HealthLocalization.kt` 改为通过 `LocalResources` 获取资源，并由 `Resources.localizedHealthText` 按参数是否为空选择非格式化或格式化 `getString` 重载；资源值仍保持字面量 `%`。
+- [HLTH-VIS-008] 新增 `HealthLocalizationTest.percentUnitWithoutArgumentsDoesNotEnterFormatter` Android 插桩回归测试。
+
+## 人工审查点
+- [HLTH-VIS-008] 本次只调整 Android 健康文案的资源解析路径，不改变卡片数据、五种 mock 场景、iOS/HarmonyOS 展示或百分比资源语义。
+- 后续新增无参数单位文案时无需写成 `%%`；同一解析器会统一走非格式化路径。
+
+## 验证结果
+- 红灯验证：实现前运行 `./gradlew :androidApp:compileDebugAndroidTestKotlin`，新增测试因 `Resources.localizedHealthText` 尚不存在而编译失败，确认缺失行为被捕获。
+- `ANDROID_SERIAL=emulator-5556 ./gradlew :androidApp:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.demo.health.HealthLocalizationTest` 通过，设备端 1 条定向测试通过。
+- `./gradlew :common:check :androidApp:assembleDebug` 通过；最终 APK 安装到 emulator-5556 后冷启动成功，`com.example.demo/.MainActivity` 为前台 Activity，进程存活且 `AndroidRuntime` 无异常。
+- `./tools/check-sdd.sh`、`./tools/check-docs.sh`、`./tools/check-resource-maintainability.sh` 与 `git diff --check` 均通过。
+
+## 人工修正点
+- Android 插桩测试最初引用当前 source set 未提供的 `kotlin.test.assertEquals`，修正为项目已具备的 JUnit 4 `org.junit.Assert.assertEquals` 后再完成绿灯验证。
+- 最终实现使用项目既有约定的 `LocalResources`，避免以 `LocalContext.current.resources` 引入 Compose 资源配置更新与 Lint 风险。
+
+# 2026-07-21 18:12 — Figma 2031 健康卡片三端精细对齐
+
+## 采纳内容
+- [HLTH-VIS-009] 按 Figma `16:8096` 及 14 个子卡节点，把三端卡片收口为 343 宽设计基准、16 页边距、8 圆角和 114/122/178/180/188/206 类型高度；标题、主值、评估指标和周计划布局逐类对齐。
+- [HLTH-VIS-010] 仪表、趋势、范围、睡眠阶段及人体图改为右侧 130/166 安全区，三端父卡与图形叶节点启用裁剪；HarmonyOS 移除会把图形推出版面的弹性满宽组合。
+- [HLTH-VIS-011] 从用户本地 `app_out/assets/fonts` 提取 `COROS-APP-Bold.ttf` / `COROS-APP-Regular.ttf`，以相同哈希打包 Android、iOS、HarmonyOS，并用于主数值与单位。
+- [HLTH-VIS-012] 从 Figma 今日活动节点接入原始地图缩略图、绿色日历完成标题图标与橙色跑步图标，三端文件哈希一致；其他卡片继续复用已入库的 COROS 图标和 Figma 人体资产。
+- [HLTH-VIS-009] 补齐周计划一至日及英文 M/T/W/T/F/S/S 的三端资源和解析映射；公里单位按 Figma 显示为 `km`，训练负荷概览统一为青色。
+
+## 人工审查点
+- [HLTH-VIS-011] 字体来自用户提供的本地应用提取目录，技术上已完成三端同源校验；正式发布前仍需产品/法务确认字体使用许可。
+- [HLTH-VIS-010] Android emulator-5556 已覆盖顶部、中部和底部滚动截图；当前没有可连接的 HDC 设备，HarmonyOS 仅完成 ArkTS 构建与结构门禁，建议目标设备再复核大字号模式。
+- [HLTH-VIS-007] Figma 目标节点仍无 motion inventory，卡片保持数据终态直绘，没有新增未经设计确认的入场或循环动画。
+
+## 验证结果
+- 红灯：实现前首次运行 `./tools/check-health-card-fidelity.sh`，三端字体、固定高度与裁剪共 13 项全部失败；实现后扩充为字体/地图哈希、几何、裁剪及周标签检查并全部通过。
+- `./gradlew :common:check :androidApp:assembleDebug` 通过；`xcodebuild -quiet -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build` 通过；`hvigorw assembleApp --no-daemon` 通过（未配置签名）。
+- Android 最终 APK 安装到 emulator-5556，冷启动后进程 `27573` 存活且 `MainActivity` 为当前焦点，日志未发现本应用 `FATAL EXCEPTION`；截图确认周标签、COROS 数字、地图及所有右侧概览均位于卡片内。
+- `./tools/check-resource-maintainability.sh`、`./tools/check-sdd.sh`、`./tools/check-docs.sh`、`git diff --check` 通过；`./tools/check-resources.sh` 仍仅报告本轮外既存的 `HarmonyOS Me is missing the language selector entry point`。
+
+## 人工修正点
+- Android 首轮截图发现周标签键缺少三端资源映射而统一回退成“健康”，已补齐资源与解析入口并在最终截图中确认显示“一二三四五六日”。
+- Android 首轮训练负荷使用中性灰柱，与 Figma 青色不符；三端 renderer 已按该卡类型统一覆盖为青色。
+- HarmonyOS 首次构建发现新分隔线引用了不存在的 `HEALTH_EDITOR_DIVIDER`，修正为既有 `AppColors.DIVIDER` 后构建通过。
+- iOS 首次验证命令误用了不存在的 `iosApp` scheme；通过 `xcodebuild -list` 确认实际 scheme 为 `IOSDemo`，改用正确命令后构建通过。
+
+# 2026-07-22 09:39 — HarmonyOS 恢复默认与 iOS 编辑器标题修复
+
+## 采纳内容
+- [HLTH-VIS-013] HarmonyOS“恢复默认数据”改为直接把编辑器草稿 `editingHealthCards` 重建为 `createDefaultHealthCards()`，同时清理告警和拖拽状态；不再重新加载当前持久化的删减顺序。
+- [HLTH-VIS-013] `SignedInPage.ets` 移除失效的 `onRestoreDefaults` 回读回调；恢复后仍停留编辑页，只有点击保存才通过 KMP 写入默认顺序。
+- [HLTH-VIS-014] iOS 新增卡片类型到本地化标题键的完整映射和统一 `editorCard` 构造器，删除卡片进入“更多每日数据”或恢复默认时不再生成空标题。
+- [HLTH-VIS-014] iOS 编辑器卡片目录补齐 `TodayActivity`，确保完整 14 类卡片均可删除、重新添加和恢复。
+
+## 人工审查点
+- [HLTH-VIS-013] HarmonyOS 的恢复行为与 Android/iOS 一致：先改变未保存草稿，点击返回会放弃，点击保存才持久化。
+- [HLTH-VIS-014] iOS 标题在重建当下按当前应用语言解析；编辑页本身没有语言切换入口，因此不会在编辑过程中产生语言与草稿不同步。
+- 当前无可连接 HDC 设备，HarmonyOS 交互由状态路径审查、专项门禁和完整 ArkTS 构建验证；建议真机点击删除→恢复→保存再做一次验收。
+
+## 验证结果
+- 红灯：实现前 `./tools/check-health-card-editor-regressions.sh` 四项全部失败，准确检出 HarmonyOS 未重置草稿/仍调用错误回调，以及 iOS 缺少标题构造/仍使用空标题。
+- 绿灯：修复后专项门禁通过，并新增 iOS `TodayActivity` 完整目录检查。
+- `xcodebuild -quiet -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build` 通过。
+- `hvigorw assembleApp --no-daemon` 通过；仅保留项目既有弃用 API 与未配置签名警告。
+
+## 人工修正点
+- HarmonyOS 原实现把“恢复默认”误解为重新调用 `loadHealthDataFromKMP()`，该方法读取的仍是用户已保存顺序，因此视觉上完全无变化；修正为编辑器内部草稿赋值。
+- iOS 原 `inactive` 和恢复按钮都使用 `title: ""` 创建卡片，导致图标存在但标题消失；修正为稳定类型键映射。
+- 排查 iOS 元数据目录时发现其只有 13 类卡片，补入此前新增的“今日活动”，避免单独删除该卡后无法找回。
+
+# 2026-07-22 09:54 — 健康卡片 iOS/HarmonyOS 资源语义补齐
+
+## 采纳内容
+- [HLTH-VIS-015] 以 Android `AppImages.Health` 为语义基线，三端资源目录补齐活动地图、今日运动标题图、跑步图和人体正反面图入口；三端卡片 renderer 改为只通过语义资源入口访问。
+- [HLTH-VIS-016] iOS 增加 `todayActivity` 及 `iconForCardType` 显式映射；HarmonyOS 增加按类型 ID 解析的 `healthCardIcon(typeName)`，编辑、添加和详情场景不再用整数索引回退。
+- [HLTH-VIS-016] 今日运动的通用图标三端统一为 Android 基线 `icon_small_training_effect`，主页卡片标题仍保留 Figma 专用 `health_today_header`。
+- [HLTH-VIS-015] 将 HarmonyOS 步数、卡路里、活动时长 PNG 规范化为与 Android 解码像素一致的 iOS PNG 副本，并在专项门禁中要求 20 组 iOS/HarmonyOS 健康 PNG 逐文件同哈希。
+
+## 人工审查点
+- 对 25 组健康图像做了解码像素核对：22 组 RGBA 尺寸与像素完全一致；HarmonyOS 的步数、卡路里、活动时长 3 组仅透明像素 RGB 值不同，alpha 和可见内容一致；未二次转码，而是直接使用已与 Android 解码像素一致的 iOS PNG 规范化透明像素数据。
+- 本轮只收口健康首页/编辑/详情的图像资源语义，没有改动账户、认证或导航资源。
+- HarmonyOS 无可连接 HDC 设备，已用完整 ArkTS 构建验证；仍建议在目标设备上人工点开“今日运动”详情和编辑页核对图标。
+
+## 验证结果
+- 红灯：扩充 `./tools/check-health-card-fidelity.sh` 后首次运行报告 23 项失败，覆盖三端概览图语义入口、renderer 直接资源引用、iOS 今日运动映射和 HarmonyOS 编辑/详情映射；追加 PNG 同哈希检查后又精确红灯检出 3 组透明像素未规范化资源。
+- 绿灯：`./tools/check-health-card-fidelity.sh` 与 `./tools/check-health-card-editor-regressions.sh` 均通过；`./tools/check-resource-maintainability.sh` 通过（37 组共享图片、2 个 Raw、196 个共享文字键）。
+- `./gradlew :androidApp:assembleDebug` 通过；`xcodebuild -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator ... build` 通过；`hvigorw assembleApp --no-daemon` 通过（未配置签名）。
+- `./tools/check-sdd.sh` 与 `./tools/check-docs.sh` 通过；`./tools/check-resources.sh` 仍只报告本轮外已知的 `HarmonyOS Me is missing the language selector entry point`。
+
+## 人工修正点
+- 原始文件 SHA 不同的原因是 Android 使用 WebP、iOS/HarmonyOS 使用 PNG，以及透明像素的非可见 RGB 差异；修正了“哈希不同就是资源内容不同”的误判，同时把同为 PNG 的 iOS/HarmonyOS 副本收口为字节一致。
+- iOS 原未显式处理 `TodayActivity`，初始卡片会回退为心率图标，而恢复后又变为专用头图；现已统一为通用训练效果图标。
+- HarmonyOS `TodayActivity` 原与 `HeartRate` 共用索引 6，现改为类型映射，并将保留的整数元数据修正为与训练效果对应的索引 2。
+
+# 2026-07-22 10:57 — 健康模块完整数据与多用户快照持久化
+
+## 采纳内容
+- [HLTH-PERSIST-001][HLTH-PERSIST-002] `HealthDashboardSnapshot` 升级为 schema v2，按 `userId` 保存完整 `HealthDashboardData` 和卡片配置；加载已有完整快照时直接重建 UI，不再用场景模板覆盖模块值。
+- [HLTH-PERSIST-003][HLTH-PERSIST-004] Demo 场景选择改为生成并持久化一份完整模块数据，卡片顺序保存只修改配置、不丢健康数据；`ReadFailure` 不覆盖最后一份有效快照。
+- [HLTH-PERSIST-003] Android、iOS、HarmonyOS 场景选择后都立即回读新版快照，避免只更新勾选状态而卡片仍显示旧数据。
+- [HLTH-PERSIST-005] common 新增无平台依赖的完整 JSON codec，支持 14 类模块、趋势点、睡眠阶段、旧场景配置快照迁移、损坏数据安全忽略与未知字段兼容。
+- [HLTH-PERSIST-006] 内存数据源支持导出/替换多用户集合，账户删除同步清理对应健康快照；20 个完整用户快照集合往返并保持在 1 MB Preferences 预算内。
+- [HLTH-PERSIST-007] HarmonyOS `health_json` 改为保存全部用户领域快照集合；认证 JSON 不再导出 `_health`，页面移除全局 `health_card_order`，仅保留旧 `_health` 的一次性迁移路径。
+
+## 人工审查点
+- [HLTH-PERSIST-003] `sourceScenario` 只用于 Demo 选择器与迁移来源展示，完整 `dashboardData` 才是恢复权威；正式产品移除场景选择器时可删除该元数据。
+- [HLTH-PERSIST-006] 当前 Preferences/JSON 方案只面向约 20 位 Demo 用户和每人一份最新小型快照；如果以后引入长期、高频真实健康采样，应另立 Spec 迁移数据库并补充真实健康数据的加密与备份策略。
+- [HLTH-PERSIST-007] HarmonyOS 无连接设备，本轮完成 native bridge 与 ArkTS 构建、快照集合自动测试和结构审查；建议在目标设备上执行用户 A/B 切换、改场景、重启后复核。
+
+## 验证结果
+- 红灯：实现前 `./gradlew :common:testAndroidHostTest` 因 `sourceScenario/dashboardData/schemaVersion` 与集合 codec 尚不存在而编译失败，准确捕获缺失行为。
+- 绿灯：`./gradlew :common:check` 通过，`HealthDashboardUseCaseTest` 增至 31 条，覆盖完整往返、模块数据优先、场景覆盖、配置保留、旧快照迁移、损坏数据、账户删除和 20 用户集合。
+- `./gradlew :androidApp:assembleDebug`、`xcodebuild -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug -derivedDataPath /private/tmp/demo-ios-derived CODE_SIGNING_ALLOWED=NO build` 通过。
+- HarmonyOS `./gradlew ohosArm64Binaries` 成功生成并链接 `libkn.so`；`hvigorw assembleApp --no-daemon` 生成更新后的 HAP。`check-health-card-editor-regressions.sh`、`check-health-card-fidelity.sh`、`check-docs.sh` 与 `git diff --check` 通过。
+
+## 人工修正点
+- 首版实现尝试复用 `kotlinx-serialization-json`，Android/iOS 通过但 HarmonyOS bridge 红灯报告该库没有 `ohos_arm64` variant；已撤回依赖，改为 common 自包含递归 JSON parser/encoder，并重新通过三端构建。
+- HarmonyOS 原来同时依赖认证快照 `_health`、单用户 `health_json` 和页面 `health_card_order`，多用户会互相复用；现统一为按 `userId` 索引的领域快照集合，旧 `_health` 仅作迁移输入。

@@ -4,19 +4,39 @@ package training.health;
 // 仅用于脱敏、本地 mock 健康首页，不包含真实服务端字段或协议。
 
 message DailySummaryMock { optional int32 steps = 1; optional int32 calories = 2; optional int32 active_minutes = 3; }
-message SleepSummaryMock { optional int32 duration_minutes = 1; optional int32 quality_score = 2; }
-message TrainingLoadMock { optional int32 value = 1; optional int32 recommended_min = 2; optional int32 recommended_max = 3; }
+message TodayActivityMock { optional double distance_km = 1; optional int32 pace_seconds_per_km = 2; optional string activity_name_key = 3; optional int32 training_load = 4; }
+message SleepStageSegmentMock { string stage = 1; int32 start_minute = 2; int32 duration_minutes = 3; }
+message SleepSummaryMock {
+  optional int32 duration_minutes = 1; optional int32 quality_score = 2;
+  optional string start_time = 3; optional string end_time = 4; repeated SleepStageSegmentMock stages = 5;
+}
+message TrainingLoadMock {
+  optional int32 value = 1; optional int32 recommended_min = 2; optional int32 recommended_max = 3;
+  repeated int32 daily_loads = 4;
+}
 message RecoveryMock { optional int32 score = 1; optional int32 remaining_hours = 2; }
-message WeeklyPlanMock { optional bool has_plan = 1; optional int32 planned_minutes = 2; optional string description = 3; }
-message TrainingAssessmentMock { optional int32 volume_score = 1; optional string trend = 2; }
-message RunningAbilityMock { optional int32 vo2max = 1; optional int32 score = 2; }
-message CyclingAbilityMock { optional int32 ftp = 1; optional int32 score = 2; }
-message HeartRateMock { optional int32 resting_hr = 1; optional int32 current_hr = 2; }
-message StressMock { optional int32 stress_level = 1; optional string status = 2; }
-message HrvAssessmentMock { optional int32 hrv_score = 1; optional string status = 2; }
-message RestingHeartRateMock { optional int32 value = 1; }
-message HealthCheckMock { optional int32 overall_score = 1; optional int32 last_check_days = 2; }
-message BodyManagementMock { optional double weight_kg = 1; optional double body_fat = 2; optional double bmi = 3; }
+message WeeklyPlanMock {
+  optional bool has_plan = 1; optional int32 planned_minutes = 2; optional string description = 3;
+  optional int32 current_day_index = 4; repeated int32 daily_loads = 5; optional string workout_name_key = 6;
+  optional int32 workout_duration_minutes = 7; optional int32 workout_training_load = 8;
+}
+message TrainingAssessmentMock {
+  optional int32 volume_score = 1; optional string trend = 2; optional int32 short_term_load = 3;
+  optional int32 long_term_load = 4; optional double load_ratio = 5; optional string assessment_key = 6;
+  optional string explanation_key = 7;
+}
+message RunningAbilityMock { optional int32 vo2max = 1; optional int32 score = 2; optional double display_score = 3; optional int32 marathon_seconds = 4; }
+message CyclingAbilityMock { optional int32 ftp = 1; optional int32 score = 2; optional double display_score = 3; optional string ability_label_key = 4; }
+message HeartRateMock { optional int32 resting_hr = 1; optional int32 current_hr = 2; optional int32 average_hr = 3; repeated int32 samples = 4; }
+message StressMock { optional int32 stress_level = 1; optional string status = 2; optional int32 average_stress = 3; repeated int32 samples = 4; }
+message HrvAssessmentMock { optional int32 hrv_score = 1; optional string status = 2; optional int32 average_ms = 3; optional int32 normal_min = 4; optional int32 normal_max = 5; }
+message RestingHeartRateMock { optional int32 value = 1; optional string measured_time = 2; optional int32 thirty_day_average = 3; optional int32 range_min = 4; optional int32 range_max = 5; }
+message HealthCheckMock {
+  optional int32 overall_score = 1; optional int32 last_check_days = 2; optional string measured_time = 3;
+  optional int32 heart_rate = 4; optional int32 hrv_ms = 5; optional int32 stress = 6;
+  optional int32 respiratory_rate = 7; optional int32 blood_oxygen = 8;
+}
+message BodyManagementMock { optional double weight_kg = 1; optional double body_fat = 2; optional double bmi = 3; optional string measured_date = 4; repeated string trained_muscle_groups = 5; }
 
 message HealthDashboardMock {
   DailySummaryMock daily = 1; SleepSummaryMock sleep = 2; TrainingLoadMock training_load = 3; RecoveryMock recovery = 4;
@@ -24,5 +44,16 @@ message HealthDashboardMock {
   RunningAbilityMock running_ability = 7; CyclingAbilityMock cycling_ability = 8;
   HeartRateMock heart_rate = 9; StressMock stress = 10; HrvAssessmentMock hrv_assessment = 11;
   RestingHeartRateMock resting_heart_rate = 12; HealthCheckMock health_check = 13; BodyManagementMock body_management = 14;
+  TodayActivityMock today_activity = 15;
 }
-message HealthDashboardSnapshotMock { string user_id = 1; string scenario = 2; repeated string enabled_card_types = 3; }
+message HealthDashboardSnapshotMock {
+  string user_id = 1;
+  // 仅作为 Demo 数据模板来源元数据；恢复时以 dashboard_data 为权威。
+  string scenario = 2;
+  repeated string enabled_card_types = 3;
+  HealthDashboardMock dashboard_data = 4;
+  int32 schema_version = 5;
+  reserved 6;
+}
+
+message HealthDashboardStoreMock { repeated HealthDashboardSnapshotMock snapshots = 1; }

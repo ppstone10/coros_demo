@@ -42,6 +42,11 @@ object AppImages {
         val ActiveDuration = AppImageAsset(R.drawable.sport_time_icon)
         val EditorAdd = AppImageAsset(R.drawable.data_screen_edit_add)
         val EditorRemove = AppImageAsset(R.drawable.delete)
+        val ActivityMap = AppImageAsset(R.drawable.health_activity_map)
+        val TodayHeader = AppImageAsset(R.drawable.health_today_header)
+        val TodayRunner = AppImageAsset(R.drawable.health_today_runner)
+        val BodyFront = AppImageAsset(R.drawable.health_body_front)
+        val BodyBack = AppImageAsset(R.drawable.health_body_back)
 
         val WeeklyPlan = AppImageAsset(R.drawable.icon_small_plan)
         val TodayActivity = AppImageAsset(R.drawable.icon_small_training_effect)

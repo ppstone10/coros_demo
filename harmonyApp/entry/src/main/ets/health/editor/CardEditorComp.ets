@@ -6,7 +6,6 @@ export struct CardEditorComp {
   @Prop healthCards: HealthCardModel[];
   onSave?: (typeNamesCsv: string) => void;
   onCancel?: () => void;
-  onRestoreDefaults?: () => void;
 
   @State editingHealthCards: HealthCardModel[] = [];
   @State warning: string = '';
@@ -66,8 +65,9 @@ export struct CardEditorComp {
             .margin({ top: 24, bottom: 32 })
             .backgroundColor(AppColors.HEALTH_CARD).borderRadius(8)
             .onClick(() => {
-              if (this.onRestoreDefaults) this.onRestoreDefaults();
+              this.editingHealthCards = createDefaultHealthCards();
               this.warning = '';
+              this.endDrag();
             })
         }
         .width('100%').padding({ left: 18, right: 18 })
@@ -86,7 +86,7 @@ export struct CardEditorComp {
     Row() {
       Text('⠿').fontSize(18).fontColor(AppColors.MUTED).padding({ top: 12, bottom: 12, right: 4 })
       Blank().width(10)
-      Image(AppImages.healthIcon(card.iconIndex)).width(22).height(22).objectFit(ImageFit.Contain)
+      Image(AppImages.healthCardIcon(card.id)).width(22).height(22).objectFit(ImageFit.Contain)
       Blank().width(10)
       Text(card.title).fontSize(AppTypography.EDITOR_ROW).fontColor(AppColors.HEALTH_EDITOR_TITLE).layoutWeight(1)
       Image(AppImages.editorRemove()).width(30).height(30).objectFit(ImageFit.Contain)
@@ -125,7 +125,7 @@ export struct CardEditorComp {
   @Builder
   AddCardRow(card: HealthCardModel) {
     Row() {
-      Image(AppImages.healthIcon(card.iconIndex)).width(22).height(22).objectFit(ImageFit.Contain)
+      Image(AppImages.healthCardIcon(card.id)).width(22).height(22).objectFit(ImageFit.Contain)
       Blank().width(10)
       Text(card.title).fontSize(AppTypography.EDITOR_ROW).fontColor(AppColors.HEALTH_EDITOR_TITLE).layoutWeight(1)
       Stack({ alignContent: Alignment.Center }) {

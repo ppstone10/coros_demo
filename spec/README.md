@@ -14,6 +14,10 @@
 
 当前 Android 资料编辑页的 Activity Result 宿主与依赖兼容性规范见 `android-profile-activity-result.md`。
 
+Figma 2031 健康首页的数据可视化与三端专用卡片规范见 `health-dashboard-visual-cards.md`。
+
+健康模块完整领域数据、多用户快照与三端私有存储规范见 `health-dashboard-persistence.md`。
+
 `AGENTS.md` 是 AI 自动入口，`spec/sdd-workflow.md` 是完整流程规范；`SESSION_START.md` 仅是便携摘要，不单独发明规则。
 
 ## 生命周期

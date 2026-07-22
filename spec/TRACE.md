@@ -32,7 +32,7 @@
 | `DOC-005` | 资源源文件保护 | `./tools/check-docs.sh`：两组源资源目录存在 | 两个 `*_resources/` 目录及映射文档 | ✅ |
 | `DOC-006` | 契约与工具去占位 | `./tools/check-docs.sh`：实际契约保留、空占位消失 | `contract/README.md`、`tools/README.md` | ✅ |
 | `DOC-007` | 平台说明就近维护 | 当前引用扫描 + `git diff --name-only` | `iosApp/README.md`、`harmonyApp/README.md`、`harmony-kmp-bridge/README.md` | ✅ |
-| `DOC-008` | 测试事实同步 | `tools/check-docs.sh` 动态核对 `@Test`：29/8/4/16，合计 57 | `TEST_REPORT.md`、本文件 | ✅ |
+| `DOC-008` | 测试事实同步 | `tools/check-docs.sh` 动态核对 `@Test`：31/8/4/31，合计 74 | `TEST_REPORT.md`、本文件 | ✅ |
 | `DOC-009` | 可执行文档门禁 | 首次 31 项红灯；最终 `bash -n`、`check-docs`、`check-sdd`、`git diff --check` 通过 | `tools/check-docs.sh` | ✅ |
 | `DOC-010` | 误删文档完整恢复 | `tools/check-docs.sh`：10份目标文件 SHA-256 与 Git 恢复源逐一一致 | `docs/reference/`、`docs/archive/harmonyos-kmp/` | ✅ |
 | `DOC-011` | 恢复后的目录归类 | `find docs` + 分类导航检查 | `docs/README.md`、三个分类 README | ✅ |
@@ -81,7 +81,7 @@
 | **实现范围 - UI model** | `HealthDashboardModels.kt:51-59`（HealthCardUiModel） | ✅ |
 | **实现范围 - mock 场景** | `HealthDashboardModels.kt:3`（HealthMockScenario）；`HealthDashboardUseCase.kt:22-73`（sample 各场景数据） | ✅ |
 | **验收标准** | 参见下方测试追溯 | ✅ |
-| **测试要求 - 12 条以上** | `HealthDashboardUseCaseTest.kt` → **16 条测试** | ✅ |
+| **测试要求 - 12 条以上** | `HealthDashboardUseCaseTest.kt` → **31 条测试** | ✅ |
 | 测试：全量数据 | `HealthDashboardUseCaseTest.kt:17`（normalScenarioShowsCompleteCardCatalog） | ✅ |
 | 测试：睡眠缺失 | `HealthDashboardUseCaseTest.kt:19`（partialMissingShowsSleepEmptyCard） | ✅ |
 | 测试：今日运动缺失 | `HealthDashboardUseCaseTest.kt:20`（partialMissingKeepsAvailableTodayActivity） | ✅ |
@@ -168,12 +168,49 @@
 | 测试类 | 测试数 | 所属 Spec |
 |--------|--------|-----------|
 | `LoginRulesTest.kt` | 8 | auth-mock-spec §7, §8, §9；RES-LOC-001 |
-| `LoginUseCaseTest.kt` | 29 | auth-mock-spec §14 |
+| `LoginUseCaseTest.kt` | 31 | auth-mock-spec §14 |
 | `BusinessMockDataSourceTest.kt` | 4 | auth-mock-spec §10, §11, §14 |
-| `HealthDashboardUseCaseTest.kt` | 16 | health-dashboard-cards 测试要求；RES-MAINT-008 |
-| **合计** | **57** | |
+| `HealthDashboardUseCaseTest.kt` | 31 | health-dashboard-cards 测试要求；RES-MAINT-008；HLTH-VIS-001~003；HLTH-PERSIST-001~007 |
+| **合计** | **74** | |
 
 ---
+
+---
+
+## health-dashboard-visual-cards.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `HLTH-VIS-001` | protobuf 与 domain 提供完整可视化字段契约 | `HealthDashboardUseCaseTest.normalScenarioProvidesFigmaVisualData`；`:common:check` | `health_dashboard_mock.proto`、`HealthDashboardMock.kt`、`HealthDashboardModels.kt` | ✅ |
+| `HLTH-VIS-002` | common 输出类型化可视化 UI 数据 | `HealthDashboardUseCaseTest.cardsExposeStableVisualKinds`；`:common:check` | `HealthCardVisualData`、`HealthDashboardUseCase` visual builders | ✅ |
+| `HLTH-VIS-003` | 默认首页包含 Figma 今日运动卡 | `HealthDashboardUseCaseTest.defaultOrderIncludesTodayActivityBeforeWeeklyPlan` | `DefaultHealthCardOrder`、三端默认卡目录 | ✅ |
+| `HLTH-VIS-004` | 三端按 visual kind 渲染专用数据卡 | `:androidApp:assembleDebug`；`xcodebuild ... IOSDemo ... build`；`hvigorw assembleApp` | `DashboardCard.kt`、`HealthDashboardView.swift`、`DashboardCardComp.ets` | ✅ |
+| `HLTH-VIS-005` | HarmonyOS 桥接传递可视化数据 | `hvigorw assembleApp --no-daemon`（含 bridge 重建） | `HarmonyLoginService.healthSnapshotJson`、`HealthVisualData` | ✅ |
+| `HLTH-VIS-006` | 体型管理使用 Figma 原始人体资产 | 三端 PNG SHA-256 一致；三端构建通过 | `health_body_front.png`、`health_body_back.png` 三端资源 | ✅ |
+| `HLTH-VIS-007` | 无 Figma 动效稿时保持静态终态 | 三端代码审查与构建；Figma motion inventory 为空 | 三端 visual renderer 直接按共享数据绘制终态 | ✅ |
+| `HLTH-VIS-008` | Android 无参数文案不得进入格式化路径 | `HealthLocalizationTest.percentUnitWithoutArgumentsDoesNotEnterFormatter`；emulator-5556 冷启动后进程存活且无 `AndroidRuntime` 异常 | `Resources.localizedHealthText`、`HealthLocalization.kt` | ✅ |
+| `HLTH-VIS-009` | 卡片采用 Figma 2031 固定几何与安全区 | `tools/check-health-card-fidelity.sh`；emulator-5556 顶部/中部/底部截图核对 | `FigmaCardHeight`、`figmaCardHeight`；三端周标签资源与 renderer | ✅ |
+| `HLTH-VIS-010` | 右侧概览图使用受约束分栏并裁剪 | Android emulator-5556 全列表滚动截图；`hvigorw assembleApp --no-daemon`；专项结构门禁 | 三端 overview/gauge/trend/range/sleep/body 固定安全区与父级 clip | ✅ |
+| `HLTH-VIS-011` | 三端使用同源 COROS 数值字体 | 专项门禁验证三端 Bold/Regular SHA-256 一致；Android/iOS/HarmonyOS 构建通过 | 三端字体文件、Android `CorosFontFamily`、SwiftUI `Font.custom`、ArkUI `font.registerFont` | ✅ |
+| `HLTH-VIS-012` | 卡片图标与缩略图使用可追溯原始资源 | 地图三端 SHA-256 `87b98b5d...c8123f9`；`check-resource-maintainability.sh` | 三端 `health_activity_map`、既有 COROS 标题图标、Figma 人体资产 | ✅ |
+| `HLTH-VIS-013` | HarmonyOS 编辑器恢复默认只重置编辑草稿 | `tools/check-health-card-editor-regressions.sh`；`hvigorw assembleApp --no-daemon` | `CardEditorComp.ets` 直接重建 `editingHealthCards`；`SignedInPage.ets` 移除错误回读回调 | ✅ |
+| `HLTH-VIS-014` | iOS 编辑器重建卡片时保留本地化标题 | `tools/check-health-card-editor-regressions.sh`；`xcodebuild ... IOSDemo ... build` | `HealthCardEditor.swift` 的完整类型目录、`cardTitleKey` 与 `editorCard` | ✅ |
+| `HLTH-VIS-015` | 三端健康图像通过完整的语义资源目录访问 | `tools/check-health-card-fidelity.sh`；Android/iOS/HarmonyOS 构建 | 三端 `AppImages.Health` / `AppImages` 概览资源入口；三端 `DashboardCard` renderer | ✅ |
+| `HLTH-VIS-016` | 今日运动在列表、编辑与详情场景保持图标身份稳定 | `tools/check-health-card-fidelity.sh`；`tools/check-health-card-editor-regressions.sh`；iOS/HarmonyOS 构建 | iOS `todayActivity` / `iconForCardType`；HarmonyOS `healthCardIcon(typeName)` 及编辑/详情调用 | ✅ |
+
+---
+
+## health-dashboard-persistence.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---|---|---|---|---|
+| `HLTH-PERSIST-001` | 快照保存完整健康领域数据 | `HealthDashboardUseCaseTest.fullDashboardSnapshotRoundTripsAllModuleData`；`./gradlew :common:check` | `health_dashboard_mock.proto`、`HealthDashboardSnapshot`、`MockHealthDashboardStoreJson` | ✅ |
+| `HLTH-PERSIST-002` | 加载以模块数据为权威 | `storedDashboardDataWinsOverScenarioTemplate`；common 全目标测试 | `HealthDashboardStore.resolveSnapshot` / `toPersistedDashboard` | ✅ |
+| `HLTH-PERSIST-003` | 场景选择覆盖并保存模块数据 | `scenarioSelectionPersistsGeneratedModuleData`；三端构建 | `HealthDashboardStore.selectScenario`；三端场景选择回读入口 | ✅ |
+| `HLTH-PERSIST-004` | 卡片配置更新保留健康数据 | `cardConfigurationUpdatePreservesDashboardData`、最少卡片回归测试 | `HealthDashboardStore.saveCardConfiguration` | ✅ |
+| `HLTH-PERSIST-005` | 旧配置快照安全迁移 | `legacyScenarioSnapshotMigratesToFullData`、`corruptedDashboardSnapshotIsIgnoredWithoutCrash` | `MockHealthDashboardStoreJson`、`JsonHealthDashboardStateDataSource`、`resolveSnapshot` | ✅ |
+| `HLTH-PERSIST-006` | 多用户数据隔离 | `fullDashboardSnapshotsAreIsolatedByUserId`、`twentyFullDashboardSnapshotsRoundTripWithinPreferencesBudget`、`deletingAccountClearsOnlyItsHealthSnapshot` | common snapshot map；Android/iOS 既有按 userId Key adapter | ✅ |
+| `HLTH-PERSIST-007` | HarmonyOS 使用单一健康快照集合 | 集合 codec 测试；KNOI `ohosArm64Binaries`、`hvigorw assembleApp --no-daemon`、结构扫描 | `HarmonyLoginService.export/restoreHealthSnapshot`、`StorePersister.ets`、`SignedInPage.ets` | ✅ |
 
 ---
 

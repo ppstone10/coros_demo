@@ -38,6 +38,7 @@
 | ArkUI `@Builder` 函数的基本类型参数是值传递一次性快照，不建立响应式绑定 | 交互组件必须用 `@Component struct` + `@Prop`（`CorosButton`、`UnderlineInput`、`ErrorText` 等已改造） |
 | SwiftUI 全局本地化函数直接读取单例 Bundle 不会自动让同级页面订阅语言变化 | 提供语言切换入口的页面及同屏导航必须通过 `@EnvironmentObject` 观察并读取 `AppLanguageStore.current`，触发局部 body 重算；不要用根视图 `.id(language)` 强制重建，否则可能丢失导航或页面状态 |
 | Compose 中通过 `LocalContext.current.resources.configuration` 或 `Context.getString()` 查询资源会被新版 Lint 判为 Error | Composable 配置使用 `LocalConfiguration.current`；字符串等资源使用 `LocalResources.current`，协程副作用把 Resources 纳入 key；资源消息解析器以 `Resources` 为接收者，保证语言/Configuration 变化触发重组 |
+| Compose 调用 `stringResource(id, *emptyArray())` 仍会选择格式化重载，资源中的裸 `%` 会触发 `UnknownFormatConversionException` | 本地化解析器必须按参数是否为空分支：无参数调用 `Resources.getString(id)`，仅非空参数调用格式化重载；百分比单位资源保持字面量 `%` |
 | Compose 本地化层用 `createConfigurationContext` 覆盖 `LocalContext` 后，`rememberLauncherForActivityResult` 找不到 Activity owner 并在组合时崩溃 | 覆盖前读取 `LocalActivityResultRegistryOwner.current`，覆盖 Context 后在子树显式继续提供；预览等 owner 为空的宿主保持可组合。仅升级 `activity-compose` 不能修复，因为当前实现仍从 `LocalContext` 查找该 owner |
 | iOS KMP 导出：`AuthMode.Register` 在 Swift 中为 `AuthMode.register_`（尾随下划线） | 适配层需使用正确的导出名 |
 | HarmonyOS KNOI `@ServiceProvider` 实例模型不确定是 singleton 还是 factory | 持久化操作前需确认 service 实例一致性；`restoreStoreSnapshot` 后需同步 adapter 状态 |
@@ -73,14 +74,25 @@
 | **资源一致性门禁** | 新增或修改认证语义键时同步三端默认中文与英文资源、三端解析入口，并运行 `./tools/check-resources.sh`；健康摘要等结构化文案需另立 Spec，不扩展共享中文硬编码 |
 | **全资源清单与债务棘轮** | `tools/resource-inventory.json` 是共享图片、Raw、共享文字键和硬编码债务上限的机器事实；`./tools/check-resource-maintainability.sh` 只允许文案/颜色债务下降，平台专属 AppIcon/启动资源不为目录对称跨端复制 |
 | **跨端文案对齐口径** | 三端共享文字键要求语义和键名一致，但允许默认中文沿用平台既有措辞（例如账户页“我的”/“我”）；迁移资源不顺带改变产品文案，统一措辞应另行评审 |
+| **健康可视化契约** | 趋势、区间、指标、睡眠阶段等绘制数据由 common 以 `HealthCardVisualData` 输出，三端按 `kind` 原生绘制；UI 不随机补点，也不把整卡烘焙成图片 |
+| **Figma 动效证据边界** | 当目标节点的 motion inventory 为空时，只实现静态终态并保留应用既有交互反馈，不凭视觉稿臆造时间线；新增动效需单独定义时长、缓动与 Reduce Motion 降级 |
+| **健康卡片右栏安全区** | 仪表、趋势、区间、睡眠阶段和人体图统一使用显式 130/166 宽高安全区，叶节点与父卡片双重裁剪；HarmonyOS 右栏不得同时使用 `layoutWeight` 和 `width('100%')`，否则概览图会越过圆角卡片 |
+| **设计字体跨端一致性** | 用户提供的应用包字体可按文件哈希确认同源后分别进入 Android font、iOS UIAppFonts、HarmonyOS rawfile；中文标题保留平台字体，COROS 字体只承担数字/单位，避免缺字 |
+| **卡片编辑器草稿边界** | “恢复默认”应先只重建编辑器本地草稿，用户点击保存后再写 KMP 持久化；不能用重新加载已保存快照代替恢复，否则删减顺序会原样返回 |
+| **编辑器卡片元数据** | UI 根据类型 ID 重建已删除或默认卡片时，标题和图标必须来自完整稳定映射，不能用空标题占位；保存边界仍只提交类型 ID |
 | **HarmonyOS 资源参数类型** | ArkUI 复用组件中会承载静态资源或动态文本的展示参数优先声明为 `ResourceStr`；业务状态、用户输入和持久化值继续保持 `string`，避免为接入 `$r` 把领域数据资源化 |
 | **格式化本地化文案** | 验证码发送提示、倒计时等共享语义使用同一资源键和类型化参数，但占位符遵循各平台语法（Android `%1$s`/`%1$d`、iOS `%@`/`%lld`、HarmonyOS `%s`/`%d`）；页面不再自行拼接最终句子 |
 | **调试资源排除** | HarmonyOS `DebugStatePage.ets` 不进入正式 Demo，可在资源债务门禁中按唯一精确路径排除文案和颜色；其他生产页面不得复用该例外 |
+| **跨格式图像一致性** | Android WebP 与 iOS/HarmonyOS PNG 的文件 SHA 不同不代表可见图形不同；排查时应比较尺寸和解码后的可见像素，并以语义资源目录约束 UI 映射。透明像素中未预乘的 RGB 差异不影响渲染，不应为追求原始文件哈希而无意义重编码 |
+| **卡片图标以类型映射** | 卡片编辑、恢复与详情页应按稳定类型 ID 获取图标，不依赖可冲突的整数索引或 default 回退；特殊首页标题图只在该渲染场景覆盖通用图标 |
+| **健康快照持久化边界** | 每位用户持久化完整 `HealthDashboardData` 与卡片配置，UI model 继续由 common 规则派生；Demo 场景只生成/覆盖数据并保留来源元数据，不得在恢复时覆盖已保存模块值。HarmonyOS 用单一 `health_json` 保存全部用户快照集合，不再维护 `_health` 与全局 `health_card_order` 双重权威状态 |
+| **HarmonyOS common JSON 依赖边界** | `ohos_arm64` 无法解析官方 kotlinx-serialization JSON Native 变体；会进入 Harmony bridge 的 common JSON codec 必须保持自包含或使用明确提供 OHOS 变体的依赖，不能仅因 Android/iOS 可编译就引入普通 Kotlin/Native 库 |
 
 ## Spec 文件索引
 
 - `spec/auth-mock-spec.md` — 认证模块规格（14 章）
 - `spec/health-dashboard-cards.md` — 健康卡片规格
+- `spec/health-dashboard-visual-cards.md` — Figma 2031 健康可视化数据与三端原生绘制规格
 - `spec/common-training-requirements.md` — 公共培训要求
 - `spec/TRACE.md` — 规格到代码的完整追溯映射
 - `spec/sdd-workflow.md` — SDD 开发闭环、状态和完成门禁

@@ -19,7 +19,7 @@ export struct HealthDetailComp {
       .height(64).width('100%').padding({ left: 18, right: 18 }).margin({ top: 32 })
       .alignItems(VerticalAlign.Center)
       Column({ space: 20 }) {
-        Image(AppImages.healthIcon(this.card().iconIndex)).width(56).height(56).objectFit(ImageFit.Contain)
+        Image(AppImages.healthCardIcon(this.card().id)).width(56).height(56).objectFit(ImageFit.Contain)
         Text(localizedHealthText(this, 'health_pending_feature', [resourceText(this, this.card().title)]))
           .fontSize(AppTypography.CARD_TITLE).fontColor(AppColors.HEALTH_PLACEHOLDER)
       }

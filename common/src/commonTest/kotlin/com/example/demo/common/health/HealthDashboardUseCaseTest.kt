@@ -5,12 +5,15 @@ import com.example.demo.common.login.InMemoryAuthStoreDataSource
 import com.example.demo.common.login.LocalMockAuthRepository
 import com.example.demo.common.login.LocalMockAuthRepository.Companion.DefaultVerifyCode
 import com.example.demo.common.login.LoginResult
+import com.example.demo.common.login.LoginStore
 import com.example.demo.common.login.MockError
 import com.example.demo.common.login.MockResult
 import com.example.demo.common.login.RegisterUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class HealthDashboardUseCaseTest {
@@ -34,7 +37,7 @@ class HealthDashboardUseCaseTest {
         }
         val recovery = normal.cards.first { it.type == HealthCardType.Recovery }
         assertEquals("health_summary_recovery_normal", recovery.summary.key)
-        assertEquals(listOf("78", "14"), recovery.summary.arguments)
+        assertEquals(listOf("95", "5"), recovery.summary.arguments)
     }
     @Test fun cardsUseStablePriorityOrder() { val cards = state(HealthMockScenario.Normal).cards; assertEquals(cards.map { it.priority }.sorted(), cards.map { it.priority }) }
     @Test fun readFailureIsReturned() = assertEquals(MockError.CorruptedData, assertIs<MockResult.Failure>(useCase().load(HealthMockScenario.ReadFailure)).error)
@@ -75,6 +78,39 @@ class HealthDashboardUseCaseTest {
         assertEquals(HealthMockScenario.entries.map { it.name }, HealthScenarios.names)
         assertEquals(HealthMockScenario.entries.size, HealthScenarios.displayKeys.size)
     }
+    @Test fun normalScenarioProvidesFigmaVisualData() {
+        val byType = state(HealthMockScenario.Normal).cards.associateBy { it.type }
+        assertEquals(7, byType.getValue(HealthCardType.WeeklyPlan).visual.chartPoints.size)
+        assertEquals(7, byType.getValue(HealthCardType.TrainingLoad).visual.chartPoints.size)
+        assertTrue(byType.getValue(HealthCardType.HeartRate).visual.chartPoints.size >= 12)
+        assertTrue(byType.getValue(HealthCardType.Stress).visual.chartPoints.size >= 12)
+        assertTrue(byType.getValue(HealthCardType.Sleep).visual.sleepStages.isNotEmpty())
+        assertEquals(5, byType.getValue(HealthCardType.HealthCheck).visual.metrics.size)
+        assertEquals("68.2", byType.getValue(HealthCardType.BodyManagement).visual.primaryValue)
+        assertEquals(52.0, byType.getValue(HealthCardType.HrvAssessment).visual.range?.normalMin)
+        assertEquals(60.0, byType.getValue(HealthCardType.HrvAssessment).visual.range?.normalMax)
+    }
+    @Test fun cardsExposeStableVisualKinds() {
+        val kinds = state(HealthMockScenario.Normal).cards.associate { it.type to it.visual.kind }
+        assertEquals(HealthCardVisualKind.TodayActivity, kinds[HealthCardType.TodayActivity])
+        assertEquals(HealthCardVisualKind.WeeklyPlan, kinds[HealthCardType.WeeklyPlan])
+        assertEquals(HealthCardVisualKind.TrainingLoad, kinds[HealthCardType.TrainingLoad])
+        assertEquals(HealthCardVisualKind.TrainingAssessment, kinds[HealthCardType.TrainingAssessment])
+        assertEquals(HealthCardVisualKind.RecoveryGauge, kinds[HealthCardType.Recovery])
+        assertEquals(HealthCardVisualKind.AbilityGauge, kinds[HealthCardType.RunningAbility])
+        assertEquals(HealthCardVisualKind.AbilityGauge, kinds[HealthCardType.CyclingAbility])
+        assertEquals(HealthCardVisualKind.TrendBars, kinds[HealthCardType.HeartRate])
+        assertEquals(HealthCardVisualKind.TrendBars, kinds[HealthCardType.Stress])
+        assertEquals(HealthCardVisualKind.SleepStages, kinds[HealthCardType.Sleep])
+        assertEquals(HealthCardVisualKind.RangeIndicator, kinds[HealthCardType.HrvAssessment])
+        assertEquals(HealthCardVisualKind.RangeIndicator, kinds[HealthCardType.RestingHeartRate])
+        assertEquals(HealthCardVisualKind.HealthCheckGrid, kinds[HealthCardType.HealthCheck])
+        assertEquals(HealthCardVisualKind.BodyMap, kinds[HealthCardType.BodyManagement])
+    }
+    @Test fun defaultOrderIncludesTodayActivityBeforeWeeklyPlan() {
+        assertTrue(HealthCardType.TodayActivity in DefaultHealthCardOrder)
+        assertTrue(DefaultHealthCardOrder.indexOf(HealthCardType.TodayActivity) < DefaultHealthCardOrder.indexOf(HealthCardType.WeeklyPlan))
+    }
     @Test fun cardSelectionAndOrderPersist() {
         val persistence = InMemoryHealthDashboardStateDataSource()
         val repository = repository(true)
@@ -85,7 +121,137 @@ class HealthDashboardUseCaseTest {
         assertEquals(order, restored.uiState.cards.map { it.type })
     }
 
+    @Test fun fullDashboardSnapshotRoundTripsAllModuleData() {
+        val data = domain(HealthMockScenario.Normal)
+        val snapshot = HealthDashboardSnapshot(
+            userId = "health-user",
+            sourceScenario = HealthMockScenario.Normal,
+            enabledCardTypes = DefaultHealthCardOrder,
+            dashboardData = data,
+            schemaVersion = 2
+        )
+
+        assertEquals(snapshot, MockHealthDashboardStoreJson.decode(MockHealthDashboardStoreJson.encode(snapshot)))
+    }
+
+    @Test fun storedDashboardDataWinsOverScenarioTemplate() {
+        val persistence = InMemoryHealthDashboardStateDataSource()
+        val repository = repository(true)
+        val storedData = domain(HealthMockScenario.Abnormal).copy(
+            bodyManagement = BodyManagement(61.3, 18.0, 21.1, "2026/7/22", listOf("chest"))
+        )
+        persistence.save(
+            HealthDashboardSnapshot(
+                userId = requireNotNull(repository.currentSession()).userId,
+                sourceScenario = HealthMockScenario.Normal,
+                dashboardData = storedData
+            )
+        )
+
+        val loaded = assertIs<MockResult.Success<PersistedDashboard>>(
+            HealthDashboardStore(repository, persistence).load()
+        ).data
+
+        assertEquals("61.3", loaded.uiState.cards.first { it.type == HealthCardType.BodyManagement }.visual.primaryValue)
+    }
+
+    @Test fun scenarioSelectionPersistsGeneratedModuleData() {
+        val persistence = InMemoryHealthDashboardStateDataSource()
+        val repository = repository(true)
+
+        assertIs<MockResult.Success<PersistedDashboard>>(
+            HealthDashboardStore(repository, persistence).selectScenario(HealthMockScenario.Abnormal)
+        )
+
+        val stored = requireNotNull(persistence.load(requireNotNull(repository.currentSession()).userId))
+        assertEquals(HealthMockScenario.Abnormal, stored.sourceScenario)
+        assertEquals(domain(HealthMockScenario.Abnormal), stored.dashboardData)
+    }
+
+    @Test fun cardConfigurationUpdatePreservesDashboardData() {
+        val persistence = InMemoryHealthDashboardStateDataSource()
+        val repository = repository(true)
+        val store = HealthDashboardStore(repository, persistence)
+        assertIs<MockResult.Success<PersistedDashboard>>(store.selectScenario(HealthMockScenario.Abnormal))
+        val before = requireNotNull(persistence.load(requireNotNull(repository.currentSession()).userId)).dashboardData
+
+        assertIs<MockResult.Success<PersistedDashboard>>(
+            store.saveCardConfiguration(listOf(HealthCardType.Sleep, HealthCardType.Stress, HealthCardType.HeartRate))
+        )
+
+        assertEquals(before, persistence.load(requireNotNull(repository.currentSession()).userId)?.dashboardData)
+    }
+
+    @Test fun legacyScenarioSnapshotMigratesToFullData() {
+        val repository = repository(true)
+        val userId = requireNotNull(repository.currentSession()).userId
+        var raw = "{\"userId\":\"$userId\",\"scenario\":\"Abnormal\",\"enabledCardTypes\":[\"Sleep\",\"Stress\",\"HeartRate\"]}"
+        val persistence = JsonHealthDashboardStateDataSource(
+            readString = { raw },
+            writeString = { _, json -> raw = json; true }
+        )
+
+        val restored = assertIs<MockResult.Success<PersistedDashboard>>(
+            HealthDashboardStore(repository, persistence).load()
+        ).data
+
+        assertEquals("3", restored.uiState.cards.first { it.type == HealthCardType.Sleep }.visual.primaryValue)
+        assertEquals(domain(HealthMockScenario.Abnormal), requireNotNull(persistence.load(userId)).dashboardData)
+        assertTrue(raw.contains("\"dashboardData\""))
+    }
+
+    @Test fun fullDashboardSnapshotsAreIsolatedByUserId() {
+        val snapshots = listOf(
+            HealthDashboardSnapshot("first", HealthMockScenario.Normal, dashboardData = domain(HealthMockScenario.Normal)),
+            HealthDashboardSnapshot("second", HealthMockScenario.Abnormal, dashboardData = domain(HealthMockScenario.Abnormal))
+        )
+
+        assertEquals(
+            snapshots,
+            MockHealthDashboardStoreJson.decodeCollection(MockHealthDashboardStoreJson.encodeCollection(snapshots))
+        )
+    }
+
+    @Test fun twentyFullDashboardSnapshotsRoundTripWithinPreferencesBudget() {
+        val snapshots = (1..20).map { index ->
+            HealthDashboardSnapshot(
+                userId = "demo-user-$index",
+                sourceScenario = if (index % 2 == 0) HealthMockScenario.Normal else HealthMockScenario.Abnormal,
+                dashboardData = domain(if (index % 2 == 0) HealthMockScenario.Normal else HealthMockScenario.Abnormal)
+            )
+        }
+        val json = MockHealthDashboardStoreJson.encodeCollection(snapshots)
+
+        assertTrue(json.length < 1_000_000, "20-user health snapshot collection should stay below 1 MB")
+        assertEquals(snapshots, MockHealthDashboardStoreJson.decodeCollection(json))
+    }
+
+    @Test fun corruptedDashboardSnapshotIsIgnoredWithoutCrash() {
+        val persistence = JsonHealthDashboardStateDataSource(
+            readString = { "{not-json" },
+            writeString = { _, _ -> true }
+        )
+
+        assertNull(persistence.load("health-user"))
+        assertFails { MockHealthDashboardStoreJson.decodeCollection("{\"scenario\":\"Normal\"}") }
+    }
+
+    @Test fun deletingAccountClearsOnlyItsHealthSnapshot() {
+        val persistence = InMemoryHealthDashboardStateDataSource()
+        val repository = repository(true)
+        val userId = requireNotNull(repository.currentSession()).userId
+        val loginStore = LoginStore.create(repository, persistence)
+        assertIs<MockResult.Success<PersistedDashboard>>(loginStore.loadHealthDashboard())
+
+        assertIs<MockResult.Success<Unit>>(loginStore.deleteCurrentAccount())
+
+        assertNull(persistence.load(userId))
+    }
+
     private fun state(scenario: HealthMockScenario) = assertIs<MockResult.Success<DashboardUiState>>(useCase().load(scenario)).data
+    private fun domain(scenario: HealthMockScenario) = assertIs<MockResult.Success<HealthDashboardData>>(
+        LocalHealthDashboardDataSource(repository(true)).load(scenario)
+    ).data
     private fun useCase() = HealthDashboardUseCase(LocalHealthDashboardDataSource(repository(true)))
     private fun repository(register: Boolean): AuthRepository = LocalMockAuthRepository(InMemoryAuthStoreDataSource(), nowEpochMs = { 1_000L }).also { repo ->
         if (register) {

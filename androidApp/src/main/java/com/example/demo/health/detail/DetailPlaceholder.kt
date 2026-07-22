@@ -27,6 +27,8 @@ import com.example.demo.common.health.HealthCardAction
 import com.example.demo.common.health.HealthCardStatus
 import com.example.demo.common.health.HealthCardType
 import com.example.demo.common.health.HealthCardUiModel
+import com.example.demo.common.health.HealthCardVisualData
+import com.example.demo.common.health.HealthCardVisualKind
 import com.example.demo.common.health.LocalizedTextSpec
 import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppImage
@@ -64,7 +66,8 @@ private fun DetailPlaceholderPreview() {
                 status = HealthCardStatus.Empty,
                 action = HealthCardAction.ViewWeeklyPlan,
                 priority = 1,
-                priorityReason = ""
+                priorityReason = "",
+                visual = HealthCardVisualData(HealthCardVisualKind.WeeklyPlan)
             ),
             onBack = {}
         )

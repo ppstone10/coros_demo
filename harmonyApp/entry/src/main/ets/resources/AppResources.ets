@@ -20,6 +20,17 @@ export class AppColors {
   static readonly HEALTH_WARNING: string = '#FF4B55';
   static readonly HEALTH_EDITOR_TITLE: string = '#ECECEC';
   static readonly HEALTH_PLACEHOLDER: string = '#BBBBBB';
+  static readonly VISUAL_GREEN: string = '#00DF7B';
+  static readonly VISUAL_YELLOW: string = '#FFC928';
+  static readonly VISUAL_ORANGE: string = '#FF9F30';
+  static readonly VISUAL_PURPLE: string = '#B769FF';
+  static readonly VISUAL_BLUE: string = '#42A5F5';
+  static readonly VISUAL_CYAN: string = '#2DCDD3';
+  static readonly VISUAL_PINK: string = '#E82D8A';
+  static readonly VISUAL_DEEP_BLUE: string = '#3156B8';
+  static readonly VISUAL_BAR: string = '#626262';
+  static readonly RANGE_TRACK: string = '#454545';
+  static readonly ACTIVITY_TILE: string = '#223C32';
   static readonly COMPLETE: string = '#19C875';
   static readonly INCOMPLETE: string = '#FFB735';
   static readonly DESTRUCTIVE: string = '#FF4053';
@@ -93,6 +104,31 @@ export class AppImages {
   static activeDuration(): Resource { return $r('app.media.sport_time_icon'); }
   static editorAdd(): Resource { return $r('app.media.data_screen_edit_add'); }
   static editorRemove(): Resource { return $r('app.media.delete'); }
+  static activityMap(): Resource { return $r('app.media.health_activity_map'); }
+  static todayHeader(): Resource { return $r('app.media.health_today_header'); }
+  static todayRunner(): Resource { return $r('app.media.health_today_runner'); }
+  static bodyFront(): Resource { return $r('app.media.health_body_front'); }
+  static bodyBack(): Resource { return $r('app.media.health_body_back'); }
+
+  static healthCardIcon(typeName: string): Resource {
+    switch (typeName) {
+      case 'TodayActivity': return $r('app.media.icon_small_training_effect');
+      case 'WeeklyPlan': return $r('app.media.icon_small_plan');
+      case 'TrainingLoad': return $r('app.media.icon_small_training_load');
+      case 'TrainingAssessment': return $r('app.media.icon_small_training_effect');
+      case 'Recovery': return $r('app.media.icon_recovery_sports');
+      case 'RunningAbility': return $r('app.media.icon_small_running_ability');
+      case 'CyclingAbility': return $r('app.media.icon_small_cycling');
+      case 'HeartRate': return $r('app.media.icon_small_heart_rate');
+      case 'Stress': return $r('app.media.icon_small_stress');
+      case 'Sleep': return $r('app.media.icon_small_sleep');
+      case 'HrvAssessment': return $r('app.media.icon_small_sleep_hrv');
+      case 'RestingHeartRate': return $r('app.media.icon_small_rhr');
+      case 'HealthCheck': return $r('app.media.icon_small_health_detection');
+      case 'BodyManagement': return $r('app.media.icon_small_body');
+      default: return $r('app.media.icon_small_heart_rate');
+    }
+  }
 
   static healthIcon(index: number): Resource {
     if (index === 0) return $r('app.media.icon_small_plan');

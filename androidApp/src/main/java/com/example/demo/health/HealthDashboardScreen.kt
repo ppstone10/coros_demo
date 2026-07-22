@@ -75,7 +75,7 @@ fun HealthDashboardScreen(
         ScenarioPickerDialog(
             currentScenario = dashboard?.scenario ?: HealthMockScenario.Normal,
             onSelect = { scenario ->
-                viewModel.selectHealthScenario(scenario)
+                result = viewModel.selectHealthScenario(scenario)
                 showScenarioPicker = false
             },
             onDismiss = { showScenarioPicker = false }

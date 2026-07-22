@@ -10,7 +10,7 @@ class LoginStore(
     private val authRepository: AuthRepository,
     private val loginUseCase: LoginUseCase = LoginUseCase(authRepository),
     private val registerUseCase: RegisterUseCase = RegisterUseCase(authRepository),
-    healthStateDataSource: HealthDashboardStateDataSource = InMemoryHealthDashboardStateDataSource()
+    private val healthStateDataSource: HealthDashboardStateDataSource = InMemoryHealthDashboardStateDataSource()
 ) {
     private val healthDashboardStore = HealthDashboardStore(authRepository, healthStateDataSource)
     var state: LoginState = createInitialState(authRepository)
@@ -116,8 +116,10 @@ class LoginStore(
     }
 
     fun deleteCurrentAccount(): MockResult<Unit> {
+        val deletedUserId = state.currentSession?.userId
         val result = authRepository.deleteCurrentAccount()
         if (result is MockResult.Success) {
+            deletedUserId?.let(healthStateDataSource::clear)
             state = state.copy(
                 isLoggedIn = false,
                 currentSession = null,

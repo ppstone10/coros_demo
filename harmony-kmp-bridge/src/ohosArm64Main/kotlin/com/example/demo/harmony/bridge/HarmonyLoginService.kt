@@ -3,6 +3,8 @@ package com.example.demo.harmony.bridge
 import com.example.demo.common.health.HealthCardType
 import com.example.demo.common.health.HealthCardUiModel
 import com.example.demo.common.health.HealthMockScenario
+import com.example.demo.common.health.InMemoryHealthDashboardStateDataSource
+import com.example.demo.common.health.MockHealthDashboardStoreJson
 import com.example.demo.common.health.PersistedDashboard
 import com.example.demo.common.login.AuthStoreDataSource
 import com.example.demo.common.login.LocalMockAuthRepository
@@ -16,7 +18,8 @@ import platform.posix.time
 @ServiceProvider
 open class HarmonyLoginService {
     private val dataSource: MemoryAuthStoreDataSource = MemoryAuthStoreDataSource()
-    private var facade: LoginFacade = createFacade(dataSource)
+    private val healthDataSource = InMemoryHealthDashboardStateDataSource()
+    private var facade: LoginFacade = createFacade(dataSource, healthDataSource)
 
     fun stateSnapshot(): String {
         return HarmonyLoginJson.stateSnapshot(facade.state)
@@ -25,11 +28,7 @@ open class HarmonyLoginService {
     fun exportStoreSnapshot(): String {
         val store = dataSource.load()
         val json = HarmonyLoginJson.storeSnapshot(store)
-        val pd = facade.loadHealthDashboard()
-        val healthPart = if (pd != null) {
-            ",\"_health\":{\"scenario\":\"${pd.scenario.name}\",\"enabledTypes\":\"${pd.enabledCardTypes.joinToString(",") { it.name }}\"}"
-        } else ""
-        return json.dropLast(1) + ""","_s":{"accounts":${store.accounts.size},"session":${store.currentSession != null},"defaultInit":${store.defaultAccountsInitialized}}$healthPart}"""
+        return json.dropLast(1) + ""","_s":{"accounts":${store.accounts.size},"session":${store.currentSession != null},"defaultInit":${store.defaultAccountsInitialized}}}"""
     }
 
     fun restoreStoreSnapshot(json: String): Boolean {
@@ -37,10 +36,10 @@ open class HarmonyLoginService {
         return try {
             val store = HarmonyLoginJson.parseStoreSnapshot(json)
             dataSource.replaceStore(store)
-            facade = createFacade(dataSource)
+            facade = createFacade(dataSource, healthDataSource)
             syncClock()
             facade.restoreSession()
-            restoreHealthFromStoreJson(json)
+            restoreLegacyHealthFromStoreJson(json)
             true
         } catch (e: Exception) {
             false
@@ -247,19 +246,21 @@ open class HarmonyLoginService {
     }
 
     fun exportHealthSnapshot(): String {
-        val pd = facade.loadHealthDashboard()
-        return if (pd != null) healthSnapshotJson(pd) else "{}"
+        return MockHealthDashboardStoreJson.encodeCollection(healthDataSource.allSnapshots())
     }
 
     fun restoreHealthSnapshot(json: String): Boolean {
-        try {
+        return try {
             if (json.isBlank() || json == "{}") return false
-            return true
-        } catch (e: Exception) { return false }
+            healthDataSource.replaceAll(MockHealthDashboardStoreJson.decodeCollection(json))
+            true
+        } catch (_: Exception) { false }
     }
 
-    private fun restoreHealthFromStoreJson(json: String) {
+    /** 仅迁移旧版认证快照；新版权威健康数据来自独立 health_json 集合。 */
+    private fun restoreLegacyHealthFromStoreJson(json: String) {
         try {
+            if (healthDataSource.allSnapshots().isNotEmpty()) return
             val healthIdx = json.indexOf("\"_health\":{")
             if (healthIdx < 0) return
             val start = json.indexOf('{', healthIdx) + 1
@@ -289,8 +290,11 @@ open class HarmonyLoginService {
     }
 
     @OptIn(ExperimentalForeignApi::class)
-    private fun createFacade(dataSource: MemoryAuthStoreDataSource): LoginFacade {
-        return LoginFacade(LoginStore.create(LocalMockAuthRepository(dataSource)))
+    private fun createFacade(
+        dataSource: MemoryAuthStoreDataSource,
+        healthDataSource: InMemoryHealthDashboardStateDataSource
+    ): LoginFacade {
+        return LoginFacade(LoginStore.create(LocalMockAuthRepository(dataSource), healthDataSource))
     }
 
     @OptIn(ExperimentalForeignApi::class)
@@ -345,6 +349,57 @@ private fun healthSnapshotJson(pd: PersistedDashboard): String {
         sb.append("]")
         sb.append(",\"isRisk\":")
         sb.append(card.status.name == "Risk")
+        sb.append(",\"visual\":{")
+        sb.append("\"kind\":\"").append(card.visual.kind.name).append("\"")
+        card.visual.primaryValue?.let { sb.append(",\"primaryValue\":\"").append(it.esc()).append("\"") }
+        card.visual.primaryUnit?.let { sb.append(",\"primaryUnitKey\":\"").append(it.key.esc()).append("\"") }
+        card.visual.secondaryValue?.let { sb.append(",\"secondaryValue\":\"").append(it.esc()).append("\"") }
+        card.visual.secondaryUnit?.let { sb.append(",\"secondaryUnitKey\":\"").append(it.key.esc()).append("\"") }
+        card.visual.caption?.let { spec ->
+            sb.append(",\"captionKey\":\"").append(spec.key.esc()).append("\",\"captionArgs\":[")
+            spec.arguments.forEachIndexed { i, arg -> if (i > 0) sb.append(","); sb.append("\"").append(arg.esc()).append("\"") }
+            sb.append("]")
+        }
+        card.visual.detail?.let { spec ->
+            sb.append(",\"detailKey\":\"").append(spec.key.esc()).append("\",\"detailArgs\":[")
+            spec.arguments.forEachIndexed { i, arg -> if (i > 0) sb.append(","); sb.append("\"").append(arg.esc()).append("\"") }
+            sb.append("]")
+        }
+        card.visual.progress?.let { sb.append(",\"progress\":").append(it) }
+        card.visual.highlightedIndex?.let { sb.append(",\"highlightedIndex\":").append(it) }
+        sb.append(",\"chartPoints\":[")
+        card.visual.chartPoints.forEachIndexed { i, point ->
+            if (i > 0) sb.append(",")
+            sb.append("{\"label\":\"").append(point.label.esc()).append("\",\"value\":").append(point.value)
+                .append(",\"level\":\"").append(point.level.name).append("\"}")
+        }
+        sb.append("],\"metrics\":[")
+        card.visual.metrics.forEachIndexed { i, metric ->
+            if (i > 0) sb.append(",")
+            sb.append("{\"labelKey\":\"").append(metric.label.key.esc()).append("\",\"value\":\"").append(metric.value.esc()).append("\"")
+            metric.unit?.let { sb.append(",\"unitKey\":\"").append(it.key.esc()).append("\"") }
+            sb.append("}")
+        }
+        sb.append("]")
+        card.visual.range?.let { range ->
+            sb.append(",\"range\":{\"minimum\":").append(range.minimum).append(",\"maximum\":").append(range.maximum)
+                .append(",\"current\":").append(range.current)
+            range.normalMin?.let { sb.append(",\"normalMin\":").append(it) }
+            range.normalMax?.let { sb.append(",\"normalMax\":").append(it) }
+            range.average?.let { sb.append(",\"average\":").append(it) }
+            sb.append("}")
+        }
+        sb.append(",\"sleepStages\":[")
+        card.visual.sleepStages.forEachIndexed { i, stage ->
+            if (i > 0) sb.append(",")
+            sb.append("{\"stage\":\"").append(stage.stage.name).append("\",\"startMinute\":").append(stage.startMinute)
+                .append(",\"durationMinutes\":").append(stage.durationMinutes).append("}")
+        }
+        sb.append("]")
+        card.visual.startTime?.let { sb.append(",\"startTime\":\"").append(it.esc()).append("\"") }
+        card.visual.endTime?.let { sb.append(",\"endTime\":\"").append(it.esc()).append("\"") }
+        card.visual.assetKey?.let { sb.append(",\"assetKey\":\"").append(it.esc()).append("\"") }
+        sb.append("}")
         sb.append("}")
     }
     sb.append("],\"enabledTypes\":\"")

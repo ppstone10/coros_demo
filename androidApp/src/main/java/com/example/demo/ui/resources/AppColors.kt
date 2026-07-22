@@ -47,6 +47,19 @@ object AppColors {
         val EditorTitle = Color(0xFFECECEC)
         val EditorDivider = Color(0xFF303030)
         val Placeholder = Color(0xFFBBBBBB)
+        val VisualGreen = Color(0xFF00DF7B)
+        val VisualYellow = Color(0xFFFFC928)
+        val VisualOrange = Color(0xFFFF9F30)
+        val VisualPurple = Color(0xFFB769FF)
+        val VisualBlue = Color(0xFF42A5F5)
+        val VisualCyan = Color(0xFF2DCDD3)
+        val VisualPink = Color(0xFFE82D8A)
+        val VisualDeepBlue = Color(0xFF3156B8)
+        val VisualBar = Color(0xFF626262)
+        val GaugeTrack = Color(0xFF333333)
+        val RangeTrack = Color(0xFF454545)
+        val ActivityTile = Color(0xFF223C32)
+        val Divider = Color(0xFF303030)
     }
 
     object Profile {

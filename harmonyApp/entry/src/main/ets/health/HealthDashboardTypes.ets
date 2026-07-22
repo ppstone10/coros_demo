@@ -6,6 +6,23 @@ export interface CardEntry {
   summaryKey: string;
   summaryArgs: string[];
   isRisk: boolean;
+  visual: HealthVisualData;
+}
+
+export interface HealthChartPointData { label: string; value: number; level: string; }
+export interface HealthMetricData { labelKey: string; value: string; unitKey?: string; }
+export interface HealthRangeData { minimum: number; maximum: number; current: number; normalMin?: number; normalMax?: number; average?: number; }
+export interface SleepStageData { stage: string; startMinute: number; durationMinutes: number; }
+export interface HealthVisualData {
+  kind: string;
+  primaryValue?: string; primaryUnitKey?: string;
+  secondaryValue?: string; secondaryUnitKey?: string;
+  captionKey?: string; captionArgs?: string[];
+  detailKey?: string; detailArgs?: string[];
+  progress?: number; highlightedIndex?: number;
+  chartPoints: HealthChartPointData[]; metrics: HealthMetricData[];
+  range?: HealthRangeData; sleepStages: SleepStageData[];
+  startTime?: string; endTime?: string; assetKey?: string;
 }
 
 export interface HealthSnapshot {
@@ -24,18 +41,22 @@ export class HealthCardModel {
   summary: ResourceStr;
   iconIndex: number;
   isRisk: boolean;
+  visual: HealthVisualData;
 
-  constructor(id: string, title: ResourceStr, summary: ResourceStr, iconIndex: number, isRisk: boolean = false) {
+  constructor(id: string, title: ResourceStr, summary: ResourceStr, iconIndex: number, isRisk: boolean = false,
+    visual: HealthVisualData = { kind: 'TrendBars', chartPoints: [], metrics: [], sleepStages: [] }) {
     this.id = id;
     this.title = title;
     this.summary = summary;
     this.iconIndex = iconIndex;
     this.isRisk = isRisk;
+    this.visual = visual;
   }
 }
 
 export function createDefaultHealthCards(): HealthCardModel[] {
   return [
+    new HealthCardModel('TodayActivity', $r('app.string.health_card_today_activity_title'), $r('app.string.health_summary_activity_empty'), 2),
     new HealthCardModel('WeeklyPlan', $r('app.string.health_card_weekly_plan_title'), $r('app.string.health_summary_weekly_empty'), 0),
     new HealthCardModel('TrainingLoad', $r('app.string.health_card_training_load_title'), $r('app.string.health_summary_training_load_empty'), 1),
     new HealthCardModel('TrainingAssessment', $r('app.string.health_card_training_assessment_title'), $r('app.string.health_summary_training_assessment_empty'), 2),
@@ -67,7 +88,7 @@ export function cardIconIndex(typeName: string): number {
     case 'RestingHeartRate': return 10;
     case 'HealthCheck': return 11;
     case 'BodyManagement': return 12;
-    case 'TodayActivity': return 6;
+    case 'TodayActivity': return 2;
     default: return 6;
   }
 }

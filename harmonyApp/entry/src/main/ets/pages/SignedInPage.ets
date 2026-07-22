@@ -28,15 +28,12 @@ import { CardEditorComp } from '../health/editor/CardEditorComp';
 import { MetricComp } from '../health/components/MetricComp';
 import { DashboardCardComp } from '../health/components/DashboardCardComp';
 
-PersistentStorage.persistProp<string>('health_card_order', '');
-
 @Entry
 @Component
 struct SignedInPage {
   private viewModel = getLoginViewModel();
   @State selectedTab: number = 0;
   @State healthCards: HealthCardModel[] = createDefaultHealthCards();
-  @StorageLink('health_card_order') savedHealthCardOrder: string = '';
   @State detailCardId: string = '';
   @State refreshing: boolean = false;
   @State dragOffset: number = 0;
@@ -64,7 +61,6 @@ struct SignedInPage {
   @State editingCards: boolean = false;
 
   aboutToAppear(): void {
-    this.loadSavedCardOrder();
     this.loadHealthDataFromKMP();
     this.syncState();
   }
@@ -88,8 +84,7 @@ struct SignedInPage {
           CardEditorComp({
             healthCards: this.healthCards,
             onSave: (csv: string) => { this.handleEditorSave(csv); },
-            onCancel: () => { this.editingCards = false; },
-            onRestoreDefaults: () => { this.loadHealthDataFromKMP(); }
+            onCancel: () => { this.editingCards = false; }
           })
         } else if (this.detailCardId.length > 0) {
           HealthDetailComp({
@@ -144,8 +139,9 @@ struct SignedInPage {
         ScenarioPickerComp({
           selectedScenario: this.scenarioName,
           onSelect: (name: string) => {
-            this.scenarioName = name;
             getService().selectHealthScene(name);
+            this.loadHealthDataFromKMP();
+            saveStoreSnapshot();
             this.showScenarioPicker = false;
           }
         })
@@ -290,7 +286,6 @@ struct SignedInPage {
       // but CardEditorComp committed already; handle error by reloading
       return;
     }
-    this.savedHealthCardOrder = typeNamesCsv;
     saveStoreSnapshot();
     this.loadHealthDataFromKMP();
     this.editingCards = false;
@@ -323,25 +318,14 @@ struct SignedInPage {
           localizedHealthText(this, c.titleKey, []),
           localizedHealthText(this, c.summaryKey, c.summaryArgs || []),
           idx,
-          c.isRisk
+          c.isRisk,
+          c.visual
         ));
       }
       this.healthCards = cards;
     } catch (e) {
       // keep defaults
     }
-  }
-
-  private loadSavedCardOrder(): void {
-    if (this.savedHealthCardOrder.length === 0) return;
-    let ids: string[] = this.savedHealthCardOrder.split(',');
-    let defaults: HealthCardModel[] = createDefaultHealthCards();
-    let restored: HealthCardModel[] = [];
-    ids.forEach((id: string) => {
-      let found: HealthCardModel | undefined = defaults.find((card: HealthCardModel) => card.id === id);
-      if (found !== undefined) restored.push(found);
-    });
-    if (restored.length >= 3) this.healthCards = restored;
   }
 
   private confirmDeleteAccount(): void {

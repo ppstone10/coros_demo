@@ -7,6 +7,7 @@ import { initPersistence, saveStoreSnapshot } from '../login/StorePersister';
 import { getService } from '../login/HarmonyServiceProvider';
 import { AppColors } from '../resources/AppResources';
 import { initializeAppLanguage } from '../resources/AppLanguage';
+import font from '@ohos.font';
 
 let knoiInitialized: boolean = false;
 
@@ -24,6 +25,8 @@ export default class EntryAbility extends UIAbility {
     hilog.info(0x0001, 'demo_persist', 'onWindowStageCreate');
     initKnoiBridge();
     initializeAppLanguage();
+    font.registerFont({ familyName: 'COROSAPP', familySrc: $rawfile('coros_app_regular.ttf') });
+    font.registerFont({ familyName: 'COROSAPPBold', familySrc: $rawfile('coros_app_bold.ttf') });
     hilog.info(0x0001, 'demo_persist', 'initKnoiBridge done');
     windowStage.getMainWindow()
       .then((mainWindow: window.Window) => {
