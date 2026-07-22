@@ -34,20 +34,26 @@ harmony_view="harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.
 harmony_page="harmonyApp/entry/src/main/ets/pages/SignedInPage.ets"
 bridge="harmony-kmp-bridge/src/ohosArm64Main/kotlin/com/example/demo/harmony/bridge/HarmonyLoginService.kt"
 
-check_present "$android" "FigmaCardHeight.minimumFor(card)"
-check_present "$android" ".heightIn(min = FigmaCardHeight.minimumFor(card))"
 check_present "$android" "card.status == HealthCardStatus.Empty"
-check_absent "$android" ".height(FigmaCardHeight.forKind(card.visual.kind))"
+check_present "$android" "HealthCardVisualContent(card.type, card.visual)"
+check_absent "$android" "FigmaCardHeight"
+check_absent "$android" ".heightIn(min ="
+check_absent "$android" "Column(Modifier.fillMaxSize())"
+check_present "$android" "Spacer(Modifier.height(16.dp))"
 
 check_present "$ios_model" "let status: String"
 check_present "$ios_model" "var isEmpty: Bool"
-check_present "$ios_view" "minHeight: cardMinimumHeight(card)"
-check_absent "$ios_view" "maxHeight: figmaCardHeight(card.visual)"
+check_absent "$ios_view" "cardMinimumHeight"
+check_absent "$ios_view" "figmaCardHeight"
+check_present "$ios_view" "HealthCardVisualContent(visual: visual)"
+check_present "$ios_view" ".padding(.top, 12)"
 
 check_present "$harmony_types" "status: string;"
 check_present "$harmony_page" "c.status"
-check_present "$harmony_view" ".constraintSize({ minHeight: this.minimumCardHeight() })"
-check_absent "$harmony_view" ".height(this.figmaCardHeight())"
+check_absent "$harmony_view" "minimumCardHeight"
+check_absent "$harmony_view" ".constraintSize({ minHeight:"
+check_present "$harmony_view" "this.VisualContent()"
+check_present "$harmony_view" "}.width('100%').margin({ top: 12 })"
 check_present "$bridge" 'sb.append(",\"status\":\"")'
 
 if [[ "$failed" -ne 0 ]]; then

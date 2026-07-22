@@ -115,30 +115,15 @@ struct HealthDashboardView: View {
             if card.isEmpty {
                 Text(card.summary).font(.system(size: 14)).foregroundStyle(AppColors.Health.muted)
             } else if let visual = card.visual {
-                HealthVisualCardContent(visual: visual)
+                HealthCardVisualContent(visual: visual)
             } else {
                 Text(card.summary).font(.system(size: 14)).foregroundStyle(card.isRisk ? AppColors.Health.risk : AppColors.Health.muted)
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 14)
-        .frame(maxWidth: .infinity, minHeight: cardMinimumHeight(card), alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppColors.Health.card).clipShape(RoundedRectangle(cornerRadius: 8))
         .clipped()
-    }
-
-    private func cardMinimumHeight(_ card: HealthCard) -> CGFloat {
-        card.isEmpty ? 82 : figmaCardHeight(card.visual)
-    }
-
-    private func figmaCardHeight(_ visual: HealthCardVisualData?) -> CGFloat {
-        switch visual?.kind.name {
-        case "TodayActivity": 114
-        case "WeeklyPlan": 178
-        case "TrainingAssessment": 206
-        case "HealthCheckGrid": 180
-        case "BodyMap": 188
-        default: 122
-        }
     }
 
     private func closeEditor() { editing = false; isFullscreen = false }
@@ -224,7 +209,7 @@ private struct ScrollViewPanObserver: UIViewRepresentable {
     }
 }
 
-private struct HealthVisualCardContent: View {
+private struct HealthCardVisualContent: View {
     let visual: HealthCardVisualData
     private let green = AppColors.Health.visualGreen
     private var points: [HealthChartPoint] { visual.chartPoints }
@@ -285,8 +270,8 @@ private struct HealthVisualCardContent: View {
         VStack(alignment: .leading, spacing: 4) {
             if let c = visual.caption { Text(localizedHealthText(c)).font(.system(size: 20, weight: .semibold)).foregroundStyle(AppColors.Health.visualOrange) }
             caption(visual.detail, size: 14).lineSpacing(2)
-            Spacer(minLength: 4)
             HStack { ForEach(Array(visual.metrics.prefix(3).enumerated()), id: \.offset) { index, m in metric(m, accent: .white, valueSize: 30); if index < 2 { Spacer(); Divider().background(AppColors.Health.divider).frame(height: 42); Spacer() } } }
+                .padding(.top, 12)
         }
     }
 

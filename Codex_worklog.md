@@ -698,3 +698,29 @@
 ## 人工修正点
 
 - 仅设置 SwiftUI `.frame(width: 30, height: 30)` 对直接桥接的 UIKit Lottie 不足，截图中动画仍按 composition 固有尺寸绘制；现由 UIKit 容器承担真实尺寸约束，SwiftUI frame 只负责顶部栏布局。
+
+# 2026-07-22 17:15 — 三端健康卡片改为内容固有高度
+
+## 采纳内容
+
+- [HLTH-VIS-023] 删除 Android `FigmaCardHeight/heightIn`、iOS `cardMinimumHeight/figmaCardHeight` 和 HarmonyOS `minimumCardHeight/constraintSize`，三端公共卡片外壳不再维护按 visual kind 区分的最低高度表。
+- Android 视觉根节点由垂直 `fillMaxSize` 改为 `fillMaxWidth`；训练量评估的垂直 `weight` 改为明确 16dp 间距。iOS 与 HarmonyOS 同步采用 16pt/vp 的说明到指标间距。
+- 三端分发入口统一为可检索的 `HealthCardVisualContent/VisualContent` 命名，review 时按“列表入口 → 卡片外壳 → visual kind 分发器 → 类型视觉 → 图形原语”定位。
+- 更新 [HLTH-VIS-004/009/017/018/023] Spec、TRACE、专项门禁和持久 Learnings，明确 Figma 高度只作设计对照。
+
+## 人工审查点
+
+- 水平方向的 `Spacer/weight/layoutWeight` 仍用于左右分栏，不属于本次禁止范围；本轮只移除了滚动方向依赖不确定剩余高度的填充。
+- 地图、柱图、仪表、睡眠阶段和人体图片继续保留明确宽高，因此取消外层最小高度不会取消图表安全区；长文案和指标会自然增高卡片。
+- KMP `HealthCardVisualData` 协议本轮保持不变，正常态必填数据继续由既有 common 测试约束；强类型 sealed visual 如需实施应单独进行跨端协议迁移。
+
+## 验证结果
+
+- 红灯：更新 `check-health-card-adaptive-layout.sh` 后首次报告 10 项失败，准确覆盖三端类型高度表、外层最小高度和训练评估垂直剩余空间填充。
+- 绿灯：`check-health-card-adaptive-layout.sh`、`check-health-card-fidelity.sh`、`./gradlew :common:check`、`./gradlew :androidApp:assembleDebug` 全部通过。
+- iOS 模拟器 `xcodebuild ... IOSDemo ... build` 通过，仅保留既有脚本输出声明和未使用返回值 warning；HarmonyOS `hvigorw assembleApp --no-daemon` 通过，仅保留既有弃用、未签名等 warning。
+
+## 人工修正点
+
+- 初版专项门禁误把横向 `Spacer(weight)` 和活动卡的横向 `Spacer(minLength:)` 也列为禁止项；已改为检查训练量评估的明确垂直间距，避免阻止合法的横向自适应分栏。
+- 没有直接把所有高度常量改为 0；而是删除整套外层高度策略，避免留下看似可配置但实际失效的尺寸入口。

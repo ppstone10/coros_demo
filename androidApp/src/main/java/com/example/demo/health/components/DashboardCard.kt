@@ -6,12 +6,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -35,11 +35,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.R
-import com.example.demo.common.health.HealthCardAction
 import com.example.demo.common.health.HealthCardStatus
 import com.example.demo.common.health.HealthCardType
 import com.example.demo.common.health.HealthCardUiModel
@@ -50,6 +48,26 @@ import com.example.demo.common.health.HealthMetric
 import com.example.demo.common.health.HealthVisualLevel
 import com.example.demo.common.health.LocalizedTextSpec
 import com.example.demo.common.health.SleepStage
+import com.example.demo.common.health.BodyManagement
+import com.example.demo.common.health.CyclingAbility
+import com.example.demo.common.health.DailySummary
+import com.example.demo.common.health.HealthCheck
+import com.example.demo.common.health.HealthDashboardData
+import com.example.demo.common.health.HealthDashboardDataSource
+import com.example.demo.common.health.HealthDashboardUseCase
+import com.example.demo.common.health.HealthMockScenario
+import com.example.demo.common.health.HeartRate
+import com.example.demo.common.health.HrvAssessment
+import com.example.demo.common.health.Recovery
+import com.example.demo.common.health.RestingHeartRate
+import com.example.demo.common.health.RunningAbility
+import com.example.demo.common.health.SleepSummary
+import com.example.demo.common.health.SleepStageSegment
+import com.example.demo.common.health.Stress
+import com.example.demo.common.health.TodayActivity
+import com.example.demo.common.health.TrainingAssessment
+import com.example.demo.common.health.TrainingLoad
+import com.example.demo.common.health.WeeklyPlan
 import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppImage
 import com.example.demo.ui.resources.AppImages
@@ -72,28 +90,6 @@ private val CorosFontFamily = FontFamily(
     Font(R.font.coros_app_bold, FontWeight.Bold),
 )
 
-private object FigmaCardHeight {
-    val Empty = 82.dp
-    val TodayActivity = 114.dp
-    val WeeklyPlan = 178.dp
-    val TrainingAssessment = 206.dp
-    val HealthCheck = 180.dp
-    val BodyMap = 188.dp
-    val Compact = 122.dp
-
-    fun forKind(kind: HealthCardVisualKind): Dp = when (kind) {
-        HealthCardVisualKind.TodayActivity -> TodayActivity
-        HealthCardVisualKind.WeeklyPlan -> WeeklyPlan
-        HealthCardVisualKind.TrainingAssessment -> TrainingAssessment
-        HealthCardVisualKind.HealthCheckGrid -> HealthCheck
-        HealthCardVisualKind.BodyMap -> BodyMap
-        else -> Compact
-    }
-
-    fun minimumFor(card: HealthCardUiModel): Dp =
-        if (card.status == HealthCardStatus.Empty) Empty else forKind(card.visual.kind)
-}
-
 @Composable
 fun DashboardCard(card: HealthCardUiModel, onClick: () -> Unit) {
     val shape = RoundedCornerShape(8.dp)
@@ -101,7 +97,6 @@ fun DashboardCard(card: HealthCardUiModel, onClick: () -> Unit) {
         modifier = Modifier
             .padding(horizontal = AppSpacing.Screen, vertical = 6.dp)
             .fillMaxWidth()
-            .heightIn(min = FigmaCardHeight.minimumFor(card))
             .clip(shape)
             .clipToBounds()
             .background(CardBlack)
@@ -121,8 +116,8 @@ fun DashboardCard(card: HealthCardUiModel, onClick: () -> Unit) {
         if (card.status == HealthCardStatus.Empty) {
             EmptyContent(card)
         } else {
-            Box(Modifier.fillMaxSize().clipToBounds()) {
-                VisualContent(card.type, card.visual)
+            Box(Modifier.fillMaxWidth().clipToBounds()) {
+                HealthCardVisualContent(card.type, card.visual)
             }
         }
     }
@@ -154,7 +149,7 @@ private fun EmptyContent(card: HealthCardUiModel) {
 }
 
 @Composable
-private fun VisualContent(type: HealthCardType, visual: HealthCardVisualData) {
+private fun HealthCardVisualContent(type: HealthCardType, visual: HealthCardVisualData) {
     when (visual.kind) {
         HealthCardVisualKind.TodayActivity -> ActivityVisual(visual)
         HealthCardVisualKind.WeeklyPlan -> WeeklyVisual(visual)
@@ -171,7 +166,7 @@ private fun VisualContent(type: HealthCardType, visual: HealthCardVisualData) {
 
 @Composable
 private fun ActivityVisual(v: HealthCardVisualData) {
-    Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         AppImage(AppImages.Health.ActivityMap, null, Modifier.size(48.dp).clip(RoundedCornerShape(6.dp)), ContentScale.Crop)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
@@ -190,7 +185,7 @@ private fun ActivityVisual(v: HealthCardVisualData) {
 
 @Composable
 private fun WeeklyVisual(v: HealthCardVisualData) {
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxWidth()) {
         WeekLabels(v)
         Spacer(Modifier.height(10.dp))
         Row(
@@ -240,10 +235,10 @@ private fun LoadVisual(v: HealthCardVisualData) {
 
 @Composable
 private fun AssessmentVisual(v: HealthCardVisualData) {
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxWidth()) {
         v.caption?.let { Text(localizedHealthText(it), color = Orange, fontSize = 20.sp, fontWeight = FontWeight.SemiBold) }
         v.detail?.let { Text(localizedHealthText(it), color = AppColors.Health.CardTitle, fontSize = 14.sp, maxLines = 2, lineHeight = 20.sp) }
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(16.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             v.metrics.take(3).forEachIndexed { index, metric ->
                 MetricValue(metric, Modifier.width(82.dp))
@@ -371,7 +366,7 @@ private fun SleepOverview(v: HealthCardVisualData) {
 
 @Composable
 private fun HealthGridVisual(v: HealthCardVisualData) {
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             v.caption?.let { Text(localizedHealthText(it), color = Muted, fontSize = 12.sp) }
         }
@@ -412,7 +407,7 @@ private fun BodyVisual(v: HealthCardVisualData) {
 
 @Composable
 private fun OverviewRow(left: @Composable () -> Unit, right: @Composable () -> Unit) {
-    Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.width(141.dp), contentAlignment = Alignment.CenterStart) { left() }
         Spacer(Modifier.weight(1f))
         Box(Modifier.clipToBounds(), contentAlignment = Alignment.CenterEnd) { right() }
@@ -489,12 +484,46 @@ fun iconOf(type: HealthCardType) = when (type) {
     HealthCardType.HealthCheck -> AppImages.Health.HealthCheck; HealthCardType.BodyManagement -> AppImages.Health.BodyManagement
 }
 
-@Preview
+@Preview(showBackground = true, backgroundColor = 0xFF000000, locale = "zh")
 @Composable
-private fun DashboardCardPreview() {
+private fun AllCardsPreview() {
+    val useCase = HealthDashboardUseCase(object : HealthDashboardDataSource {
+        override fun load(scenario: HealthMockScenario) = error("not used")
+    })
+    val data = HealthDashboardData(
+        dailySummary = DailySummary(8769, 769, 69),
+        todayActivity = TodayActivity(8.41, 637, LocalizedTextSpec("health_visual_activity_easy_run"), 78),
+        sleepSummary = SleepSummary(504, 86, "23:00", "08:40", listOf(
+            SleepStageSegment(SleepStage.Awake, 0, 18), SleepStageSegment(SleepStage.Light, 18, 72),
+            SleepStageSegment(SleepStage.Deep, 90, 55), SleepStageSegment(SleepStage.Light, 145, 74),
+            SleepStageSegment(SleepStage.Rem, 219, 42), SleepStageSegment(SleepStage.Light, 261, 65),
+            SleepStageSegment(SleepStage.Deep, 326, 38), SleepStageSegment(SleepStage.Light, 364, 77),
+            SleepStageSegment(SleepStage.Rem, 441, 45), SleepStageSegment(SleepStage.Awake, 486, 18)
+        )),
+        trainingLoad = TrainingLoad(246, 600, 800, listOf(22, 11, 22, 12, 0, 0, 0)),
+        recovery = Recovery(95, 5),
+        weeklyPlan = WeeklyPlan(true, 300, null, 3, listOf(0, 0, 0, 78, 0, 0, 0),
+            LocalizedTextSpec("health_visual_workout_easy_run"), 102, 78),
+        trainingAssessment = TrainingAssessment(78, "increasing", 155, 138, 1.2,
+            LocalizedTextSpec("health_visual_assessment_efficient"), LocalizedTextSpec("health_visual_assessment_efficient_detail")),
+        runningAbility = RunningAbility(52, 85, 78.6, 12621),
+        cyclingAbility = CyclingAbility(220, 72, 80.6, LocalizedTextSpec("health_visual_cycling_climber")),
+        heartRate = HeartRate(55, 68, 81, listOf(62, 65, 63, 68, 72, 70, 76, 74, 80, 84, 78, 92, 86, 81, 88, 79, 76, 82, 75, 72, 77, 70, 74, 68)),
+        stress = Stress(35, "normal", 52, listOf(18, 20, 22, 25, 28, 32, 38, 45, 52, 61, 74, 86, 78, 64, 52, 40, 34, 48, 58, 42, 30, 25, 22, 20)),
+        hrvAssessment = HrvAssessment(48, "low", 48, 52, 60),
+        restingHeartRate = RestingHeartRate(58, "08:45", 52, 30, 80),
+        healthCheck = HealthCheck(82, 0, "15:04", 91, 42, 45, 91, 91),
+        bodyManagement = BodyManagement(68.2, 15.5, 22.3, "2022/8/7", listOf("chest", "quadriceps"))
+    )
+    val state = useCase.toUiState(data)
+
     DemoTheme {
-        DashboardCard(
-            HealthCardUiModel(HealthCardType.Recovery, LocalizedTextSpec("health_card_recovery_title"), LocalizedTextSpec("health_summary_recovery_normal", listOf("95", "5")), HealthCardStatus.Normal, HealthCardAction.ViewRecovery, 1, "", HealthCardVisualData(HealthCardVisualKind.RecoveryGauge, "95", progress = .95)), {}
-        )
+        Column(
+            Modifier.background(AppColors.Health.Page).verticalScroll(rememberScrollState()).padding(vertical = 8.dp)
+        ) {
+            state.cards.forEach { card ->
+                DashboardCard(card) {}
+            }
+        }
     }
 }

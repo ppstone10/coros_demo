@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,17 +41,40 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.example.demo.R
 import com.example.demo.common.health.HealthCardUiModel
 import com.example.demo.common.health.HealthMockScenario
+import com.example.demo.common.health.BodyManagement
+import com.example.demo.common.health.CyclingAbility
+import com.example.demo.common.health.DailySummary
+import com.example.demo.common.health.HealthCheck
+import com.example.demo.common.health.HealthDashboardData
+import com.example.demo.common.health.HealthDashboardDataSource
+import com.example.demo.common.health.HealthDashboardUseCase
+import com.example.demo.common.health.HeartRate
+import com.example.demo.common.health.HrvAssessment
+import com.example.demo.common.health.LocalizedTextSpec
+import com.example.demo.common.health.Recovery
+import com.example.demo.common.health.RestingHeartRate
+import com.example.demo.common.health.RunningAbility
+import com.example.demo.common.health.SleepSummary
+import com.example.demo.common.health.SleepStage
+import com.example.demo.common.health.SleepStageSegment
+import com.example.demo.common.health.Stress
+import com.example.demo.common.health.TodayActivity
+import com.example.demo.common.health.TrainingAssessment
+import com.example.demo.common.health.TrainingLoad
+import com.example.demo.common.health.WeeklyPlan
 import com.example.demo.common.login.MockError
 import com.example.demo.common.login.MockResult
 import com.example.demo.login.LoginViewModel
 import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppSpacing
 import com.example.demo.ui.resources.AppTypography
+import com.example.demo.ui.theme.DemoTheme
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -267,6 +292,66 @@ fun HealthDashboardScreen(
             }
 
             Spacer(Modifier.height(0.dp))
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000, locale = "zh")
+@Composable
+private fun HealthDashboardPreview() {
+    val useCase = HealthDashboardUseCase(object : HealthDashboardDataSource {
+        override fun load(scenario: HealthMockScenario) = error("not used")
+    })
+    val data = HealthDashboardData(
+        dailySummary = DailySummary(8769, 769, 69),
+        todayActivity = TodayActivity(8.41, 637, LocalizedTextSpec("health_visual_activity_easy_run"), 78),
+        sleepSummary = SleepSummary(504, 86, "23:00", "08:40", listOf(
+            SleepStageSegment(SleepStage.Awake, 0, 18), SleepStageSegment(SleepStage.Light, 18, 72),
+            SleepStageSegment(SleepStage.Deep, 90, 55), SleepStageSegment(SleepStage.Light, 145, 74),
+            SleepStageSegment(SleepStage.Rem, 219, 42), SleepStageSegment(SleepStage.Light, 261, 65),
+            SleepStageSegment(SleepStage.Deep, 326, 38), SleepStageSegment(SleepStage.Light, 364, 77),
+            SleepStageSegment(SleepStage.Rem, 441, 45), SleepStageSegment(SleepStage.Awake, 486, 18)
+        )),
+        trainingLoad = TrainingLoad(246, 600, 800, listOf(22, 11, 22, 12, 0, 0, 0)),
+        recovery = Recovery(95, 5),
+        weeklyPlan = WeeklyPlan(true, 300, null, 3, listOf(0, 0, 0, 78, 0, 0, 0),
+            LocalizedTextSpec("health_visual_workout_easy_run"), 102, 78),
+        trainingAssessment = TrainingAssessment(78, "increasing", 155, 138, 1.2,
+            LocalizedTextSpec("health_visual_assessment_efficient"), LocalizedTextSpec("health_visual_assessment_efficient_detail")),
+        runningAbility = RunningAbility(52, 85, 78.6, 12621),
+        cyclingAbility = CyclingAbility(220, 72, 80.6, LocalizedTextSpec("health_visual_cycling_climber")),
+        heartRate = HeartRate(55, 68, 81, listOf(62, 65, 63, 68, 72, 70, 76, 74, 80, 84, 78, 92, 86, 81, 88, 79, 76, 82, 75, 72, 77, 70, 74, 68)),
+        stress = Stress(35, "normal", 52, listOf(18, 20, 22, 25, 28, 32, 38, 45, 52, 61, 74, 86, 78, 64, 52, 40, 34, 48, 58, 42, 30, 25, 22, 20)),
+        hrvAssessment = HrvAssessment(48, "low", 48, 52, 60),
+        restingHeartRate = RestingHeartRate(58, "08:45", 52, 30, 80),
+        healthCheck = HealthCheck(82, 0, "15:04", 91, 42, 45, 91, 91),
+        bodyManagement = BodyManagement(68.2, 15.5, 22.3, "2022/8/7", listOf("chest", "quadriceps"))
+    )
+    val state = useCase.toUiState(data)
+
+    DemoTheme {
+        Column(
+            Modifier.fillMaxSize().background(AppColors.Health.Page)
+        ) {
+            HeroTopRow(dateLabel = "July 21, 2026", isSyncing = false, onLongPressWatch = {})
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                ArcAndMetricsSection(state)
+                state.cards.forEach { card ->
+                    DashboardCard(card) {}
+                }
+                Text(
+                    text = stringResource(R.string.health_edit_cards),
+                    color = AppColors.Health.EditText,
+                    fontSize = AppTypography.Label,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(AppSpacing.Large)
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(AppColors.Health.Card)
+                        .padding(horizontal = AppSpacing.ActionHorizontal, vertical = AppSpacing.Medium)
+                )
+                Spacer(Modifier.height(24.dp))
+            }
         }
     }
 }

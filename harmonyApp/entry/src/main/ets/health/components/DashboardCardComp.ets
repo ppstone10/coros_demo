@@ -11,16 +11,6 @@ export struct DashboardCardComp {
     return localizedHealthText(this, key, args || []);
   }
 
-  private minimumCardHeight(): number {
-    if (this.card.status === 'Empty') return 82;
-    if (this.card.visual.kind === 'TodayActivity') return 114;
-    if (this.card.visual.kind === 'WeeklyPlan') return 178;
-    if (this.card.visual.kind === 'TrainingAssessment') return 206;
-    if (this.card.visual.kind === 'HealthCheckGrid') return 180;
-    if (this.card.visual.kind === 'BodyMap') return 188;
-    return 122;
-  }
-
   @Builder Header() {
     Row() {
       Image(this.card.id === 'TodayActivity' ? AppImages.todayHeader() : AppImages.healthCardIcon(this.card.id)).width(20).height(20).objectFit(ImageFit.Contain)
@@ -64,7 +54,7 @@ export struct DashboardCardComp {
     }.height(heightValue).width(widthValue).alignItems(VerticalAlign.Bottom).clip(true)
   }
 
-  @Builder Visual() {
+  @Builder VisualContent() {
     if (this.card.visual.kind === 'TodayActivity') {
       Row({ space: 12 }) {
         Image(AppImages.activityMap()).width(48).height(48).objectFit(ImageFit.Cover).borderRadius(6)
@@ -119,13 +109,12 @@ export struct DashboardCardComp {
       Column({ space: 4 }) {
         Text(this.text(this.card.visual.captionKey, this.card.visual.captionArgs)).fontSize(20).fontColor(AppColors.VISUAL_ORANGE).fontWeight(FontWeight.Medium)
         Text(this.text(this.card.visual.detailKey, this.card.visual.detailArgs)).fontSize(14).fontColor(AppColors.HEALTH_CARD_TITLE).maxLines(2)
-        Blank()
         Row() {
           ForEach(this.card.visual.metrics.slice(0, 3), (metric: HealthMetricData, index: number) => {
             this.Metric(metric)
             if (index < 2) { Blank(); Divider().vertical(true).height(42).color(AppColors.DIVIDER); Blank() }
           })
-        }.width('100%')
+        }.width('100%').margin({ top: 12 })
       }.alignItems(HorizontalAlign.Start)
     } else if (this.card.visual.kind === 'RecoveryGauge' || this.card.visual.kind === 'AbilityGauge') {
       Row() {
@@ -221,11 +210,10 @@ export struct DashboardCardComp {
         this.Header()
         if (this.card.status === 'Empty') {
           Text(this.card.summary).fontSize(14).lineHeight(18).fontColor(AppColors.MUTED)
-        } else { this.Visual() }
+        } else { this.VisualContent() }
       }
       .alignItems(HorizontalAlign.Start)
       .layoutWeight(1)
-      .constraintSize({ minHeight: this.minimumCardHeight() })
       .padding({ left: 16, right: 16, top: 14, bottom: 14 })
       .backgroundColor(AppColors.HEALTH_CARD).borderRadius(8).clip(true)
       .onClick(() => { if (this.onTap) { this.onTap(); } })

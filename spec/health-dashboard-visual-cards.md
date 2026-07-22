@@ -84,7 +84,7 @@
 
 - Given：卡片具有 `HealthCardVisualData`
 - When：Android、iOS 或 HarmonyOS 渲染首页
-- Then：不再把所有卡片压缩为 76dp 摘要行；按类型展示 114/122/178/180/188/206 级别的内容密度、主数值和图表
+- Then：不再把所有卡片压缩为统一摘要行；各类型按自身内容密度展示主数值、说明、指标和图表，并由内容自然决定卡片高度
 - 异常/边界：图表没有点时显示摘要空态，不崩溃、不绘制伪造数据
 
 ### `HLTH-VIS-005`：HarmonyOS 桥接完整传递可视化数据
@@ -119,7 +119,8 @@
 
 - Given：页面按 375pt 设计宽度或任意等比手机宽度渲染
 - When：三端展示 14 类健康卡片
-- Then：卡片左右页边距为 16、圆角为 8；有数据卡按类型以 114/122/178/180/188/206 为最小视觉高度；标题基线、主值区与右侧概览区映射 Figma 节点 `16:8097`、`16:8866`、`16:8837`、`16:8810`、`16:8771`、`16:8742`、`16:8712`、`16:8651`、`16:8627`、`16:8482`、`16:8408`、`16:8389`、`16:8354`、`16:8192`
+- Then：卡片左右页边距为 16、圆角为 8；标题基线、主值区与右侧概览区映射 Figma 节点 `16:8097`、`16:8866`、`16:8837`、`16:8810`、`16:8771`、`16:8742`、`16:8712`、`16:8651`、`16:8627`、`16:8482`、`16:8408`、`16:8389`、`16:8354`、`16:8192`
+- And：114/122/178/180/188/206 只作为设计稿对照尺寸，不再作为运行时外层最小高度；运行时高度由标题、文案、指标、图表固有尺寸、明确间距和内边距共同决定
 - And：周计划七个日期标签通过共享键渲染为一至日（英文为 M/T/W/T/F/S/S），不得显示资源键或通用回退文案
 - 异常/边界：窄屏可压缩左右分栏之间空白，但不得改变卡片外边距或让内容越过圆角边界
 
@@ -176,16 +177,16 @@
 
 - Given：卡片状态为 `Empty`，对应 Figma「首页_空状态」节点 `16:2313`
 - When：三端在任意受支持语言、手机宽度或系统字体缩放下渲染标题和空态说明
-- Then：平台必须以显式 `HealthCardStatus.Empty` 选择空态布局，不得通过主值或图表是否为空猜测；卡片以 82pt/dp/vp 为单行设计最小高度，说明换为两行时自然增长至约 102，更多换行继续撑高且不裁剪
-- And：有数据或风险卡继续使用 `visual.kind` 对应的最小视觉高度；三端列表允许相邻卡片具有不同实际高度，并保持 12 的垂直间距
+- Then：平台必须以显式 `HealthCardStatus.Empty` 选择空态布局，不得通过主值或图表是否为空猜测；空态由标题、12pt/dp/vp 间距、完整说明和上下内边距自然确定高度，说明换行时继续撑高且不裁剪
+- And：有数据或风险卡同样按内容固有高度排布，不再使用 `visual.kind` 对应的外层最小高度；三端列表允许相邻卡片具有不同实际高度，并保持 12 的垂直间距
 - 异常/边界：iOS 与 HarmonyOS 平台适配模型必须完整保留 common 的状态；空态说明不得使用固定最大高度或省略号截断，父卡片仍保留圆角裁剪
 
 ### `HLTH-VIS-018`：HarmonyOS 有数据卡不得撑开列表视口
 
 - Given：HarmonyOS 在任意有数据场景渲染负荷、评估、恢复、能力、趋势、范围、睡眠、健康检查或体型管理卡
 - When：卡片内部包含固定宽度图表、仪表或人体图
-- Then：全宽外层先扣除左右各 16vp 页面边距，卡片本体仅占剩余可用宽度；内部视觉只能使用内容固有高度和卡片最小高度测量，不得以 `height('100%')` 取得 Scroll/Refresh 视口高度
-- And：普通有数据卡保持约 122vp 的设计高度，训练评估等复杂类型使用其类型最小高度；不得出现单张卡占满整屏的空白区域，也不得扩大卡片或横向滚动页面
+- Then：全宽外层先扣除左右各 16vp 页面边距，卡片本体仅占剩余可用宽度；内部视觉只能使用内容固有高度测量，不得以 `height('100%')` 取得 Scroll/Refresh 视口高度
+- And：普通与复杂有数据卡均由实际内容自然增高；不得出现类型最小高度制造的尾部空白、单张卡占满整屏或横向滚动页面
 - 异常/边界：空态与有数据态使用同一外层宽度契约；320vp 等窄屏允许内部安全区压缩或裁剪，不允许突破卡片圆角边界
 
 ### `HLTH-VIS-019`：HarmonyOS 手表 Lottie 跟随同步状态播放
@@ -219,6 +220,15 @@
 - Then：`UIViewRepresentable` 必须返回裁剪的容器 UIView，内部动画关闭 autoresizing mask 并以四边 Auto Layout 约束填满容器；动画不得按 composition 固有尺寸溢出顶部栏
 - 异常/边界：长按手势继续绑定外部 30×30pt 区域；日历保持 23×23pt，手表与 Android/HarmonyOS 均保持 30×30 的同一语义尺寸
 
+### `HLTH-VIS-023`：三端卡片外壳按内容固有高度测量
+
+- Given：Android Compose、iOS SwiftUI 或 HarmonyOS ArkUI 在滚动容器中渲染任意健康卡片
+- When：卡片内容为正常、风险或空状态，且文案长度、指标数量或图表类型不同
+- Then：公共卡片外壳只负责全宽、安全边距、标题、状态分支、内边距、圆角和裁剪，不得维护按 visual kind 区分的最小高度表
+- And：视觉组件的垂直尺寸来自文字、固定高度图表/图片及明确间距；不得使用依赖滚动方向剩余高度的 `fillMaxSize`、无固定高度 `Spacer/Blank` 或垂直 `weight/layoutWeight` 撑开内容
+- And：正常 mock 场景中每个 visual kind 的必填内容继续由 common 测试保证完整；缺失状态必须走显式 `HealthCardStatus.Empty`，不得依靠外层最小高度掩盖不完整数据
+- 异常/边界：水平方向仍可使用 `fillMaxWidth`、`Spacer` 或权重分配左右安全区；图表和人体图片继续保留自身明确宽高并由卡片裁剪
+
 ## 新增资源来源与一致性
 
 | 资源 | 来源 | 三端 SHA-256 |
@@ -249,12 +259,13 @@
 | `HLTH-VIS-014` | `tools/check-health-card-editor-regressions.sh` + iOS 构建 | 删除/恢复生成的卡片标题均来自本地化键且非空 |
 | `HLTH-VIS-015` | `tools/check-health-card-fidelity.sh` + 三端构建 | 资源目录覆盖全部健康图像，UI 通过语义入口访问 |
 | `HLTH-VIS-016` | `tools/check-health-card-fidelity.sh` + 编辑/详情人工验收 | 今日运动的通用图标三端一致，首页专用头图不受影响 |
-| `HLTH-VIS-017` | `tools/check-health-card-adaptive-layout.sh` + 三端构建 | 空态按显式状态使用 82 最小高度并允许内容继续撑高；有数据卡保留类型最小高度 |
+| `HLTH-VIS-017` | `tools/check-health-card-adaptive-layout.sh` + 三端构建 | 空态与有数据卡均由内容自然确定高度，完整说明不裁剪 |
 | `HLTH-VIS-018` | `tools/check-health-dashboard-runtime-states.sh` + HarmonyOS 构建 | 有数据与空态使用同一受限外壳，数据子视图不含视口级 `height('100%')` |
 | `HLTH-VIS-019` | `tools/check-health-dashboard-runtime-states.sh` + HarmonyOS 构建 | Lottie 仅在刷新时播放一次并复位 |
 | `HLTH-VIS-020` | `tools/check-health-dashboard-runtime-states.sh` + iOS 构建 | UIScrollView 在 pan began 锁定顶部资格，中段起手永不刷新 |
 | `HLTH-VIS-021` | `tools/check-health-dashboard-runtime-states.sh` + iOS 构建 | 每次自定义刷新直接 play，结束直接 stop 并归零 |
 | `HLTH-VIS-022` | `tools/check-health-dashboard-runtime-states.sh` + iOS 构建 | Lottie 四边约束在裁剪的 30pt 容器内，不按固有尺寸溢出 |
+| `HLTH-VIS-023` | `tools/check-health-card-adaptive-layout.sh` + 三端构建 | 三端不存在类型最小高度表和垂直剩余空间填充，卡片外壳职责一致 |
 
 ## 验收标准
 

@@ -189,7 +189,7 @@
 | `HLTH-VIS-006` | 体型管理使用 Figma 原始人体资产 | 三端 PNG SHA-256 一致；三端构建通过 | `health_body_front.png`、`health_body_back.png` 三端资源 | ✅ |
 | `HLTH-VIS-007` | 无 Figma 动效稿时保持静态终态 | 三端代码审查与构建；Figma motion inventory 为空 | 三端 visual renderer 直接按共享数据绘制终态 | ✅ |
 | `HLTH-VIS-008` | Android 无参数文案不得进入格式化路径 | `HealthLocalizationTest.percentUnitWithoutArgumentsDoesNotEnterFormatter`；emulator-5556 冷启动后进程存活且无 `AndroidRuntime` 异常 | `Resources.localizedHealthText`、`HealthLocalization.kt` | ✅ |
-| `HLTH-VIS-009` | 卡片采用 Figma 2031 分状态几何与安全区 | `tools/check-health-card-fidelity.sh`；emulator-5556 顶部/中部/底部截图核对 | `FigmaCardHeight`、`figmaCardHeight`；三端周标签资源与 renderer | ✅ |
+| `HLTH-VIS-009` | 卡片采用 Figma 2031 分状态几何与安全区 | `tools/check-health-card-fidelity.sh`；emulator-5556 顶部/中部/底部截图核对 | 三端内容驱动 renderer、周标签资源与固定图表安全区 | ✅ |
 | `HLTH-VIS-010` | 右侧概览图使用受约束分栏并裁剪 | Android emulator-5556 全列表滚动截图；`hvigorw assembleApp --no-daemon`；专项结构门禁 | 三端 overview/gauge/trend/range/sleep/body 固定安全区与父级 clip | ✅ |
 | `HLTH-VIS-011` | 三端使用同源 COROS 数值字体 | 专项门禁验证三端 Bold/Regular SHA-256 一致；Android/iOS/HarmonyOS 构建通过 | 三端字体文件、Android `CorosFontFamily`、SwiftUI `Font.custom`、ArkUI `font.registerFont` | ✅ |
 | `HLTH-VIS-012` | 卡片图标与缩略图使用可追溯原始资源 | 地图三端 SHA-256 `87b98b5d...c8123f9`；`check-resource-maintainability.sh` | 三端 `health_activity_map`、既有 COROS 标题图标、Figma 人体资产 | ✅ |
@@ -197,12 +197,13 @@
 | `HLTH-VIS-014` | iOS 编辑器重建卡片时保留本地化标题 | `tools/check-health-card-editor-regressions.sh`；`xcodebuild ... IOSDemo ... build` | `HealthCardEditor.swift` 的完整类型目录、`cardTitleKey` 与 `editorCard` | ✅ |
 | `HLTH-VIS-015` | 三端健康图像通过完整的语义资源目录访问 | `tools/check-health-card-fidelity.sh`；Android/iOS/HarmonyOS 构建 | 三端 `AppImages.Health` / `AppImages` 概览资源入口；三端 `DashboardCard` renderer | ✅ |
 | `HLTH-VIS-016` | 今日运动在列表、编辑与详情场景保持图标身份稳定 | `tools/check-health-card-fidelity.sh`；`tools/check-health-card-editor-regressions.sh`；iOS/HarmonyOS 构建 | iOS `todayActivity` / `iconForCardType`；HarmonyOS `healthCardIcon(typeName)` 及编辑/详情调用 | ✅ |
-| `HLTH-VIS-017` | 空态卡片按显式状态和说明内容自适应高度 | `tools/check-health-card-adaptive-layout.sh` 实施前 12 项红灯、实施后绿灯；`:common:check :androidApp:assembleDebug`、iOS `xcodebuild`、bridge `ohosArm64Binaries`、HarmonyOS `assembleApp` | Android `FigmaCardHeight.minimumFor`/`heightIn`；iOS `HealthCard.status/isEmpty` 与 `cardMinimumHeight`；Harmony JSON `status`、ArkUI `minimumCardHeight/constraintSize` | ✅ |
+| `HLTH-VIS-017` | 空态卡片按显式状态和说明内容自适应高度 | `tools/check-health-card-adaptive-layout.sh`；三端构建 | 三端显式 Empty 状态分支、内容固有高度与完整说明渲染 | ✅ |
 | `HLTH-VIS-018` | HarmonyOS 有数据卡不撑开列表视口 | 用户实机截图红灯；专项门禁禁止数据 renderer `height('100%')`；HarmonyOS `assembleApp` | `DashboardCardComp` 全宽受限外壳 + 固有高度 Visual | ✅ |
 | `HLTH-VIS-019` | HarmonyOS 手表 Lottie 跟随同步状态播放一次 | 专项门禁；HarmonyOS `assembleApp` | `HeroTopRowComp.isSyncing/onSyncingChanged`；`SignedInPage.refreshing` | ✅ |
 | `HLTH-VIS-020` | iOS 下拉刷新仅允许从列表顶部开始 | 两轮用户实机反馈红灯；专项门禁要求单一 UIScrollView pan observer；iOS `xcodebuild` | `ScrollViewPanObserver.ObserverView.handlePan` 在 began 锁定顶部，64pt 触发 | ✅ |
 | `HLTH-VIS-021` | iOS 自定义刷新与右上角手表 Lottie 命令式同步 | 用户实机反馈声明式联动未播放；专项门禁红灯后转绿；iOS `xcodebuild` | `WatchSyncLottieView` 直接 `play/stop/currentProgress`；`syncCycle/isLoading` | ✅ |
 | `HLTH-VIS-022` | iOS 手表 Lottie 约束在 30pt 容器内 | 用户截图红灯；专项门禁红灯 6 项后转绿；iOS `xcodebuild`；iPhone 17 模拟器截图 | `WatchSyncLottieView` 裁剪 UIView 容器 + 四边 Auto Layout；SwiftUI 30×30 frame | ✅ |
+| `HLTH-VIS-023` | 三端卡片外壳按内容固有高度测量 | `tools/check-health-card-adaptive-layout.sh` 实施前 10 项红灯、最终绿灯；`:common:check`、`:androidApp:assembleDebug`、iOS `xcodebuild`、HarmonyOS `assembleApp` | Android `DashboardCard/HealthCardVisualContent`；iOS `cardRow/HealthCardVisualContent`；HarmonyOS `DashboardCardComp.VisualContent` | ✅ |
 
 ---
 
