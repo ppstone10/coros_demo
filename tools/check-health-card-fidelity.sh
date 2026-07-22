@@ -105,7 +105,7 @@ check_text androidApp/src/main/java/com/example/demo/health/components/Dashboard
 check_text androidApp/src/main/java/com/example/demo/health/components/DashboardCard.kt "clipToBounds()"
 check_text iosApp/iosApp/Health/HealthDashboardView.swift "figmaCardHeight"
 check_text iosApp/iosApp/Health/HealthDashboardView.swift ".clipped()"
-check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets "figmaCardHeight"
+check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets "minimumCardHeight"
 check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets ".clip(true)"
 check_text harmonyApp/entry/src/main/ets/entryability/EntryAbility.ets "COROSAPP"
 check_text androidApp/src/main/res/values/strings.xml '<string name="health_visual_day_mon">一</string>'

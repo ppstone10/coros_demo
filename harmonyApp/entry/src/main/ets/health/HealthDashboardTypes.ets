@@ -5,6 +5,7 @@ export interface CardEntry {
   titleKey: string;
   summaryKey: string;
   summaryArgs: string[];
+  status: string;
   isRisk: boolean;
   visual: HealthVisualData;
 }
@@ -26,6 +27,7 @@ export interface HealthVisualData {
 }
 
 export interface HealthSnapshot {
+  error?: string;
   scenario: string;
   dateLabelKey: string;
   steps: number;
@@ -41,15 +43,18 @@ export class HealthCardModel {
   summary: ResourceStr;
   iconIndex: number;
   isRisk: boolean;
+  status: string;
   visual: HealthVisualData;
 
   constructor(id: string, title: ResourceStr, summary: ResourceStr, iconIndex: number, isRisk: boolean = false,
+    status: string = 'Empty',
     visual: HealthVisualData = { kind: 'TrendBars', chartPoints: [], metrics: [], sleepStages: [] }) {
     this.id = id;
     this.title = title;
     this.summary = summary;
     this.iconIndex = iconIndex;
     this.isRisk = isRisk;
+    this.status = status;
     this.visual = visual;
   }
 }

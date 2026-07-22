@@ -1,11 +1,7 @@
 import SwiftUI
 import Shared
 import Lottie
-
-struct ScrollTopKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
+import UIKit
 
 struct HealthDashboardView: View {
     @Binding var isFullscreen: Bool
@@ -13,9 +9,8 @@ struct HealthDashboardView: View {
     @StateObject private var viewModel = HealthDashboardViewModel()
     @State private var editing = false
     @State private var detail: HealthCard?
-    @State private var dragOffset: CGFloat = 0
     @State private var showScenarioPicker = false
-    @State private var isAtScrollTop = true
+    @State private var dragOffset: CGFloat = 0
 
     var body: some View {
         Group {
@@ -35,58 +30,68 @@ struct HealthDashboardView: View {
     private var dashboard: some View {
         VStack(spacing: 0) {
             HeroTopRow(dateLabel: viewModel.dateLabel, isSyncing: viewModel.isLoading,
+                       syncCycle: viewModel.syncCycle,
                        onLongPressWatch: { showScenarioPicker = true })
             ZStack(alignment: .top) {
                 ScrollView {
                     VStack(spacing: 0) {
-                        GeometryReader { geo in
-                            AppColors.Core.clear.preference(key: ScrollTopKey.self,
-                                value: geo.frame(in: .named("scrollSpace")).minY)
-                        }.frame(height: 0)
-
-                        HeroArcView(steps: viewModel.steps, calories: viewModel.calories,
-                                    minutes: viewModel.activeMinutes).offset(y: max(0, dragOffset))
-
-                        ForEach(viewModel.cards) { card in
-                            Button {
-                                detail = card; isFullscreen = true
-                            } label: {
-                                cardRow(card)
-                            }.buttonStyle(.plain)
+                        if viewModel.isDataCorrupted {
+                            Text(appLocalized("health_data_corrupted"))
+                                .font(.system(size: AppTypography.supporting))
+                                .foregroundStyle(AppColors.Health.muted)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity, minHeight: 360)
                                 .padding(.horizontal, AppSpacing.screen)
-                                .padding(.vertical, AppSpacing.xSmall)
-                                .offset(y: max(0, dragOffset))
-                        }
+                        } else {
+                            HeroArcView(steps: viewModel.steps, calories: viewModel.calories,
+                                        minutes: viewModel.activeMinutes)
 
-                        Button {
-                            editing = true; isFullscreen = true
-                        } label: {
-                            Text(appLocalized("health_edit_cards"))
-                                .font(.system(size: AppTypography.label))
-                                .foregroundStyle(AppColors.Health.editText)
-                                .padding(.horizontal, AppSpacing.actionHorizontal).padding(.vertical, AppSpacing.medium)
-                                .background(AppColors.Health.card).clipShape(Capsule())
-                        }.buttonStyle(.plain).padding(AppSpacing.large).offset(y: max(0, dragOffset))
-                    }
-                }
-                .coordinateSpace(name: "scrollSpace").scrollIndicators(.hidden)
-                .simultaneousGesture(
-                    DragGesture()
-                        .onChanged { v in
-                            let t = v.translation.height
-                            if isAtScrollTop && t > 0 && !viewModel.isLoading { dragOffset = min(t * 0.4, 250) }
-                        }
-                        .onEnded { v in
-                            if v.translation.height > 80 && !viewModel.isLoading {
-                                withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { dragOffset = 55 }
-                                Task { await viewModel.refresh() }
-                            } else {
-                                withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { dragOffset = 0 }
+                            ForEach(viewModel.cards) { card in
+                                Button {
+                                    detail = card; isFullscreen = true
+                                } label: {
+                                    cardRow(card)
+                                }.buttonStyle(.plain)
+                                    .padding(.horizontal, AppSpacing.screen)
+                                    .padding(.vertical, AppSpacing.xSmall)
                             }
+
+                            Button {
+                                editing = true; isFullscreen = true
+                            } label: {
+                                Text(appLocalized("health_edit_cards"))
+                                    .font(.system(size: AppTypography.label))
+                                    .foregroundStyle(AppColors.Health.editText)
+                                    .padding(.horizontal, AppSpacing.actionHorizontal).padding(.vertical, AppSpacing.medium)
+                                    .background(AppColors.Health.card).clipShape(Capsule())
+                            }.buttonStyle(.plain).padding(AppSpacing.large)
                         }
-                )
+                    }
+                    .offset(y: max(0, dragOffset))
+                    .background(
+                        ScrollViewPanObserver(
+                            isRefreshing: viewModel.isLoading,
+                            onPullChanged: { distance in
+                                guard !viewModel.isLoading else { return }
+                                dragOffset = min(distance * 0.4, 250)
+                            },
+                            onPullEnded: { distance, gestureBeganAtTop in
+                                let shouldRefresh = gestureBeganAtTop && distance >= 64 && !viewModel.isLoading
+                                if shouldRefresh {
+                                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { dragOffset = 55 }
+                                    Task { await viewModel.refresh() }
+                                } else {
+                                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { dragOffset = 0 }
+                                }
+                            }
+                        )
+                    )
+                }
+                .scrollIndicators(.hidden)
                 .onChange(of: viewModel.isLoading) { _, loading in
-                    if !loading { withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { dragOffset = 0 } }
+                    if !loading {
+                        withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { dragOffset = 0 }
+                    }
                 }
 
                 if dragOffset > 10 || viewModel.isLoading {
@@ -96,28 +101,33 @@ struct HealthDashboardView: View {
                     }.padding(.top, 6)
                 }
             }
-            .onPreferenceChange(ScrollTopKey.self) { isAtScrollTop = $0 >= 0 }
         }
         .ignoresSafeArea(edges: .top)
     }
 
     private func cardRow(_ card: HealthCard) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: card.isEmpty ? 12 : 8) {
             HStack(spacing: 5) {
                 Image(card.id == "TodayActivity" ? AppImages.Health.todayHeader : card.icon).resizable().scaledToFit().frame(width: 20, height: 20)
                 Text(card.title).font(.system(size: 16, weight: .medium)).foregroundStyle(AppColors.Health.cardTitle).lineLimit(1)
                 Spacer(minLength: 0)
             }
-            if let visual = card.visual, visual.primaryValue != nil || !visual.chartPoints.isEmpty || !visual.metrics.isEmpty {
+            if card.isEmpty {
+                Text(card.summary).font(.system(size: 14)).foregroundStyle(AppColors.Health.muted)
+            } else if let visual = card.visual {
                 HealthVisualCardContent(visual: visual)
             } else {
-                Text(card.summary).font(.system(size: AppTypography.supporting)).foregroundStyle(card.isRisk ? AppColors.Health.risk : AppColors.Health.muted).lineLimit(2)
+                Text(card.summary).font(.system(size: 14)).foregroundStyle(card.isRisk ? AppColors.Health.risk : AppColors.Health.muted)
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 14)
-        .frame(maxWidth: .infinity, minHeight: figmaCardHeight(card.visual), maxHeight: figmaCardHeight(card.visual), alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: cardMinimumHeight(card), alignment: .leading)
         .background(AppColors.Health.card).clipShape(RoundedRectangle(cornerRadius: 8))
         .clipped()
+    }
+
+    private func cardMinimumHeight(_ card: HealthCard) -> CGFloat {
+        card.isEmpty ? 82 : figmaCardHeight(card.visual)
     }
 
     private func figmaCardHeight(_ visual: HealthCardVisualData?) -> CGFloat {
@@ -135,6 +145,82 @@ struct HealthDashboardView: View {
     private func saveCards(_ value: [HealthCard]) {
         viewModel.saveCardConfiguration(value.map { $0.id })
         viewModel.load(); closeEditor()
+    }
+}
+
+private struct ScrollViewPanObserver: UIViewRepresentable {
+    let isRefreshing: Bool
+    let onPullChanged: (CGFloat) -> Void
+    let onPullEnded: (CGFloat, Bool) -> Void
+
+    func makeUIView(context: Context) -> ObserverView {
+        let view = ObserverView()
+        configure(view)
+        return view
+    }
+
+    func updateUIView(_ uiView: ObserverView, context: Context) {
+        configure(uiView)
+        uiView.attachToEnclosingScrollViewIfNeeded()
+    }
+
+    private func configure(_ view: ObserverView) {
+        view.isRefreshing = isRefreshing
+        view.onPullChanged = onPullChanged
+        view.onPullEnded = onPullEnded
+    }
+
+    final class ObserverView: UIView {
+        weak var observedScrollView: UIScrollView?
+        var isRefreshing = false
+        var onPullChanged: ((CGFloat) -> Void)?
+        var onPullEnded: ((CGFloat, Bool) -> Void)?
+        private var gestureBeganAtTop = false
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            DispatchQueue.main.async { [weak self] in
+                self?.attachToEnclosingScrollViewIfNeeded()
+            }
+        }
+
+        func attachToEnclosingScrollViewIfNeeded() {
+            guard observedScrollView == nil else { return }
+            var ancestor = superview
+            while let view = ancestor {
+                if let scrollView = view as? UIScrollView {
+                    observedScrollView = scrollView
+                    scrollView.panGestureRecognizer.addTarget(self, action: #selector(handlePan(_:)))
+                    return
+                }
+                ancestor = view.superview
+            }
+        }
+
+        @objc private func handlePan(_ recognizer: UIPanGestureRecognizer) {
+            guard let scrollView = observedScrollView else { return }
+            switch recognizer.state {
+            case .began:
+                gestureBeganAtTop = !isRefreshing &&
+                    scrollView.contentOffset.y <= -scrollView.adjustedContentInset.top + 1
+            case .changed:
+                guard gestureBeganAtTop else { return }
+                onPullChanged?(max(0, recognizer.translation(in: scrollView).y))
+            case .ended:
+                let distance = max(0, recognizer.translation(in: scrollView).y)
+                onPullEnded?(distance, gestureBeganAtTop)
+                gestureBeganAtTop = false
+            case .cancelled, .failed:
+                onPullEnded?(0, false)
+                gestureBeganAtTop = false
+            default:
+                break
+            }
+        }
+
+        deinit {
+            observedScrollView?.panGestureRecognizer.removeTarget(self, action: #selector(handlePan(_:)))
+        }
     }
 }
 

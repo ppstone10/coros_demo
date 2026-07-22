@@ -512,3 +512,189 @@
 ## 人工修正点
 - 首版实现尝试复用 `kotlinx-serialization-json`，Android/iOS 通过但 HarmonyOS bridge 红灯报告该库没有 `ohos_arm64` variant；已撤回依赖，改为 common 自包含递归 JSON parser/encoder，并重新通过三端构建。
 - HarmonyOS 原来同时依赖认证快照 `_health`、单用户 `health_json` 和页面 `health_card_order`，多用户会互相复用；现统一为按 `userId` 索引的领域快照集合，旧 `_health` 仅作迁移输入。
+# 2026-07-22 11:25 — 场景选择与健康刷新持久化解耦
+
+## 采纳内容
+
+- [HLTH-PERSIST-003] 将场景选择改为仅记录当前用户的运行期待刷新场景，不立即生成模块数据、不更新健康首页、不写持久化快照。
+- [HLTH-PERSIST-003] 新增共享层 `refresh` 提交边界：刷新成功后才生成并保存完整 `HealthDashboardData` 与 `sourceScenario`；Android、iOS、HarmonyOS 均改由刷新入口调用。
+- [HLTH-PERSIST-003] HarmonyOS 选择场景时不再调用 `loadHealthDataFromKMP` 或 `saveStoreSnapshot`，刷新成功后才回读 KMP 数据并导出全用户 `health_json`。
+
+## 人工审查点
+
+- [HLTH-PERSIST-003] 待刷新场景属于 Demo 运行期交互状态，不跨进程保存；应用在刷新前退出后，重新进入仍以最后一次成功刷新快照为准。
+- [HLTH-PERSIST-003] `ReadFailure` 刷新失败时首页与持久化快照保持旧值，当前页面不切换到空白或损坏状态。
+
+## 验证结果
+
+- 红灯：新增刷新语义测试后首次执行 `./gradlew :common:testAndroidHostTest`，因 `HealthDashboardStore.refresh` 尚不存在而编译失败。
+- 绿灯：`./gradlew :common:testAndroidHostTest`、`./gradlew :common:check :androidApp:assembleDebug`、`:common:linkDebugFrameworkIosSimulatorArm64` 均通过；`HealthDashboardUseCaseTest` 增至 33 条，共享测试合计 76 条。
+- iOS：`xcodebuild -quiet -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug -derivedDataPath /private/tmp/demo-ios-derived CODE_SIGNING_ALLOWED=NO build` 通过。
+- HarmonyOS：bridge `ohosArm64Binaries` 与 `hvigorw assembleApp --no-daemon` 通过；仅保留既有 KSP、弃用 API 和未签名构建警告。
+
+## 人工修正点
+
+- [HLTH-PERSIST-003] 根据反馈纠正上一轮“选择场景立即覆盖并持久化”的语义，将刷新恢复为唯一的数据获取和提交动作。
+- [HLTH-PERSIST-005] 旧 `_health` 迁移仍在 bridge 内显式执行一次选择加刷新，避免迁移路径被新的延迟提交语义中断。
+
+## 下轮交接
+
+- 已完成：场景选择、刷新生成、首页更新和完整快照持久化已拆分，并完成三端构建与共享层自动测试。
+- 未完成 / 阻塞项：没有可连接的 HarmonyOS 设备，尚未做真机下拉刷新与重启恢复验收。
+- 下轮起步建议：先读 `spec/health-dashboard-persistence.md` 的 `HLTH-PERSIST-003`，再在三端分别验证“选择后旧卡片不变、刷新后新卡片出现、重启后仍为刷新成功的数据”。
+
+# 2026-07-22 11:51 — 健康首页空态卡片自适应高度
+
+## 采纳内容
+
+- [HLTH-VIS-009][HLTH-VIS-017] 将卡片几何从“按 visual kind 强制固定高度”调整为“空态按显式状态自适应、有数据卡按 kind 保持设计最小高度”；Figma 单行空态的 82 作为最小高度，多行或放大字体可继续撑高。
+- Android 使用 `HealthCardStatus.Empty`、`heightIn(min = ...)` 和不截断的 14sp 空态说明；iOS 在平台模型中保留 `status/isEmpty` 并移除固定 `maxHeight`；HarmonyOS bridge JSON 新增 `status`，ArkUI 使用 `constraintSize(minHeight)`。
+- 新增 `tools/check-health-card-adaptive-layout.sh`，覆盖三端状态桥接、自适应容器和旧固定高度写法回归；同步修订既有视觉门禁与 `HLTH-VIS-009` 规范表述。
+
+## 人工审查点
+
+- 空态判定以 common 的 `HealthCardStatus.Empty` 为唯一权威，不能以 `primaryValue/chartPoints/metrics` 是否为空推断，因为部分数据卡可能具有值但仍采用特殊状态布局。
+- 右侧图表的 130/166 安全区和父级圆角裁剪保持不变；自适应的是卡片外壳与说明文字，不是任意拉伸图表。
+- 当前没有连接的 Android/HarmonyOS 设备，尚未执行 320/375/430 宽度、中文/英文与放大字体下的 AllEmpty/PartialMissing 截图；建议设备可用时按该矩阵人工复核。
+
+## 验证结果
+
+- 红灯：实现前 `./tools/check-health-card-adaptive-layout.sh` 报告 12 项失败，准确检出三端固定高度、iOS/HarmonyOS 状态丢失及 Harmony bridge 未输出状态。
+- 绿灯：实现后自适应布局门禁、`check-health-card-fidelity.sh`、`check-health-card-editor-regressions.sh` 和 `git diff --check` 均通过。
+- `./gradlew :common:check :androidApp:assembleDebug` 与 iOS 模拟器 `xcodebuild` 通过；iOS 仅保留既有弃用 API、未使用返回值和脚本输出声明警告。
+- `harmony-kmp-bridge/gradlew ohosArm64Binaries` 与 HarmonyOS `hvigorw assembleApp --no-daemon` 通过；仅保留既有 KSP/编译器、弃用 API、资源重名和未签名警告。
+- `check-resource-maintainability.sh`、`check-sdd.sh`、`check-docs.sh` 通过；全量 `check-resources.sh` 仍只报告本轮外既有的 HarmonyOS“我”页缺少语言选择入口。
+
+## 人工修正点
+
+- 初次 bridge 验证误用了根 Gradle wrapper 的 `-p harmony-kmp-bridge`，触发 Kuikly/Kotlin 插件环境错误；按项目文档改用 bridge 自带 wrapper 后构建通过。
+- 初次 HarmonyOS 应用命令未设置 DevEco 内置 Node 环境而失败；补齐 `NODE_HOME/DEVECO_SDK_HOME/PATH` 后完整 ArkTS 构建通过。
+- Harmony JSON 首版补丁在 `status` 字段前多写了一个引号，代码审查时在运行前修正为合法的 `,\"status\":\"...\"` 字段拼接。
+
+# 2026-07-22 13:57 — 健康损坏态、鸿蒙宽度与动画、iOS 顶部刷新修复
+
+## 采纳内容
+
+- [HLTH-PERSIST-008] common 跨语言门面新增一次性健康错误读取；Android 直接接收刷新失败结果，iOS/HarmonyOS 显式传递 `CorruptedData`，三端在失败时隐藏旧摘要与卡片并展示独立损坏态，成功刷新后自动恢复。
+- [HLTH-VIS-018] HarmonyOS 卡片改为全宽 Row 统一扣除左右 16vp 页边距，卡片 Column 仅占剩余宽度，避免负荷、评估、恢复、能力、趋势、睡眠和体型等有数据子树反向撑宽页面。
+- [HLTH-VIS-019] HarmonyOS 手表 Lottie 接入 `refreshing` 状态：刷新开始从首帧播放一次，结束复位，未刷新时保持静止。
+- [HLTH-VIS-020] iOS 下拉手势在第一次位移时锁定是否从列表顶部开始；非顶部起手的整次手势不再显示提示或触发刷新。
+
+## 人工审查点
+
+- 损坏态只覆盖本次前台读取结果，不删除或覆盖最后一份有效持久化快照；这是错误反馈与数据恢复能力的分离。
+- HarmonyOS 卡片宽度已通过 ArkTS 编译和结构门禁，但当前没有可连接的 HarmonyOS 设备，仍建议在 320/375/430vp 真机或预览上复核全部有数据卡边界。
+- iOS 顶部资格按单次手势锁定；阈值仍等价于原 80pt 原始拖动距离，不改变刷新等待时长。
+
+## 验证结果
+
+- 红灯：新增 `./tools/check-health-dashboard-runtime-states.sh` 后首次运行报告 11 项失败，覆盖三端损坏态、iOS 顶部手势锁、HarmonyOS 卡片外壳和 Lottie 状态驱动。
+- 绿灯：专项门禁、`check-health-card-adaptive-layout.sh`、`check-health-card-fidelity.sh`、`check-health-card-editor-regressions.sh` 与 `git diff --check` 均通过。
+- `./gradlew :common:check :androidApp:assembleDebug` 通过；iOS 模拟器 `xcodebuild` 通过，仅保留既有弃用 API、未使用返回值和脚本输出声明警告。
+- Harmony bridge `linkDebugSharedOhosArm64` 与 `hvigorw assembleApp --no-daemon` 通过；仅保留既有 KSP、生成 C++、弃用 API、资源重名和未签名警告。
+- `./tools/check-sdd.sh` 与 `./tools/check-docs.sh` 通过。
+
+## 人工修正点
+
+- 原实现把跨语言失败压缩成 null/`{}`，平台无法区分损坏和无数据；现改为消费一次的稳定错误名，避免错误长期残留又不暴露平台 UI 类型到 common。
+- HarmonyOS 原卡片同时使用百分比宽度、内外边距和固定宽子图；现把页面边距所有权上移到 Row，卡片本体不再自行计算 `calc(100% - 32vp)`。
+- HarmonyOS Lottie 原配置 `autoplay: false` 且加载后从未调用 `play`；现由刷新状态显式调用播放，并保留完成/结束复位。
+
+# 2026-07-22 14:11 — 按实机反馈修正鸿蒙整屏卡片与 iOS 中段误刷新
+
+## 采纳内容
+
+- [HLTH-VIS-018] 根据用户实机截图重新定位：鸿蒙不是外壳横向边距未生效，而是 6 个有数据 Visual 分支的 `height('100%')` 在 Scroll/Refresh 中取得了视口高度；现全部改为内容固有高度，并继续由卡片类型最小高度控制设计尺寸。
+- [HLTH-VIS-020] 删除 iOS 的顶部 Preference、自定义位移、`simultaneousGesture` 和 `DragGesture`，改用 SwiftUI `ScrollView.refreshable`，由系统滚动容器保证只有到达内容顶部后继续下拉才进入刷新。
+- 强化 `check-health-dashboard-runtime-states.sh`：明确禁止 Harmony renderer 的 `height('100%')`，要求 iOS 存在 `refreshable` 且不存在自定义拖拽手势。
+
+## 人工审查点
+
+- 截图中的鸿蒙“本周负荷”宽度本身仍在左右 16vp 边距内，异常是卡片高度占满屏幕；本轮按可见证据修正纵向测量根因。
+- iOS 使用系统刷新控件后会保留系统刷新指示，同时顶部手表 Lottie 仍由 `viewModel.isLoading` 驱动；不再维护一套容易与 ScrollView 冲突的手势状态机。
+- 当前工作环境仍无可控制的 HarmonyOS 输入设备；ArkTS 构建能验证类型和组件语法，最终实机尺寸需使用用户同一设备再次复核。
+
+## 验证结果
+
+- 红灯：强化后的专项门禁首次报告 4 类失败：缺少 `refreshable`、残留 `DragGesture`、残留 `simultaneousGesture`、Harmony renderer 残留 `height('100%')`。
+- 绿灯：实现后专项门禁全部通过，确认 iOS 自定义拖拽代码和 Harmony 数据 renderer 的 100% 高度均已清零。
+- iOS 模拟器 `xcodebuild` 通过，仅保留既有弃用 API、未使用返回值与脚本输出声明警告。
+- HarmonyOS `hvigorw assembleApp --no-daemon` 通过，仅保留既有弃用 API、资源重名和未签名警告。
+
+## 人工修正点
+
+- 上一轮误把鸿蒙问题归因于横向宽度外壳，结构门禁虽然转绿，但没有覆盖截图中的纵向百分比高度；本轮将实机失败证据写回同一 Spec/TRACE，并把遗漏模式加入回归门禁。
+- 上一轮试图在 SwiftUI 手势层缓存 `isAtScrollTop`，仍会与 ScrollView 自身手势竞争；本轮撤销该方案，改用平台原生刷新边界。
+
+# 2026-07-22 14:21 — iOS 原生刷新与右上角手表 Lottie 显式同步
+
+## 采纳内容
+
+- [HLTH-VIS-021] `HealthDashboardViewModel` 新增单调递增的 `syncCycle`，每次系统 `refreshable` 真正进入刷新时先递增周期，再设置 `isLoading`。
+- `HeroTopRow` 接收刷新周期，并以 `syncCycle-isSyncing` 作为 Lottie 实例 ID：开始刷新时强制创建播放实例，刷新结束时强制创建首帧暂停实例。
+- 保留 iOS 原生顶部刷新语义；中段下滑不会调用 `refresh()`，因此不会改变周期、同步文案或手表动画。
+
+## 人工审查点
+
+- 三端卡片高度策略一致：空态采用 82 最小高度并由文案撑高；有数据卡采用类型最小高度并允许固有内容撑高。HarmonyOS 删除的是滚动视口级 100% 高度，并未恢复固定高度。
+- iOS 系统刷新指示、顶部同步文案和手表动画现在共享 `refresh()` 的同一个 `isLoading` 生命周期；`syncCycle` 只用于突破 Lottie SwiftUI 实例复用。
+- 当前仅完成模拟器构建和结构门禁，仍建议在同一 iPhone 模拟器上连续刷新两次，确认两次动画都从首帧开始并在约 4.46 秒后复位。
+
+## 验证结果
+
+- 红灯：扩充专项门禁后首次报告 5 项失败，覆盖 View 未传周期、ViewModel 无周期状态/递增、Hero 无复合 ID及仍依赖 `animationDidFinish` 自行换 ID。
+- 绿灯：实现后 `check-health-dashboard-runtime-states.sh` 全部通过；确认周期从原生刷新链路传到 Lottie，旧完成回调已删除。
+- iOS 模拟器 `xcodebuild` 通过；仅保留既有弃用 API、未使用返回值和脚本输出声明警告。
+
+## 人工修正点
+
+- 原 Hero 仅依赖 `isSyncing` 与 `animationDidFinish` 内部随机 UUID，动画完成时间和数据刷新生命周期彼此独立；现由外部刷新周期统一控制开始与结束，避免首次能播、后续复用漏播或完成后自行重启。
+
+# 2026-07-22 14:33 — iOS 单一原生 pan 链与命令式手表 Lottie
+
+## 采纳内容
+
+- [HLTH-VIS-020] 撤回系统 `refreshable`，恢复原自定义下拉位移、同步提示和回弹视觉；触发阈值调整为 64pt，改善系统刷新难触发的问题。
+- 新增 `ScrollViewPanObserver`，只给 SwiftUI ScrollView 底层已有的 `panGestureRecognizer` 增加 target；在 `.began` 使用真实 `contentOffset/adjustedContentInset` 锁定顶部资格，`.changed/.ended` 使用同一识别器的 translation。
+- [HLTH-VIS-021] 手表改为 `UIViewRepresentable + LottieAnimationView`：刷新开始直接 `stop → currentProgress=0 → play`，刷新结束直接 `stop → currentProgress=0`。
+- 保留 `syncCycle` 防止重复刷新周期被合并；中段起手不会调用 `refresh()`，因此不会显示同步态或播放 Lottie。
+
+## 人工审查点
+
+- Observer 没有创建新的手势识别器，不会阻止 ScrollView 正常滚动；它只监听系统 pan 的状态和位移。
+- 顶部资格只在 `.began` 计算一次；从中段开始、同一次拖动途中到达顶部仍保持无资格，必须松手后从顶部发起新手势。
+- 当前阈值 64pt，比原 80pt 和系统刷新更易触发；视觉位移仍按 0.4 比例、最多 250pt，触发后保持 55pt 直到约 4.46 秒刷新结束。
+
+## 验证结果
+
+- 红灯：最终专项门禁先检出缺少单一 pan 回调链、仍存在独立 DragGesture/simultaneousGesture，以及 Lottie 未直接 play/stop/归零。
+- 绿灯：`check-health-dashboard-runtime-states.sh` 通过，确认没有 `.refreshable`、SwiftUI DragGesture 或 simultaneousGesture，顶部锁定和命令式 Lottie 标记完整。
+- iOS 模拟器 `xcodebuild` 通过；仅保留既有弃用 API、未使用返回值和脚本输出声明警告。
+
+## 人工修正点
+
+- 原生 `refreshable` 虽能保证顶部边界，但触发阈值和系统 spinner 与计划视觉不一致；本轮按用户选择恢复自定义体验，同时保留 UIKit 的真实滚动边界。
+- 上一版通过 SwiftUI ID 重建尝试驱动 Lottie，运行时仍未播放；现不再依赖视图 diff，直接控制同一个动画实例。
+
+# 2026-07-22 14:39 — iOS 手表 Lottie 收口到正常 30pt 尺寸
+
+## 采纳内容
+
+- [HLTH-VIS-022] `WatchSyncLottieView` 不再直接返回具有大固有尺寸的 `LottieAnimationView`，改为返回裁剪的透明 UIView 容器。
+- 内部动画关闭 autoresizing mask，以 leading/trailing/top/bottom 四条 Auto Layout 约束填满容器；动画和容器均开启 `clipsToBounds`，SwiftUI 外层继续使用 30×30pt 并二次裁剪。
+- 命令式刷新同步逻辑保持不变，长按场景选择手势仍绑定在外部 30pt 区域。
+
+## 人工审查点
+
+- 30×30pt 与 Android/HarmonyOS 手表语义尺寸一致，略大于旁边 23×23pt 日历，但不会覆盖状态栏、日期或活动时长指标。
+- 本轮只修复 UIKit Lottie 的测量和溢出，没有缩放动画资源文件，也没有改动播放周期与刷新逻辑。
+
+## 验证结果
+
+- 红灯：扩充专项门禁后首次报告 6 项失败，覆盖缺少裁剪容器、autoresizing mask 和四边约束。
+- 绿灯：`check-health-dashboard-runtime-states.sh` 通过；iOS 模拟器 `xcodebuild` 通过，仅保留既有警告。
+- 已将新构建安装到已启动的 iPhone 17 模拟器并启动，`simctl` 截图 `/private/tmp/demo-ios-watch-size.png` 人工核对通过：手表位于右上角 30pt 区域，没有溢出。
+
+## 人工修正点
+
+- 仅设置 SwiftUI `.frame(width: 30, height: 30)` 对直接桥接的 UIKit Lottie 不足，截图中动画仍按 composition 固有尺寸绘制；现由 UIKit 容器承担真实尺寸约束，SwiftUI frame 只负责顶部栏布局。

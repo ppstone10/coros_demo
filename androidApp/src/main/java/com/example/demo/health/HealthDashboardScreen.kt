@@ -64,6 +64,7 @@ fun HealthDashboardScreen(
     var detail by remember { mutableStateOf<HealthCardUiModel?>(null) }
     var showScenarioPicker by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
+    var selectedScenario by remember(viewModel.state.currentSession) { mutableStateOf(HealthMockScenario.Normal) }
 
     val dashboard = (result as? MockResult.Success)?.data
     val state = dashboard?.uiState
@@ -71,11 +72,16 @@ fun HealthDashboardScreen(
     val isAuthError = failureError != null && failureError != MockError.CorruptedData
     val isCorrupted = failureError == MockError.CorruptedData
 
+    LaunchedEffect(dashboard?.scenario) {
+        dashboard?.scenario?.let { selectedScenario = it }
+    }
+
     if (showScenarioPicker) {
         ScenarioPickerDialog(
-            currentScenario = dashboard?.scenario ?: HealthMockScenario.Normal,
+            currentScenario = selectedScenario,
             onSelect = { scenario ->
-                result = viewModel.selectHealthScenario(scenario)
+                viewModel.selectHealthScenario(scenario)
+                selectedScenario = scenario
                 showScenarioPicker = false
             },
             onDismiss = { showScenarioPicker = false }
@@ -103,7 +109,7 @@ fun HealthDashboardScreen(
     LaunchedEffect(isRefreshing) {
         if (isRefreshing) {
             delay(4460.milliseconds)
-            result = viewModel.loadHealthDashboard()
+            result = viewModel.refreshHealthDashboard()
             isRefreshing = false
         }
     }

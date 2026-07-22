@@ -245,13 +245,36 @@ class LoginFacade(
 
     fun loadHealthDashboard(): PersistedDashboard? {
         val result = store.loadHealthDashboard()
-        return if (result is MockResult.Success<*>) result.data as? PersistedDashboard else null
+        return if (result is MockResult.Success<*>) {
+            lastHealthDashboardError = null
+            result.data as? PersistedDashboard
+        } else {
+            lastHealthDashboardError = (result as? MockResult.Failure)?.error?.name
+            null
+        }
     }
 
-    fun selectHealthScenario(name: String): PersistedDashboard? {
-        val scenario = HealthMockScenario.entries.firstOrNull { it.name == name } ?: return null
+    fun selectHealthScenario(name: String): Boolean {
+        val scenario = HealthMockScenario.entries.firstOrNull { it.name == name } ?: return false
         val result = store.selectHealthScenario(scenario)
-        return if (result is MockResult.Success<*>) result.data as? PersistedDashboard else null
+        return result is MockResult.Success<*>
+    }
+
+    fun refreshHealthDashboard(): PersistedDashboard? {
+        val result = store.refreshHealthDashboard()
+        return if (result is MockResult.Success<*>) {
+            lastHealthDashboardError = null
+            result.data as? PersistedDashboard
+        } else {
+            lastHealthDashboardError = (result as? MockResult.Failure)?.error?.name
+            null
+        }
+    }
+
+    fun healthDashboardError(): String? {
+        val error = lastHealthDashboardError
+        lastHealthDashboardError = null
+        return error
     }
 
     fun saveHealthCardConfiguration(typeNames: List<String>): PersistedDashboard? {
@@ -270,6 +293,7 @@ class LoginFacade(
     }
 
     private var lastHealthCardError: String? = null
+    private var lastHealthDashboardError: String? = null
 
     private fun String.toMeasurementSystemOrDefault(): MeasurementSystem {
         return when (this) {

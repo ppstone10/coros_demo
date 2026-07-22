@@ -56,7 +56,9 @@ protocol SharedLoginAdapterProtocol {
     func resumeSession()
     func consumeEffect() -> LoginEffect?
     func loadHealthDashboard() -> PersistedDashboard?
-    func selectHealthScenario(_ name: String) -> PersistedDashboard?
+    func selectHealthScenario(_ name: String) -> Bool
+    func refreshHealthDashboard() -> PersistedDashboard?
+    func healthDashboardError() -> String?
     func saveHealthCardConfiguration(_ typeNames: [String]) -> PersistedDashboard?
     func healthCardSaveError() -> String?
 }
@@ -286,8 +288,16 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
         facade.loadHealthDashboard()
     }
     
-    func selectHealthScenario(_ name: String) -> PersistedDashboard? {
+    func selectHealthScenario(_ name: String) -> Bool {
         facade.selectHealthScenario(name: name)
+    }
+
+    func refreshHealthDashboard() -> PersistedDashboard? {
+        facade.refreshHealthDashboard()
+    }
+
+    func healthDashboardError() -> String? {
+        facade.healthDashboardError()
     }
     
     func saveHealthCardConfiguration(_ typeNames: [String]) -> PersistedDashboard? {

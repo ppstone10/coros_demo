@@ -9,6 +9,8 @@ final class HealthDashboardViewModel: ObservableObject {
     @Published private(set) var calories = 769
     @Published private(set) var activeMinutes = 69
     @Published private(set) var isLoading = false
+    @Published private(set) var syncCycle = 0
+    @Published private(set) var isDataCorrupted = false
     @Published private(set) var selectedScenario = "Normal"
 
     private let adapter: SharedLoginAdapterProtocol
@@ -19,7 +21,15 @@ final class HealthDashboardViewModel: ObservableObject {
     }
 
     func load() {
-        guard let pd = adapter.loadHealthDashboard() else { return }
+        if let pd = adapter.loadHealthDashboard() {
+            apply(pd)
+        } else {
+            isDataCorrupted = adapter.healthDashboardError() == "CorruptedData"
+        }
+    }
+
+    private func apply(_ pd: PersistedDashboard) {
+        isDataCorrupted = false
         dateLabel = localizedHealthText(pd.uiState.dateLabel)
         selectedScenario = pd.scenario.name
         if let ds = pd.uiState.dailySummary {
@@ -30,14 +40,15 @@ final class HealthDashboardViewModel: ObservableObject {
         cards = pd.uiState.cards.map { c in
             HealthCard(id: c.type.name, title: localizedHealthText(c.title),
                        summary: localizedHealthText(c.summary),
-                       icon: iconForCardType(c.type.name), isRisk: c.status.name == "Risk", visual: c.visual)
+                       icon: iconForCardType(c.type.name), isRisk: c.status.name == "Risk",
+                       status: c.status.name, visual: c.visual)
         }
     }
 
     func selectScenario(_ name: String) {
-        selectedScenario = name
-        _ = adapter.selectHealthScenario(name)
-        load()
+        if adapter.selectHealthScenario(name) {
+            selectedScenario = name
+        }
     }
 
     func saveCardConfiguration(_ typeIDs: [String]) -> String? {
@@ -48,8 +59,15 @@ final class HealthDashboardViewModel: ObservableObject {
 
     func refresh() async {
         guard !isLoading else { return }
-        isLoading = true; try? await Task.sleep(nanoseconds: 4_460_000_000)
-        load(); isLoading = false
+        syncCycle += 1
+        isLoading = true
+        try? await Task.sleep(nanoseconds: 4_460_000_000)
+        if let refreshed = adapter.refreshHealthDashboard() {
+            apply(refreshed)
+        } else {
+            isDataCorrupted = adapter.healthDashboardError() == "CorruptedData"
+        }
+        isLoading = false
     }
 }
 

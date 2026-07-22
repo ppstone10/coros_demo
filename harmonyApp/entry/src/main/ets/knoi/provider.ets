@@ -89,6 +89,8 @@ export interface HarmonyLoginService {
 
    selectHealthScene(name: string): string;
 
+   refreshHealthSnapshot(): string;
+
    saveCardConfig(typeNamesCsv: string): string;
 
    exportHealthSnapshot(): string;

@@ -227,6 +227,8 @@ class LoginViewModel(
 
     fun selectHealthScenario(scenario: HealthMockScenario) = store.selectHealthScenario(scenario)
 
+    fun refreshHealthDashboard() = store.refreshHealthDashboard()
+
     fun saveHealthCardConfiguration(types: List<com.example.demo.common.health.HealthCardType>) =
         store.saveHealthCardConfiguration(types)
 

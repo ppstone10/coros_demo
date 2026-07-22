@@ -4,6 +4,7 @@ import lottie, { AnimationItem } from '@ohos/lottie';
 @Component
 export struct HeroTopRowComp {
   @Prop dateLabel: ResourceStr = $r('app.string.health_demo_date');
+  @Prop @Watch('onSyncingChanged') isSyncing: boolean = false;
   onLongPress?: () => void;
   private lottieCanvasCtx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true));
   private lottieItem: AnimationItem | null = null;
@@ -12,6 +13,16 @@ export struct HeroTopRowComp {
   aboutToDisappear(): void {
     lottie.destroy();
     this.lottieLoaded = false;
+  }
+
+  private onSyncingChanged(): void {
+    if (!this.lottieLoaded || this.lottieItem === null) return;
+    if (this.isSyncing) {
+      this.lottieItem.goToAndStop(0, true);
+      this.lottieItem.play('lottieWatch');
+    } else {
+      this.lottieItem.goToAndStop(0, true);
+    }
   }
 
   build() {
@@ -42,6 +53,7 @@ export struct HeroTopRowComp {
           });
           this.lottieItem.addEventListener('DOMLoaded', () => {
             this.lottieLoaded = true;
+            this.onSyncingChanged();
           });
           this.lottieItem.addEventListener('complete', () => {
             this.lottieItem?.goToAndStop(0, true);

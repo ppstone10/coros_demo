@@ -8,6 +8,7 @@
 - 登录页面通过 `LoginViewModel` -> `LoginLogicAdapter` 调用业务逻辑。
 - `KnoiLoginAdapter` 通过 KuiklyBase-Kotlin + KNOI 调用 `harmony-kmp-bridge` 中的 `HarmonyLoginService`；该 service 复用 `common/src/commonMain` 的 `LoginFacade`、验证码、注册、登录和登出逻辑。
 - native 运行期使用内存 Store；`StorePersister.ets` 将 bridge 导出的认证 JSON 与按 `userId` 隔离的完整健康快照集合分别保存到 `@ohos.data.preferences`，并在应用启动时恢复。
+- Demo 场景选择只写入 bridge 的运行期待刷新状态；用户下拉刷新成功后，ArkUI 才重新读取首页数据并把完整健康快照集合写入 Preferences。
 - `EntryAbility` 显式执行 `setup('libkn.so', false)` 和 `init()`；Harmony 登录业务不再走 `import libshared_login_bridge.so`。
 - KNOI 工具链、native module 产物和兼容约束以 `harmony-kmp-bridge/README.md` 为准。没有 `libkn.so` 时，鸿蒙端不应被视为已完成可运行构建。
 

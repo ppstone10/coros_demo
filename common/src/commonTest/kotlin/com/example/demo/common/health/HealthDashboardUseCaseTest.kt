@@ -45,8 +45,10 @@ class HealthDashboardUseCaseTest {
     @Test fun selectedScenarioPersistsForTheSameUser() {
         val persistence = InMemoryHealthDashboardStateDataSource()
         val repository = repository(true)
-        HealthDashboardStore(repository, persistence).selectScenario(HealthMockScenario.Abnormal)
-        assertEquals(HealthMockScenario.Abnormal, assertIs<MockResult.Success<PersistedDashboard>>(HealthDashboardStore(repository, persistence).load()).data.scenario)
+        val store = HealthDashboardStore(repository, persistence)
+        store.selectScenario(HealthMockScenario.Abnormal)
+        store.refresh()
+        assertEquals(HealthMockScenario.Abnormal, assertIs<MockResult.Success<PersistedDashboard>>(store.load()).data.scenario)
     }
     @Test fun dashboardSnapshotsAreIsolatedByUserId() {
         val persistence = InMemoryHealthDashboardStateDataSource()
@@ -54,7 +56,10 @@ class HealthDashboardUseCaseTest {
         val second = LocalMockAuthRepository(InMemoryAuthStoreDataSource(), nowEpochMs = { 1_000L })
         second.requestVerifyCode("other@example.com", DefaultVerifyCode)
         assertIs<LoginResult.Success>(RegisterUseCase(second).execute("other@example.com", "password1", DefaultVerifyCode, "CN", "Other User"))
-        HealthDashboardStore(first, persistence).selectScenario(HealthMockScenario.AllEmpty)
+        HealthDashboardStore(first, persistence).apply {
+            selectScenario(HealthMockScenario.AllEmpty)
+            refresh()
+        }
         assertEquals(HealthMockScenario.Normal, assertIs<MockResult.Success<PersistedDashboard>>(HealthDashboardStore(second, persistence).load()).data.scenario)
     }
     @Test fun cardSaveRejectsMinimumConfig() {
@@ -155,24 +160,53 @@ class HealthDashboardUseCaseTest {
         assertEquals("61.3", loaded.uiState.cards.first { it.type == HealthCardType.BodyManagement }.visual.primaryValue)
     }
 
-    @Test fun scenarioSelectionPersistsGeneratedModuleData() {
+    @Test fun scenarioSelectionDoesNotChangeDashboardUntilRefresh() {
         val persistence = InMemoryHealthDashboardStateDataSource()
         val repository = repository(true)
+        val store = HealthDashboardStore(repository, persistence)
+        val before = assertIs<MockResult.Success<PersistedDashboard>>(store.load()).data
+        val beforeSnapshot = persistence.load(requireNotNull(repository.currentSession()).userId)
 
-        assertIs<MockResult.Success<PersistedDashboard>>(
-            HealthDashboardStore(repository, persistence).selectScenario(HealthMockScenario.Abnormal)
-        )
+        assertIs<MockResult.Success<Unit>>(store.selectScenario(HealthMockScenario.Abnormal))
 
+        assertEquals(before, assertIs<MockResult.Success<PersistedDashboard>>(store.load()).data)
+        assertEquals(beforeSnapshot, persistence.load(requireNotNull(repository.currentSession()).userId))
+    }
+
+    @Test fun refreshPersistsSelectedScenarioModuleData() {
+        val persistence = InMemoryHealthDashboardStateDataSource()
+        val repository = repository(true)
+        val store = HealthDashboardStore(repository, persistence)
+        assertIs<MockResult.Success<PersistedDashboard>>(store.load())
+        assertIs<MockResult.Success<Unit>>(store.selectScenario(HealthMockScenario.Abnormal))
+
+        val refreshed = assertIs<MockResult.Success<PersistedDashboard>>(store.refresh()).data
         val stored = requireNotNull(persistence.load(requireNotNull(repository.currentSession()).userId))
+
+        assertEquals(HealthMockScenario.Abnormal, refreshed.scenario)
         assertEquals(HealthMockScenario.Abnormal, stored.sourceScenario)
         assertEquals(domain(HealthMockScenario.Abnormal), stored.dashboardData)
+    }
+
+    @Test fun failedRefreshPreservesLastDashboardSnapshot() {
+        val persistence = InMemoryHealthDashboardStateDataSource()
+        val repository = repository(true)
+        val store = HealthDashboardStore(repository, persistence)
+        val before = assertIs<MockResult.Success<PersistedDashboard>>(store.load()).data
+        val beforeSnapshot = persistence.load(requireNotNull(repository.currentSession()).userId)
+        assertIs<MockResult.Success<Unit>>(store.selectScenario(HealthMockScenario.ReadFailure))
+
+        assertEquals(MockError.CorruptedData, assertIs<MockResult.Failure>(store.refresh()).error)
+        assertEquals(before, assertIs<MockResult.Success<PersistedDashboard>>(store.load()).data)
+        assertEquals(beforeSnapshot, persistence.load(requireNotNull(repository.currentSession()).userId))
     }
 
     @Test fun cardConfigurationUpdatePreservesDashboardData() {
         val persistence = InMemoryHealthDashboardStateDataSource()
         val repository = repository(true)
         val store = HealthDashboardStore(repository, persistence)
-        assertIs<MockResult.Success<PersistedDashboard>>(store.selectScenario(HealthMockScenario.Abnormal))
+        assertIs<MockResult.Success<Unit>>(store.selectScenario(HealthMockScenario.Abnormal))
+        assertIs<MockResult.Success<PersistedDashboard>>(store.refresh())
         val before = requireNotNull(persistence.load(requireNotNull(repository.currentSession()).userId)).dashboardData
 
         assertIs<MockResult.Success<PersistedDashboard>>(

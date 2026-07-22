@@ -229,12 +229,20 @@ open class HarmonyLoginService {
 
     fun loadHealthSnapshot(): String {
         val pd = facade.loadHealthDashboard()
-        return if (pd != null) healthSnapshotJson(pd) else "{}"
+        if (pd != null) return healthSnapshotJson(pd)
+        val error = facade.healthDashboardError()
+        return if (error != null) "{\"error\":\"$error\"}" else "{}"
     }
 
     fun selectHealthScene(name: String): String {
-        val pd = facade.selectHealthScenario(name)
-        return if (pd != null) healthSnapshotJson(pd) else "{}"
+        return facade.selectHealthScenario(name).toString()
+    }
+
+    fun refreshHealthSnapshot(): String {
+        val pd = facade.refreshHealthDashboard()
+        if (pd != null) return healthSnapshotJson(pd)
+        val error = facade.healthDashboardError()
+        return if (error != null) "{\"error\":\"$error\"}" else "{}"
     }
 
     fun saveCardConfig(typeNamesCsv: String): String {
@@ -273,7 +281,9 @@ open class HarmonyLoginService {
                 val sStart = scenarioIdx + scenarioKey.length
                 val sEnd = body.indexOf('"', sStart)
                 val scenario = body.substring(sStart, if (sEnd >= 0) sEnd else body.length)
-                if (scenario.isNotBlank()) facade.selectHealthScenario(scenario)
+                if (scenario.isNotBlank() && facade.selectHealthScenario(scenario)) {
+                    facade.refreshHealthDashboard()
+                }
             }
             val typesKey = "\"enabledTypes\":\""
             val typesIdx = body.indexOf(typesKey)
@@ -347,6 +357,9 @@ private fun healthSnapshotJson(pd: PersistedDashboard): String {
             sb.append("\"").append(argument.esc()).append("\"")
         }
         sb.append("]")
+        sb.append(",\"status\":\"")
+        sb.append(card.status.name)
+        sb.append("\"")
         sb.append(",\"isRisk\":")
         sb.append(card.status.name == "Risk")
         sb.append(",\"visual\":{")

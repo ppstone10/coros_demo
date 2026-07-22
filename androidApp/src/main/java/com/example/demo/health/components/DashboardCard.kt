@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -72,6 +73,7 @@ private val CorosFontFamily = FontFamily(
 )
 
 private object FigmaCardHeight {
+    val Empty = 82.dp
     val TodayActivity = 114.dp
     val WeeklyPlan = 178.dp
     val TrainingAssessment = 206.dp
@@ -87,6 +89,9 @@ private object FigmaCardHeight {
         HealthCardVisualKind.BodyMap -> BodyMap
         else -> Compact
     }
+
+    fun minimumFor(card: HealthCardUiModel): Dp =
+        if (card.status == HealthCardStatus.Empty) Empty else forKind(card.visual.kind)
 }
 
 @Composable
@@ -96,7 +101,7 @@ fun DashboardCard(card: HealthCardUiModel, onClick: () -> Unit) {
         modifier = Modifier
             .padding(horizontal = AppSpacing.Screen, vertical = 6.dp)
             .fillMaxWidth()
-            .height(FigmaCardHeight.forKind(card.visual.kind))
+            .heightIn(min = FigmaCardHeight.minimumFor(card))
             .clip(shape)
             .clipToBounds()
             .background(CardBlack)
@@ -104,9 +109,21 @@ fun DashboardCard(card: HealthCardUiModel, onClick: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {
         CardHeader(card)
-        Spacer(Modifier.height(if (card.visual.kind == HealthCardVisualKind.TodayActivity) 10.dp else 8.dp))
-        Box(Modifier.fillMaxSize().clipToBounds()) {
-            if (card.status == HealthCardStatus.Empty) EmptyContent(card) else VisualContent(card.type, card.visual)
+        Spacer(
+            Modifier.height(
+                when {
+                    card.status == HealthCardStatus.Empty -> 12.dp
+                    card.visual.kind == HealthCardVisualKind.TodayActivity -> 10.dp
+                    else -> 8.dp
+                }
+            )
+        )
+        if (card.status == HealthCardStatus.Empty) {
+            EmptyContent(card)
+        } else {
+            Box(Modifier.fillMaxSize().clipToBounds()) {
+                VisualContent(card.type, card.visual)
+            }
         }
     }
 }
@@ -133,7 +150,7 @@ private fun CardHeader(card: HealthCardUiModel) {
 
 @Composable
 private fun EmptyContent(card: HealthCardUiModel) {
-    Text(localizedHealthText(card.summary), color = Muted, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    Text(localizedHealthText(card.summary), color = Muted, fontSize = 14.sp, lineHeight = 18.sp)
 }
 
 @Composable

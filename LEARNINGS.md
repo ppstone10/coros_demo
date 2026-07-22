@@ -77,6 +77,7 @@
 | **健康可视化契约** | 趋势、区间、指标、睡眠阶段等绘制数据由 common 以 `HealthCardVisualData` 输出，三端按 `kind` 原生绘制；UI 不随机补点，也不把整卡烘焙成图片 |
 | **Figma 动效证据边界** | 当目标节点的 motion inventory 为空时，只实现静态终态并保留应用既有交互反馈，不凭视觉稿臆造时间线；新增动效需单独定义时长、缓动与 Reduce Motion 降级 |
 | **健康卡片右栏安全区** | 仪表、趋势、区间、睡眠阶段和人体图统一使用显式 130/166 宽高安全区，叶节点与父卡片双重裁剪；HarmonyOS 右栏不得同时使用 `layoutWeight` 和 `width('100%')`，否则概览图会越过圆角卡片 |
+| **健康卡片高度契约** | 空态必须由 common 的显式 `HealthCardStatus.Empty` 选择，iOS/HarmonyOS 适配层不得通过主值或图表是否为空猜测；空态以 82 为最小高度并由完整说明自然撑高，有数据卡仅把 114/122/178/180/188/206 作为按 visual kind 的最小视觉高度 |
 | **设计字体跨端一致性** | 用户提供的应用包字体可按文件哈希确认同源后分别进入 Android font、iOS UIAppFonts、HarmonyOS rawfile；中文标题保留平台字体，COROS 字体只承担数字/单位，避免缺字 |
 | **卡片编辑器草稿边界** | “恢复默认”应先只重建编辑器本地草稿，用户点击保存后再写 KMP 持久化；不能用重新加载已保存快照代替恢复，否则删减顺序会原样返回 |
 | **编辑器卡片元数据** | UI 根据类型 ID 重建已删除或默认卡片时，标题和图标必须来自完整稳定映射，不能用空标题占位；保存边界仍只提交类型 ID |
@@ -85,7 +86,12 @@
 | **调试资源排除** | HarmonyOS `DebugStatePage.ets` 不进入正式 Demo，可在资源债务门禁中按唯一精确路径排除文案和颜色；其他生产页面不得复用该例外 |
 | **跨格式图像一致性** | Android WebP 与 iOS/HarmonyOS PNG 的文件 SHA 不同不代表可见图形不同；排查时应比较尺寸和解码后的可见像素，并以语义资源目录约束 UI 映射。透明像素中未预乘的 RGB 差异不影响渲染，不应为追求原始文件哈希而无意义重编码 |
 | **卡片图标以类型映射** | 卡片编辑、恢复与详情页应按稳定类型 ID 获取图标，不依赖可冲突的整数索引或 default 回退；特殊首页标题图只在该渲染场景覆盖通用图标 |
-| **健康快照持久化边界** | 每位用户持久化完整 `HealthDashboardData` 与卡片配置，UI model 继续由 common 规则派生；Demo 场景只生成/覆盖数据并保留来源元数据，不得在恢复时覆盖已保存模块值。HarmonyOS 用单一 `health_json` 保存全部用户快照集合，不再维护 `_health` 与全局 `health_card_order` 双重权威状态 |
+| **健康快照持久化边界** | 每位用户持久化完整 `HealthDashboardData` 与卡片配置，UI model 继续由 common 规则派生；Demo 场景选择只更新运行期待刷新状态，只有健康首页刷新成功才生成、覆盖并持久化模块数据，刷新失败保留旧快照。恢复时不得用场景覆盖已保存模块值。HarmonyOS 用单一 `health_json` 保存全部用户快照集合，不再维护 `_health` 与全局 `health_card_order` 双重权威状态 |
+| **健康刷新失败前台状态** | “失败时保留最后有效快照”只约束持久化，不能让页面继续冒充刷新成功；跨语言 nullable/空 JSON 会丢失原因，门面需一次性暴露稳定错误名，三端用独立损坏态隐藏旧卡片，下一次成功刷新再清除 |
+| **iOS 下拉刷新边界** | 当产品要求自定义下拉视觉/阈值时，不用 Preference 推测顶部，也不叠加独立 SwiftUI `DragGesture`；只给现有 `UIScrollView.panGestureRecognizer` 增加 target，在 `.began` 以真实 `contentOffset/adjustedContentInset` 锁定整次手势资格，changed/ended 沿用同一识别器 |
+| **iOS Lottie 刷新同步** | SwiftUI `LottieView.playbackMode`、随机/周期 ID 重建都不能替代实际播放验证；需要严格同步时用 `UIViewRepresentable` 持有 `LottieAnimationView`，刷新开始显式 `stop → progress 0 → play`，结束显式 `stop → progress 0` |
+| **iOS UIKit 动画尺寸** | `UIViewRepresentable` 直接返回具有固有 composition 尺寸的 `LottieAnimationView` 时，外部 SwiftUI `.frame` 可能只约束包装层而允许动画溢出；返回裁剪 UIView 容器，把动画关闭 autoresizing mask 后四边约束填充，并在 SwiftUI 层再次 `.clipped()` |
+| **HarmonyOS 卡片尺寸所有权** | 百分比宽度、内外边距与固定宽子图共同参与 ArkUI 测量时，由全宽 Row 扣页面 padding、卡片 Column 仅 `layoutWeight(1)` 占剩余宽度；更关键的是 Scroll/Refresh 内的数据 renderer 禁止 `height('100%')`，否则百分比高度会解析为滚动视口并让一张普通卡占满整屏 |
 | **HarmonyOS common JSON 依赖边界** | `ohos_arm64` 无法解析官方 kotlinx-serialization JSON Native 变体；会进入 Harmony bridge 的 common JSON codec 必须保持自包含或使用明确提供 OHOS 变体的依赖，不能仅因 Android/iOS 可编译就引入普通 Kotlin/Native 库 |
 
 ## Spec 文件索引

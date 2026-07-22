@@ -11,7 +11,8 @@ export struct DashboardCardComp {
     return localizedHealthText(this, key, args || []);
   }
 
-  private figmaCardHeight(): number {
+  private minimumCardHeight(): number {
+    if (this.card.status === 'Empty') return 82;
     if (this.card.visual.kind === 'TodayActivity') return 114;
     if (this.card.visual.kind === 'WeeklyPlan') return 178;
     if (this.card.visual.kind === 'TrainingAssessment') return 206;
@@ -113,7 +114,7 @@ export struct DashboardCardComp {
         }.width(141).alignItems(HorizontalAlign.Start)
         Blank()
         this.Bars(this.card.visual.kind === 'TrendBars' ? 166 : 130, this.card.visual.kind === 'TrendBars' ? 56 : 54)
-      }.width('100%').height('100%').alignItems(VerticalAlign.Center)
+      }.width('100%').alignItems(VerticalAlign.Center)
     } else if (this.card.visual.kind === 'TrainingAssessment') {
       Column({ space: 4 }) {
         Text(this.text(this.card.visual.captionKey, this.card.visual.captionArgs)).fontSize(20).fontColor(AppColors.VISUAL_ORANGE).fontWeight(FontWeight.Medium)
@@ -125,7 +126,7 @@ export struct DashboardCardComp {
             if (index < 2) { Blank(); Divider().vertical(true).height(42).color(AppColors.DIVIDER); Blank() }
           })
         }.width('100%')
-      }.height('100%').alignItems(HorizontalAlign.Start)
+      }.alignItems(HorizontalAlign.Start)
     } else if (this.card.visual.kind === 'RecoveryGauge' || this.card.visual.kind === 'AbilityGauge') {
       Row() {
         Column({ space: 0 }) {
@@ -141,7 +142,7 @@ export struct DashboardCardComp {
             .startAngle(-90).endAngle(90).colors(AppColors.VISUAL_CYAN).strokeWidth(4).width(114).height(58)
           Text(this.text(this.card.visual.captionKey, this.card.visual.captionArgs)).fontSize(12).fontColor(AppColors.MUTED).maxLines(1)
         }.width(130).alignItems(HorizontalAlign.Center).clip(true)
-      }.width('100%').height('100%').alignItems(VerticalAlign.Center)
+      }.width('100%').alignItems(VerticalAlign.Center)
     } else if (this.card.visual.kind === 'RangeIndicator') {
       Row() {
         Column({ space: 0 }) {
@@ -159,7 +160,7 @@ export struct DashboardCardComp {
             Row().height(4).width(46).margin({ left: 45 }).backgroundColor(AppColors.VISUAL_GREEN).borderRadius(2)
           }.height(14).width(130)
         }.width(130).clip(true)
-      }.width('100%').height('100%').alignItems(VerticalAlign.Center)
+      }.width('100%').alignItems(VerticalAlign.Center)
     } else if (this.card.visual.kind === 'SleepStages') {
       Row() {
         Column({ space: 0 }) {
@@ -179,7 +180,7 @@ export struct DashboardCardComp {
               .backgroundColor(stage.stage === 'Awake' ? AppColors.VISUAL_ORANGE : stage.stage === 'Rem' ? AppColors.VISUAL_PURPLE : stage.stage === 'Deep' ? AppColors.VISUAL_DEEP_BLUE : AppColors.VISUAL_BLUE).borderRadius(2)
           })
         }.width(130).height(56).alignItems(VerticalAlign.Top).clip(true)
-      }.width('100%').height('100%').alignItems(VerticalAlign.Center)
+      }.width('100%').alignItems(VerticalAlign.Center)
     } else if (this.card.visual.kind === 'HealthCheckGrid') {
       Column({ space: 7 }) {
         Text(this.text(this.card.visual.captionKey, this.card.visual.captionArgs)).fontSize(10).fontColor(AppColors.MUTED)
@@ -210,20 +211,26 @@ export struct DashboardCardComp {
             })
           }
         }.width(142).alignItems(HorizontalAlign.Center).clip(true)
-      }.width('100%').height('100%').alignItems(VerticalAlign.Center)
+      }.width('100%').alignItems(VerticalAlign.Center)
     }
   }
 
   build() {
-    Column({ space: 8 }) {
-      this.Header()
-      if (!this.card.visual || (!this.card.visual.primaryValue && this.card.visual.chartPoints.length === 0 && this.card.visual.metrics.length === 0)) {
-        Text(this.card.summary).fontSize(AppTypography.SUPPORTING).fontColor(this.card.isRisk ? AppColors.RISK : AppColors.MUTED).maxLines(2)
-      } else { this.Visual() }
+    Row() {
+      Column({ space: this.card.status === 'Empty' ? 12 : 8 }) {
+        this.Header()
+        if (this.card.status === 'Empty') {
+          Text(this.card.summary).fontSize(14).lineHeight(18).fontColor(AppColors.MUTED)
+        } else { this.Visual() }
+      }
+      .alignItems(HorizontalAlign.Start)
+      .layoutWeight(1)
+      .constraintSize({ minHeight: this.minimumCardHeight() })
+      .padding({ left: 16, right: 16, top: 14, bottom: 14 })
+      .backgroundColor(AppColors.HEALTH_CARD).borderRadius(8).clip(true)
+      .onClick(() => { if (this.onTap) { this.onTap(); } })
     }
-    .alignItems(HorizontalAlign.Start).width('calc(100% - 32vp)').height(this.figmaCardHeight())
-    .padding({ left: 16, right: 16, top: 14, bottom: 14 }).margin({ left: 16, right: 16, top: 6, bottom: 6 })
-    .backgroundColor(AppColors.HEALTH_CARD).borderRadius(8).clip(true)
-    .onClick(() => { if (this.onTap) { this.onTap(); } })
+    .width('100%')
+    .padding({ left: 16, right: 16, top: 6, bottom: 6 })
   }
 }

@@ -63,9 +63,16 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     } catch (e) { return null; }
   }
 
-  selectHealthScenario(name: string): Record<string, Object> | null {
+  selectHealthScenario(name: string): boolean {
     try {
       const json: string = this.harmonyLoginService.selectHealthScene(name);
+      return json === 'true';
+    } catch (e) { return false; }
+  }
+
+  refreshHealthDashboard(): Record<string, Object> | null {
+    try {
+      const json: string = this.harmonyLoginService.refreshHealthSnapshot();
       return JSON.parse(json) as Record<string, Object>;
     } catch (e) { return null; }
   }

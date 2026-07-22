@@ -3,7 +3,7 @@
 ## 元数据
 
 - Spec ID 前缀：`HLTH-PERSIST`
-- 状态：实施中
+- 状态：已实施
 - 适用范围：common 健康领域快照、Android/iOS/HarmonyOS 应用私有存储
 - 最后更新：2026-07-22
 
@@ -49,13 +49,14 @@
 - Then：直接由 `dashboardData` 生成 UI，不重新调用场景模板覆盖数值
 - 异常/边界：场景来源未知时仍可恢复完整模块数据
 
-### `HLTH-PERSIST-003`：场景选择覆盖并保存模块数据
+### `HLTH-PERSIST-003`：场景选择与刷新提交分离
 
 - Given：用户在 Demo 场景选择器选择一个场景
-- When：场景模板生成 `HealthDashboardData`
-- Then：用该数据替换当前用户快照中的 `dashboardData` 并持久化，同时更新 `sourceScenario`
-- And：三端页面立即重新读取返回的完整快照，不能只改变场景勾选而继续展示旧卡片值
-- 异常/边界：`ReadFailure` 继续返回读取失败，不覆盖最后一份有效快照
+- When：仅完成场景选择、尚未执行健康首页刷新
+- Then：只更新当前运行期内该用户的“待刷新场景”，首页卡片、摘要、`dashboardData` 与 `sourceScenario` 均保持最后一次成功刷新值，不写持久化快照
+- When：用户随后执行健康首页刷新且场景模板成功生成 `HealthDashboardData`
+- Then：用新数据替换当前用户快照中的 `dashboardData` 并持久化，同时更新 `sourceScenario`，三端首页才展示新状态
+- 异常/边界：`ReadFailure` 刷新失败时不覆盖最后一份有效快照和首页；待刷新场景不跨进程持久化
 
 ### `HLTH-PERSIST-004`：卡片配置更新保留健康数据
 
@@ -86,24 +87,35 @@
 - And：页面不再以全局 `health_card_order` 或认证 JSON 内 `_health` 作为权威健康状态
 - 异常/边界：旧 `_health`/`health_card_order` 只允许迁移，不得覆盖新版完整快照
 
+### `HLTH-PERSIST-008`：读取失败使用独立前台损坏态
+
+- Given：三端首页已有最后一次成功刷新的健康卡片，随后选择 `ReadFailure` 并刷新
+- When：common 返回 `MockError.CorruptedData`
+- Then：Android、iOS 与 HarmonyOS 均隐藏旧摘要和旧卡片，展示 `health_data_corrupted` 独立损坏态；不得把旧场景内容伪装成本次刷新结果
+- And：最后一份有效持久化快照保持不变；随后选择有效场景并刷新成功时，损坏态消失并展示新快照
+- 异常/边界：跨语言门面必须显式传递稳定错误名 `CorruptedData`，不得仅用空对象或 null 丢失失败原因
+
 ## 测试要求
 
 | Spec ID | 自动化测试/验证 | 预期结果 |
 |---|---|---|
 | `HLTH-PERSIST-001` | `fullDashboardSnapshotRoundTripsAllModuleData` | 全模块完整往返 |
 | `HLTH-PERSIST-002` | `storedDashboardDataWinsOverScenarioTemplate` | 保存数据不被场景重建覆盖 |
-| `HLTH-PERSIST-003` | `scenarioSelectionPersistsGeneratedModuleData` | 场景生成的数据进入快照 |
+| `HLTH-PERSIST-003` | `scenarioSelectionDoesNotChangeDashboardUntilRefresh`、`refreshPersistsSelectedScenarioModuleData`、`failedRefreshPreservesLastDashboardSnapshot` | 选择不提交，成功刷新才持久化，失败刷新保留旧值 |
 | `HLTH-PERSIST-004` | `cardConfigurationUpdatePreservesDashboardData` | 配置更新不丢数据 |
 | `HLTH-PERSIST-005` | `legacyScenarioSnapshotMigratesToFullData`、损坏 JSON 测试 | 旧格式迁移且损坏安全 |
 | `HLTH-PERSIST-006` | `fullDashboardSnapshotsAreIsolatedByUserId`、`twentyFullDashboardSnapshotsRoundTripWithinPreferencesBudget` | 多用户隔离且 20 用户集合小于 1 MB |
 | `HLTH-PERSIST-007` | common 集合 codec 测试、HarmonyOS bridge/ArkTS 构建与结构检查 | 全用户恢复且无重复权威状态 |
+| `HLTH-PERSIST-008` | `tools/check-health-dashboard-runtime-states.sh` + 三端构建 | 三端显示独立损坏态，成功刷新可恢复且旧快照不被覆盖 |
 
 ## 验收标准
 
 - [x] common 快照 JSON 包含完整 `HealthDashboardData` 并可逐字段往返。
 - [x] 已保存数据的加载不依赖 mock 场景重建。
+- [x] 场景选择不改变首页或快照，刷新成功后才提交完整模块数据。
 - [x] Android、iOS 使用现有按用户私有 Key 保存新版完整快照。
 - [x] HarmonyOS 的 `health_json` 可恢复多个用户，页面不再维护全局卡片顺序副本。
+- [x] 三端刷新收到 `CorruptedData` 时隐藏旧卡片并展示独立损坏态，且最后有效快照不被覆盖。
 - [x] 相关 common 测试、三端构建、SDD 与文档门禁通过。
 
 ## 待人工确认

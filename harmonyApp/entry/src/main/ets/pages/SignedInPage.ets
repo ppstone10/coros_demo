@@ -43,6 +43,7 @@ struct SignedInPage {
   @State healthCalories: string = '769';
   @State healthMinutes: string = '69';
   @State healthDateLabel: ResourceStr = $r('app.string.health_demo_date');
+  @State healthDataCorrupted: boolean = false;
   @State dashboardVersion: number = 0;
   private isAtScrollTop: boolean = true;
   @State showDeleteDialog: boolean = false;
@@ -139,9 +140,9 @@ struct SignedInPage {
         ScenarioPickerComp({
           selectedScenario: this.scenarioName,
           onSelect: (name: string) => {
-            getService().selectHealthScene(name);
-            this.loadHealthDataFromKMP();
-            saveStoreSnapshot();
+            if (getService().selectHealthScene(name) === 'true') {
+              this.scenarioName = name;
+            }
             this.showScenarioPicker = false;
           }
         })
@@ -160,31 +161,38 @@ struct SignedInPage {
     Column() {
       HeroTopRowComp({
         dateLabel: this.healthDateLabel,
+        isSyncing: this.refreshing,
         onLongPress: () => { this.showScenarioPicker = true; }
       })
       Refresh({ refreshing: $$this.refreshing }) {
         Scroll() {
           Column() {
-            Column() {
-              this.ArcMetrics();
-            }
-            .id(`arc_${this.dashboardVersion}`)
-            ForEach(this.healthCards, (card: HealthCardModel) => {
-              DashboardCardComp({
-                card: card,
-                onTap: () => { this.detailCardId = card.id; }
-              })
-            }, (card: HealthCardModel) => `${card.id}_v${this.dashboardVersion}`)
+            if (this.healthDataCorrupted) {
+              Text($r('app.string.health_data_corrupted'))
+                .fontSize(AppTypography.SUPPORTING).fontColor(AppColors.MUTED).textAlign(TextAlign.Center)
+                .width('100%').height(360).padding({ left: 20, right: 20 })
+            } else {
+              Column() {
+                this.ArcMetrics();
+              }
+              .id(`arc_${this.dashboardVersion}`)
+              ForEach(this.healthCards, (card: HealthCardModel) => {
+                DashboardCardComp({
+                  card: card,
+                  onTap: () => { this.detailCardId = card.id; }
+                })
+              }, (card: HealthCardModel) => `${card.id}_v${this.dashboardVersion}`)
 
-            Text($r('app.string.health_edit_cards'))
-              .fontSize(AppTypography.LABEL)
-              .fontColor(AppColors.HEALTH_EDIT_TEXT)
-              .padding({ left: AppSpacing.ACTION_HORIZONTAL, right: AppSpacing.ACTION_HORIZONTAL,
-                top: AppSpacing.MEDIUM, bottom: AppSpacing.MEDIUM })
-              .backgroundColor(AppColors.HEALTH_CARD)
-              .borderRadius(22)
-              .margin({ top: AppSpacing.LARGE, bottom: 42 })
-              .onClick(() => { this.editingCards = true; })
+              Text($r('app.string.health_edit_cards'))
+                .fontSize(AppTypography.LABEL)
+                .fontColor(AppColors.HEALTH_EDIT_TEXT)
+                .padding({ left: AppSpacing.ACTION_HORIZONTAL, right: AppSpacing.ACTION_HORIZONTAL,
+                  top: AppSpacing.MEDIUM, bottom: AppSpacing.MEDIUM })
+                .backgroundColor(AppColors.HEALTH_CARD)
+                .borderRadius(22)
+                .margin({ top: AppSpacing.LARGE, bottom: 42 })
+                .onClick(() => { this.editingCards = true; })
+            }
           }
           .width('100%')
           .alignItems(HorizontalAlign.Center)
@@ -293,9 +301,18 @@ struct SignedInPage {
 
   // MARK: - Data
   private performRefresh(): void {
-    this.loadHealthDataFromKMP();
+    let refreshed: string = getService().refreshHealthSnapshot();
+    if (refreshed && refreshed !== '{}') {
+      let result: Record<string, Object> = JSON.parse(refreshed) as Record<string, Object>;
+      if (result['error'] === 'CorruptedData') {
+        this.healthDataCorrupted = true;
+      } else {
+        this.loadHealthDataFromKMP();
+        saveStoreSnapshot();
+      }
+      this.dashboardVersion++;
+    }
     this.refreshing = false;
-    this.dashboardVersion++;
   }
 
   private loadHealthDataFromKMP(): void {
@@ -303,7 +320,12 @@ struct SignedInPage {
       let json: string = getService().loadHealthSnapshot();
       if (!json || json === '{}') return;
       let data: HealthSnapshot = JSON.parse(json) as HealthSnapshot;
+      if (data.error === 'CorruptedData') {
+        this.healthDataCorrupted = true;
+        return;
+      }
       if (!data || !data.cards || data.cards.length === 0) return;
+      this.healthDataCorrupted = false;
       this.scenarioName = data.scenario || 'Normal';
       this.healthDateLabel = localizedHealthText(this, data.dateLabelKey || 'health_demo_date', []);
       this.healthSteps = String(data.steps || 0);
@@ -319,6 +341,7 @@ struct SignedInPage {
           localizedHealthText(this, c.summaryKey, c.summaryArgs || []),
           idx,
           c.isRisk,
+          c.status,
           c.visual
         ));
       }

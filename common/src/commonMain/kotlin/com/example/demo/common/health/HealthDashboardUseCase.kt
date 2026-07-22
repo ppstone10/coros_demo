@@ -468,6 +468,7 @@ class HealthDashboardStore(
 ) {
     private val dashboardDataSource = LocalHealthDashboardDataSource(authRepository)
     private val useCase = HealthDashboardUseCase(dashboardDataSource)
+    private val pendingScenarios = mutableMapOf<String, HealthMockScenario>()
 
     fun load(): MockResult<PersistedDashboard> = when (val access = authRepository.verifyBusinessAccess()) {
         is MockResult.Failure -> MockResult.Failure(access.error)
@@ -479,23 +480,45 @@ class HealthDashboardStore(
         }
     }
 
-    fun selectScenario(scenario: HealthMockScenario): MockResult<PersistedDashboard> = when (val access = authRepository.verifyBusinessAccess()) {
+    fun selectScenario(scenario: HealthMockScenario): MockResult<Unit> = when (val access = authRepository.verifyBusinessAccess()) {
         is MockResult.Failure -> MockResult.Failure(access.error)
         is MockResult.Success -> {
-            when (val generated = dashboardDataSource.load(scenario)) {
-                is MockResult.Failure -> MockResult.Failure(generated.error)
+            pendingScenarios[access.data.userId] = scenario
+            MockResult.Success(Unit)
+        }
+    }
+
+    fun refresh(): MockResult<PersistedDashboard> = when (val access = authRepository.verifyBusinessAccess()) {
+        is MockResult.Failure -> MockResult.Failure(access.error)
+        is MockResult.Success -> {
+            val userId = access.data.userId
+            when (val resolved = resolveSnapshot(userId)) {
+                is MockResult.Failure -> MockResult.Failure(resolved.error)
                 is MockResult.Success -> {
-                    val old = stateDataSource.load(access.data.userId) ?: HealthDashboardSnapshot(access.data.userId)
-                    val updated = old.copy(
-                        sourceScenario = scenario,
-                        dashboardData = generated.data,
-                        schemaVersion = CurrentHealthDashboardSchemaVersion
-                    )
-                    if (!stateDataSource.save(updated)) MockResult.Failure(MockError.PersistFailed)
-                    else updated.toPersistedDashboard()
+                    val scenario = pendingScenarios[userId] ?: resolved.data.sourceScenario
+                    when (val generated = dashboardDataSource.load(scenario)) {
+                        is MockResult.Failure -> MockResult.Failure(generated.error)
+                        is MockResult.Success -> {
+                            val updated = resolved.data.copy(
+                                sourceScenario = scenario,
+                                dashboardData = generated.data,
+                                schemaVersion = CurrentHealthDashboardSchemaVersion
+                            )
+                            if (!stateDataSource.save(updated)) MockResult.Failure(MockError.PersistFailed)
+                            else {
+                                pendingScenarios.remove(userId)
+                                updated.toPersistedDashboard()
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+
+    fun clear(userId: String): Boolean {
+        pendingScenarios.remove(userId)
+        return stateDataSource.clear(userId)
     }
 
     fun saveCardConfiguration(types: List<HealthCardType>): MockResult<PersistedDashboard> {

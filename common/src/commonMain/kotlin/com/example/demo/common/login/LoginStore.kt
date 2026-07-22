@@ -119,7 +119,7 @@ class LoginStore(
         val deletedUserId = state.currentSession?.userId
         val result = authRepository.deleteCurrentAccount()
         if (result is MockResult.Success) {
-            deletedUserId?.let(healthStateDataSource::clear)
+            deletedUserId?.let(healthDashboardStore::clear)
             state = state.copy(
                 isLoggedIn = false,
                 currentSession = null,
@@ -175,8 +175,10 @@ class LoginStore(
     /** 健康业务只经共享层读取认证后的本地 mock 数据。 */
     fun loadHealthDashboard(): MockResult<PersistedDashboard> = healthDashboardStore.load()
 
-    fun selectHealthScenario(scenario: HealthMockScenario): MockResult<PersistedDashboard> =
+    fun selectHealthScenario(scenario: HealthMockScenario): MockResult<Unit> =
         healthDashboardStore.selectScenario(scenario)
+
+    fun refreshHealthDashboard(): MockResult<PersistedDashboard> = healthDashboardStore.refresh()
 
     fun saveHealthCardConfiguration(types: List<com.example.demo.common.health.HealthCardType>): MockResult<PersistedDashboard> =
         healthDashboardStore.saveCardConfiguration(types)
