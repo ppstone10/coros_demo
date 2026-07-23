@@ -89,3 +89,19 @@ struct VerifyCodeView: View {
         countdown = viewModel.verifyCodeRemainingSeconds(account: account)
     }
 }
+ 
+ #Preview {
+     VerifyCodeView(
+         account: "13800138000",
+         targetKind: .phone,
+         viewModel: LoginViewModel(),
+         router: AuthRouter(
+             push: { _ in },
+             pop: {},
+             replaceTop: { _ in },
+             resetTo: { _ in },
+             resetKeepingEntranceAndPush: { _ in }
+         )
+     )
+     .preferredColorScheme(.dark)
+ }

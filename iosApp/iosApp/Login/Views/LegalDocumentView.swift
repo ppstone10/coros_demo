@@ -10,6 +10,32 @@ struct PrivacyPolicyView: View {
         )
     }
 }
+ 
+ #Preview {
+     PrivacyPolicyView(
+         router: AuthRouter(
+             push: { _ in },
+             pop: {},
+             replaceTop: { _ in },
+             resetTo: { _ in },
+             resetKeepingEntranceAndPush: { _ in }
+         )
+     )
+     .preferredColorScheme(.dark)
+ }
+ 
+ #Preview {
+     ServiceTermsView(
+         router: AuthRouter(
+             push: { _ in },
+             pop: {},
+             replaceTop: { _ in },
+             resetTo: { _ in },
+             resetKeepingEntranceAndPush: { _ in }
+         )
+     )
+     .preferredColorScheme(.dark)
+ }
 
 struct ServiceTermsView: View {
     let router: AuthRouter

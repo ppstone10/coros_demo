@@ -5,6 +5,7 @@ import lottie, { AnimationItem } from '@ohos/lottie';
 export struct HeroTopRowComp {
   @Prop dateLabel: ResourceStr = $r('app.string.health_demo_date');
   @Prop @Watch('onSyncingChanged') isSyncing: boolean = false;
+  onTap?: () => void;
   onLongPress?: () => void;
   private lottieCanvasCtx: CanvasRenderingContext2D = new CanvasRenderingContext2D(new RenderingContextSettings(true));
   private lottieItem: AnimationItem | null = null;
@@ -59,7 +60,13 @@ export struct HeroTopRowComp {
             this.lottieItem?.goToAndStop(0, true);
           });
         })
-        .gesture(LongPressGesture().onAction(() => { if (this.onLongPress) this.onLongPress(); }))
+        .gesture(
+          GestureGroup(
+            GestureMode.Exclusive,
+            LongPressGesture().onAction(() => { if (this.onLongPress) this.onLongPress(); }),
+            TapGesture().onAction(() => { if (this.onTap) this.onTap(); })
+          )
+        )
     }
     .width('100%').padding({ left: 20, right: 20, top: 32 })
   }

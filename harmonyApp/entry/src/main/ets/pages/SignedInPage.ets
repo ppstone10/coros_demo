@@ -61,6 +61,26 @@ struct SignedInPage {
   @State showLanguageDialog: boolean = false;
   @State editingCards: boolean = false;
 
+  private calorieArcProgress(): number {
+    return Math.max(0, Math.min(800, Number(this.healthCalories) || 0)) / 800;
+  }
+
+  private calorieArcPath(progress: number): string {
+    const center: number = vp2px(58);
+    const radius: number = vp2px(54);
+    const startDegrees: number = 135;
+    const sweepDegrees: number = 270 * Math.max(0, Math.min(1, progress));
+    const endDegrees: number = startDegrees + sweepDegrees;
+    const startRadians: number = startDegrees * Math.PI / 180;
+    const endRadians: number = endDegrees * Math.PI / 180;
+    const startX: number = center + radius * Math.cos(startRadians);
+    const startY: number = center + radius * Math.sin(startRadians);
+    const endX: number = center + radius * Math.cos(endRadians);
+    const endY: number = center + radius * Math.sin(endRadians);
+    const largeArc: number = sweepDegrees > 180 ? 1 : 0;
+    return `M${startX} ${startY} A${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY}`;
+  }
+
   aboutToAppear(): void {
     this.loadHealthDataFromKMP();
     this.syncState();
@@ -162,6 +182,7 @@ struct SignedInPage {
       HeroTopRowComp({
         dateLabel: this.healthDateLabel,
         isSyncing: this.refreshing,
+        onTap: () => { this.selectedTab = 3; this.syncState(); },
         onLongPress: () => { this.showScenarioPicker = true; }
       })
       Refresh({ refreshing: $$this.refreshing }) {
@@ -213,8 +234,23 @@ struct SignedInPage {
   @Builder
   ArcMetrics() {
     Stack({ alignContent: Alignment.Center }) {
-      Progress({ value: 78, total: 100, type: ProgressType.Ring })
-        .width(126).height(126).color(AppColors.GAUGE).style({ strokeWidth: 5 })
+      Stack({ alignContent: Alignment.Center }) {
+        Path()
+          .commands(this.calorieArcPath(1))
+          .width(116).height(116)
+          .fill(AppColors.TRANSPARENT)
+          .stroke(AppColors.RANGE_TRACK)
+          .strokeWidth(5)
+        if (this.calorieArcProgress() > 0) {
+          Path()
+            .commands(this.calorieArcPath(this.calorieArcProgress()))
+            .width(116).height(116)
+            .fill(AppColors.TRANSPARENT)
+            .stroke(this.calorieArcProgress() >= 0.75 ? AppColors.VISUAL_ORANGE : AppColors.VISUAL_YELLOW)
+            .strokeWidth(5)
+        }
+      }
+      .width(116).height(116)
       Row() {
         MetricComp({ icon: AppImages.steps(), value: this.healthSteps, unit: $r('app.string.health_unit_steps') })
           .id(`metricSteps_${this.dashboardVersion}`)
@@ -227,7 +263,7 @@ struct SignedInPage {
       }
       .width('100%')
     }
-    .width('100%').height(128).padding({ left: 20, right: 20 }).margin({ top: 16 })
+    .width('100%').height(140).padding({ left: 20, right: 20 }).margin({ top: 16 })
   }
 
   @Builder

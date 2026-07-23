@@ -222,6 +222,7 @@
     <string name="health_summary_activity_detail">%1$s km · Pace %2$s</string>
     <string name="health_visual_activity_easy_run">Easy run</string>
     <string name="health_visual_workout_easy_run">Easy run 10 km</string>
+    <string name="health_visual_weekly_rest_day">Rest day</string>
     <string name="health_visual_assessment_efficient">Efficient</string>
     <string name="health_visual_assessment_efficient_detail">Your load is improving fitness efficiently. Maintain a steady recovery rhythm.</string>
     <string name="health_visual_cycling_climber">Climber</string>
@@ -234,6 +235,9 @@
     <string name="health_visual_training_load_short">Training load</string>
     <string name="health_unit_minutes_long">min</string>
     <string name="health_visual_recommended_range">Recommended %1$s–%2$s</string>
+    <string name="health_visual_normal_range_short">Normal range %1$s–%2$s %3$s</string>
+    <string name="health_visual_recovery_ready">Well recovered</string>
+    <string name="health_visual_recovery_low">Recovery needed</string>
     <string name="health_visual_short_term_load">Short-term load</string>
     <string name="health_visual_long_term_load">Long-term load</string>
     <string name="health_visual_load_ratio">Load ratio</string>

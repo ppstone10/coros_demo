@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -46,23 +47,38 @@ fun ArcAndMetrics(state: DashboardUiState) {
     Box(
         Modifier
             .fillMaxWidth()
-            .height(150.dp)
+            .height(140.dp)
             .padding(horizontal = 20.dp)
     ) {
         Canvas(
             Modifier
-                .size(150.dp)
+                .size(116.dp)
                 .align(Alignment.Center)
         ) {
+            val progress = calorieArcProgress(state.dailySummary?.calories)
+            val stroke = 5.dp.toPx()
+            val inset = stroke / 2
+            val arcColor = lerp(AppColors.Health.CalorieArcStart, AppColors.Health.CalorieArcEnd, progress)
             drawArc(
-                color = AppColors.Health.Gauge,
+                color = AppColors.Health.CalorieArcTrack,
                 startAngle = 135f,
                 sweepAngle = 270f,
                 useCenter = false,
-                style = Stroke(5.dp.toPx(), cap = StrokeCap.Round),
-                topLeft = Offset(10.dp.toPx(), 10.dp.toPx()),
-                size = Size(size.width - 20.dp.toPx(), size.height - 20.dp.toPx())
+                style = Stroke(stroke, cap = StrokeCap.Round),
+                topLeft = Offset(inset, inset),
+                size = Size(size.width - stroke, size.height - stroke)
             )
+            if (progress > 0f) {
+                drawArc(
+                    color = arcColor,
+                    startAngle = 135f,
+                    sweepAngle = 270f * progress,
+                    useCenter = false,
+                    style = Stroke(stroke, cap = StrokeCap.Round),
+                    topLeft = Offset(inset, inset),
+                    size = Size(size.width - stroke, size.height - stroke)
+                )
+            }
         }
         Row(
             modifier = Modifier.fillMaxSize(),

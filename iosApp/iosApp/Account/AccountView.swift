@@ -98,6 +98,22 @@ struct AccountView: View {
         }
     }
 }
+ 
+ #Preview {
+     AccountView(
+         viewModel: LoginViewModel(),
+         router: AuthRouter(
+             push: { _ in },
+             pop: {},
+             replaceTop: { _ in },
+             resetTo: { _ in },
+             resetKeepingEntranceAndPush: { _ in }
+         ),
+         isFullscreen: .constant(false)
+     )
+     .environmentObject(AppLanguageStore.shared)
+     .preferredColorScheme(.dark)
+ }
 
 private struct AccountAvatar: View {
     let path: String?

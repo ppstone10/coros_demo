@@ -31,6 +31,20 @@ struct EntranceView: View {
         }
     }
 }
+ 
+ #Preview {
+     EntranceView(
+         viewModel: LoginViewModel(),
+         router: AuthRouter(
+             push: { _ in },
+             pop: {},
+             replaceTop: { _ in },
+             resetTo: { _ in },
+             resetKeepingEntranceAndPush: { _ in }
+         )
+     )
+     .preferredColorScheme(.dark)
+ }
 
 private struct EntranceTopBar: View {
     var body: some View {

@@ -32,3 +32,8 @@ private struct ScenarioRow: View {
         }.listRowBackground(AppColors.Health.card)
     }
 }
+
+#Preview {
+    ScenarioPickerView(viewModel: HealthDashboardViewModel())
+        .preferredColorScheme(.dark)
+}

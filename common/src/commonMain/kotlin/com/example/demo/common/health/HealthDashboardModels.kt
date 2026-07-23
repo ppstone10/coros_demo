@@ -29,7 +29,14 @@ data class LocalizedTextSpec(
     val arguments: List<String> = emptyList()
 )
 
-data class HealthChartPoint(val label: String, val value: Double, val level: HealthVisualLevel = HealthVisualLevel.Neutral)
+data class HealthChartPoint(
+    val label: String,
+    val value: Double,
+    val level: HealthVisualLevel = HealthVisualLevel.Neutral,
+    val minimum: Double? = null,
+    val maximum: Double? = null,
+    val average: Double? = null
+)
 data class HealthRange(
     val minimum: Double, val maximum: Double, val current: Double,
     val normalMin: Double? = null, val normalMax: Double? = null, val average: Double? = null
@@ -52,11 +59,18 @@ data class TrainingLoad(
     val dailyLoads: List<Int> = emptyList()
 )
 data class Recovery(val score: Int?, val remainingHours: Int?)
+data class WeeklyDayPlan(
+    val dayIndex: Int,
+    val workoutName: LocalizedTextSpec? = null,
+    val workoutDurationMinutes: Int? = null,
+    val workoutTrainingLoad: Int? = null
+)
 data class WeeklyPlan(
     val hasPlan: Boolean, val plannedMinutes: Int?, val description: String?,
     val currentDayIndex: Int = 0, val dailyLoads: List<Int> = emptyList(),
     val workoutName: LocalizedTextSpec? = null, val workoutDurationMinutes: Int? = null,
-    val workoutTrainingLoad: Int? = null
+    val workoutTrainingLoad: Int? = null,
+    val dayPlans: List<WeeklyDayPlan> = emptyList()
 )
 data class TrainingAssessment(
     val volumeScore: Int?, val trend: String?,
@@ -69,8 +83,19 @@ data class RunningAbility(
 data class CyclingAbility(
     val ftp: Int?, val score: Int?, val displayScore: Double? = null, val abilityLabel: LocalizedTextSpec? = null
 )
+data class HeartRateInterval(
+    val startMinute: Int,
+    val minimum: Int,
+    val maximum: Int,
+    val average: Int
+)
 data class HeartRate(
-    val restingHr: Int?, val currentHr: Int?, val averageHr: Int? = null, val samples: List<Int> = emptyList()
+    val restingHr: Int?,
+    val currentHr: Int?,
+    val averageHr: Int? = null,
+    val samples: List<Int> = emptyList(),
+    val intervals: List<HeartRateInterval> = emptyList(),
+    val fiveMinuteSamples: List<Int> = emptyList()
 )
 data class Stress(
     val stressLevel: Int?, val status: String?, val averageStress: Int? = null, val samples: List<Int> = emptyList()
@@ -138,7 +163,8 @@ data class HealthCardVisualData(
     val startTime: String? = null,
     val endTime: String? = null,
     val highlightedIndex: Int? = null,
-    val assetKey: String? = null
+    val assetKey: String? = null,
+    val weeklyDayPlans: List<WeeklyDayPlan> = emptyList()
 )
 
 data class DashboardUiState(
@@ -157,7 +183,7 @@ data class HealthDashboardSnapshot(
     val schemaVersion: Int = CurrentHealthDashboardSchemaVersion
 )
 
-const val CurrentHealthDashboardSchemaVersion = 2
+const val CurrentHealthDashboardSchemaVersion = 4
 
 object HealthScenarios {
     val names: List<String> = HealthMockScenario.entries.map { it.name }

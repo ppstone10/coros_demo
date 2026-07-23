@@ -43,6 +43,7 @@ private val PageBlack = AppColors.Health.Page
 fun HeroTopRow(
     dateLabel: String,
     isSyncing: Boolean,
+    onClickWatch: () -> Unit,
     onLongPressWatch: () -> Unit
 ) {
     val composition by rememberLottieComposition(
@@ -88,7 +89,7 @@ fun HeroTopRow(
             modifier = Modifier
                 .size(30.dp)
                 .combinedClickable(
-                    onClick = {},
+                    onClick = onClickWatch,
                     onLongClick = onLongPressWatch
                 )
         ) {
@@ -108,6 +109,6 @@ fun HeroTopRow(
 @Composable
 private fun HeroTopRowPreview() {
     DemoTheme {
-        HeroTopRow(dateLabel = "July 21, 2026", isSyncing = false, onLongPressWatch = {})
+        HeroTopRow(dateLabel = "July 21, 2026", isSyncing = false, onClickWatch = {}, onLongPressWatch = {})
     }
 }

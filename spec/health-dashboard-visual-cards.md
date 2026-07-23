@@ -3,9 +3,9 @@
 ## 元数据
 
 - Spec ID 前缀：`HLTH-VIS`
-- 状态：实施中（2031 视觉精修）
+- 状态：Android 2031 视觉精修已完成；iOS/HarmonyOS 待按同一参数对齐
 - 设计来源：Figma「首页 PROGRESS Copy」节点 `16:8096`（2031）
-- 最后更新：2026-07-22
+- 最后更新：2026-07-23
 
 ## 目标
 
@@ -35,6 +35,7 @@
 | 类型 | 字段 | 用途 |
 |------|------|------|
 | `HealthChartPoint` | `labelKey/value/level` | 七日负荷、心率、压力等趋势点 |
+| `HeartRateInterval` | `startMinute/minimum/maximum/average` | 每半小时心率区间与平均值；旧单值样本迁移为退化区间 |
 | `HealthRange` | `minimum/maximum/current/normalMin/normalMax/average` | 静息心率与 HRV 区间尺 |
 | `HealthMetric` | `labelKey/value/unitKey` | 训练评估三列、健康快测五项 |
 | `SleepStageSegment` | `stage/startMinute/durationMinutes` | 睡眠阶段时序图 |
@@ -50,7 +51,7 @@
 | 训练量评估 | 评估等级、解释、短期负荷、长期负荷、比值 |
 | 体力恢复 | 恢复百分比、预计恢复时间、半圆仪表 |
 | 跑步/骑行能力 | 能力分数、能力标签或预测成绩、0-100 仪表 |
-| 心率/压力 | 主值、单位/说明、彩色趋势柱图 |
+| 心率/压力 | 心率使用半小时最低–最高区间柱与平均值；压力使用主值、说明和彩色趋势柱图 |
 | 静息心率 | 当前值、测量时间、近 30 天平均、范围尺 |
 | 睡眠 | 小时/分钟、起止时间、睡眠阶段序列 |
 | HRV 评估 | 等级、平均值、正常范围和当前位置 |
@@ -220,14 +221,144 @@
 - Then：`UIViewRepresentable` 必须返回裁剪的容器 UIView，内部动画关闭 autoresizing mask 并以四边 Auto Layout 约束填满容器；动画不得按 composition 固有尺寸溢出顶部栏
 - 异常/边界：长按手势继续绑定外部 30×30pt 区域；日历保持 23×23pt，手表与 Android/HarmonyOS 均保持 30×30 的同一语义尺寸
 
-### `HLTH-VIS-023`：三端卡片外壳按内容固有高度测量
+### `HLTH-VIS-023`：三端卡片外壳按内容固有高度和概览安全高度测量
 
 - Given：Android Compose、iOS SwiftUI 或 HarmonyOS ArkUI 在滚动容器中渲染任意健康卡片
 - When：卡片内容为正常、风险或空状态，且文案长度、指标数量或图表类型不同
-- Then：公共卡片外壳只负责全宽、安全边距、标题、状态分支、内边距、圆角和裁剪，不得维护按 visual kind 区分的最小高度表
+- Then：公共卡片外壳只负责全宽、安全边距、标题、状态分支、内边距、圆角和裁剪，不维护整卡固定高度；有数据的视觉组件必须按 Android 已验收内容尺寸保留类型级最小安全高度，避免原生测量把图表压窄或裁断
 - And：视觉组件的垂直尺寸来自文字、固定高度图表/图片及明确间距；不得使用依赖滚动方向剩余高度的 `fillMaxSize`、无固定高度 `Spacer/Blank` 或垂直 `weight/layoutWeight` 撑开内容
-- And：正常 mock 场景中每个 visual kind 的必填内容继续由 common 测试保证完整；缺失状态必须走显式 `HealthCardStatus.Empty`，不得依靠外层最小高度掩盖不完整数据
+- And：正常 mock 场景中每个 visual kind 的必填内容继续由 common 测试保证完整；缺失状态必须走显式 `HealthCardStatus.Empty`，空态不得继承有数据视觉组件的最小安全高度
 - 异常/边界：水平方向仍可使用 `fillMaxWidth`、`Spacer` 或权重分配左右安全区；图表和人体图片继续保留自身明确宽高并由卡片裁剪
+
+### `HLTH-VIS-024`：三端卡片概览图按 2031 类型分别绘制
+
+- Given：Android 展示体力恢复、跑步能力、骑行能力、心率、压力、静息心率、睡眠或 HRV 卡片
+- When：三端原生 UI 根据卡片类型与 `HealthCardVisualData` 绘制右侧概览
+- Then：体力恢复使用 114×78dp 的恢复弧、中央白色人体与状态文案，不显示指针；跑步/骑行能力使用 112×54dp 分段半圆、0/100 端点与数据指针；心率使用约 1dp 的连续细线波形；压力使用按 `HealthVisualLevel` 分类着色的密集细柱；静息心率使用单色区间线、平均值说明与三角指示；HRV 使用红/黄/绿/橙分段带、正常范围说明与三角指示；睡眠按清醒/REM/浅睡/深睡四条基线绘制阶段段落
+- And：图形尺寸、留白与颜色语义以 Figma 2031 节点 `16:8771`、`16:8742`、`16:8712`、`16:8651`、`16:8627`、`16:8482`、`16:8408`、`16:8389` 为验收基线，不再用同一个通用仪表、柱图或范围尺代替不同图形
+- 异常/边界：所有进度、指针和区间位置必须夹在可绘制范围内；空点列或无效范围不得崩溃，也不得在 UI 层随机补数据
+
+### `HLTH-VIS-025`：三端顶部卡路里圆弧按 0–800 数据渲染
+
+- Given：`DailySummary.calories` 为任意整数或缺失
+- When：任一端绘制顶部 142×116、起始角 135°、总扫角 270° 的卡路里圆弧
+- Then：先绘制完整暗色轨道，再按 `clamp(calories, 0, 800) / 800` 绘制有效弧长；0 不绘制有效弧、400 绘制一半、800 及以上绘制满弧
+- And：有效弧颜色可随占比从 Figma 黄色平滑加深至橙黄色，但不得改变步数、卡路里和活动分钟的原始展示数值
+- 异常/边界：缺失或负数按 0；超过 800 只夹紧可视进度，数值文本仍显示真实值
+
+### `HLTH-VIS-026`：三端顶部卡路里弧保持正圆几何
+
+- Given：任一端在任意受支持屏幕宽度绘制顶部卡路里弧
+- When：布局为弧线分配宽高
+- Then：弧线绘制区域必须等宽等高，直径取可用区域宽高的较小值；不得把 142×116 的外部设计占位直接作为椭圆包围盒
+- And：继续保留 [HLTH-VIS-025] 的 135° 起始、270° 总扫角、5dp 线宽、暗色轨道和 0–800 比例
+- 异常/边界：左右指标可占用剩余横向空间，但不得通过非等比缩放压扁圆弧
+
+### `HLTH-VIS-027`：三端心率按半小时最低/最高/平均区间表达
+
+- Given：本地 mock 提供一天的心率趋势
+- When：common 生成心率卡 `chartPoints`
+- Then：每个点表示连续半小时，包含起始时间、最低心率、最高心率和平均心率；必须满足 `minimum <= average <= maximum`
+- And：三端在 166×44 图表内为每个半小时绘制一根从最低值到最高值的约 1dp/pt/vp 垂直区间柱，不再从统一基线绘制，也不通过插值伪造更多柱
+- And：纵轴使用同一批半小时数据的全局最低值和最高值归一化，并保留上下安全边距；平均心率继续作为卡片主值或统计字段，不额外改变区间柱端点
+- 异常/边界：proto 保留旧 `samples` 字段兼容历史快照，新增字段使用新 tag；旧快照没有区间数据时可把旧样本作为 `minimum == average == maximum` 的退化区间，不凭 UI 随机扩展上下限
+
+### `HLTH-VIS-028`：5 分钟模拟心率聚合为半小时区间
+
+- Given：`heart.md` 为正常 1、正常 2、正常 3、异常分别提供连续一天的 288 个 5 分钟心率采样
+- When：common 构造心率 mock 数据
+- Then：按时间顺序每 6 个采样聚合为一个半小时区间，最低值取该组最小值、最高值取该组最大值、平均值取该组算术平均值四舍五入后的整数，共输出 48 个区间
+- And：当前运行时只把正常 1、正常 2、异常分别用于 `Normal`、`PartialMissing`、`Abnormal`；正常 3 不进入运行时 fixture 或场景选择器；`AllEmpty` 与 `ReadFailure` 保持无数据/读取失败语义
+- 异常/边界：不足 6 个采样的尾组不参与绘制；聚合逻辑不得按时间索引人为添加上下振幅，原始 5 分钟样本随完整健康快照持久化
+
+### `HLTH-VIS-029`：三端周计划日期只切换卡内计划
+
+- Given：本周计划包含七天各自的计划名称、时长和训练负荷，且标记今天索引
+- When：用户点击周计划卡中的某个星期日期
+- Then：只在当前卡片内切换选中日，并展示该日计划；不得打开详情页
+- When：用户点击日期以外的卡片区域
+- Then：沿用 `ViewWeeklyPlan` 行为进入详情页
+- 异常/边界：没有训练的日期展示休息日计划；选中索引夹紧在 0..6，刷新或场景切换后恢复到该数据的今天索引
+
+### `HLTH-VIS-030`：三端 HRV 与静息心率指针位于指标线下方
+
+- Given：HRV 评估或静息心率卡具有合法范围和当前值
+- When：Android Compose、iOS SwiftUI 或 HarmonyOS ArkUI 绘制右侧范围指标
+- Then：三角指针的三个顶点均位于彩色指标线下方，三角尖端朝向指标线；横向位置继续由当前值在范围中的夹紧比例决定
+- 异常/边界：当前值超出范围时指针仍夹紧在左右端点，三角形不得越过 130dp/pt/vp 图形安全区
+
+### `HLTH-VIS-031`：三端健康快测时间与卡片标题同一行
+
+- Given：健康快测具有 `measuredTime`
+- When：任一端渲染卡片标题
+- Then：测量时间显示在标题行右侧，内容区不再为时间单起一行
+- Given：`measuredTime` 缺失
+- Then：标题行不显示时间，也不显示 `---` 或占位文案
+
+### `HLTH-VIS-032`：三端手表短按导航与长按场景入口共存
+
+- Given：用户位于健康首页且右上角手表可见
+- When：短按手表
+- Then：主标签切换到“我”页面
+- When：长按手表
+- Then：只打开既有数据场景选择器，不同时切换到“我”页面
+- 异常/边界：同步动画播放期间仍保留相同点击语义；短按不改变健康数据场景
+
+### `HLTH-VIS-033`：iOS 与 HarmonyOS 有数据卡采用 Android 内容安全高度
+
+- Given：Android 已验收卡片在相同共享数据下完整显示标题、文字和右侧图形
+- When：iOS 或 HarmonyOS 渲染有数据卡
+- Then：今日活动、周计划、训练负荷、训练量评估、恢复/能力、趋势/范围/睡眠、健康快测和体型管理内容区分别保留与 Android 内容固有高度等价的安全高度；圆弧、柱图、指针、睡眠阶段和指标文字均不得被卡片上下边界截断
+- And：卡片仍可因多行文案或更大动态字体自然增高；安全高度是最小值而非固定整卡高度
+- 异常/边界：空态继续由说明文字自然测量，不套用上述有数据安全高度
+
+### `HLTH-VIS-034`：周计划日期同步切换计划内容和高亮柱
+
+- Given：周计划具有七日训练量柱和当前选中日
+- When：任一端点击新的日期
+- Then：日期圆点、计划名称、时长、训练负荷以及右侧七日柱中的高亮柱必须在同一状态更新中切换到该日
+- And：未选中柱保留原始高度与灰色语义；选中柱使用 Android 基线的青色高亮
+- 异常/边界：休息日仍高亮对应的低柱，不把高亮留在数据初始日
+
+### `HLTH-VIS-035`：训练负荷、趋势与睡眠概览按 Android 几何绘制
+
+- Given：三端消费同一 `HealthCardVisualData`
+- When：绘制本周负荷、心率、压力或睡眠右侧概览
+- Then：本周负荷为 130×36 的七条完整轨道和数据柱，下方显示七日标签；心率为 166×44 的半小时 min–max 柱；压力为 166×56、约 2dp 间距的插值密集细柱并按阈值着色；睡眠为 130×56、按开始时间与持续时长落在清醒/REM/浅睡/深睡四条基线上的分段条
+- And：左侧主值与说明使用 141 宽安全区并在至少 60 高内容区内垂直居中，心率、压力和睡眠不得各自出现不同的上偏移
+- 异常/边界：空点列不绘制；睡眠段宽度至少 2，段间保留约 2 的视觉间隙
+
+### `HLTH-VIS-036`：恢复与能力仪表完整显示且只出现本地化状态
+
+- Given：恢复、跑步能力或骑行能力卡有合法 progress
+- When：iOS 或 HarmonyOS 绘制右侧仪表
+- Then：恢复弧使用 114×58 绘制区和 114×78 总安全区，完整显示上半圆、中央人体与本地化状态；能力仪表使用 121×60 绘制区和 121×71 总安全区，完整显示 30 段、指针和 0/100 端点
+- And：界面不得直接显示 `health_visual_recovery_*` 英文资源键或其他未本地化占位
+- 异常/边界：progress 夹紧到 0..1，弧线和指针不得越过安全区
+
+### `HLTH-VIS-037`：HarmonyOS 顶部指标、范围指针与健康快测对齐 Android
+
+- Given：HarmonyOS 展示正常健康首页
+- When：绘制顶部三项指标、HRV/静息心率与健康快测
+- Then：卡路里弧在独立 116×116 居中容器内绘制；步数、卡路里、运动时间图标分别以 `#00DF7B`、`#FFC928`、`#D72BCC` 模板着色；HRV/静息心率的白色上指三角在指标线下方清晰可见
+- And：健康快测按 Android 的两行三列网格排列，每个指标占 92 宽安全区，列间距 18，测量时间仍位于标题行
+- 异常/边界：小屏宽度不足时允许列间距缩小，但不得把五项压成单列或改变数据顺序
+
+### `HLTH-VIS-038`：HarmonyOS Path 几何按 vp 设计尺寸换算
+
+- Given：HarmonyOS 在高像素密度设备上绘制顶部卡路里弧、体力恢复弧、跑步能力仪表或骑行能力仪表
+- When：ArkUI `Path.commands` 接收路径坐标
+- Then：所有来自 116×116、114×58、121×60 vp 设计坐标系的中心点、半径和端点必须先通过 `vp2px` 换算，再生成 Path 命令；Path 外层宽高继续使用 vp
+- And：顶部卡路里弧应在 116×116 容器内保持完整正圆；恢复弧应占满 114×58 上半圆；能力仪表应占满 121×60 的分段半圆，三者不得因屏幕密度缩小或向左上偏移
+- 异常/边界：角度、进度比例和夹紧规则不参与单位换算；ArkUI 布局属性、边距和组件宽高不得重复换算
+
+### `HLTH-VIS-039`：HarmonyOS 顶部指标图标使用模板色
+
+- Given：顶部步数、卡路里、运动时长使用带透明通道的 PNG 图标
+- When：HarmonyOS 渲染三项指标
+- Then：图片必须以 `ImageRenderMode.Template` 渲染后再应用语义颜色；步数为 `#00DF7B`、卡路里为 `#FFC928`、运动时长为 `#D72BCC`
+- And：图标透明轮廓、22×22 vp 尺寸和三项排列保持不变，不显示 PNG 文件中原有的白色或蓝色像素
+- 异常/边界：模板着色仅用于这三个单色指标图标；地图、人体、手表等多色资源继续保留原图渲染
 
 ## 新增资源来源与一致性
 
@@ -238,6 +369,7 @@
 | `health_activity_map.png` | Figma 节点 `16:8097` 中活动地图原始图片资产 | `87b98b5d4ac3b1c098b24102ec61a8d87e051cd25d49019a5d68e5f41c8123f9` |
 | `health_today_header.png` | Figma 节点 `16:8100` 标题日历完成图标导出 | `0c03fe8e8637454a417de0d3608277bea4a3e5efdf55e8ec4b5eacb712bba476` |
 | `health_today_runner.png` | Figma 节点 `16:8120` 右侧跑步图标导出 | `27c9f18ad60239a63ac6f5b033080564c557554ad44a13813f3a29c8fe4a69d3` |
+| `health_recovery_status.xml`（Android 基线） | Figma 节点 `16:8771` 中央白色人体 SVG 路径；原始 SVG SHA-256 `a1906fd17cfed8e5be9dfbaa8df44d8f9e6fd40b0a1e309e399e9d84ed0a4962` | Android 本轮接入；iOS/HarmonyOS 交接时从同一 SVG 路径生成对应矢量资源 |
 
 ## 测试要求
 
@@ -265,7 +397,23 @@
 | `HLTH-VIS-020` | `tools/check-health-dashboard-runtime-states.sh` + iOS 构建 | UIScrollView 在 pan began 锁定顶部资格，中段起手永不刷新 |
 | `HLTH-VIS-021` | `tools/check-health-dashboard-runtime-states.sh` + iOS 构建 | 每次自定义刷新直接 play，结束直接 stop 并归零 |
 | `HLTH-VIS-022` | `tools/check-health-dashboard-runtime-states.sh` + iOS 构建 | Lottie 四边约束在裁剪的 30pt 容器内，不按固有尺寸溢出 |
-| `HLTH-VIS-023` | `tools/check-health-card-adaptive-layout.sh` + 三端构建 | 三端不存在类型最小高度表和垂直剩余空间填充，卡片外壳职责一致 |
+| `HLTH-VIS-023` | `tools/check-health-card-adaptive-layout.sh` + 三端构建 | 整卡无固定高度，有数据内容保留类型安全高度，空态仍按说明自然测量 |
+| `HLTH-VIS-024` | `DashboardVisualMathTest` + Android 构建 + emulator-5554 分段截图 | 专用恢复/能力/心率/压力/静息心率/HRV/睡眠图形匹配 2031 且不越界 |
+| `HLTH-VIS-025` | `DashboardVisualMathTest.calorieArcUsesZeroToEightHundredClampedScale` + 顶部截图 | 0/400/800/超限比例正确，769 可见短暗色余量 |
+| `HLTH-VIS-026` | `DashboardVisualMathTest.calorieArcDiameterUsesSmallerDimension` + 顶部截图 | 圆弧包围盒等宽等高，没有横向拉伸或纵向压扁 |
+| `HLTH-VIS-027` | common 半小时区间与快照往返测试 + Android 区间归一化单测 + 心率卡截图 | 48 个半小时区间满足最小/平均/最大约束，每根柱只连接自身最低和最高心率 |
+| `HLTH-VIS-028` | `fiveMinuteHeartSamplesAggregateIntoHalfHourIntervals`、三场景数据映射/场景目录测试、快照往返测试 | 启用的三组 288 点生成 48 个真实 min/max/average 区间，正常 3 不出现在选择器 |
+| `HLTH-VIS-029` | common 七日计划映射测试 + Android 选择函数单测 + Compose 人工点击验收 | 日期点击只更新卡内计划，卡片其他区域继续进入详情 |
+| `HLTH-VIS-030` | Android 单测 + 三端结构门禁与截图/预览核对 | HRV/静息心率三角形完全位于指标线下方并指向线条 |
+| `HLTH-VIS-031` | common 无测量时间测试 + 三端结构门禁与健康快测截图 | 有时间时与标题同行，无时间时没有占位 |
+| `HLTH-VIS-032` | 三端结构门禁与设备/模拟器短按、长按人工验收 | 短按进入“我”，长按仍打开场景选择器且不跳页 |
+| `HLTH-VIS-033` | `tools/check-health-cross-platform-parity.sh` + 两端构建/截图 | iOS/HarmonyOS 各类有数据卡高度不小于 Android 内容基线且图形无裁断 |
+| `HLTH-VIS-034` | 跨端专项门禁 + 日期点击人工验收 | 日期、文案、数值与高亮柱同步切换 |
+| `HLTH-VIS-035` | 跨端专项门禁 + 分段截图 | 负荷轨道/星期、压力密柱、心率区间和睡眠四阶段与 Android 一致 |
+| `HLTH-VIS-036` | 本地化资源门禁 + 仪表截图 | 三种仪表完整，无资源键泄漏 |
+| `HLTH-VIS-037` | HarmonyOS 专项门禁 + 真机/预览截图 | 顶部弧和图标、范围指针、快测网格与 Android 一致 |
+| `HLTH-VIS-038` | HarmonyOS 专项门禁 + `assembleApp` + 高密度真机/预览截图 | 四类 Path 圆弧按设计 vp 尺寸占满安全区，不缩小或错位 |
+| `HLTH-VIS-039` | HarmonyOS 专项门禁 + `assembleApp` + 顶部截图 | 三个 PNG 指标图标进入模板模式并显示对应语义色 |
 
 ## 验收标准
 
@@ -284,4 +432,4 @@
 - 本轮按用户明确授权，从其本地 `app_out` / `ipa_extract` 提取同源 COROS 字体并打包三端；字体的最终发布许可仍应由产品/法务确认。
 - Figma 节点没有 motion 时间线；当前保持静态终态，后续若提供真实产品动效稿应另立规范校准。
 - HarmonyOS 当前没有可连接 HDC 设备；已完成 ArkTS 构建和结构门禁，仍建议在目标鸿蒙设备上复核不同系统字号下的右侧安全区。
-- 本轮没有可连接的 Android/HarmonyOS 设备；建议在 320/375/430 宽度、中文/英文及放大字体下分别截图 AllEmpty/PartialMissing，确认空态说明完整且单行/多行卡片高度自然分化。
+- Android 已在 emulator-5554 中文正常场景完成顶部、中部、底部截图；仍建议后续在 320/430 宽度、英文及放大字体下分别复核 AllEmpty/PartialMissing。HarmonyOS 当前没有可连接设备。

@@ -82,6 +82,7 @@ private fun healthStringResource(key: String): Int = when (key) {
     "health_summary_body_normal" -> R.string.health_summary_body_normal
     "health_visual_activity_easy_run" -> R.string.health_visual_activity_easy_run
     "health_visual_workout_easy_run" -> R.string.health_visual_workout_easy_run
+    "health_visual_weekly_rest_day" -> R.string.health_visual_weekly_rest_day
     "health_visual_assessment_efficient" -> R.string.health_visual_assessment_efficient
     "health_visual_assessment_efficient_detail" -> R.string.health_visual_assessment_efficient_detail
     "health_visual_cycling_climber" -> R.string.health_visual_cycling_climber

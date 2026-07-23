@@ -32,7 +32,7 @@
 | `DOC-005` | 资源源文件保护 | `./tools/check-docs.sh`：两组源资源目录存在 | 两个 `*_resources/` 目录及映射文档 | ✅ |
 | `DOC-006` | 契约与工具去占位 | `./tools/check-docs.sh`：实际契约保留、空占位消失 | `contract/README.md`、`tools/README.md` | ✅ |
 | `DOC-007` | 平台说明就近维护 | 当前引用扫描 + `git diff --name-only` | `iosApp/README.md`、`harmonyApp/README.md`、`harmony-kmp-bridge/README.md` | ✅ |
-| `DOC-008` | 测试事实同步 | `tools/check-docs.sh` 动态核对 `@Test`：31/8/4/33，合计 76 | `TEST_REPORT.md`、本文件 | ✅ |
+| `DOC-008` | 测试事实同步 | `tools/check-docs.sh` 动态核对 `@Test`：31/8/4/39，合计 82 | `TEST_REPORT.md`、本文件 | ✅ |
 | `DOC-009` | 可执行文档门禁 | 首次 31 项红灯；最终 `bash -n`、`check-docs`、`check-sdd`、`git diff --check` 通过 | `tools/check-docs.sh` | ✅ |
 | `DOC-010` | 误删文档完整恢复 | `tools/check-docs.sh`：10份目标文件 SHA-256 与 Git 恢复源逐一一致 | `docs/reference/`、`docs/archive/harmonyos-kmp/` | ✅ |
 | `DOC-011` | 恢复后的目录归类 | `find docs` + 分类导航检查 | `docs/README.md`、三个分类 README | ✅ |
@@ -81,7 +81,7 @@
 | **实现范围 - UI model** | `HealthDashboardModels.kt:51-59`（HealthCardUiModel） | ✅ |
 | **实现范围 - mock 场景** | `HealthDashboardModels.kt:3`（HealthMockScenario）；`HealthDashboardUseCase.kt:22-73`（sample 各场景数据） | ✅ |
 | **验收标准** | 参见下方测试追溯 | ✅ |
-| **测试要求 - 12 条以上** | `HealthDashboardUseCaseTest.kt` → **33 条测试** | ✅ |
+| **测试要求 - 12 条以上** | `HealthDashboardUseCaseTest.kt` → **39 条测试** | ✅ |
 | 测试：全量数据 | `HealthDashboardUseCaseTest.kt:17`（normalScenarioShowsCompleteCardCatalog） | ✅ |
 | 测试：睡眠缺失 | `HealthDashboardUseCaseTest.kt:19`（partialMissingShowsSleepEmptyCard） | ✅ |
 | 测试：今日运动缺失 | `HealthDashboardUseCaseTest.kt:20`（partialMissingKeepsAvailableTodayActivity） | ✅ |
@@ -170,8 +170,8 @@
 | `LoginRulesTest.kt` | 8 | auth-mock-spec §7, §8, §9；RES-LOC-001 |
 | `LoginUseCaseTest.kt` | 31 | auth-mock-spec §14 |
 | `BusinessMockDataSourceTest.kt` | 4 | auth-mock-spec §10, §11, §14 |
-| `HealthDashboardUseCaseTest.kt` | 33 | health-dashboard-cards 测试要求；RES-MAINT-008；HLTH-VIS-001~003；HLTH-PERSIST-001~007 |
-| **合计** | **76** | |
+| `HealthDashboardUseCaseTest.kt` | 39 | health-dashboard-cards 测试要求；RES-MAINT-008；HLTH-VIS-001~003、027~032；HLTH-PERSIST-001~007 |
+| **合计** | **82** | |
 
 ---
 
@@ -204,6 +204,22 @@
 | `HLTH-VIS-021` | iOS 自定义刷新与右上角手表 Lottie 命令式同步 | 用户实机反馈声明式联动未播放；专项门禁红灯后转绿；iOS `xcodebuild` | `WatchSyncLottieView` 直接 `play/stop/currentProgress`；`syncCycle/isLoading` | ✅ |
 | `HLTH-VIS-022` | iOS 手表 Lottie 约束在 30pt 容器内 | 用户截图红灯；专项门禁红灯 6 项后转绿；iOS `xcodebuild`；iPhone 17 模拟器截图 | `WatchSyncLottieView` 裁剪 UIView 容器 + 四边 Auto Layout；SwiftUI 30×30 frame | ✅ |
 | `HLTH-VIS-023` | 三端卡片外壳按内容固有高度测量 | `tools/check-health-card-adaptive-layout.sh` 实施前 10 项红灯、最终绿灯；`:common:check`、`:androidApp:assembleDebug`、iOS `xcodebuild`、HarmonyOS `assembleApp` | Android `DashboardCard/HealthCardVisualContent`；iOS `cardRow/HealthCardVisualContent`；HarmonyOS `DashboardCardComp.VisualContent` | ✅ |
+| `HLTH-VIS-024` | 三端卡片概览图按 2031 类型分别绘制 | `tools/check-health-card-fidelity.sh` 红灯 6 项后转绿；Android/iOS/HarmonyOS 构建通过；iPhone 17 模拟器截图 | 三端按卡片类型选择恢复/能力、心率/压力、静息心率/HRV、睡眠专用绘制器；iOS/HarmonyOS 增加恢复人体资源 | ✅ |
+| `HLTH-VIS-025` | 三端顶部卡路里圆弧按 0–800 数据渲染 | 三端结构门禁与构建通过；iPhone 17 模拟器 769 Kcal 截图显示约 96% 弧长 | Android `calorieArcProgress`、iOS `HeroArcView.calorieProgress`、HarmonyOS `SignedInPage.calorieArcProgress` 均夹紧到 0–800 | ✅ |
+| `HLTH-VIS-026` | 三端顶部卡路里弧保持正圆几何 | 三端结构门禁与构建通过；Android 与 iPhone 17 模拟器截图 | 三端均在 116×116 正方形绘制区内绘制 270° 圆弧 | ✅ |
+| `HLTH-VIS-027` | 三端心率按半小时最低/最高/平均区间表达 | common/Android 测试通过；三端结构门禁与构建通过 | 共享 48 个半小时区间；三端 `HeartRateIntervalOverview` 每柱按自身 minimum/maximum 绘制 | ✅ |
+| `HLTH-VIS-028` | 5 分钟模拟心率按每 6 点聚合为半小时区间；当前只启用正常 1、正常 2、异常三个有心率场景 | `fiveMinuteHeartSamplesAggregateIntoHalfHourIntervals`、`enabledHeartDataScenariosUseThreeProvidedFiveMinuteSamples`；枚举精确目录断言先因 `Normal3` 多余红灯，最终 `:common:testAndroidHostTest` 通过；emulator-5554 长按场景弹窗仅显示 5 个既有场景 | `HealthMockScenario`/`HealthScenarios` 移除 `Normal3`；`LocalHealthDashboardDataSource` 只映射 normal1/normal2/abnormal；三端场景选择入口和资源同步移除正常数据 3 | ✅ |
+| `HLTH-VIS-029` | 三端周计划日期点击仅切换卡内七日计划，其他区域进入详情 | common/Android 测试通过；三端结构门禁与构建通过；iPhone 17 模拟器确认默认日计划 | 三端各自维护卡内选中日，日期子节点消费点击并从共享 `weeklyDayPlans` 切换内容 | ✅ |
+| `HLTH-VIS-030` | 三端 HRV 与静息心率三角指针位于指标线下方 | Android 单测与模拟器通过；三端结构门禁与构建通过 | Android Compose、iOS Canvas、HarmonyOS Path 均在线下绘制朝上三角 | ✅ |
+| `HLTH-VIS-031` | 三端健康快测测量时间与标题同行且缺失时隐藏 | common 测试、三端结构门禁与构建通过 | 三端 CardHeader 右侧条件渲染 nullable caption，内容区不再重复时间行 | ✅ |
+| `HLTH-VIS-032` | 三端手表短按进入“我”，长按保留场景切换 | Android 模拟器通过；三端互斥手势结构门禁与构建通过 | Android `combinedClickable`、iOS exclusive gesture、HarmonyOS `GestureGroup(Exclusive)` 分离短按与长按 | ✅ |
+| `HLTH-VIS-033` | iOS/HarmonyOS 有数据卡采用 Android 内容安全高度 | 用户反馈作为红灯；`check-health-cross-platform-parity.sh` 19 项红灯后转绿；两端构建通过；iPhone 17 首屏截图 | iOS `contentMinimumHeight`；HarmonyOS `contentMinimumHeight()` + 仅有数据分支的 `constraintSize` | ✅ |
+| `HLTH-VIS-034` | 周计划日期同步切换内容与高亮柱 | 专项门禁转绿；iPhone 17 截图确认周四圆点与第 4 柱同时高亮；HarmonyOS 构建通过 | iOS 显式传入 `selectedIndex`；HarmonyOS `Bars(...weeklySelectedIndex())` | ✅ |
+| `HLTH-VIS-035` | 负荷、趋势与睡眠概览按 Android 几何绘制 | 专项门禁、资源门禁与两端构建通过；iPhone 17 首屏确认负荷完整轨道/星期与训练评估高度 | iOS `LoadOverview/StressOverview/SleepStageOverview`；HarmonyOS `LoadOverview/StressOverview/SleepOverview` | ✅ |
+| `HLTH-VIS-036` | 恢复/能力仪表完整且状态本地化 | 专项门禁、三端资源 JSON 与两端构建通过；模拟器下半屏自动翻页受系统辅助功能权限限制 | 两端 114×78 恢复与 121×71 能力安全区；补齐中英文恢复状态资源 | ✅ |
+| `HLTH-VIS-037` | HarmonyOS 顶部指标、范围指针、快测网格对齐 Android | 专项门禁与 `assembleApp` 通过；当前无在线 HarmonyOS 设备，真机截图待人工回归 | 独立 116×116 弧容器；`MetricComp.iconColor`；可见 `RangeMarker`；`HealthCheckGrid` 两行三列 | ✅ |
+| `HLTH-VIS-038` | HarmonyOS Path 几何按 vp 设计尺寸换算 | 用户高密度设备截图作为红灯；`check-health-cross-platform-parity.sh` 8 项坐标断言红灯后转绿；HarmonyOS `assembleApp` 通过 | `SignedInPage.calorieArcPath`、`DashboardCardComp.gaugeArcPath/abilitySegmentPath/abilityNeedlePath/rangeMarkerPath` 在生成 Path 命令前调用 `vp2px` | ✅ |
+| `HLTH-VIS-039` | HarmonyOS 顶部指标 PNG 使用模板色 | 用户截图显示白/蓝原图色作为红灯；专项门禁模板模式断言红灯后转绿；HarmonyOS `assembleApp` 通过 | `MetricComp` 使用 `ImageRenderMode.Template` 后应用 `AppColors.STEPS/CALORIES/ACTIVE` | ✅ |
 
 ---
 
@@ -240,3 +256,11 @@
 1. **新加功能**：先在 `spec/` 下写 .md 或追加章节 → 在本文件预留映射行（状态标为 ⏳）→ 写测试 → 写实现 → 改状态为 ✅
 2. **Codex 协作**：`Codex_worklog.md` 的每一条“采纳/审查/验证/修正”必须引用稳定 Spec ID；历史 Spec 尚无稳定 ID 时可引用章节号，例如 `[auth-mock-spec §8]`
 3. **评审验收**：按 TRACE.md 逐条核对 Spec 落地情况
+
+## 跨平台预览注解
+
+| Spec 章节 | 对应代码位置 | 状态 |
+|-----------|-------------|------|
+| **iOS #Preview** | 23 个 View 文件均有 `#Preview` 块（Login/Home/Account/Health 全部 View 和组件） | ✅ |
+| **HarmonyOS @Preview** | 6 个纯 `@Component` 文件均有 `@Preview` 装饰器（DashboardCard/HeroTopRow/Metric/ScenarioPicker/HealthDetail/CardEditor） | ✅ |
+| **Android @Preview** | 21 个 Compose 屏幕/组件文件均有 `@Preview` 注解 | ✅ |

@@ -4,6 +4,16 @@
     "" : {
 
     },
+    "  %lld %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "  %1$lld %2$@"
+          }
+        }
+      }
+    },
     "·" : {
 
     },
@@ -33,6 +43,12 @@
 
     },
     "⠿" : {
+
+    },
+    "0" : {
+
+    },
+    "100" : {
 
     },
     "account_default_user" : {
@@ -3775,6 +3791,23 @@
         }
       }
     },
+    "health_visual_normal_range_short" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal range %@–%@ %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正常范围 %@–%@ %@"
+          }
+        }
+      }
+    },
     "health_visual_recommended_range" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3805,6 +3838,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "预计 %@ 小时后完全恢复"
+          }
+        }
+      }
+    },
+    "health_visual_recovery_low" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recovery needed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要恢复"
+          }
+        }
+      }
+    },
+    "health_visual_recovery_ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "体力充沛"
           }
         }
       }
@@ -3890,6 +3957,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "训练负荷"
+          }
+        }
+      }
+    },
+    "health_visual_weekly_rest_day" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rest day"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "休息日"
           }
         }
       }

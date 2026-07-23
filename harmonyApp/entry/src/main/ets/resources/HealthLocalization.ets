@@ -60,6 +60,7 @@ export function healthResource(key: string): Resource {
     case 'health_summary_body_normal': return $r('app.string.health_summary_body_normal');
     case 'health_visual_activity_easy_run': return $r('app.string.health_visual_activity_easy_run');
     case 'health_visual_workout_easy_run': return $r('app.string.health_visual_workout_easy_run');
+    case 'health_visual_weekly_rest_day': return $r('app.string.health_visual_weekly_rest_day');
     case 'health_visual_assessment_efficient': return $r('app.string.health_visual_assessment_efficient');
     case 'health_visual_assessment_efficient_detail': return $r('app.string.health_visual_assessment_efficient_detail');
     case 'health_visual_cycling_climber': return $r('app.string.health_visual_cycling_climber');
@@ -77,6 +78,8 @@ export function healthResource(key: string): Resource {
     case 'health_visual_load_ratio': return $r('app.string.health_visual_load_ratio');
     case 'health_unit_percent': return $r('app.string.health_unit_percent');
     case 'health_visual_recovery_after_hours': return $r('app.string.health_visual_recovery_after_hours');
+    case 'health_visual_recovery_ready': return $r('app.string.health_visual_recovery_ready');
+    case 'health_visual_recovery_low': return $r('app.string.health_visual_recovery_low');
     case 'health_visual_marathon_prediction': return $r('app.string.health_visual_marathon_prediction');
     case 'health_unit_bpm': return $r('app.string.health_unit_bpm');
     case 'health_visual_average_heart_rate': return $r('app.string.health_visual_average_heart_rate');

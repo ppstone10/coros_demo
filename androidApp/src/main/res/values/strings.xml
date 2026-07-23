@@ -222,6 +222,7 @@
     <string name="health_summary_activity_detail">%1$s 公里 · 配速 %2$s</string>
     <string name="health_visual_activity_easy_run">轻松跑</string>
     <string name="health_visual_workout_easy_run">轻松跑 10 公里</string>
+    <string name="health_visual_weekly_rest_day">休息日</string>
     <string name="health_visual_assessment_efficient">高效</string>
     <string name="health_visual_assessment_efficient_detail">当前负荷有效促进体能提升，继续保持恢复节奏。</string>
     <string name="health_visual_cycling_climber">爬坡型</string>
@@ -234,6 +235,9 @@
     <string name="health_visual_training_load_short">训练负荷</string>
     <string name="health_unit_minutes_long">分钟</string>
     <string name="health_visual_recommended_range">建议 %1$s–%2$s</string>
+    <string name="health_visual_normal_range_short">正常范围 %1$s–%2$s %3$s</string>
+    <string name="health_visual_recovery_ready">体力充沛</string>
+    <string name="health_visual_recovery_low">需要恢复</string>
     <string name="health_visual_short_term_load">短期负荷</string>
     <string name="health_visual_long_term_load">长期负荷</string>
     <string name="health_visual_load_ratio">负荷比</string>

@@ -5,6 +5,7 @@ struct HeroTopRow: View {
     let dateLabel: String
     let isSyncing: Bool
     let syncCycle: Int
+    let onTapWatch: () -> Void
     let onLongPressWatch: () -> Void
     var body: some View {
         HStack {
@@ -18,7 +19,19 @@ struct HeroTopRow: View {
             WatchSyncLottieView(isSyncing: isSyncing, syncCycle: syncCycle)
                 .frame(width: 30, height: 30)
                 .clipped()
-                .onLongPressGesture(perform: onLongPressWatch)
+                .contentShape(Rectangle())
+                .gesture(
+                    LongPressGesture(minimumDuration: 0.5)
+                        .exclusively(before: TapGesture())
+                        .onEnded { result in
+                            switch result {
+                            case .first:
+                                onLongPressWatch()
+                            case .second:
+                                onTapWatch()
+                            }
+                        }
+                )
         }
         .padding(.horizontal, 20).padding(.top, 54)
     }
@@ -79,4 +92,15 @@ private struct WatchSyncLottieView: UIViewRepresentable {
         var lastCycle = -1
         var wasSyncing = false
     }
+}
+
+#Preview {
+    HeroTopRow(
+        dateLabel: "2026-07-23 周四",
+        isSyncing: false,
+        syncCycle: 1,
+        onTapWatch: {},
+        onLongPressWatch: {}
+    )
+    .preferredColorScheme(.dark)
 }

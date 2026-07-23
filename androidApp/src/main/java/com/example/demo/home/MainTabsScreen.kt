@@ -52,6 +52,10 @@ fun MainTabsScreen(viewModel: LoginViewModel) {
             when (tab) {
                 HomeTab.Fitness -> HealthDashboardScreen(
                     viewModel,
+                    onWatchClick = {
+                        contentFullscreen = false
+                        tab = HomeTab.Me
+                    },
                     onFullscreenChange = { contentFullscreen = it }
                 )
                 HomeTab.Me -> SignedInScreen(
@@ -100,5 +104,4 @@ fun MainTabsScreen(viewModel: LoginViewModel) {
         }
     }
 }
-
 

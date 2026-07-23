@@ -43,6 +43,7 @@ Pods/
 # HarmonyOS / DevEco Studio
 .hvigor/
 oh_modules/
+.preview/
 
 # Node / frontend / tools
 node_modules/

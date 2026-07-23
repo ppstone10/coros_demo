@@ -56,3 +56,17 @@ struct ForgotPasswordView: View {
         router.push(.resetPassword(account: normalizedAccount))
     }
 }
+ 
+ #Preview {
+     ForgotPasswordView(
+         viewModel: LoginViewModel(),
+         router: AuthRouter(
+             push: { _ in },
+             pop: {},
+             replaceTop: { _ in },
+             resetTo: { _ in },
+             resetKeepingEntranceAndPush: { _ in }
+         )
+     )
+     .preferredColorScheme(.dark)
+ }

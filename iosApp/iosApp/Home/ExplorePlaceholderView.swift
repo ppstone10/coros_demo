@@ -8,3 +8,8 @@ struct ExplorePlaceholderView: View {
             .background(AppColors.Core.black)
     }
 }
+ 
+ #Preview {
+     ExplorePlaceholderView()
+         .preferredColorScheme(.dark)
+ }

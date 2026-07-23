@@ -20,29 +20,7 @@ class LocalHealthDashboardDataSource(
     }
 
     private fun sample(scenario: HealthMockScenario): HealthDashboardData = when (scenario) {
-        HealthMockScenario.Normal -> HealthDashboardData(
-            dailySummary = DailySummary(8769, 769, 69),
-            todayActivity = TodayActivity(8.41, 637, LocalizedTextSpec("health_visual_activity_easy_run"), 78),
-            sleepSummary = SleepSummary(504, 86, "23:00", "08:40", normalSleepStages()),
-            trainingLoad = TrainingLoad(246, 600, 800, listOf(22, 11, 22, 12, 0, 0, 0)),
-            recovery = Recovery(95, 5),
-            weeklyPlan = WeeklyPlan(
-                true, 300, null, 3, listOf(0, 0, 0, 78, 0, 0, 0),
-                LocalizedTextSpec("health_visual_workout_easy_run"), 102, 78
-            ),
-            trainingAssessment = TrainingAssessment(
-                78, "increasing", 155, 138, 1.2,
-                LocalizedTextSpec("health_visual_assessment_efficient"), LocalizedTextSpec("health_visual_assessment_efficient_detail")
-            ),
-            runningAbility = RunningAbility(52, 85, 78.6, 12_621),
-            cyclingAbility = CyclingAbility(220, 72, 80.6, LocalizedTextSpec("health_visual_cycling_climber")),
-            heartRate = HeartRate(55, 68, 81, normalHeartSamples()),
-            stress = Stress(35, "normal", 52, normalStressSamples()),
-            hrvAssessment = HrvAssessment(48, "low", 48, 52, 60),
-            restingHeartRate = RestingHeartRate(58, "08:45", 52, 30, 80),
-            healthCheck = HealthCheck(82, 0, "15:04", 91, 42, 45, 91, 91),
-            bodyManagement = BodyManagement(68.2, 15.5, 22.3, "2022/8/7", listOf("chest", "quadriceps"))
-        )
+        HealthMockScenario.Normal -> normalDashboardData(SimulatedHeartRateSamples.normal1)
         HealthMockScenario.PartialMissing -> HealthDashboardData(
             dailySummary = DailySummary(null, 310, 32),
             todayActivity = TodayActivity(5.2, 390, LocalizedTextSpec("health_visual_activity_easy_run"), 45),
@@ -53,7 +31,7 @@ class LocalHealthDashboardDataSource(
             trainingAssessment = null,
             runningAbility = RunningAbility(52, 85, 78.6, 12_621),
             cyclingAbility = null,
-            heartRate = HeartRate(55, 68, 62, normalHeartSamples()),
+            heartRate = heartRateFromSamples(SimulatedHeartRateSamples.normal2, restingHr = 55),
             stress = null,
             hrvAssessment = null,
             restingHeartRate = RestingHeartRate(55, "08:45", 52),
@@ -71,7 +49,7 @@ class LocalHealthDashboardDataSource(
             trainingAssessment = TrainingAssessment(25, "declining", 240, 130, 1.8, LocalizedTextSpec("health_visual_assessment_overload"), LocalizedTextSpec("health_visual_assessment_overload_detail")),
             runningAbility = RunningAbility(38, 28, 38.0, 15_300),
             cyclingAbility = CyclingAbility(150, 25, 25.0, LocalizedTextSpec("health_visual_cycling_beginner")),
-            heartRate = HeartRate(92, 138, 108, abnormalHeartSamples()),
+            heartRate = heartRateFromSamples(SimulatedHeartRateSamples.abnormal, restingHr = 92),
             stress = Stress(85, "high", 85, abnormalStressSamples()),
             hrvAssessment = HrvAssessment(32, "low", 32, 52, 60),
             restingHeartRate = RestingHeartRate(108, "08:45", 72),
@@ -80,10 +58,49 @@ class LocalHealthDashboardDataSource(
         )
         HealthMockScenario.ReadFailure -> error("handled above")
     }
+
+    private fun normalDashboardData(heartSamples: List<Int>) = HealthDashboardData(
+            dailySummary = DailySummary(8769, 769, 69),
+            todayActivity = TodayActivity(8.41, 637, LocalizedTextSpec("health_visual_activity_easy_run"), 78),
+            sleepSummary = SleepSummary(504, 86, "23:00", "08:40", normalSleepStages()),
+            trainingLoad = TrainingLoad(246, 600, 800, listOf(22, 11, 22, 12, 0, 0, 0)),
+            recovery = Recovery(95, 5),
+            weeklyPlan = WeeklyPlan(
+                true, 300, null, 3, listOf(0, 35, 0, 78, 0, 90, 110),
+                LocalizedTextSpec("health_visual_workout_easy_run"), 102, 78,
+                dayPlans = normalWeeklyDayPlans()
+            ),
+            trainingAssessment = TrainingAssessment(
+                78, "increasing", 155, 138, 1.2,
+                LocalizedTextSpec("health_visual_assessment_efficient"), LocalizedTextSpec("health_visual_assessment_efficient_detail")
+            ),
+            runningAbility = RunningAbility(52, 85, 78.6, 12_621),
+            cyclingAbility = CyclingAbility(220, 72, 80.6, LocalizedTextSpec("health_visual_cycling_climber")),
+            heartRate = heartRateFromSamples(heartSamples, restingHr = 55),
+            stress = Stress(35, "normal", 52, normalStressSamples()),
+            hrvAssessment = HrvAssessment(48, "low", 48, 52, 60),
+            restingHeartRate = RestingHeartRate(58, "08:45", 52, 30, 80),
+            healthCheck = HealthCheck(82, 0, "15:04", 91, 42, 45, 91, 91),
+            bodyManagement = BodyManagement(68.2, 15.5, 22.3, "2022/8/7", listOf("chest", "quadriceps"))
+        )
 }
 
-private fun normalHeartSamples() = listOf(62, 65, 63, 68, 72, 70, 76, 74, 80, 84, 78, 92, 86, 81, 88, 79, 76, 82, 75, 72, 77, 70, 74, 68)
-private fun abnormalHeartSamples() = listOf(92, 98, 105, 112, 108, 118, 125, 138, 132, 128, 145, 138, 134, 142, 130, 126, 136, 122, 118, 124, 116, 110, 120, 108)
+private fun heartRateFromSamples(samples: List<Int>, restingHr: Int): HeartRate = HeartRate(
+    restingHr = restingHr,
+    currentHr = samples.lastOrNull(),
+    averageHr = samples.takeIf { it.isNotEmpty() }?.let { (it.sum() + it.size / 2) / it.size },
+    intervals = aggregateFiveMinuteHeartSamples(samples),
+    fiveMinuteSamples = samples
+)
+private fun normalWeeklyDayPlans() = listOf(
+    WeeklyDayPlan(0),
+    WeeklyDayPlan(1, LocalizedTextSpec("health_visual_workout_easy_run"), 45, 35),
+    WeeklyDayPlan(2),
+    WeeklyDayPlan(3, LocalizedTextSpec("health_visual_workout_easy_run"), 102, 78),
+    WeeklyDayPlan(4),
+    WeeklyDayPlan(5, LocalizedTextSpec("health_visual_activity_tempo_run"), 60, 90),
+    WeeklyDayPlan(6, LocalizedTextSpec("health_visual_workout_easy_run"), 93, 110)
+)
 private fun normalStressSamples() = listOf(18, 20, 22, 25, 28, 32, 38, 45, 52, 61, 74, 86, 78, 64, 52, 40, 34, 48, 58, 42, 30, 25, 22, 20)
 private fun abnormalStressSamples() = listOf(62, 68, 72, 78, 84, 90, 95, 88, 92, 97, 91, 86, 94, 98, 92, 89, 96, 90, 87, 93, 88, 84, 90, 86)
 private fun normalSleepStages() = listOf(
@@ -241,7 +258,21 @@ class HealthDashboardUseCase(private val dataSource: HealthDashboardDataSource) 
         caption = value.workoutName,
         chartPoints = dayPoints(value.dailyLoads),
         metrics = value.workoutTrainingLoad?.let { listOf(HealthMetric(text("health_visual_training_load_short"), it.toString())) }.orEmpty(),
-        highlightedIndex = value.currentDayIndex
+        highlightedIndex = value.currentDayIndex,
+        weeklyDayPlans = value.dayPlans.ifEmpty {
+            (0..6).map { dayIndex ->
+                if (dayIndex == value.currentDayIndex) {
+                    WeeklyDayPlan(
+                        dayIndex,
+                        value.workoutName,
+                        value.workoutDurationMinutes,
+                        value.workoutTrainingLoad
+                    )
+                } else {
+                    WeeklyDayPlan(dayIndex)
+                }
+            }
+        }
     )
 
     private fun trainingLoadVisual(value: TrainingLoad) = HealthCardVisualData(
@@ -290,7 +321,17 @@ class HealthDashboardUseCase(private val dataSource: HealthDashboardDataSource) 
         primaryValue = (value.averageHr ?: value.currentHr ?: value.restingHr)?.toString(),
         primaryUnit = text("health_unit_bpm"),
         caption = text("health_visual_average_heart_rate"),
-        chartPoints = value.samples.mapIndexed { index, sample -> HealthChartPoint(index.toString(), sample.toDouble()) }
+        chartPoints = value.intervals.ifEmpty {
+            value.samples.mapIndexed { index, sample -> HeartRateInterval(index * 30, sample, sample, sample) }
+        }.map { interval ->
+            HealthChartPoint(
+                label = halfHourLabel(interval.startMinute),
+                value = interval.average.toDouble(),
+                minimum = interval.minimum.toDouble(),
+                maximum = interval.maximum.toDouble(),
+                average = interval.average.toDouble()
+            )
+        }
     )
 
     private fun stressVisual(value: Stress) = HealthCardVisualData(
@@ -336,7 +377,7 @@ class HealthDashboardUseCase(private val dataSource: HealthDashboardDataSource) 
 
     private fun healthCheckVisual(value: HealthCheck) = HealthCardVisualData(
         kind = HealthCardVisualKind.HealthCheckGrid,
-        caption = text("health_visual_measured_at", value.measuredTime ?: "---"),
+        caption = value.measuredTime?.let { text("health_visual_measured_at", it) },
         metrics = listOfNotNull(
             value.heartRate?.let { HealthMetric(text("health_visual_heart_rate"), it.toString(), text("health_unit_bpm")) },
             value.hrvMs?.let { HealthMetric(text("health_visual_hrv"), it.toString(), text("health_unit_milliseconds")) },
@@ -373,6 +414,13 @@ class HealthDashboardUseCase(private val dataSource: HealthDashboardDataSource) 
 
     private fun dayPoints(values: List<Int>) = values.mapIndexed { index, value ->
         HealthChartPoint("health_visual_day_${listOf("mon", "tue", "wed", "thu", "fri", "sat", "sun").getOrElse(index) { "mon" }}", value.toDouble())
+    }
+
+    private fun halfHourLabel(startMinute: Int): String {
+        val minuteOfDay = startMinute.coerceIn(0, 23 * 60 + 30)
+        val hour = minuteOfDay / 60
+        val minute = minuteOfDay % 60
+        return hour.toString().padStart(2, '0') + ":" + minute.toString().padStart(2, '0')
     }
 
     private fun stressLevel(value: Int) = when {

@@ -10,8 +10,21 @@ export interface CardEntry {
   visual: HealthVisualData;
 }
 
-export interface HealthChartPointData { label: string; value: number; level: string; }
+export interface HealthChartPointData {
+  label: string;
+  value: number;
+  level: string;
+  minimum?: number;
+  maximum?: number;
+  average?: number;
+}
 export interface HealthMetricData { labelKey: string; value: string; unitKey?: string; }
+export interface WeeklyDayPlanData {
+  dayIndex: number;
+  workoutNameKey?: string;
+  workoutDurationMinutes?: number;
+  workoutTrainingLoad?: number;
+}
 export interface HealthRangeData { minimum: number; maximum: number; current: number; normalMin?: number; normalMax?: number; average?: number; }
 export interface SleepStageData { stage: string; startMinute: number; durationMinutes: number; }
 export interface HealthVisualData {
@@ -21,6 +34,7 @@ export interface HealthVisualData {
   captionKey?: string; captionArgs?: string[];
   detailKey?: string; detailArgs?: string[];
   progress?: number; highlightedIndex?: number;
+  weeklyDayPlans?: WeeklyDayPlanData[];
   chartPoints: HealthChartPointData[]; metrics: HealthMetricData[];
   range?: HealthRangeData; sleepStages: SleepStageData[];
   startTime?: string; endTime?: string; assetKey?: string;

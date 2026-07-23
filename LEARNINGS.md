@@ -75,9 +75,13 @@
 | **全资源清单与债务棘轮** | `tools/resource-inventory.json` 是共享图片、Raw、共享文字键和硬编码债务上限的机器事实；`./tools/check-resource-maintainability.sh` 只允许文案/颜色债务下降，平台专属 AppIcon/启动资源不为目录对称跨端复制 |
 | **跨端文案对齐口径** | 三端共享文字键要求语义和键名一致，但允许默认中文沿用平台既有措辞（例如账户页“我的”/“我”）；迁移资源不顺带改变产品文案，统一措辞应另行评审 |
 | **健康可视化契约** | 趋势、区间、指标、睡眠阶段等绘制数据由 common 以 `HealthCardVisualData` 输出，三端按 `kind` 原生绘制；UI 不随机补点，也不把整卡烘焙成图片 |
+| **2031 图形分型、圆弧与心率区间** | `visual.kind` 只表达数据族，不保证同族图形相同：恢复/能力、心率/压力、静息心率/HRV 必须继续结合稳定 `HealthCardType` 选择专用绘制器。顶部卡路里弧三端统一按 0–800、135° 起始、270° 总扫角夹紧绘制，并使用等宽等高包围盒保持正圆。心率每根柱代表一个半小时的最低–最高区间，平均值是统计字段；不得从统一基线绘制或插值伪造更多时间片 |
+| **模拟心率时间粒度与周计划交互边界** | 模拟心率原型保留连续 5 分钟样本，由 common 每 6 点聚合为半小时 min/max/四舍五入平均值，UI 只消费聚合区间且不得按索引制造振幅；当前运行时只启用正常 1、正常 2、异常，正常 3 不进入 fixture 或场景目录。周计划七日详情属于共享数据契约；三端日期子节点消费点击并只切换卡内选中日，卡片其余区域继续进入详情，旧快照缺少七日详情时补成“当前日原计划 + 其余休息日” |
+| **三端健康页复合点击与头部元数据** | 右上角手表必须以平台原生的同一互斥手势入口区分短按/长按：短按切换主标签到“我”，长按只打开调试场景，禁止叠加两个会同时命中的独立手势。卡片级元数据优先进入 `CardHeader` 右侧并保持 nullable；健康快测时间缺失时不生成 `---`。HRV/静息心率范围指针的三角尖端位于指标带下方并朝上指向线条 |
 | **Figma 动效证据边界** | 当目标节点的 motion inventory 为空时，只实现静态终态并保留应用既有交互反馈，不凭视觉稿臆造时间线；新增动效需单独定义时长、缓动与 Reduce Motion 降级 |
 | **健康卡片右栏安全区** | 仪表、趋势、区间、睡眠阶段和人体图统一使用显式 130/166 宽高安全区，叶节点与父卡片双重裁剪；HarmonyOS 右栏不得同时使用 `layoutWeight` 和 `width('100%')`，否则概览图会越过圆角卡片 |
-| **健康卡片高度契约** | 空态必须由 common 的显式 `HealthCardStatus.Empty` 选择，iOS/HarmonyOS 适配层不得通过主值或图表是否为空猜测；三端卡片外壳均按内容固有高度测量，Figma 114/122/178/180/188/206 只作设计对照，不作为运行时类型最小高度。滚动方向禁止以 `fillMaxSize`、无尺寸 Spacer/Blank 或 weight 吸收不确定剩余空间；图表和图片保留自身明确宽高 |
+| **健康卡片高度契约** | 空态必须由 common 的显式 `HealthCardStatus.Empty` 选择，iOS/HarmonyOS 适配层不得通过主值或图表是否为空猜测；公共外壳不固定整卡高度，但有数据视觉组件必须保留与 Android 内容固有尺寸等价的类型安全高度，防止 SwiftUI/ArkUI 把圆弧、指针或多行指标压缩裁断。空态不继承该安全高度；滚动方向仍禁止以 `fillMaxSize`、无尺寸 Spacer/Blank 或 weight 吸收不确定剩余空间 |
+| **跨端图表状态与容器高度** | 周计划的选中日必须同时传给日期、计划内容和柱图高亮，不能让图表继续读取快照初始索引。柱高必须以实际图表容器高度计算；例如 36 高负荷图若沿用 58 高公式必然被裁。睡眠持续时长需转成显式 x/width，`layoutPriority/layoutWeight` 不能替代时间坐标。恢复状态等 UI 自生文案也必须进入三端资源目录，缺键会直接泄漏资源名 |
 | **设计字体跨端一致性** | 用户提供的应用包字体可按文件哈希确认同源后分别进入 Android font、iOS UIAppFonts、HarmonyOS rawfile；中文标题保留平台字体，COROS 字体只承担数字/单位，避免缺字 |
 | **卡片编辑器草稿边界** | “恢复默认”应先只重建编辑器本地草稿，用户点击保存后再写 KMP 持久化；不能用重新加载已保存快照代替恢复，否则删减顺序会原样返回 |
 | **编辑器卡片元数据** | UI 根据类型 ID 重建已删除或默认卡片时，标题和图标必须来自完整稳定映射，不能用空标题占位；保存边界仍只提交类型 ID |
@@ -92,6 +96,7 @@
 | **iOS Lottie 刷新同步** | SwiftUI `LottieView.playbackMode`、随机/周期 ID 重建都不能替代实际播放验证；需要严格同步时用 `UIViewRepresentable` 持有 `LottieAnimationView`，刷新开始显式 `stop → progress 0 → play`，结束显式 `stop → progress 0` |
 | **iOS UIKit 动画尺寸** | `UIViewRepresentable` 直接返回具有固有 composition 尺寸的 `LottieAnimationView` 时，外部 SwiftUI `.frame` 可能只约束包装层而允许动画溢出；返回裁剪 UIView 容器，把动画关闭 autoresizing mask 后四边约束填充，并在 SwiftUI 层再次 `.clipped()` |
 | **HarmonyOS 卡片尺寸所有权** | 百分比宽度、内外边距与固定宽子图共同参与 ArkUI 测量时，由全宽 Row 扣页面 padding、卡片 Column 仅 `layoutWeight(1)` 占剩余宽度；更关键的是 Scroll/Refresh 内的数据 renderer 禁止 `height('100%')`，否则百分比高度会解析为滚动视口并让一张普通卡占满整屏 |
+| **HarmonyOS Path 与图片着色单位边界** | ArkUI `Path.commands` 的数值坐标按物理像素解释，而 `.width/.height/.margin` 等布局尺寸按 vp；把设计稿 vp 坐标直接写进 Path 会在高密度设备上缩小并向左上错位，生成命令前应以 `vp2px` 换算且不能重复换算布局值。PNG 的 `fillColor` 单独使用不会覆盖原图颜色，单色语义图标需先启用 `ImageRenderMode.Template` |
 | **HarmonyOS common JSON 依赖边界** | `ohos_arm64` 无法解析官方 kotlinx-serialization JSON Native 变体；会进入 Harmony bridge 的 common JSON codec 必须保持自包含或使用明确提供 OHOS 变体的依赖，不能仅因 Android/iOS 可编译就引入普通 Kotlin/Native 库 |
 
 ## Spec 文件索引

@@ -173,3 +173,17 @@ struct HealthCardEditor: View {
         dragScrollOffset = 0; dragEdgeDirection = 0; dragEdgeSpeed = 0
     }
 }
+
+#Preview {
+    HealthCardEditor(
+        initial: [
+            HealthCard(id: "TodayActivity", title: "今日活动", summary: "", icon: "health_today_activity", isRisk: false),
+            HealthCard(id: "WeeklyPlan", title: "本周计划", summary: "", icon: "health_weekly_plan", isRisk: false),
+            HealthCard(id: "TrainingLoad", title: "训练负荷", summary: "", icon: "health_training_load", isRisk: false),
+            HealthCard(id: "HeartRate", title: "心率", summary: "", icon: "health_heart_rate", isRisk: false),
+        ],
+        onClose: {},
+        onSave: { _ in }
+    )
+    .preferredColorScheme(.dark)
+}

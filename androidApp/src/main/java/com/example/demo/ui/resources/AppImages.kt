@@ -47,6 +47,7 @@ object AppImages {
         val TodayRunner = AppImageAsset(R.drawable.health_today_runner)
         val BodyFront = AppImageAsset(R.drawable.health_body_front)
         val BodyBack = AppImageAsset(R.drawable.health_body_back)
+        val RecoveryStatus = AppImageAsset(R.drawable.health_recovery_status)
 
         val WeeklyPlan = AppImageAsset(R.drawable.icon_small_plan)
         val TodayActivity = AppImageAsset(R.drawable.icon_small_training_effect)

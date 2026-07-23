@@ -380,11 +380,25 @@ private fun healthSnapshotJson(pd: PersistedDashboard): String {
         }
         card.visual.progress?.let { sb.append(",\"progress\":").append(it) }
         card.visual.highlightedIndex?.let { sb.append(",\"highlightedIndex\":").append(it) }
+        sb.append(",\"weeklyDayPlans\":[")
+        card.visual.weeklyDayPlans.forEachIndexed { i, plan ->
+            if (i > 0) sb.append(",")
+            sb.append("{\"dayIndex\":").append(plan.dayIndex)
+            plan.workoutName?.let { sb.append(",\"workoutNameKey\":\"").append(it.key.esc()).append("\"") }
+            plan.workoutDurationMinutes?.let { sb.append(",\"workoutDurationMinutes\":").append(it) }
+            plan.workoutTrainingLoad?.let { sb.append(",\"workoutTrainingLoad\":").append(it) }
+            sb.append("}")
+        }
+        sb.append("]")
         sb.append(",\"chartPoints\":[")
         card.visual.chartPoints.forEachIndexed { i, point ->
             if (i > 0) sb.append(",")
             sb.append("{\"label\":\"").append(point.label.esc()).append("\",\"value\":").append(point.value)
-                .append(",\"level\":\"").append(point.level.name).append("\"}")
+                .append(",\"level\":\"").append(point.level.name).append("\"")
+            point.minimum?.let { sb.append(",\"minimum\":").append(it) }
+            point.maximum?.let { sb.append(",\"maximum\":").append(it) }
+            point.average?.let { sb.append(",\"average\":").append(it) }
+            sb.append("}")
         }
         sb.append("],\"metrics\":[")
         card.visual.metrics.forEachIndexed { i, metric ->

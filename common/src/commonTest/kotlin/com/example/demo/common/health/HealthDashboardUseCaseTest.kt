@@ -95,6 +95,99 @@ class HealthDashboardUseCaseTest {
         assertEquals(52.0, byType.getValue(HealthCardType.HrvAssessment).visual.range?.normalMin)
         assertEquals(60.0, byType.getValue(HealthCardType.HrvAssessment).visual.range?.normalMax)
     }
+    @Test fun heartRateVisualUsesFortyEightHalfHourMinMaxAverageIntervals() {
+        val points = state(HealthMockScenario.Normal).cards
+            .first { it.type == HealthCardType.HeartRate }
+            .visual.chartPoints
+
+        assertEquals(48, points.size)
+        assertEquals("00:00", points.first().label)
+        assertEquals("23:30", points.last().label)
+        points.forEach { point ->
+            val minimum = requireNotNull(point.minimum)
+            val maximum = requireNotNull(point.maximum)
+            val average = requireNotNull(point.average)
+            assertTrue(minimum <= average)
+            assertTrue(average <= maximum)
+            assertEquals(average, point.value)
+        }
+    }
+    @Test fun fiveMinuteHeartSamplesAggregateIntoHalfHourIntervals() {
+        val intervals = aggregateFiveMinuteHeartSamples(
+            listOf(
+                50, 50, 53, 52, 50, 50,
+                51, 52, 51, 53, 53, 56
+            )
+        )
+
+        assertEquals(
+            listOf(
+                HeartRateInterval(startMinute = 0, minimum = 50, maximum = 53, average = 51),
+                HeartRateInterval(startMinute = 30, minimum = 51, maximum = 56, average = 53)
+            ),
+            intervals
+        )
+    }
+    @Test fun enabledHeartDataScenariosUseThreeProvidedFiveMinuteSamples() {
+        val scenarios = listOf(
+            HealthMockScenario.Normal,
+            HealthMockScenario.PartialMissing,
+            HealthMockScenario.Abnormal
+        )
+
+        scenarios.forEach { scenario ->
+            val heartRate = requireNotNull(domain(scenario).heartRate)
+            assertEquals(288, heartRate.fiveMinuteSamples.size)
+            assertEquals(48, heartRate.intervals.size)
+        }
+        assertEquals(HeartRateInterval(0, 50, 53, 51), requireNotNull(domain(HealthMockScenario.Normal).heartRate).intervals.first())
+        assertEquals(HeartRateInterval(0, 50, 55, 53), requireNotNull(domain(HealthMockScenario.PartialMissing).heartRate).intervals.first())
+        assertEquals(HeartRateInterval(0, 67, 70, 69), requireNotNull(domain(HealthMockScenario.Abnormal).heartRate).intervals.first())
+        assertEquals(
+            listOf(
+                HealthMockScenario.Normal,
+                HealthMockScenario.PartialMissing,
+                HealthMockScenario.AllEmpty,
+                HealthMockScenario.Abnormal,
+                HealthMockScenario.ReadFailure
+            ),
+            HealthMockScenario.entries
+        )
+        assertTrue(domain(HealthMockScenario.AllEmpty).heartRate == null)
+    }
+    @Test fun healthCheckWithoutMeasuredTimeDoesNotExposeHeaderPlaceholder() {
+        val data = HealthDashboardData(
+            dailySummary = null,
+            sleepSummary = null,
+            trainingLoad = null,
+            recovery = null,
+            healthCheck = HealthCheck(overallScore = 82, lastCheckDays = 0, measuredTime = null)
+        )
+
+        val card = useCase()
+            .toUiState(data)
+            .cards
+            .first { it.type == HealthCardType.HealthCheck }
+
+        assertNull(card.visual.caption)
+    }
+    @Test fun weeklyPlanProvidesSevenSelectableDayPlans() {
+        val weeklyPlan = requireNotNull(domain(HealthMockScenario.Normal).weeklyPlan)
+
+        assertEquals(7, weeklyPlan.dayPlans.size)
+        assertEquals(weeklyPlan.currentDayIndex, weeklyPlan.dayPlans[weeklyPlan.currentDayIndex].dayIndex)
+        assertTrue(weeklyPlan.dayPlans.any { it.workoutName != weeklyPlan.dayPlans[weeklyPlan.currentDayIndex].workoutName })
+    }
+    @Test fun legacyHeartRateSamplesDecodeAsDegenerateHalfHourIntervals() {
+        val snapshot = MockHealthDashboardStoreJson.decode(
+            """{"userId":"legacy-heart","dashboardData":{"heartRate":{"restingHr":55,"currentHr":68,"averageHr":65,"samples":[60,72]}}}"""
+        )
+        val intervals = requireNotNull(snapshot.dashboardData?.heartRate).intervals
+
+        assertEquals(2, intervals.size)
+        assertEquals(HeartRateInterval(0, 60, 60, 60), intervals[0])
+        assertEquals(HeartRateInterval(30, 72, 72, 72), intervals[1])
+    }
     @Test fun cardsExposeStableVisualKinds() {
         val kinds = state(HealthMockScenario.Normal).cards.associate { it.type to it.visual.kind }
         assertEquals(HealthCardVisualKind.TodayActivity, kinds[HealthCardType.TodayActivity])

@@ -130,12 +130,26 @@ object MockHealthDashboardStoreJson {
         put("hasPlan", hasPlan); putNullable("plannedMinutes", plannedMinutes); putNullable("description", description)
         put("currentDayIndex", currentDayIndex); put("dailyLoads", ints(dailyLoads)); putNullable("workoutNameKey", workoutName?.key)
         putNullable("workoutDurationMinutes", workoutDurationMinutes); putNullable("workoutTrainingLoad", workoutTrainingLoad)
+        put("dayPlans", buildJsonArray { dayPlans.forEach { add(it.toJson()) } })
+    }
+    private fun WeeklyDayPlan.toJson() = buildJsonObject {
+        put("dayIndex", dayIndex); putNullable("workoutNameKey", workoutName?.key)
+        putNullable("workoutDurationMinutes", workoutDurationMinutes); putNullable("workoutTrainingLoad", workoutTrainingLoad)
     }
     private fun JsonObject.toWeeklyPlan() = WeeklyPlan(
         bool("hasPlan", "has_plan") ?: false, int("plannedMinutes", "planned_minutes"), string("description"),
         int("currentDayIndex", "current_day_index") ?: 0, intList("dailyLoads", "daily_loads"),
         string("workoutNameKey", "workout_name_key")?.let(::LocalizedTextSpec),
-        int("workoutDurationMinutes", "workout_duration_minutes"), int("workoutTrainingLoad", "workout_training_load")
+        int("workoutDurationMinutes", "workout_duration_minutes"), int("workoutTrainingLoad", "workout_training_load"),
+        array("dayPlans", "day_plans").map { value ->
+            val item = value.asObject()
+            WeeklyDayPlan(
+                item.int("dayIndex", "day_index") ?: 0,
+                item.string("workoutNameKey", "workout_name_key")?.let(::LocalizedTextSpec),
+                item.int("workoutDurationMinutes", "workout_duration_minutes"),
+                item.int("workoutTrainingLoad", "workout_training_load")
+            )
+        }
     )
 
     private fun TrainingAssessment.toJson() = buildJsonObject {
@@ -167,10 +181,34 @@ object MockHealthDashboardStoreJson {
 
     private fun HeartRate.toJson() = buildJsonObject {
         putNullable("restingHr", restingHr); putNullable("currentHr", currentHr); putNullable("averageHr", averageHr); put("samples", ints(samples))
+        put("intervals", buildJsonArray { intervals.forEach { add(it.toJson()) } })
+        put("fiveMinuteSamples", ints(fiveMinuteSamples))
     }
-    private fun JsonObject.toHeartRate() = HeartRate(
-        int("restingHr", "resting_hr"), int("currentHr", "current_hr"), int("averageHr", "average_hr"), intList("samples")
-    )
+    private fun HeartRateInterval.toJson() = buildJsonObject {
+        put("startMinute", startMinute); put("minimum", minimum); put("maximum", maximum); put("average", average)
+    }
+    private fun JsonObject.toHeartRate(): HeartRate {
+        val samples = intList("samples")
+        val intervals = array("intervals").map { item ->
+            val interval = item.asObject()
+            HeartRateInterval(
+                interval.int("startMinute", "start_minute") ?: 0,
+                interval.int("minimum") ?: 0,
+                interval.int("maximum") ?: 0,
+                interval.int("average") ?: 0
+            )
+        }.ifEmpty {
+            samples.mapIndexed { index, sample -> HeartRateInterval(index * 30, sample, sample, sample) }
+        }
+        return HeartRate(
+            int("restingHr", "resting_hr"),
+            int("currentHr", "current_hr"),
+            int("averageHr", "average_hr"),
+            samples,
+            intervals,
+            intList("fiveMinuteSamples", "five_minute_samples")
+        )
+    }
 
     private fun Stress.toJson() = buildJsonObject {
         putNullable("stressLevel", stressLevel); putNullable("status", status); putNullable("averageStress", averageStress); put("samples", ints(samples))

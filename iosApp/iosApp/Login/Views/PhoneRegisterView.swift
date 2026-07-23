@@ -83,3 +83,17 @@ struct PhoneRegisterView: View {
         }
     }
 }
+ 
+ #Preview {
+     PhoneRegisterView(
+         viewModel: LoginViewModel(),
+         router: AuthRouter(
+             push: { _ in },
+             pop: {},
+             replaceTop: { _ in },
+             resetTo: { _ in },
+             resetKeepingEntranceAndPush: { _ in }
+         )
+     )
+     .preferredColorScheme(.dark)
+ }

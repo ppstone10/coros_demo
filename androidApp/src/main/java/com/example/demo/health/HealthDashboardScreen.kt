@@ -82,6 +82,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @Composable
 fun HealthDashboardScreen(
     viewModel: LoginViewModel,
+    onWatchClick: () -> Unit = {},
     onFullscreenChange: (Boolean) -> Unit = {}
 ) {
     var result by remember(viewModel.state.currentSession) { mutableStateOf(viewModel.loadHealthDashboard()) }
@@ -147,6 +148,7 @@ fun HealthDashboardScreen(
         HeroTopRow(
             dateLabel = state?.dateLabel?.let { localizedHealthText(it) }.orEmpty(),
             isSyncing = isRefreshing,
+            onClickWatch = onWatchClick,
             onLongPressWatch = { showScenarioPicker = true }
         )
 
@@ -333,7 +335,7 @@ private fun HealthDashboardPreview() {
         Column(
             Modifier.fillMaxSize().background(AppColors.Health.Page)
         ) {
-            HeroTopRow(dateLabel = "July 21, 2026", isSyncing = false, onLongPressWatch = {})
+            HeroTopRow(dateLabel = "July 21, 2026", isSyncing = false, onClickWatch = {}, onLongPressWatch = {})
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 ArcAndMetricsSection(state)
                 state.cards.forEach { card ->

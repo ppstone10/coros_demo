@@ -66,3 +66,18 @@ struct ResetPasswordView: View {
         viewModel.toastMessage = appLocalized("auth_password_updated")
     }
 }
+ 
+ #Preview {
+     ResetPasswordView(
+         account: "user@example.com",
+         viewModel: LoginViewModel(),
+         router: AuthRouter(
+             push: { _ in },
+             pop: {},
+             replaceTop: { _ in },
+             resetTo: { _ in },
+             resetKeepingEntranceAndPush: { _ in }
+         )
+     )
+     .preferredColorScheme(.dark)
+ }

@@ -18,3 +18,11 @@ struct HealthDetailView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity).background(AppColors.Core.black)
     }
 }
+
+#Preview {
+    HealthDetailView(
+        card: HealthCard(id: "TodayActivity", title: "今日活动", summary: "", icon: "health_today_activity", isRisk: false),
+        onBack: {}
+    )
+    .preferredColorScheme(.dark)
+}

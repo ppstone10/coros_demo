@@ -68,6 +68,8 @@ check_file harmonyApp/entry/src/main/resources/base/media/health_today_header.pn
 check_file androidApp/src/main/res/drawable-nodpi/health_today_runner.png
 check_file iosApp/iosApp/Assets.xcassets/health_today_runner.imageset/health_today_runner.png
 check_file harmonyApp/entry/src/main/resources/base/media/health_today_runner.png
+check_file iosApp/iosApp/Assets.xcassets/health_recovery_status.imageset/health_recovery_status.svg
+check_file harmonyApp/entry/src/main/resources/base/media/health_recovery_status.svg
 
 check_same_hash androidApp/src/main/res/font/coros_app_bold.ttf \
   iosApp/iosApp/Resources/Fonts/COROS-APP-Bold.ttf \
@@ -142,6 +144,24 @@ check_text iosApp/iosApp/Health/HealthDashboardViewModel.swift 'case "TodayActiv
 check_text harmonyApp/entry/src/main/ets/resources/AppResources.ets "case 'TodayActivity': return \$r('app.media.icon_small_training_effect')"
 check_text harmonyApp/entry/src/main/ets/health/editor/CardEditorComp.ets "AppImages.healthCardIcon(card.id)"
 check_text harmonyApp/entry/src/main/ets/health/detail/HealthDetailComp.ets "AppImages.healthCardIcon(this.card().id)"
+
+# HLTH-VIS-030..032: all native renderers keep the accepted Android behavior.
+check_text iosApp/iosApp/Health/HealthDashboardView.swift "RangeIndicatorOverview(cardType: cardType, visual: visual)"
+check_text iosApp/iosApp/Health/HealthDashboardView.swift "if card.id == \"HealthCheck\", let measuredTime = card.visual?.caption"
+check_text iosApp/iosApp/Health/Components/HeroTopRow.swift "onTapWatch"
+check_text iosApp/iosApp/Home/MainTabsView.swift "onWatchTap: { selected = .me }"
+check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets "this.RangeIndicatorOverview()"
+check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets "this.card.id === 'HealthCheck' && this.card.visual.captionKey"
+check_text harmonyApp/entry/src/main/ets/health/components/HeroTopRowComp.ets "onTap?: () => void"
+check_text harmonyApp/entry/src/main/ets/pages/SignedInPage.ets "onTap: () => { this.selectedTab = 3;"
+check_text iosApp/iosApp/Health/Components/HeroArcView.swift "private var calorieProgress"
+check_text iosApp/iosApp/Health/HealthDashboardView.swift "HeartRateIntervalOverview"
+check_text iosApp/iosApp/Health/HealthDashboardView.swift "onWeeklyDaySelected"
+check_text harmonyApp/entry/src/main/ets/pages/SignedInPage.ets "private calorieArcProgress()"
+check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets "HeartRateIntervalOverview"
+check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets "onWeeklyDaySelected"
+check_text iosApp/iosApp/Health/HealthDashboardView.swift "GaugeOverview(cardType: cardType, visual: visual)"
+check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets "this.GaugeOverview()"
 
 if [[ "$failed" -ne 0 ]]; then
   exit 1

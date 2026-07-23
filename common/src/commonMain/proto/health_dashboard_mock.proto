@@ -15,10 +15,15 @@ message TrainingLoadMock {
   repeated int32 daily_loads = 4;
 }
 message RecoveryMock { optional int32 score = 1; optional int32 remaining_hours = 2; }
+message WeeklyDayPlanMock {
+  int32 day_index = 1; optional string workout_name_key = 2;
+  optional int32 workout_duration_minutes = 3; optional int32 workout_training_load = 4;
+}
 message WeeklyPlanMock {
   optional bool has_plan = 1; optional int32 planned_minutes = 2; optional string description = 3;
   optional int32 current_day_index = 4; repeated int32 daily_loads = 5; optional string workout_name_key = 6;
   optional int32 workout_duration_minutes = 7; optional int32 workout_training_load = 8;
+  repeated WeeklyDayPlanMock day_plans = 9;
 }
 message TrainingAssessmentMock {
   optional int32 volume_score = 1; optional string trend = 2; optional int32 short_term_load = 3;
@@ -27,7 +32,15 @@ message TrainingAssessmentMock {
 }
 message RunningAbilityMock { optional int32 vo2max = 1; optional int32 score = 2; optional double display_score = 3; optional int32 marathon_seconds = 4; }
 message CyclingAbilityMock { optional int32 ftp = 1; optional int32 score = 2; optional double display_score = 3; optional string ability_label_key = 4; }
-message HeartRateMock { optional int32 resting_hr = 1; optional int32 current_hr = 2; optional int32 average_hr = 3; repeated int32 samples = 4; }
+message HeartRateIntervalMock {
+  int32 start_minute = 1; int32 minimum = 2; int32 maximum = 3; int32 average = 4;
+}
+message HeartRateMock {
+  optional int32 resting_hr = 1; optional int32 current_hr = 2; optional int32 average_hr = 3;
+  repeated int32 samples = 4; // 旧快照兼容；新数据使用 intervals。
+  repeated HeartRateIntervalMock intervals = 5;
+  repeated int32 five_minute_samples = 6;
+}
 message StressMock { optional int32 stress_level = 1; optional string status = 2; optional int32 average_stress = 3; repeated int32 samples = 4; }
 message HrvAssessmentMock { optional int32 hrv_score = 1; optional string status = 2; optional int32 average_ms = 3; optional int32 normal_min = 4; optional int32 normal_max = 5; }
 message RestingHeartRateMock { optional int32 value = 1; optional string measured_time = 2; optional int32 thirty_day_average = 3; optional int32 range_min = 4; optional int32 range_max = 5; }

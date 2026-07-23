@@ -28,6 +28,8 @@ export class AppColors {
   static readonly VISUAL_CYAN: string = '#2DCDD3';
   static readonly VISUAL_PINK: string = '#E82D8A';
   static readonly VISUAL_DEEP_BLUE: string = '#3156B8';
+  static readonly STRESS_LOW: string = '#449AFA';
+  static readonly STRESS_GOOD: string = '#AADB37';
   static readonly VISUAL_BAR: string = '#626262';
   static readonly RANGE_TRACK: string = '#454545';
   static readonly ACTIVITY_TILE: string = '#223C32';
@@ -109,6 +111,7 @@ export class AppImages {
   static todayRunner(): Resource { return $r('app.media.health_today_runner'); }
   static bodyFront(): Resource { return $r('app.media.health_body_front'); }
   static bodyBack(): Resource { return $r('app.media.health_body_back'); }
+  static recoveryStatus(): Resource { return $r('app.media.health_recovery_status'); }
 
   static healthCardIcon(typeName: string): Resource {
     switch (typeName) {

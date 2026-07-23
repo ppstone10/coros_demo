@@ -30,3 +30,8 @@ struct SnackbarView: View {
         .animation(.spring(response: 0.35), value: isPresented)
     }
 }
+
+#Preview {
+    SnackbarView(message: "这是一个示例提示消息", isPresented: .constant(true))
+        .preferredColorScheme(.dark)
+}

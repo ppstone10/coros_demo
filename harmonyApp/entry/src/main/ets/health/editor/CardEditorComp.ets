@@ -1,6 +1,7 @@
 import { AppColors, AppImages, AppSpacing, AppTypography } from '../../resources/AppResources';
 import { HealthCardModel, createDefaultHealthCards, localizedHealthText } from '../HealthDashboardTypes';
 
+ @Preview
 @Component
 export struct CardEditorComp {
   @Prop healthCards: HealthCardModel[];

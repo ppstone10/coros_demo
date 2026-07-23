@@ -8,3 +8,8 @@ struct RecordsPlaceholderView: View {
             .background(AppColors.Core.black)
     }
 }
+ 
+ #Preview {
+     RecordsPlaceholderView()
+         .preferredColorScheme(.dark)
+ }

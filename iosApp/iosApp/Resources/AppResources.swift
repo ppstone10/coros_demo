@@ -135,6 +135,8 @@ enum AppColors {
         static let visualCyan = Color(red: 45 / 255, green: 205 / 255, blue: 211 / 255)
         static let visualPink = Color(red: 232 / 255, green: 45 / 255, blue: 138 / 255)
         static let visualDeepBlue = Color(red: 49 / 255, green: 86 / 255, blue: 184 / 255)
+        static let stressLow = Color(red: 68 / 255, green: 154 / 255, blue: 250 / 255)
+        static let stressGood = Color(red: 170 / 255, green: 219 / 255, blue: 55 / 255)
         static let visualBar = Color(red: 98 / 255, green: 98 / 255, blue: 98 / 255)
         static let rangeTrack = Color(red: 69 / 255, green: 69 / 255, blue: 69 / 255)
         static let gaugeTrack = Color(red: 51 / 255, green: 51 / 255, blue: 51 / 255)
@@ -212,6 +214,7 @@ enum AppImages {
         static let todayRunner = "health_today_runner"
         static let bodyFront = "health_body_front"
         static let bodyBack = "health_body_back"
+        static let recoveryStatus = "health_recovery_status"
         static let weeklyPlan = "icon_small_plan"
         static let todayActivity = "icon_small_training_effect"
         static let trainingLoad = "icon_small_training_load"

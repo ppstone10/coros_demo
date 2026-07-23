@@ -98,6 +98,21 @@ struct PasswordSetupView: View {
         router.resetKeepingEntranceAndPush(targetKind == .email ? .emailRegister : .phoneRegister)
     }
 }
+ 
+ #Preview {
+     PasswordSetupView(
+         targetKind: .phone,
+         viewModel: LoginViewModel(),
+         router: AuthRouter(
+             push: { _ in },
+             pop: {},
+             replaceTop: { _ in },
+             resetTo: { _ in },
+             resetKeepingEntranceAndPush: { _ in }
+         )
+     )
+     .preferredColorScheme(.dark)
+ }
 
 private struct RegistrationRegionPicker: View {
     @Binding var region: String

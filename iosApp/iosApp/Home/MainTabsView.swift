@@ -32,7 +32,11 @@ struct MainTabsView: View {
         VStack(spacing: 0) {
             Group {
                 switch selected {
-                case .fitness: HealthDashboardView(isFullscreen: $contentFullscreen)
+                case .fitness:
+                    HealthDashboardView(
+                        isFullscreen: $contentFullscreen,
+                        onWatchTap: { selected = .me }
+                    )
                 case .me: AccountView(viewModel: viewModel, router: router, isFullscreen: $contentFullscreen)
                 case .records: RecordsPlaceholderView()
                 case .explore: ExplorePlaceholderView()
@@ -59,3 +63,18 @@ struct MainTabsView: View {
         .background(AppColors.Core.black)
     }
 }
+ 
+ #Preview {
+     MainTabsView(
+         viewModel: LoginViewModel(),
+         router: AuthRouter(
+             push: { _ in },
+             pop: {},
+             replaceTop: { _ in },
+             resetTo: { _ in },
+             resetKeepingEntranceAndPush: { _ in }
+         )
+     )
+     .environmentObject(AppLanguageStore.shared)
+     .preferredColorScheme(.dark)
+ }
