@@ -191,7 +191,7 @@ struct ProfileCompletionView: View {
                 await MainActor.run {
                     avatarData = data
                     if let data {
-                        draft.avatarUri = ProfileImageStore.save(data)
+                        draft.avatarUri = ProfileImageStore.save(data, userId: viewModel.state.currentSession?.userId ?? "")
                     }
                 }
             }

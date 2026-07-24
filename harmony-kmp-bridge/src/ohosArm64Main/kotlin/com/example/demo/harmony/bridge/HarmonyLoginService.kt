@@ -2,7 +2,11 @@ package com.example.demo.harmony.bridge
 
 import com.example.demo.common.health.HealthCardType
 import com.example.demo.common.health.HealthCardUiModel
+import com.example.demo.common.health.HealthEffect
+import com.example.demo.common.health.HealthFacade
+import com.example.demo.common.health.HealthFacadeFactory
 import com.example.demo.common.health.HealthMockScenario
+import com.example.demo.common.health.HealthState
 import com.example.demo.common.health.InMemoryHealthDashboardStateDataSource
 import com.example.demo.common.health.MockHealthDashboardStoreJson
 import com.example.demo.common.health.PersistedDashboard
@@ -20,6 +24,7 @@ open class HarmonyLoginService {
     private val dataSource: MemoryAuthStoreDataSource = MemoryAuthStoreDataSource()
     private val healthDataSource = InMemoryHealthDashboardStateDataSource()
     private var facade: LoginFacade = createFacade(dataSource, healthDataSource)
+    private var healthFacade: HealthFacade = createHealthFacade(dataSource, healthDataSource)
 
     fun stateSnapshot(): String {
         return HarmonyLoginJson.stateSnapshot(facade.state)
@@ -37,6 +42,7 @@ open class HarmonyLoginService {
             val store = HarmonyLoginJson.parseStoreSnapshot(json)
             dataSource.replaceStore(store)
             facade = createFacade(dataSource, healthDataSource)
+            healthFacade = createHealthFacade(dataSource, healthDataSource)
             syncClock()
             facade.restoreSession()
             restoreLegacyHealthFromStoreJson(json)
@@ -228,29 +234,37 @@ open class HarmonyLoginService {
     }
 
     fun loadHealthSnapshot(): String {
-        val pd = facade.loadHealthDashboard()
-        if (pd != null) return healthSnapshotJson(pd)
-        val error = facade.healthDashboardError()
-        return if (error != null) "{\"error\":\"$error\"}" else "{}"
+        healthFacade.load()
+        val state = healthFacade.state
+        return if (state.error != null) {
+            "{\"error\":\"${state.error.name}\"}"
+        } else {
+            healthSnapshotFromState(state)
+        }
     }
 
     fun selectHealthScene(name: String): String {
-        return facade.selectHealthScenario(name).toString()
+        return healthFacade.selectScenario(name).toString()
     }
 
     fun refreshHealthSnapshot(): String {
-        val pd = facade.refreshHealthDashboard()
-        if (pd != null) return healthSnapshotJson(pd)
-        val error = facade.healthDashboardError()
-        return if (error != null) "{\"error\":\"$error\"}" else "{}"
+        healthFacade.refresh()
+        val state = healthFacade.state
+        return if (state.error != null) {
+            "{\"error\":\"${state.error.name}\"}"
+        } else {
+            healthSnapshotFromState(state)
+        }
     }
 
     fun saveCardConfig(typeNamesCsv: String): String {
         val names = typeNamesCsv.split(",").map { it.trim() }.filter { it.isNotBlank() }
-        val pd = facade.saveHealthCardConfiguration(names)
-        if (pd != null) return healthSnapshotJson(pd)
-        val error = facade.healthCardSaveError()
-        return if (error != null) "{\"error\":\"$error\"}" else "{}"
+        val error = healthFacade.saveCardConfiguration(names)
+        return if (error != null) {
+            "{\"error\":\"$error\"}"
+        } else {
+            healthSnapshotFromState(healthFacade.state)
+        }
     }
 
     fun exportHealthSnapshot(): String {
@@ -265,7 +279,6 @@ open class HarmonyLoginService {
         } catch (_: Exception) { false }
     }
 
-    /** 仅迁移旧版认证快照；新版权威健康数据来自独立 health_json 集合。 */
     private fun restoreLegacyHealthFromStoreJson(json: String) {
         try {
             if (healthDataSource.allSnapshots().isNotEmpty()) return
@@ -281,8 +294,8 @@ open class HarmonyLoginService {
                 val sStart = scenarioIdx + scenarioKey.length
                 val sEnd = body.indexOf('"', sStart)
                 val scenario = body.substring(sStart, if (sEnd >= 0) sEnd else body.length)
-                if (scenario.isNotBlank() && facade.selectHealthScenario(scenario)) {
-                    facade.refreshHealthDashboard()
+                if (scenario.isNotBlank() && healthFacade.selectScenario(scenario)) {
+                    healthFacade.refresh()
                 }
             }
             val typesKey = "\"enabledTypes\":\""
@@ -293,7 +306,7 @@ open class HarmonyLoginService {
                 val typesStr = body.substring(tStart, if (tEnd >= 0) tEnd else body.length)
                 if (typesStr.isNotBlank()) {
                     val names = typesStr.split(",").map { it.trim() }.filter { it.isNotBlank() }
-                    facade.saveHealthCardConfiguration(names)
+                    healthFacade.saveCardConfiguration(names)
                 }
             }
         } catch (_: Exception) { }
@@ -304,7 +317,17 @@ open class HarmonyLoginService {
         dataSource: MemoryAuthStoreDataSource,
         healthDataSource: InMemoryHealthDashboardStateDataSource
     ): LoginFacade {
-        return LoginFacade(LoginStore.create(LocalMockAuthRepository(dataSource), healthDataSource))
+        return LoginFacade(LoginStore.create(LocalMockAuthRepository(dataSource)))
+    }
+
+    private fun createHealthFacade(
+        dataSource: MemoryAuthStoreDataSource,
+        healthDataSource: InMemoryHealthDashboardStateDataSource
+    ): HealthFacade {
+        return HealthFacadeFactory().createPersistent(
+            authRepository = LocalMockAuthRepository(dataSource),
+            stateDataSource = healthDataSource
+        )
     }
 
     @OptIn(ExperimentalForeignApi::class)
@@ -330,20 +353,21 @@ private class MemoryAuthStoreDataSource(
     }
 }
 
-private fun healthSnapshotJson(pd: PersistedDashboard): String {
+private fun healthSnapshotFromState(state: HealthState): String {
+    val uiState = state.uiState ?: return "{}"
     val sb = StringBuilder()
     sb.append("{\"scenario\":\"")
-    sb.append(pd.scenario.name)
+    sb.append(state.currentScenario.name)
     sb.append("\",\"dateLabelKey\":\"")
-    sb.append(pd.uiState.dateLabel.key.esc())
+    sb.append(uiState.dateLabel.key.esc())
     sb.append("\",\"steps\":")
-    sb.append(pd.uiState.dailySummary?.steps ?: 0)
+    sb.append(uiState.dailySummary?.steps ?: 0)
     sb.append(",\"calories\":")
-    sb.append(pd.uiState.dailySummary?.calories ?: 0)
+    sb.append(uiState.dailySummary?.calories ?: 0)
     sb.append(",\"activeMinutes\":")
-    sb.append(pd.uiState.dailySummary?.activeMinutes ?: 0)
+    sb.append(uiState.dailySummary?.activeMinutes ?: 0)
     sb.append(",\"cards\":[")
-    pd.uiState.cards.forEachIndexed { index, card ->
+    uiState.cards.forEachIndexed { index, card ->
         if (index > 0) sb.append(",")
         sb.append("{\"type\":\"")
         sb.append(card.type.name)
@@ -430,7 +454,7 @@ private fun healthSnapshotJson(pd: PersistedDashboard): String {
         sb.append("}")
     }
     sb.append("],\"enabledTypes\":\"")
-    sb.append(pd.enabledCardTypes.joinToString(",") { it.name })
+    sb.append(state.enabledCardTypes.joinToString(",") { it.name })
     sb.append("\"}")
     return sb.toString()
 }

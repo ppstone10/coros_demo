@@ -240,13 +240,15 @@ enum AppImages {
 }
 
 enum ProfileImageStore {
-    static func save(_ data: Data) -> String? {
+    static let baseName = "profile-avatar"
+
+    static func save(_ data: Data, userId: String) -> String? {
         guard let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return nil
         }
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            let url = directory.appendingPathComponent("profile-avatar.jpg")
+            let url = directory.appendingPathComponent("\(baseName)-\(userId).jpg")
             try data.write(to: url, options: .atomic)
             return url.path
         } catch {

@@ -13,6 +13,8 @@ final class HealthDashboardViewModel: ObservableObject {
     @Published private(set) var isDataCorrupted = false
     @Published private(set) var selectedScenario = "Normal"
 
+    var onEffect: ((HealthEffect) -> Void)?
+
     private let adapter: SharedLoginAdapterProtocol
 
     init(adapter: SharedLoginAdapterProtocol = SharedLoginAdapter()) {
@@ -21,27 +23,10 @@ final class HealthDashboardViewModel: ObservableObject {
     }
 
     func load() {
-        if let pd = adapter.loadHealthDashboard() {
-            apply(pd)
-        } else {
-            isDataCorrupted = adapter.healthDashboardError() == "CorruptedData"
-        }
-    }
-
-    private func apply(_ pd: PersistedDashboard) {
-        isDataCorrupted = false
-        dateLabel = localizedHealthText(pd.uiState.dateLabel)
-        selectedScenario = pd.scenario.name
-        if let ds = pd.uiState.dailySummary {
-            steps = ds.steps?.intValue ?? 0
-            calories = ds.calories?.intValue ?? 0
-            activeMinutes = ds.activeMinutes?.intValue ?? 0
-        }
-        cards = pd.uiState.cards.map { c in
-            HealthCard(id: c.type.name, title: localizedHealthText(c.title),
-                       summary: localizedHealthText(c.summary),
-                       icon: iconForCardType(c.type.name), isRisk: c.status.name == "Risk",
-                       status: c.status.name, visual: c.visual)
+        adapter.loadHealth()
+        apply(adapter.healthState())
+        if let effect = adapter.consumeHealthEffect() {
+            onEffect?(effect)
         }
     }
 
@@ -51,10 +36,13 @@ final class HealthDashboardViewModel: ObservableObject {
         }
     }
 
-    func saveCardConfiguration(_ typeIDs: [String]) -> String? {
-        let result = adapter.saveHealthCardConfiguration(typeIDs)
-        if result == nil { return adapter.healthCardSaveError() }
-        load(); return nil
+    func saveCardConfiguration(_ typeIDs: [String]) {
+        if let error = adapter.saveHealthCardConfiguration(typeIDs) {
+            // Error message returned directly; relay via callback.
+            // HealthEffect construction from Swift is not needed here.
+            return
+        }
+        load()
     }
 
     func refresh() async {
@@ -62,12 +50,47 @@ final class HealthDashboardViewModel: ObservableObject {
         syncCycle += 1
         isLoading = true
         try? await Task.sleep(nanoseconds: 4_460_000_000)
-        if let refreshed = adapter.refreshHealthDashboard() {
-            apply(refreshed)
-        } else {
-            isDataCorrupted = adapter.healthDashboardError() == "CorruptedData"
+        adapter.refreshHealth()
+        apply(adapter.healthState())
+        if let effect = adapter.consumeHealthEffect() {
+            onEffect?(effect)
         }
         isLoading = false
+    }
+
+    private func apply(_ state: HealthState?) {
+        guard let state = state else {
+            isDataCorrupted = true
+            return
+        }
+        if let error = state.error {
+            if error.name == "CorruptedData" || error.name == "AuthRequired" {
+                isDataCorrupted = true
+                return
+            }
+        }
+        guard let uiState = state.uiState else {
+            isDataCorrupted = true
+            return
+        }
+        isDataCorrupted = false
+        dateLabel = localizedHealthText(uiState.dateLabel)
+        selectedScenario = state.currentScenario.name
+        if let ds = uiState.dailySummary {
+            steps = ds.steps?.intValue ?? 0
+            calories = ds.calories?.intValue ?? 0
+            activeMinutes = ds.activeMinutes?.intValue ?? 0
+        } else {
+            steps = 0
+            calories = 0
+            activeMinutes = 0
+        }
+        cards = uiState.cards.map { c in
+            HealthCard(id: c.type.name, title: localizedHealthText(c.title),
+                       summary: localizedHealthText(c.summary),
+                       icon: iconForCardType(c.type.name), isRisk: c.status.name == "Risk",
+                       status: c.status.name, visual: c.visual)
+        }
     }
 }
 

@@ -8,7 +8,6 @@ import { getLoginViewModel } from '../login/LoginViewModelProvider';
 import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
 import { AuthRoutes } from '../login/AuthRoutes';
 import { handleAuthEffect } from '../login/AuthEffectHandler';
-import { getService } from '../login/HarmonyServiceProvider';
 import { saveStoreSnapshot } from '../login/StorePersister';
 import { AppColors, AppImages, AppSpacing, AppTypography } from '../resources/AppResources';
 import {
@@ -16,7 +15,8 @@ import {
   APP_LANGUAGE_ENGLISH,
   selectAppLanguage
 } from '../resources/AppLanguage';
-import { CardEntry, HealthSnapshot, HealthCardModel, createDefaultHealthCards, cardIconIndex, localizedHealthText, resourceText } from '../health/HealthDashboardTypes';
+import { HealthCardModel } from '../health/HealthDashboardTypes';
+import { HealthDashboardViewModel } from '../health/HealthDashboardViewModel';
 import { AccountOverviewComp } from '../account/AccountOverviewComp';
 import { RecordsPlaceholderComp } from './RecordsPlaceholderComp';
 import { ExplorePlaceholderComp } from './ExplorePlaceholderComp';
@@ -28,23 +28,21 @@ import { CardEditorComp } from '../health/editor/CardEditorComp';
 import { MetricComp } from '../health/components/MetricComp';
 import { DashboardCardComp } from '../health/components/DashboardCardComp';
 
+const PAGE_MAIN: string = 'main';
+const PAGE_DETAIL: string = 'detail';
+const PAGE_EDITOR: string = 'editor';
+const PAGE_SCENARIO_PICKER: string = 'scenario_picker';
+
 @Entry
 @Component
 struct SignedInPage {
   private viewModel = getLoginViewModel();
   @State selectedTab: number = 0;
-  @State healthCards: HealthCardModel[] = createDefaultHealthCards();
+  @State healthVM: HealthDashboardViewModel = new HealthDashboardViewModel();
+  @State currentPage: string = PAGE_MAIN;
   @State detailCardId: string = '';
   @State refreshing: boolean = false;
   @State dragOffset: number = 0;
-  @State showScenarioPicker: boolean = false;
-  @State scenarioName: string = 'Normal';
-  @State healthSteps: string = '8769';
-  @State healthCalories: string = '769';
-  @State healthMinutes: string = '69';
-  @State healthDateLabel: ResourceStr = $r('app.string.health_demo_date');
-  @State healthDataCorrupted: boolean = false;
-  @State dashboardVersion: number = 0;
   private isAtScrollTop: boolean = true;
   @State showDeleteDialog: boolean = false;
   @State localError: string = '';
@@ -59,10 +57,9 @@ struct SignedInPage {
   @StorageLink('app_language') appLanguage: string = APP_LANGUAGE_CHINESE;
   @StorageLink('app_language_version') languageVersion: number = 0;
   @State showLanguageDialog: boolean = false;
-  @State editingCards: boolean = false;
 
   private calorieArcProgress(): number {
-    return Math.max(0, Math.min(800, Number(this.healthCalories) || 0)) / 800;
+    return Math.max(0, Math.min(800, Number(this.healthVM.healthCalories) || 0)) / 800;
   }
 
   private calorieArcPath(progress: number): string {
@@ -82,7 +79,7 @@ struct SignedInPage {
   }
 
   aboutToAppear(): void {
-    this.loadHealthDataFromKMP();
+    this.healthVM.load(this);
     this.syncState();
   }
 
@@ -91,8 +88,8 @@ struct SignedInPage {
   }
 
   onBackPress(): boolean {
-    if (this.editingCards || this.detailCardId.length > 0) {
-      this.editingCards = false;
+    if (this.currentPage !== PAGE_MAIN) {
+      this.currentPage = PAGE_MAIN;
       this.detailCardId = '';
     }
     return true;
@@ -101,17 +98,28 @@ struct SignedInPage {
   build() {
     Stack() {
       Column() {
-        if (this.editingCards) {
-          CardEditorComp({
-            healthCards: this.healthCards,
-            onSave: (csv: string) => { this.handleEditorSave(csv); },
-            onCancel: () => { this.editingCards = false; }
+        if (this.currentPage === PAGE_SCENARIO_PICKER) {
+          ScenarioPickerComp({
+            selectedScenario: this.healthVM.currentScenario,
+            onSelect: (name: string) => {
+              this.healthVM.selectScenario(name);
+              this.currentPage = PAGE_MAIN;
+            },
+            onDismiss: () => {
+              this.currentPage = PAGE_MAIN;
+            }
           })
-        } else if (this.detailCardId.length > 0) {
+        } else if (this.currentPage === PAGE_EDITOR) {
+          CardEditorComp({
+            healthCards: this.healthVM.healthCards,
+            onSave: (csv: string) => { this.handleEditorSave(csv); },
+            onCancel: () => { this.currentPage = PAGE_MAIN; }
+          })
+        } else if (this.currentPage === PAGE_DETAIL && this.detailCardId.length > 0) {
           HealthDetailComp({
             cardId: this.detailCardId,
-            healthCards: this.healthCards,
-            backAction: () => { this.detailCardId = ''; }
+            healthCards: this.healthVM.healthCards,
+            backAction: () => { this.currentPage = PAGE_MAIN; this.detailCardId = ''; }
           })
         } else {
           if (this.selectedTab === 0) {
@@ -139,7 +147,7 @@ struct SignedInPage {
           }
         }
 
-        if (!this.editingCards && this.detailCardId.length === 0) {
+        if (this.currentPage === PAGE_MAIN) {
           BottomNavBarComp({
             selectedTab: this.selectedTab,
             onTabClick: (index: number) => {
@@ -156,17 +164,6 @@ struct SignedInPage {
       if (this.showDeleteDialog) {
         this.DeleteAccountDialog();
       }
-      if (this.showScenarioPicker) {
-        ScenarioPickerComp({
-          selectedScenario: this.scenarioName,
-          onSelect: (name: string) => {
-            if (getService().selectHealthScene(name) === 'true') {
-              this.scenarioName = name;
-            }
-            this.showScenarioPicker = false;
-          }
-        })
-      }
       if (this.showLanguageDialog) {
         this.LanguageDialog();
       }
@@ -180,15 +177,15 @@ struct SignedInPage {
   HealthDashboard() {
     Column() {
       HeroTopRowComp({
-        dateLabel: this.healthDateLabel,
+        dateLabel: this.healthVM.healthDateLabel,
         isSyncing: this.refreshing,
         onTap: () => { this.selectedTab = 3; this.syncState(); },
-        onLongPress: () => { this.showScenarioPicker = true; }
+        onLongPress: () => { this.currentPage = PAGE_SCENARIO_PICKER; }
       })
       Refresh({ refreshing: $$this.refreshing }) {
         Scroll() {
           Column() {
-            if (this.healthDataCorrupted) {
+            if (this.healthVM.healthDataCorrupted) {
               Text($r('app.string.health_data_corrupted'))
                 .fontSize(AppTypography.SUPPORTING).fontColor(AppColors.MUTED).textAlign(TextAlign.Center)
                 .width('100%').height(360).padding({ left: 20, right: 20 })
@@ -196,13 +193,13 @@ struct SignedInPage {
               Column() {
                 this.ArcMetrics();
               }
-              .id(`arc_${this.dashboardVersion}`)
-              ForEach(this.healthCards, (card: HealthCardModel) => {
+              .id(`arc_${this.healthVM.dashboardVersion}`)
+              ForEach(this.healthVM.healthCards, (card: HealthCardModel) => {
                 DashboardCardComp({
                   card: card,
-                  onTap: () => { this.detailCardId = card.id; }
+                  onTap: () => { this.detailCardId = card.id; this.currentPage = PAGE_DETAIL; }
                 })
-              }, (card: HealthCardModel) => `${card.id}_v${this.dashboardVersion}`)
+              }, (card: HealthCardModel) => `${card.id}_v${this.healthVM.dashboardVersion}`)
 
               Text($r('app.string.health_edit_cards'))
                 .fontSize(AppTypography.LABEL)
@@ -212,14 +209,14 @@ struct SignedInPage {
                 .backgroundColor(AppColors.HEALTH_CARD)
                 .borderRadius(22)
                 .margin({ top: AppSpacing.LARGE, bottom: 42 })
-                .onClick(() => { this.editingCards = true; })
+                .onClick(() => { this.currentPage = PAGE_EDITOR; })
             }
           }
           .width('100%')
           .alignItems(HorizontalAlign.Center)
         }
         .scrollBar(BarState.Off)
-        .id(`scrollData_${this.dashboardVersion}`)
+        .id(`scrollData_${this.healthVM.dashboardVersion}`)
       }
       .layoutWeight(1)
       .onRefreshing(() => {
@@ -252,14 +249,14 @@ struct SignedInPage {
       }
       .width(116).height(116)
       Row() {
-        MetricComp({ icon: AppImages.steps(), value: this.healthSteps, unit: $r('app.string.health_unit_steps') })
-          .id(`metricSteps_${this.dashboardVersion}`)
+        MetricComp({ icon: AppImages.steps(), value: String(this.healthVM.healthSteps), unit: $r('app.string.health_unit_steps') })
+          .id(`metricSteps_${this.healthVM.dashboardVersion}`)
         Blank().layoutWeight(1)
-        MetricComp({ icon: AppImages.calories(), value: this.healthCalories, unit: $r('app.string.health_unit_calories') })
-          .id(`metricCal_${this.dashboardVersion}`)
+        MetricComp({ icon: AppImages.calories(), value: String(this.healthVM.healthCalories), unit: $r('app.string.health_unit_calories') })
+          .id(`metricCal_${this.healthVM.dashboardVersion}`)
         Blank().layoutWeight(1)
-        MetricComp({ icon: AppImages.activeDuration(), value: this.healthMinutes, unit: $r('app.string.health_unit_minutes') })
-          .id(`metricMin_${this.dashboardVersion}`)
+        MetricComp({ icon: AppImages.activeDuration(), value: String(this.healthVM.healthActiveMinutes), unit: $r('app.string.health_unit_minutes') })
+          .id(`metricMin_${this.healthVM.dashboardVersion}`)
       }
       .width('100%')
     }
@@ -315,76 +312,32 @@ struct SignedInPage {
     .width('100%').height(52).padding({ left: 22, right: 22 })
     .onClick(() => {
       selectAppLanguage(language);
-      this.loadHealthDataFromKMP();
-      this.dashboardVersion++;
+      this.healthVM.load(this);
       this.showLanguageDialog = false;
     })
   }
 
   // MARK: - Editor save
   private handleEditorSave(typeNamesCsv: string): void {
-    let json: string = getService().saveCardConfig(typeNamesCsv);
-    let parsed: object = JSON.parse(json);
-    if (parsed && parsed['error']) {
-      // error is shown inside CardEditorComp via its own warning state
-      // but CardEditorComp committed already; handle error by reloading
+    const types: string[] = typeNamesCsv.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    this.healthVM.saveCardConfiguration(types, this);
+    const msg: string | undefined = this.healthVM.consumeEffectMessage();
+    if (msg !== undefined) {
+      // error is handled by CardEditorComp; reload to restore original card state
+      this.healthVM.load(this);
       return;
     }
     saveStoreSnapshot();
-    this.loadHealthDataFromKMP();
-    this.editingCards = false;
+    this.currentPage = PAGE_MAIN;
   }
 
   // MARK: - Data
   private performRefresh(): void {
-    let refreshed: string = getService().refreshHealthSnapshot();
-    if (refreshed && refreshed !== '{}') {
-      let result: Record<string, Object> = JSON.parse(refreshed) as Record<string, Object>;
-      if (result['error'] === 'CorruptedData') {
-        this.healthDataCorrupted = true;
-      } else {
-        this.loadHealthDataFromKMP();
-        saveStoreSnapshot();
-      }
-      this.dashboardVersion++;
+    this.healthVM.refresh(this);
+    if (!this.healthVM.healthDataCorrupted) {
+      saveStoreSnapshot();
     }
     this.refreshing = false;
-  }
-
-  private loadHealthDataFromKMP(): void {
-    try {
-      let json: string = getService().loadHealthSnapshot();
-      if (!json || json === '{}') return;
-      let data: HealthSnapshot = JSON.parse(json) as HealthSnapshot;
-      if (data.error === 'CorruptedData') {
-        this.healthDataCorrupted = true;
-        return;
-      }
-      if (!data || !data.cards || data.cards.length === 0) return;
-      this.healthDataCorrupted = false;
-      this.scenarioName = data.scenario || 'Normal';
-      this.healthDateLabel = localizedHealthText(this, data.dateLabelKey || 'health_demo_date', []);
-      this.healthSteps = String(data.steps || 0);
-      this.healthCalories = String(data.calories || 0);
-      this.healthMinutes = String(data.activeMinutes || 0);
-      let cards: HealthCardModel[] = [];
-      for (let i = 0; i < data.cards.length; i++) {
-        let c: CardEntry = data.cards[i];
-        let idx: number = cardIconIndex(c.type);
-        cards.push(new HealthCardModel(
-          c.type,
-          localizedHealthText(this, c.titleKey, []),
-          localizedHealthText(this, c.summaryKey, c.summaryArgs || []),
-          idx,
-          c.isRisk,
-          c.status,
-          c.visual
-        ));
-      }
-      this.healthCards = cards;
-    } catch (e) {
-      // keep defaults
-    }
   }
 
   private confirmDeleteAccount(): void {

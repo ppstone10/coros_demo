@@ -1,38 +1,54 @@
 import SwiftUI
 import Shared
 import Lottie
-import UIKit
+
+enum DashboardPage: Equatable {
+    case main
+    case detail(HealthCard)
+    case editor
+    case scenarioPicker
+}
+
+struct DashboardScreenState {
+    var page: DashboardPage = .main
+    var dragOffset: CGFloat = 0
+}
 
 struct HealthDashboardView: View {
     @Binding var isFullscreen: Bool
     let onWatchTap: () -> Void
     @EnvironmentObject private var languageStore: AppLanguageStore
     @StateObject private var viewModel = HealthDashboardViewModel()
-    @State private var editing = false
-    @State private var detail: HealthCard?
-    @State private var showScenarioPicker = false
-    @State private var dragOffset: CGFloat = 0
+    @State private var screenState = DashboardScreenState()
     var body: some View {
         Group {
-            if editing {
+            switch screenState.page {
+            case .editor:
                 HealthCardEditor(initial: viewModel.cards, onClose: closeEditor, onSave: saveCards)
-            } else if let detail {
-                HealthDetailView(card: detail) { self.detail = nil; isFullscreen = false }
-            } else {
-                dashboard
+            case .detail(let card):
+                HealthDetailView(card: card) { screenState.page = .main; isFullscreen = false }
+            case .main, .scenarioPicker:
+                mainDashboard
+                    .sheet(isPresented: .init(get: { screenState.page == .scenarioPicker }, set: { if !$0 { screenState.page = .main } })) {
+                        ScenarioPickerView(viewModel: viewModel)
+                    }
             }
         }
-        .onChange(of: languageStore.current) { _, _ in detail = nil; isFullscreen = false; viewModel.load() }
+        .onChange(of: languageStore.current) { _ in screenState.page = .main; isFullscreen = false; viewModel.load() }
         .background(AppColors.Core.black)
-        .sheet(isPresented: $showScenarioPicker) { ScenarioPickerView(viewModel: viewModel) }
+        .onAppear {
+            viewModel.onEffect = { effect in
+                // HealthEffect subclasses from KMP are flat types, not nested
+            }
+        }
     }
 
-    private var dashboard: some View {
+    private var mainDashboard: some View {
         VStack(spacing: 0) {
             HeroTopRow(dateLabel: viewModel.dateLabel, isSyncing: viewModel.isLoading,
                        syncCycle: viewModel.syncCycle,
                        onTapWatch: onWatchTap,
-                       onLongPressWatch: { showScenarioPicker = true })
+                       onLongPressWatch: { screenState.page = .scenarioPicker })
             ZStack(alignment: .top) {
                 ScrollView {
                     VStack(spacing: 0) {
@@ -49,7 +65,7 @@ struct HealthDashboardView: View {
 
                             ForEach(viewModel.cards) { card in
                                 Button {
-                                    detail = card; isFullscreen = true
+                                    screenState.page = .detail(card); isFullscreen = true
                                 } label: {
                                     cardRow(card)
                                 }.buttonStyle(.plain)
@@ -58,7 +74,7 @@ struct HealthDashboardView: View {
                             }
 
                             Button {
-                                editing = true; isFullscreen = true
+                                screenState.page = .editor; isFullscreen = true
                             } label: {
                                 Text(appLocalized("health_edit_cards"))
                                     .font(.system(size: AppTypography.label))
@@ -68,21 +84,21 @@ struct HealthDashboardView: View {
                             }.buttonStyle(.plain).padding(AppSpacing.large)
                         }
                     }
-                    .offset(y: max(0, dragOffset))
+                    .offset(y: max(0, screenState.dragOffset))
                     .background(
                         ScrollViewPanObserver(
                             isRefreshing: viewModel.isLoading,
                             onPullChanged: { distance in
                                 guard !viewModel.isLoading else { return }
-                                dragOffset = min(distance * 0.4, 250)
+                                screenState.dragOffset = min(distance * 0.4, 250)
                             },
                             onPullEnded: { distance, gestureBeganAtTop in
                                 let shouldRefresh = gestureBeganAtTop && distance >= 64 && !viewModel.isLoading
                                 if shouldRefresh {
-                                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { dragOffset = 55 }
+                                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { screenState.dragOffset = 55 }
                                     Task { await viewModel.refresh() }
                                 } else {
-                                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { dragOffset = 0 }
+                                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { screenState.dragOffset = 0 }
                                 }
                             }
                         )
@@ -91,11 +107,11 @@ struct HealthDashboardView: View {
                 .scrollIndicators(.hidden)
                 .onChange(of: viewModel.isLoading) { _, loading in
                     if !loading {
-                        withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { dragOffset = 0 }
+                        withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { screenState.dragOffset = 0 }
                     }
                 }
 
-                if dragOffset > 10 || viewModel.isLoading {
+                if screenState.dragOffset > 10 || viewModel.isLoading {
                     HStack(spacing: 8) {
                         ProgressView().progressViewStyle(CircularProgressViewStyle(tint: AppColors.Health.steps)).scaleEffect(0.8)
                         Text(appLocalized("health_data_syncing")).font(.system(size: AppTypography.supporting)).foregroundColor(AppColors.Health.muted)
@@ -134,86 +150,10 @@ struct HealthDashboardView: View {
         .clipped()
     }
 
-    private func closeEditor() { editing = false; isFullscreen = false }
+    private func closeEditor() { screenState.page = .main; isFullscreen = false }
     private func saveCards(_ value: [HealthCard]) {
         viewModel.saveCardConfiguration(value.map { $0.id })
         viewModel.load(); closeEditor()
-    }
-}
-
-private struct ScrollViewPanObserver: UIViewRepresentable {
-    let isRefreshing: Bool
-    let onPullChanged: (CGFloat) -> Void
-    let onPullEnded: (CGFloat, Bool) -> Void
-
-    func makeUIView(context: Context) -> ObserverView {
-        let view = ObserverView()
-        configure(view)
-        return view
-    }
-
-    func updateUIView(_ uiView: ObserverView, context: Context) {
-        configure(uiView)
-        uiView.attachToEnclosingScrollViewIfNeeded()
-    }
-
-    private func configure(_ view: ObserverView) {
-        view.isRefreshing = isRefreshing
-        view.onPullChanged = onPullChanged
-        view.onPullEnded = onPullEnded
-    }
-
-    final class ObserverView: UIView {
-        weak var observedScrollView: UIScrollView?
-        var isRefreshing = false
-        var onPullChanged: ((CGFloat) -> Void)?
-        var onPullEnded: ((CGFloat, Bool) -> Void)?
-        private var gestureBeganAtTop = false
-
-        override func didMoveToWindow() {
-            super.didMoveToWindow()
-            DispatchQueue.main.async { [weak self] in
-                self?.attachToEnclosingScrollViewIfNeeded()
-            }
-        }
-
-        func attachToEnclosingScrollViewIfNeeded() {
-            guard observedScrollView == nil else { return }
-            var ancestor = superview
-            while let view = ancestor {
-                if let scrollView = view as? UIScrollView {
-                    observedScrollView = scrollView
-                    scrollView.panGestureRecognizer.addTarget(self, action: #selector(handlePan(_:)))
-                    return
-                }
-                ancestor = view.superview
-            }
-        }
-
-        @objc private func handlePan(_ recognizer: UIPanGestureRecognizer) {
-            guard let scrollView = observedScrollView else { return }
-            switch recognizer.state {
-            case .began:
-                gestureBeganAtTop = !isRefreshing &&
-                    scrollView.contentOffset.y <= -scrollView.adjustedContentInset.top + 1
-            case .changed:
-                guard gestureBeganAtTop else { return }
-                onPullChanged?(max(0, recognizer.translation(in: scrollView).y))
-            case .ended:
-                let distance = max(0, recognizer.translation(in: scrollView).y)
-                onPullEnded?(distance, gestureBeganAtTop)
-                gestureBeganAtTop = false
-            case .cancelled, .failed:
-                onPullEnded?(0, false)
-                gestureBeganAtTop = false
-            default:
-                break
-            }
-        }
-
-        deinit {
-            observedScrollView?.panGestureRecognizer.removeTarget(self, action: #selector(handlePan(_:)))
-        }
     }
 }
 

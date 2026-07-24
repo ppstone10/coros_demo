@@ -1,18 +1,10 @@
 package com.example.demo.common.login
 
-import com.example.demo.common.health.HealthMockScenario
-import com.example.demo.common.health.HealthDashboardStateDataSource
-import com.example.demo.common.health.HealthDashboardStore
-import com.example.demo.common.health.InMemoryHealthDashboardStateDataSource
-import com.example.demo.common.health.PersistedDashboard
-
 class LoginStore(
     private val authRepository: AuthRepository,
     private val loginUseCase: LoginUseCase = LoginUseCase(authRepository),
-    private val registerUseCase: RegisterUseCase = RegisterUseCase(authRepository),
-    private val healthStateDataSource: HealthDashboardStateDataSource = InMemoryHealthDashboardStateDataSource()
+    private val registerUseCase: RegisterUseCase = RegisterUseCase(authRepository)
 ) {
-    private val healthDashboardStore = HealthDashboardStore(authRepository, healthStateDataSource)
     var state: LoginState = createInitialState(authRepository)
         private set
 
@@ -116,10 +108,8 @@ class LoginStore(
     }
 
     fun deleteCurrentAccount(): MockResult<Unit> {
-        val deletedUserId = state.currentSession?.userId
         val result = authRepository.deleteCurrentAccount()
         if (result is MockResult.Success) {
-            deletedUserId?.let(healthDashboardStore::clear)
             state = state.copy(
                 isLoggedIn = false,
                 currentSession = null,
@@ -171,17 +161,6 @@ class LoginStore(
             }
         }
     }
-
-    /** 健康业务只经共享层读取认证后的本地 mock 数据。 */
-    fun loadHealthDashboard(): MockResult<PersistedDashboard> = healthDashboardStore.load()
-
-    fun selectHealthScenario(scenario: HealthMockScenario): MockResult<Unit> =
-        healthDashboardStore.selectScenario(scenario)
-
-    fun refreshHealthDashboard(): MockResult<PersistedDashboard> = healthDashboardStore.refresh()
-
-    fun saveHealthCardConfiguration(types: List<com.example.demo.common.health.HealthCardType>): MockResult<PersistedDashboard> =
-        healthDashboardStore.saveCardConfiguration(types)
 
     private fun submit() {
         if (!state.canSubmit) {
@@ -319,10 +298,9 @@ class LoginStore(
         }
 
         fun create(
-            authRepository: AuthRepository,
-            healthStateDataSource: HealthDashboardStateDataSource = InMemoryHealthDashboardStateDataSource()
+            authRepository: AuthRepository
         ): LoginStore {
-            return LoginStore(authRepository, healthStateDataSource = healthStateDataSource)
+            return LoginStore(authRepository)
         }
 
         private fun createInitialState(authRepository: AuthRepository): LoginState {

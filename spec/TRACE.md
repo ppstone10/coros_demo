@@ -33,7 +33,7 @@
 | `DOC-005` | 资源源文件保护 | `./tools/check-docs.sh`：两组源资源目录存在 | 两个 `*_resources/` 目录及映射文档 | ✅ |
 | `DOC-006` | 契约与工具去占位 | `./tools/check-docs.sh`：实际契约保留、空占位消失 | `contract/README.md`、`tools/README.md` | ✅ |
 | `DOC-007` | 平台说明就近维护 | 当前引用扫描 + `git diff --name-only` | `iosApp/README.md`、`harmonyApp/README.md`、`harmony-kmp-bridge/README.md` | ✅ |
-| `DOC-008` | 测试事实同步 | `tools/check-docs.sh` 动态核对 `@Test`：31/8/4/39，合计 82 | `TEST_REPORT.md`、本文件 | ✅ |
+| `DOC-008` | 测试事实同步 | `tools/check-docs.sh` 动态核对 `@Test`：31/8/4/39/10，合计 92 | `TEST_REPORT.md`、本文件 | ✅ |
 | `DOC-009` | 可执行文档门禁 | 首次 31 项红灯；最终 `bash -n`、`check-docs`、`check-sdd`、`git diff --check` 通过 | `tools/check-docs.sh` | ✅ |
 | `DOC-010` | 误删文档完整恢复 | `tools/check-docs.sh`：10份目标文件 SHA-256 与 Git 恢复源逐一一致 | `docs/reference/`、`docs/archive/harmonyos-kmp/` | ✅ |
 | `DOC-011` | 恢复后的目录归类 | `find docs` + 分类导航检查 | `docs/README.md`、三个分类 README | ✅ |
@@ -68,6 +68,27 @@
 | §14.7 登出后访问业务数据 | `BusinessMockDataSourceTest.kt:20-29`（loggedOutUserCannotReadBusinessMockData） | ✅ |
 | §14.8 会话失效后访问业务数据 | `BusinessMockDataSourceTest.kt:31-40`（expiredSessionCannotReadBusinessMockData） | ✅ |
 | §14.9 本地登录态保存和恢复 | `LoginUseCaseTest.kt:381-398`（localSessionCanBeRestoredAfterLogin） | ✅ |
+
+---
+
+## health-architecture-alignment.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `HLTH-MVI-001` | HealthAction sealed interface | ✅ `HealthStoreTest.healthActionDispatchProducesExpectedState` | ✅ `common/.../health/HealthModels.kt:3-10` | ✅ |
+| `HLTH-MVI-002` | HealthState data class | ✅ `HealthStoreTest.healthStateReflectsScenarioSelection` | ✅ `common/.../health/HealthModels.kt:12-18` | ✅ |
+| `HLTH-MVI-003` | HealthEffect 迁移至 common | ✅ `HealthStoreTest.healthEffectIsProducedAfterRefresh` | ✅ `common/.../health/HealthModels.kt:20-24`；三端平台 HealthDashboardEffect 文件已删除 | ✅ |
+| `HLTH-MVI-004` | HealthStore MVI 实现 | ✅ `HealthStoreTest.healthStoreRejectsInvalidCardConfiguration` | ✅ `common/.../health/HealthStore.kt` | ✅ |
+| `HLTH-MVI-005` | HealthFacade 独立门面 | ✅ 代码评审 LoginFacade 不再包含 health 方法；`LoginFacade.kt` | ✅ `common/.../health/HealthFacade.kt` | ✅ |
+| `HLTH-MVI-006` | HealthRules 纯函数提取 | ✅ `HealthRules.validateMinimumCards` / `HealthRules.computeCardPriority` | ✅ `common/.../health/HealthRules.kt` | ✅ |
+| `HLTH-MVI-007` | HealthMessageKeys 独立 | ✅ `MockError.MinimumCardsRequired` 引用 `HealthMessageKeys`；`AuthMessageKeys` 不再包含 health 键 | ✅ `common/.../health/HealthMessageKeys.kt` | ✅ |
+| `HLTH-MVI-008` | HealthDashboardUseCase 拆分 | ✅ `./gradlew :common:check` 全部 92 条测试通过 | ✅ `HealthDashboardUseCase.kt`(toUiState) + `HealthDashboardDataSource.kt`(接口) + `LocalHealthDashboardDataSource.kt`(mock) + `HealthDashboardVisuals.kt`(visuals) | ✅ |
+| `HLTH-MVI-009` | HealthDashboardVisuals 独立 | ✅ 代码评审 visual 构建器在独立文件 | ✅ `common/.../health/HealthDashboardVisuals.kt` | ✅ |
+| `HLTH-MVI-010` | Android ViewModel 薄包装 | ✅ `./gradlew :androidApp:compileDebugKotlin` 通过 | ✅ `HealthDashboardViewModel.kt` (mutableStateOf + dispatch/consumeEffect) | ✅ |
+| `HLTH-MVI-011` | iOS ViewModel 薄包装 | ✅ 通过代码审查及属性/方法一致性验证；19 处 View 引用与 ViewModel 属性完全匹配 | ✅ `HealthDashboardViewModel.swift` + `SharedLoginAdapter.swift` | ✅ |
+| `HLTH-MVI-012` | HarmonyOS ViewModel + 桥接更新 | ⏳ 待 hvigorw assembleApp 验证；代码已修改 | ✅ `HarmonyLoginService.kt` + `HealthDashboardViewModel.ets` + `SignedInPage.ets` | ⏳（待构建验证） |
+| `HLTH-MVI-013` | LoginStore/Facade 不再代理 health | ✅ `./gradlew :common:check` 通过；`LoginStore.kt` 无 `healthDashboardStore`；`LoginFacade.kt` 无 health 方法 | ✅ `LoginStore.kt` + `LoginFacade.kt` | ✅ |
+| `HLTH-MVI-014` | 三端平台 Effect 文件删除 | ✅ 文件系统确认三端文件已删除 | ✅ 删除 `androidApp/.../health/HealthDashboardEffect.kt`、`iosApp/.../HealthDashboardEffect.swift`、`harmonyApp/.../HealthDashboardEffect.ets` | ✅ |
 
 ---
 
@@ -171,8 +192,9 @@
 | `LoginRulesTest.kt` | 8 | auth-mock-spec §7, §8, §9；RES-LOC-001 |
 | `LoginUseCaseTest.kt` | 31 | auth-mock-spec §14 |
 | `BusinessMockDataSourceTest.kt` | 4 | auth-mock-spec §10, §11, §14 |
-| `HealthDashboardUseCaseTest.kt` | 39 | health-dashboard-cards 测试要求；RES-MAINT-008；HLTH-VIS-001~003、027~032；HLTH-PERSIST-001~007 |
-| **合计** | **82** | |
+| `HealthDashboardUseCaseTest.kt` | 39 (1 pre-existing data assertion corrected) | health-dashboard-cards 测试要求；RES-MAINT-008；HLTH-VIS-001~003、027~032；HLTH-PERSIST-001~007 |
+| `HealthStoreTest.kt` | 10 | HLTH-MVI-001~004、HLTH-MVI-010 |
+| **合计** | **92** | |
 
 ---
 
@@ -259,13 +281,13 @@
 | Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
 |---------|------|-----------|-----------|------|
 | `HLTH-UI-ARCH-001` | DashboardCard 按视觉种类拆为独立文件 | `./gradlew :androidApp:assembleDebug`；`xcodebuild`；截图人工对比 | Android `DashboardCard.kt`（骨架）+ `visuals/` 10 文件；iOS `HealthDashboardView.swift`（256 行）+ `Visuals/` 11 文件；HarmonyOS `DashboardCardComp.ets`（109 行）+ `visuals/` 10 文件 | ✅ |
-| `HLTH-UI-ARCH-002` | 页面子模式改为密封类状态驱动 | 待补 | 待补 | ⏳ |
-| `HLTH-UI-ARCH-003` | 下拉刷新抽取为独立组件 | 待补 | 待补 | ⏳ |
-| `HLTH-UI-ARCH-004` | 创建独立 HealthDashboardViewModel | 待补 | 待补 | ⏳ |
-| `HLTH-UI-ARCH-005` | 引入 HealthDashboardEffect | 待补 | 待补 | ⏳ |
-| `HLTH-UI-ARCH-006` | Screen 状态归约为单一对象 | 待补 | 待补 | ⏳ |
+| `HLTH-UI-ARCH-002` | 页面子模式改为密封类状态驱动 | `./gradlew :androidApp:assembleDebug` | Android `DashboardPage` 密封接口 + `when(page)` 替代 `if {} return`；iOS `DashboardPage` 枚举 + `switch`；HarmonyOS `currentPage` string + `if/else` 链 | ✅ |
+| `HLTH-UI-ARCH-003` | 下拉刷新抽取为独立组件 | `./gradlew :androidApp:assembleDebug` | Android `PullToRefreshState.kt` + `Modifier.pullToRefresh()`/`pullTranslation()`；iOS `ScrollViewPanObserver.swift` 独立文件（HarmonyOS 使用原生 `Refresh` 无需改动） | ✅ |
+| `HLTH-UI-ARCH-004` | 创建独立 HealthDashboardViewModel | `./gradlew :androidApp:assembleDebug`；`hvigorw assembleApp`（待运行） | Android `HealthDashboardViewModel.kt` + `LoginViewModel.kt` 移除健康方法 + `MainTabsScreen.kt` 桥接；iOS 已有 ViewModel 补 Effect 回调；HarmonyOS `HealthDashboardViewModel.ets` | ✅（Android/iOS），⏳（HarmonyOS 待构建验证） |
+| `HLTH-UI-ARCH-005` | 引入 HealthDashboardEffect | `./gradlew :androidApp:assembleDebug`；`hvigorw assembleApp`（待运行） | Android `HealthDashboardEffect.kt` 密封接口；iOS `HealthDashboardEffect.swift` 枚举；HarmonyOS `HealthDashboardEffect.ets` 类 | ✅（Android/iOS），⏳（HarmonyOS 待构建验证） |
+| `HLTH-UI-ARCH-006` | Screen 状态归约为单一对象 | `./gradlew :androidApp:assembleDebug` | Android `DashboardScreenState` data class（替代 5 个独立变量）；iOS `DashboardScreenState` struct（替代 4 个 @State）；HarmonyOS `currentPage` + `detailCardId` 替代 `editingCards`/`showScenarioPicker`/`detailCardId` | ✅ |
 | `HLTH-UI-ARCH-007` | selectedWeeklyDay 下放到 WeeklyVisual/WeeklyPlan | Android `./gradlew :androidApp:assembleDebug`；代码审查 | Android `WeeklyVisual.kt` 内部 `selectedDay`；iOS `WeeklyPlanView.swift` 内部 `@State selectedDay`；HarmonyOS `WeeklyPlanVisualComp.ets` 内部 `@State selectedDay` | ✅ |
-| `HLTH-UI-ARCH-008` | 三端同一子模式状态驱动对齐 | 待补 | 待补 | ⏳ |
+| `HLTH-UI-ARCH-008` | 三端同一子模式状态驱动对齐 | `./gradlew :androidApp:assembleDebug`；代码审查 | 三端均使用枚举/密封类 + `when`/`switch` 管理子页面，不再使用 `if {} return` 或 `if/else` 条件截断 | ✅ |
 | `HLTH-UI-ARCH-009` | iOS `HealthDashboardView.swift` 按视觉种类拆分 | `xcodebuild`（待运行） | iOS `HealthDashboardView.swift`（256 行）+ `Visuals/` 11 个独立文件 | ✅（待验证） |
 | `HLTH-UI-ARCH-010` | HarmonyOS `DashboardCardComp.ets` 按视觉种类拆分 | `hvigorw assembleApp`（待运行） | HarmonyOS `DashboardCardComp.ets`（109 行）+ `visuals/` 10 个独立文件 | ✅（待验证） |
 

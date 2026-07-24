@@ -258,7 +258,7 @@ private struct PersonalProfileEditView: View {
                 guard let data = try? await item.loadTransferable(type: Data.self) else { return }
                 await MainActor.run {
                     avatarData = data
-                    draft.avatarUri = ProfileImageStore.save(data)
+                    draft.avatarUri = ProfileImageStore.save(data, userId: viewModel.state.currentSession?.userId ?? "")
                 }
             }
         }

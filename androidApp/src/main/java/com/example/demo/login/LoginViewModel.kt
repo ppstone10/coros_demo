@@ -11,15 +11,23 @@ import com.example.demo.common.login.LoginRules
 import com.example.demo.common.login.LoginState
 import com.example.demo.common.login.LoginStore
 import com.example.demo.common.login.LocalMockAuthRepository
+import com.example.demo.common.login.InMemoryAuthStoreDataSource
 import com.example.demo.common.login.MockResult
 import com.example.demo.common.login.MockVerifyCodeState
 import com.example.demo.common.login.UserProfile
-import com.example.demo.common.health.HealthMockScenario
+import com.example.demo.common.health.HealthStore
+import com.example.demo.common.health.InMemoryHealthDashboardStateDataSource
 import com.example.demo.health.AndroidHealthDashboardStateDataSource
 
 class LoginViewModel(
-    private val store: LoginStore = LoginStore.createFake()
+    private val store: LoginStore = LoginStore.createFake(),
+    healthStore: HealthStore? = null
 ) {
+    val healthStore: HealthStore = healthStore ?: HealthStore(
+        LocalMockAuthRepository(InMemoryAuthStoreDataSource()),
+        InMemoryHealthDashboardStateDataSource()
+    )
+
     var state: LoginState by mutableStateOf(store.state)
         private set
 
@@ -223,15 +231,6 @@ class LoginViewModel(
         state = store.state
     }
 
-    fun loadHealthDashboard() = store.loadHealthDashboard()
-
-    fun selectHealthScenario(scenario: HealthMockScenario) = store.selectHealthScenario(scenario)
-
-    fun refreshHealthDashboard() = store.refreshHealthDashboard()
-
-    fun saveHealthCardConfiguration(types: List<com.example.demo.common.health.HealthCardType>) =
-        store.saveHealthCardConfiguration(types)
-
     fun onEffectConsumed() {
         effect = null
     }
@@ -248,11 +247,10 @@ class LoginViewModel(
                 AndroidAuthStoreDataSource(context.applicationContext),
                 nowEpochMs = { System.currentTimeMillis() }
             )
+            val healthDataSource = AndroidHealthDashboardStateDataSource(context.applicationContext)
             return LoginViewModel(
-                LoginStore.create(
-                    authRepository = repository,
-                    healthStateDataSource = AndroidHealthDashboardStateDataSource(context.applicationContext)
-                )
+                store = LoginStore.create(authRepository = repository),
+                healthStore = HealthStore(repository, healthDataSource)
             )
         }
     }

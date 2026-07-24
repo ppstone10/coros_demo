@@ -55,17 +55,18 @@ protocol SharedLoginAdapterProtocol {
     func pauseSession()
     func resumeSession()
     func consumeEffect() -> LoginEffect?
-    func loadHealthDashboard() -> PersistedDashboard?
+    func healthState() -> HealthState?
+    func loadHealth()
     func selectHealthScenario(_ name: String) -> Bool
-    func refreshHealthDashboard() -> PersistedDashboard?
-    func healthDashboardError() -> String?
-    func saveHealthCardConfiguration(_ typeNames: [String]) -> PersistedDashboard?
-    func healthCardSaveError() -> String?
+    func refreshHealth()
+    func saveHealthCardConfiguration(_ typeNames: [String]) -> String?
+    func consumeHealthEffect() -> HealthEffect?
 }
 
 final class SharedLoginAdapter: SharedLoginAdapterProtocol {
     private static let storeKey = "training_auth_mock_store"
     private let facade: LoginFacade
+    private let healthFacade: HealthFacade
 
     init() {
         let defaults = UserDefaults.standard
@@ -78,14 +79,26 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
             }
         )
         self.facade = LoginFacadeFactory().createPersistent(
-            loadJson: {
-                defaults.string(forKey: Self.storeKey)
-            },
+            loadJson: { defaults.string(forKey: Self.storeKey) },
             saveJson: { json in
                 defaults.set(json, forKey: Self.storeKey)
                 return KotlinBoolean(bool: defaults.synchronize())
-            },
-            healthStateDataSource: healthStore
+            }
+        )
+        let authDataSource = JsonAuthStoreDataSource(
+            loadJson: { defaults.string(forKey: Self.storeKey) },
+            saveJson: { json in
+                defaults.set(json, forKey: Self.storeKey)
+                return KotlinBoolean(bool: defaults.synchronize())
+            }
+        )
+        let repository = LocalMockAuthRepository(
+            dataSource: authDataSource,
+            nowEpochMs: { KotlinLong(value: Int64(Date().timeIntervalSince1970 * 1_000)) }
+        )
+        self.healthFacade = HealthFacadeFactory().createPersistent(
+            authRepository: repository,
+            stateDataSource: healthStore
         )
         syncClock()
         facade.restoreSession()
@@ -284,28 +297,28 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
         facade.consumeEffect()
     }
 
-    func loadHealthDashboard() -> PersistedDashboard? {
-        facade.loadHealthDashboard()
+    func healthState() -> HealthState? {
+        healthFacade.state
     }
-    
+
+    func loadHealth() {
+        healthFacade.load()
+    }
+
     func selectHealthScenario(_ name: String) -> Bool {
-        facade.selectHealthScenario(name: name)
+        healthFacade.selectScenario(name: name)
     }
 
-    func refreshHealthDashboard() -> PersistedDashboard? {
-        facade.refreshHealthDashboard()
+    func refreshHealth() {
+        healthFacade.refresh()
     }
 
-    func healthDashboardError() -> String? {
-        facade.healthDashboardError()
+    func saveHealthCardConfiguration(_ typeNames: [String]) -> String? {
+        healthFacade.saveCardConfiguration(typeNames: typeNames)
     }
-    
-    func saveHealthCardConfiguration(_ typeNames: [String]) -> PersistedDashboard? {
-        facade.saveHealthCardConfiguration(typeNames: typeNames)
-    }
-    
-    func healthCardSaveError() -> String? {
-        facade.healthCardSaveError()
+
+    func consumeHealthEffect() -> HealthEffect? {
+        healthFacade.consumeEffect()
     }
 
     private func syncClock() {

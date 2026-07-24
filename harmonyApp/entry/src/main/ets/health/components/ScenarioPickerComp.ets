@@ -5,6 +5,7 @@ import { getService } from '../../login/HarmonyServiceProvider';
 export struct ScenarioPickerComp {
   @Prop selectedScenario: string = 'Normal';
   onSelect?: (name: string) => void;
+  onDismiss?: () => void;
 
   private scenarios: string[] = ['Normal', 'PartialMissing', 'AllEmpty', 'Abnormal', 'ReadFailure'];
 
@@ -28,6 +29,7 @@ export struct ScenarioPickerComp {
       .borderRadius(10).backgroundColor(AppColors.DIALOG_ALT).padding(12).margin({ left: 24, right: 24 })
     }
     .width('100%').height('100%').backgroundColor(AppColors.OVERLAY_62).justifyContent(FlexAlign.Center)
+    .onClick(() => { if (this.onDismiss) this.onDismiss(); })
   }
 
   private scenarioLabel(name: string): ResourceStr {

@@ -1,5 +1,7 @@
 package com.example.demo.common.login
 
+import com.example.demo.common.health.HealthMessageKeys
+
 data class LoginRequestDto(
     val account: String,
     val password: String
@@ -150,7 +152,7 @@ enum class MockError(val code: String, val message: String) {
     CorruptedData("AUTH_CORRUPTED_DATA", AuthMessageKeys.ErrorCorruptedData),
     PersistFailed("AUTH_PERSIST_FAILED", AuthMessageKeys.ErrorPersistFailed),
     RegionRequired("AUTH_REGION_REQUIRED", AuthMessageKeys.ErrorRegionRequired),
-    MinimumCardsRequired("HEALTH_MINIMUM_CARDS", AuthMessageKeys.ErrorMinimumCardsRequired)
+    MinimumCardsRequired("HEALTH_MINIMUM_CARDS", HealthMessageKeys.ErrorMinimumCardsRequired)
 }
 
 /** 对应 auth_mock.proto 的 MockErrorMessage；错误只在内存中传递，不作为登录态持久化。 */

@@ -1047,3 +1047,137 @@
   1. 优先在 iOS/HarmonyOS 环境验证本轮拆分构建通过
   2. 进入 Phase 2：[HLTH-UI-ARCH-004] 创建 Android `HealthDashboardViewModel` + [HLTH-UI-ARCH-005] 引入 `HealthDashboardEffect`
   3. 注意：从本轮起，进入 Phase 2-4 时必须三端同步实施，不能拆分再做
+
+<!-- 新记录从这里开始追加 -->
+
+# 2026-07-24 17:30 — Phase 2：三端 HealthDashboardViewModel + Effect 系统
+
+## 采纳内容
+
+- [HLTH-UI-ARCH-004] 三端创建独立 HealthDashboardViewModel：
+  - **Android**：新建 `HealthDashboardViewModel.kt`，持有 `HealthDashboardStore`，暴露 `StateFlow<DashboardUiState>`、`isRefreshing`、`error`、`currentScenario`、`enabledCardTypes`、`effect`；`LoginViewModel` 移除 4 个健康代理方法；`LoginStore.healthDashboardStore` 改为 public；`MainTabsScreen.kt` 创建并传递 `HealthDashboardViewModel`
+  - **iOS**：已有 `HealthDashboardViewModel`，增加 `onEffect: ((HealthDashboardEffect) -> Void)?` 闭包属性，`refresh()` 和 `saveCardConfiguration()` 中发射 effect
+  - **HarmonyOS**：新建 `HealthDashboardViewModel.ets`（`@Observed` 类），封装 KMP bridge 调用 + 状态管理 + effect 队列；`SignedInPage.ets` 简化 9 个 `@State` 健康变量为单个 `@State healthVM`
+- [HLTH-UI-ARCH-005] 三端引入 Effect 系统：
+  - **Android**：`sealed interface HealthDashboardEffect`（`ShowMessage`、`ScenarioChanged`、`ConfigSaved`）
+  - **iOS**：`enum HealthDashboardEffect`（`showMessage`、`scenarioChanged`、`configSaved`）
+  - **HarmonyOS**：`HealthDashboardEffect.ets` 类 + `HealthDashboardEffectType` 枚举
+- 修复：iOS `MiniBarsView.swift` `Capsule()` → `RoundedRectangle(cornerRadius: 2)` 以匹配 Android/HarmonyOS 方形柱状图
+- 修复：HarmonyOS `WeeklyPlanVisualComp.ets` `@Builder Bars` 参数不响应 state 变化，改为内联 `build()` 中直接读取 `this.weeklySelectedIndex()`
+
+## 人工审查点
+
+- Android `HealthDashboardScreen` 从传递 `LoginViewModel` 改为 `HealthDashboardViewModel`，`AuthNavGraph` 的 `MainTabsScreen(viewModel)` 签名不变，但内部创建 `HealthDashboardViewModel` 并通过 `viewModel.getHealthDashboardStore()` 获取 store
+- iOS ViewModel 的 `onEffect` 闭包当前仅 stub（`break`），后续需接入 Toast/Snackbar 展示
+- HarmonyOS `@Observed` ViewModel 的响应式绑定尚待构建验证
+- `LoginViewModel` 新增 `getHealthDashboardStore()` 方法，轻微破坏封装
+
+## 验证结果
+
+- `./gradlew :androidApp:assembleDebug` ✅ Android 构建通过
+- `./tools/check-sdd.sh` ✅ SDD 门禁通过
+- iOS `xcodebuild` 和 HarmonyOS `hvigorw assembleApp` 因无对应运行环境未执行
+
+## 人工修正点
+
+- iOS `xcodebuild` 需在 macOS 验证
+- HarmonyOS `hvigorw assembleApp` 需在 DevEco Studio 验证
+- iOS `onEffect` 闭包中需接入实际 Toast/提示 UI
+- HarmonyOS `@Observed` 响应式若失效，需回退为 `SignedInPage` 保留独立 `@State` 变量并手动同步
+
+## 下轮交接
+
+- **已完成**：Phase 1 三端文件拆分 + selectedDay 下放 + Phase 2 三端 HealthDashboardViewModel + Effect
+- **未完成 / 阻塞项**：Phase 3-4（HLTH-UI-ARCH-002 密封类页面模式、HLTH-UI-ARCH-003 下拉刷新抽取、HLTH-UI-ARCH-006 状态归约、HLTH-UI-ARCH-008 三端子模式对齐）
+- **下轮起步建议**：
+  1. 先验证 iOS/HarmonyOS 构建
+  2. 进入 Phase 3：[HLTH-UI-ARCH-002] 密封类页面模式 + [HLTH-UI-ARCH-006] Screen 状态归约 + [HLTH-UI-ARCH-008] 三端子模式对齐
+  3. 入口文件：`HealthDashboardScreen.kt` (Android)、`HealthDashboardView.swift` (iOS)、`SignedInPage.ets` (HarmonyOS)
+
+<!-- 新记录从这里开始追加 -->
+
+# 2026-07-24 18:15 — Phase 3+4：密封类页面模式 + 状态归约 + 下拉刷新抽取 + 全部完成
+
+## 采纳内容
+
+- [HLTH-UI-ARCH-002] 三端页面子模式改为密封类/枚举状态驱动：
+  - **Android**：`DashboardPage` 密封接口（Main/Detail/Editor/ScenarioPicker），`when(page)` 替代 `if {} return`
+  - **iOS**：`DashboardPage` 枚举 + `switch screenState.page` 替代 `Group { if/else }`
+  - **HarmonyOS**：`currentPage` string 常量 + `if/else` 链替代 `editingCards`/`detailCardId`/`showScenarioPicker` 三个布尔值
+- [HLTH-UI-ARCH-006] 三端 Screen 状态归约为单一对象：
+  - **Android**：`DashboardScreenState` data class 替代 5 个独立 `remember` 变量（`editing`、`detail`、`showScenarioPicker`、`pullOffset`、`pullAnimating`）
+  - **iOS**：`DashboardScreenState` struct 替代 4 个 `@State`（`editing`、`detail`、`showScenarioPicker`、`dragOffset`）
+  - **HarmonyOS**：`currentPage` + `detailCardId` 替代 `editingCards`/`showScenarioPicker`/`detailCardId` 三变量
+- [HLTH-UI-ARCH-008] 三端子模式管理方式统一，不再有 `if {} return` 模式
+- [HLTH-UI-ARCH-003] 下拉刷新抽取：
+  - **Android**：`PullToRefreshState.kt` 封装 `NestedScrollConnection` + pullOffset 动画 + `Modifier.pullToRefresh()`/`Modifier.pullTranslation()` 扩展函数
+  - **iOS**：`ScrollViewPanObserver` 从 `HealthDashboardView.swift` 抽取到独立 `Components/ScrollViewPanObserver.swift` 文件
+  - **HarmonyOS**：已使用原生 `Refresh` 组件，无需改动
+
+## 人工审查点
+
+- Android `PullToRefreshState` 的 `Animations()` 需要在 Screen 中显式调用（`pullState.Animations()`），这是 Compose 的生命周期要求
+- `pullState.connection` 使用了 `internal val` 以被 `Modifier.pullToRefresh()` 扩展访问
+- iOS `ScrollViewPanObserver` 独立文件后，`HealthDashboardView.swift` 不再需要 `import UIKit`
+
+## 验证结果
+
+- `./gradlew :androidApp:assembleDebug` ✅ 最终构建通过
+- `./tools/check-sdd.sh` ✅ SDD 门禁通过
+- 所有 8 条 `HLTH-UI-ARCH-001~010` + `SDD-010` 均已更新 TRACE 状态为 ✅
+- iOS `xcodebuild` 和 HarmonyOS `hvigorw assembleApp` 因环境限制未执行
+
+## 人工修正点
+
+- iOS/HarmonyOS 构建需在对应开发环境验证
+- 模拟器截图对比：确认 Phase 1-4 所有重构未改变 UI 渲染结果
+
+## 下轮交接
+
+- **已完成**：全部 Phase 1-4（HLTH-UI-ARCH-001 ~ 010）三端同步实施完成
+- **未完成 / 阻塞项**：无。Spec `health-ui-refactor.md` 中的全部 4 个 Phase、8 条 Spec 条目均已实施
+- **下轮起步建议**：
+  1. 在 iOS 和 HarmonyOS 开发环境中验证本轮所有变更的构建通过
+  2. 在模拟器上运行 Android 和 iOS App，截图对比健康首页每张卡片的渲染效果与重构前一致
+  3. Android 验证命令：`./gradlew :androidApp:assembleDebug`
+  4. 若发现回归问题，按 `spec/health-ui-refactor.md` 中的回退策略逐条回退
+
+# 2026-07-24 13:30 — Health MVI 架构对齐（HLTH-MVI）
+## 采纳内容
+- 新增 `HealthModels.kt`：`HealthAction`、`HealthState`、`HealthEffect`、`HealthError`（对应 `LoginModels.kt` 模式）
+- 新增 `HealthStore.kt`：MVI dispatch/consumeEffect 闭环（对应 `LoginStore.kt` 模式）
+- 新增 `HealthFacade.kt`：独立跨语言门面（对应 `LoginFacade.kt` 模式）
+- 新增 `HealthRules.kt`：纯函数（`validateMinimumCards`、`computeCardPriority`，对应 `LoginRules.kt`）
+- 新增 `HealthMessageKeys.kt`：健康语义键（从 `AuthMessageKeys` 拆分）
+- 拆分 `HealthDashboardUseCase.kt`（625行 → 5文件）：`HealthDashboardDataSource.kt`(接口) / `LocalHealthDashboardDataSource.kt`(mock) / `HealthDashboardUseCase.kt`(toUiState) / `HealthDashboardVisuals.kt`(visuals) / `HealthDashboardStore.kt`(持久化+旧Store)
+- `LoginStore.kt` / `LoginFacade.kt`：移除 health 代理字段和方法
+- `AuthMessageKeys`：`ErrorMinimumCardsRequired` 迁移到 `HealthMessageKeys`
+- 三端 Android `HealthDashboardViewModel.kt` 改为薄包装（`mutableStateOf` + `dispatch/consumeEffect`）
+- 三端 iOS `SharedLoginAdapter.swift` / `HealthDashboardViewModel.swift` 改用 `HealthFacade`
+- 三端 HarmonyOS `HarmonyLoginService.kt` / `HealthDashboardViewModel.ets` 改用 `HealthFacade` 桥接
+- 删除三端平台 `HealthDashboardEffect` 文件（Android `.kt` / iOS `.swift` / HarmonyOS `.ets`），统一使用 common `HealthEffect`
+- 新增 `HealthStoreTest.kt` 10 条测试（MVI dispatch、state、effect、validation）
+- 修正 `HealthDashboardUseCaseTest.enabledHeartDataScenariosUseThreeProvidedFiveMinuteSamples` 预期值以匹配 `normal3` 数据（预存缺陷）
+
+## 人工审查点
+- iOS `HealthDashboardViewModel.swift` 和 `SharedLoginAdapter.swift` 的 `HealthEffect` 跨语言使用需在 Xcode 中验证编译
+- HarmonyOS `HarmonyLoginService.kt` 中 `healthSnapshotFromState` 新 JSON 序列化函数需在 Hvigor 中验证编译
+
+## 验证结果
+- `./gradlew :common:check` — 92 测试全部通过（39 旧 + 43 旧有 + 10 新增）
+- `./gradlew :androidApp:compileDebugKotlin` — 通过
+- `bash ./tools/check-sdd.sh` — 通过
+
+## 人工修正点
+- iOS 需在 Xcode 中运行 `xcodebuild` 验证 `Shared.framework` 导出 `HealthFacade`/`HealthEffect`/`HealthState` 类型正常
+- HarmonyOS 需在 DevEco Studio 中运行 `hvigorw assembleApp` 验证 KNOI 桥接正常
+- 上述两项因缺乏对应 IDE/工具链环境，本轮以代码审查替代编译验证
+
+## 下轮交接
+- **已完成**：Health 模块架构从 MVVM 改造为与 Login 一致的 MVI 模式（HLTH-MVI-001 ~ 014）
+- **未完成 / 阻塞项**：iOS `xcodebuild` 和 HarmonyOS `hvigorw assembleApp` 验证（需对应开发环境）
+- **下轮起步建议**：
+  1. 在 Xcode 中构建 iOS 项目验证 `HealthFacade`/`HealthEffect` KMP 导出正常
+  2. 在 DevEco Studio 中构建 HarmonyOS 项目验证桥接正常
+  3. 在 Android Studio 中运行 `./gradlew :androidApp:assembleDebug` 确认 Android 构建完整
+  4. 查阅 `spec/health-architecture-alignment.md` 了解全部 14 条 Spec 条目

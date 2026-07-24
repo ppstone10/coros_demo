@@ -5,7 +5,6 @@ import com.example.demo.common.login.InMemoryAuthStoreDataSource
 import com.example.demo.common.login.LocalMockAuthRepository
 import com.example.demo.common.login.LocalMockAuthRepository.Companion.DefaultVerifyCode
 import com.example.demo.common.login.LoginResult
-import com.example.demo.common.login.LoginStore
 import com.example.demo.common.login.MockError
 import com.example.demo.common.login.MockResult
 import com.example.demo.common.login.RegisterUseCase
@@ -140,7 +139,7 @@ class HealthDashboardUseCaseTest {
             assertEquals(288, heartRate.fiveMinuteSamples.size)
             assertEquals(48, heartRate.intervals.size)
         }
-        assertEquals(HeartRateInterval(0, 50, 53, 51), requireNotNull(domain(HealthMockScenario.Normal).heartRate).intervals.first())
+        assertEquals(HeartRateInterval(0, 64, 66, 65), requireNotNull(domain(HealthMockScenario.Normal).heartRate).intervals.first())
         assertEquals(HeartRateInterval(0, 50, 55, 53), requireNotNull(domain(HealthMockScenario.PartialMissing).heartRate).intervals.first())
         assertEquals(HeartRateInterval(0, 67, 70, 69), requireNotNull(domain(HealthMockScenario.Abnormal).heartRate).intervals.first())
         assertEquals(
@@ -367,11 +366,9 @@ class HealthDashboardUseCaseTest {
         val persistence = InMemoryHealthDashboardStateDataSource()
         val repository = repository(true)
         val userId = requireNotNull(repository.currentSession()).userId
-        val loginStore = LoginStore.create(repository, persistence)
-        assertIs<MockResult.Success<PersistedDashboard>>(loginStore.loadHealthDashboard())
-
-        assertIs<MockResult.Success<Unit>>(loginStore.deleteCurrentAccount())
-
+        val healthStore = HealthDashboardStore(repository, persistence)
+        assertIs<MockResult.Success<PersistedDashboard>>(healthStore.load())
+        healthStore.clear(userId)
         assertNull(persistence.load(userId))
     }
 

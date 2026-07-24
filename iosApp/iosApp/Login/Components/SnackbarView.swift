@@ -3,6 +3,7 @@ import SwiftUI
 struct SnackbarView: View {
     let message: String
     @Binding var isPresented: Bool
+    @State private var dismissTask: DispatchWorkItem?
 
     var body: some View {
         VStack {
@@ -21,9 +22,15 @@ struct SnackbarView: View {
                 .padding(.bottom, 32)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                        withAnimation { isPresented = false }
+                    let task = DispatchWorkItem {
+                        isPresented = false
                     }
+                    dismissTask = task
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5, execute: task)
+                }
+                .onDisappear {
+                    dismissTask?.cancel()
+                    dismissTask = nil
                 }
             }
         }

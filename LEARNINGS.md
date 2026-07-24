@@ -10,8 +10,8 @@
 | 决策 | 详情 |
 |------|------|
 | **三端原生 UI + KMP 共享** | Android Jetpack Compose，iOS SwiftUI，HarmonyOS ArkUI；业务逻辑在 `common` KMP 模块共享。HarmonyOS 不走 KuiklyUI 共享 UI |
-| **MVVM / MVI** | `LoginAction` → `LoginStore.dispatch()` → `LoginState` + `LoginEffect`。ViewModel 只做薄适配，不做业务规则 |
-| **平台边界** | UI 层只做展示和交互，不拼装业务规则。规则在 `common` 的 `LoginRules`、`LoginUseCase`、`HealthDashboardUseCase` 中 |
+| **MVVM / MVI** | `LoginAction` → `LoginStore.dispatch()` → `LoginState` + `LoginEffect`。ViewModel 只做薄适配，不做业务规则。Health 模块已在 2026-07-24 对齐为相同 MVI 模式：`HealthAction` → `HealthStore.dispatch()` → `HealthState` + `HealthEffect`，`HealthFacade` 为跨语言门面 |
+| **平台边界** | UI 层只做展示和交互，不拼装业务规则。规则在 `common` 的 `LoginRules`、`LoginUseCase`、`HealthRules`、`HealthDashboardUseCase`、`HealthDashboardVisuals` 中 |
 | **导航架构** | Android `Navigation Compose` (NavHost)，iOS `NavigationStack` + `AuthCoordinator`，HarmonyOS `router`。导航协调器监听 `LoginEffect` 做页面跳转 |
 | **HarmonyOS KMP 接入** | 独立 Gradle 项目 `harmony-kmp-bridge`，使用 KuiklyBase-Kotlin + KNOI 编译 `commonMain` 为 `libkn.so`，ArkTS 通过 KNOI provider 调用 |
 | **三端 UI 组件对齐** | 每端提取公共组件到 `components/`（`AuthComponents.kt` / `AuthComponents.swift` / `AuthComponents.ets`），保持签名一致 |

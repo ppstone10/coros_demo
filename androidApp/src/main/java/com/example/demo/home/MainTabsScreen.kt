@@ -1,5 +1,6 @@
 package com.example.demo.home
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,20 +13,21 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
-import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.stringResource
 import com.example.demo.R
 import com.example.demo.health.HealthDashboardScreen
+import com.example.demo.health.HealthDashboardViewModel
 import com.example.demo.login.LoginViewModel
 import com.example.demo.login.signedin.SignedInScreen
 import com.example.demo.ui.resources.AppColors
@@ -47,11 +49,14 @@ private enum class HomeTab(
 fun MainTabsScreen(viewModel: LoginViewModel) {
     var tab by rememberSaveable { mutableStateOf(HomeTab.Fitness) }
     var contentFullscreen by rememberSaveable { mutableStateOf(false) }
+    val healthViewModel = remember(viewModel) {
+        HealthDashboardViewModel(viewModel.healthStore)
+    }
     Column(Modifier.fillMaxSize().background(AppColors.Core.Black)) {
         Box(Modifier.weight(1f)) {
             when (tab) {
                 HomeTab.Fitness -> HealthDashboardScreen(
-                    viewModel,
+                    healthViewModel = healthViewModel,
                     onWatchClick = {
                         contentFullscreen = false
                         tab = HomeTab.Me
@@ -80,7 +85,6 @@ fun MainTabsScreen(viewModel: LoginViewModel) {
             ) {
                 HomeTab.entries.forEach { item ->
                     val selected = tab == item
-                    val label = stringResource(item.labelRes)
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -89,11 +93,11 @@ fun MainTabsScreen(viewModel: LoginViewModel) {
                     ) {
                         AppImage(
                             asset = if (selected) item.icons.selected else item.icons.normal,
-                            contentDescription = label,
+                            contentDescription = stringResource(item.labelRes),
                             modifier = Modifier.size(27.dp)
                         )
                         Text(
-                            text = label,
+                            text = stringResource(item.labelRes),
                             color = if (selected) AppColors.Core.White else AppColors.Navigation.Unselected,
                             fontSize = 11.sp,
                             fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
@@ -104,4 +108,3 @@ fun MainTabsScreen(viewModel: LoginViewModel) {
         }
     }
 }
-
