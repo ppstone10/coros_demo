@@ -961,3 +961,89 @@
 - **已完成**：三平台所有 View/Component/Composable 文件均具备 IDE 预览能力（iOS #Preview 23 个、HarmonyOS @Preview 6 个、Android @Preview 21 个）。
 - **未完成 / 阻塞项**：无。
 - **下轮起步建议**：可进入各平台 IDE 逐一预览并截图，核对每张卡片的布局像素。若发现 SwiftUI/ArkUI 预览与真机不一致，优先检查 `@Environment` 依赖、`@ObservedObject` 初始化和资源名映射。
+
+<!-- 新记录从这里开始追加 -->
+
+# 2026-07-24 15:30 — Phase 1 DashboardCard 拆分 + selectedWeeklyDay 下放
+
+## 采纳内容
+
+- [HLTH-UI-ARCH-001] 将 `DashboardCard.kt`（原 798 行）按 10 种 `HealthCardVisualKind` 拆分为独立文件，每文件 30–110 行：
+  - `visuals/ActivityVisual.kt`、`WeeklyVisual.kt`、`LoadVisual.kt`、`AssessmentVisual.kt`、`GaugeVisual.kt`、`TrendVisual.kt`、`RangeVisual.kt`、`SleepVisual.kt`、`HealthGridVisual.kt`、`BodyVisual.kt`
+  - `DashboardCard.kt` 保留：CardHeader、EmptyContent、HealthCardVisualContent 分发、5 个共用工具（OverviewRow、MiniBars、MetricValue、ValueText、UnitText）、3 个映射函数（iconOf、resourceName、titleOf）、预览
+  - 共用工具从 `private` 改为 `internal` 以被 visuals/ 目录引用；颜色常量改用 `AppColors.Health.*` 全路径内联
+- [HLTH-UI-ARCH-007] `selectedWeeklyDay` 状态从 `DashboardCard` 移到 `WeeklyVisual` 内部：
+  - `DashboardCard` 不再判断 `card.type == WeeklyPlan` 预处理 visual，不再持有 `selectedWeeklyDay` 状态
+  - `HealthCardVisualContent` 签名移除 `onWeeklyDaySelected` 参数
+  - `WeeklyVisual` 内部用 `remember` 管理 `selectedDay`，WeekLabels 接收 `selectedDayIndex` 参数代替读取 `v.highlightedIndex`
+
+## 人工审查点
+
+- `OverviewRow`、`MiniBars`、`MetricValue`、`ValueText`、`UnitText` 保留在 `DashboardCard.kt` 中作为 `internal` 供 visuals/ 引用；若视觉文件数继续增长，可考虑抽取为独立文件
+- 颜色常量去掉了 `CardBlack`、`Muted`、`Green`、`Yellow`、`Orange`、`Purple`、`Blue` 等私有 val，全改为 `AppColors.Health.*` 直接引用，各文件稍有重复但更自包含
+
+## 验证结果
+
+- `./gradlew :androidApp:assembleDebug` ✅ 构建成功
+- `./gradlew :common:check` ⚠️ `enabledHeartDataScenariosUseThreeProvidedFiveMinuteSamples` 失败（第 143 行），该失败是会话前已有的 `SimulatedHeartRateSamples.normal3` 添加 + `HealthDashboardUseCase.kt` 将 Normal 场景改用 `normal3` 导致的预期值不匹配，与本次 UI 重构无关
+
+## 人工修正点
+
+- `enabledHeartDataScenariosUseThreeProvidedFiveMinuteSamples` 测试断言值需同步更新以匹配 `normal3` 数据（待 common 方面处理）
+- iOS/HarmonyOS 端尚未做对应拆分，可参考本次 Android 的拆分模式实施
+
+## 下轮交接
+
+- **已完成**：[HLTH-UI-ARCH-001] Android DashboardCard 拆分 + [HLTH-UI-ARCH-007] selectedWeeklyDay 下放
+- **未完成 / 阻塞项**：Phase 2–4 尚未开始（HLTH-UI-ARCH-002 ~ 006、008）
+- **下轮起步建议**：
+  1. 先运行 `./tools/check-sdd.sh` 确认门禁通过
+  2. 进入 Phase 2：[HLTH-UI-ARCH-004] 创建 `HealthDashboardViewModel` + [HLTH-UI-ARCH-005] 引入 `HealthDashboardEffect`
+  3. 从 `spec/health-ui-refactor.md` 读取各条目的测试要求和验收标准
+
+<!-- 新记录从这里开始追加 -->
+
+# 2026-07-24 16:45 — 三端同步：iOS/HarmonyOS 视觉拆分 + selectedDay 下放 + SDD 同步门禁
+
+## 采纳内容
+
+- [HLTH-UI-ARCH-009] iOS 端 `HealthDashboardView.swift` 从 827 行拆为 12 个独立文件：
+  - `Components/Visuals/` 目录下 11 个独立 View struct + `HealthCardHelpers.swift`
+  - `HealthDashboardView.swift` 精简至 256 行，只保留 Screen 编排 + 调度 `switch(visual.kind.name)` 骨架 + `ScrollViewPanObserver`
+  - `selectedWeeklyDay` 从 `@State private var selectedWeeklyDays: [String: Int]` 移除，下放到 `WeeklyPlanView.swift` 内部 `@State selectedDay`
+- [HLTH-UI-ARCH-010] HarmonyOS 端 `DashboardCardComp.ets` 从 600 行拆为 11 个独立文件：
+  - `components/visuals/` 目录下 10 个 `@Component struct` + `HealthVisualHelpers.ets`
+  - `DashboardCardComp.ets` 精简至 109 行，只保留骨架 + 调度 `if/else-if` 链
+  - `selectedWeeklyDay` 从 `DashboardCardComp` 移除，下放到 `WeeklyPlanVisualComp.ets` 内部 `@State selectedDay`
+- [HLTH-UI-ARCH-001] 更新：原仅 Android 完成，现三端均完成
+- [HLTH-UI-ARCH-007] 更新：原仅 Android 完成，现三端均完成
+- [SDD-010] 新增三端同步原则到 `sdd-workflow.md`，同步更新 `AGENTS.md` 项目边界和 `LEARNINGS.md` 架构决策
+
+## 人工审查点
+
+- iOS 端提取过程中，`stageColor` 辅助函数的颜色值与原始 `SleepStageOverview` 内联颜色有微妙差异（`visualOrange`/`visualPurple` vs `visualYellow`/`visualCyan`），采用了 `HealthCardVisualContent` 中的辅助函数定义，需人工截图确认睡眠颜色与之前一致
+- HarmonyOS 端 `DashboardCardComp.ets` 中原 `Metric` builder 现在未被任何子组件使用（每个子组件有自己的 Metric 实现），按指示保留但实质成为死代码
+- `HealthVisualHelpers.ets` 中的路径计算函数（`gaugeArcPath`、`abilitySegmentPath`、`abilityNeedlePath`、`rangeMarkerPath`）经过了 `vp2px` 换算，与原有的换算逻辑一致
+
+## 验证结果
+
+- `./gradlew :androidApp:assembleDebug` ✅ Android 构建通过
+- `./tools/check-sdd.sh` ✅ SDD 门禁通过
+- iOS `xcodebuild` 和 HarmonyOS `hvigorw assembleApp` 因无对应运行环境未执行，TRACE 标记 `✅（待验证）`
+
+## 人工修正点
+
+- iOS `xcodebuild` 需在 macOS 环境验证构建通过
+- HarmonyOS `hvigorw assembleApp` 需在 DevEco Studio 环境验证构建通过
+- Android `@Preview` 在 `DashboardCard.kt` 中的 `AllCardsPreview` 需要确认所有 14 张卡片渲染正确
+- 三端截图对比：需在真机/模拟器上打开健康首页，确认拆分后每张卡片的布局、颜色、间距与拆分前完全一致
+- `DashboardCardComp.ets` 中的死代码 `@Builder Metric` 可在后续清理
+
+## 下轮交接
+
+- **已完成**：[HLTH-UI-ARCH-001] 三端拆分、[HLTH-UI-ARCH-007] 三端 selectedDay 下放、[HLTH-UI-ARCH-009] iOS 拆分、[HLTH-UI-ARCH-010] HarmonyOS 拆分、[SDD-010] 三端同步原则
+- **未完成 / 阻塞项**：Phase 2–4 尚未开始（HLTH-UI-ARCH-002 ~ 006、008）
+- **下轮起步建议**：
+  1. 优先在 iOS/HarmonyOS 环境验证本轮拆分构建通过
+  2. 进入 Phase 2：[HLTH-UI-ARCH-004] 创建 Android `HealthDashboardViewModel` + [HLTH-UI-ARCH-005] 引入 `HealthDashboardEffect`
+  3. 注意：从本轮起，进入 Phase 2-4 时必须三端同步实施，不能拆分再做

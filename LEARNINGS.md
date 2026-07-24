@@ -15,6 +15,7 @@
 | **导航架构** | Android `Navigation Compose` (NavHost)，iOS `NavigationStack` + `AuthCoordinator`，HarmonyOS `router`。导航协调器监听 `LoginEffect` 做页面跳转 |
 | **HarmonyOS KMP 接入** | 独立 Gradle 项目 `harmony-kmp-bridge`，使用 KuiklyBase-Kotlin + KNOI 编译 `commonMain` 为 `libkn.so`，ArkTS 通过 KNOI provider 调用 |
 | **三端 UI 组件对齐** | 每端提取公共组件到 `components/`（`AuthComponents.kt` / `AuthComponents.swift` / `AuthComponents.ets`），保持签名一致 |
+| **三端同步原则** | 所有影响 UI 结构、行为或架构模式的变更必须在三端同步实施，或在 Spec/TRACE 中明确标记单平台并跟踪为债务。Spec 不得写"三端同步"却只做一端。iOS 和 HarmonyOS 的视觉拆分参照 Android `HLTH-UI-ARCH-001` 模式 |
 | **共享消息本地化边界** | `common` 的认证失败消息只输出稳定 `auth_*` 语义键；Android/iOS/HarmonyOS 在展示边界使用各自原生资源解析。保留既有跨语言 `errorMessage`/`message` 字段名，未知键原样回退 |
 | **健康文案本地化边界** | `common` 健康 UI model 使用 `LocalizedTextSpec(key, arguments)`，只输出稳定 `health_*` 语义键和参数；三端在原生资源边界格式化最终文案，KNOI JSON 同步传递 key/arguments |
 | **法律正文资源结构** | Demo 法律正文使用原生本地化资源保存，并以空行、`## ` 标题和 `**...**` 强调组成受限轻量结构；三端解析器恢复段落样式。英文仅为 Demo 翻译，正式发布前必须法律审校 |

@@ -18,6 +18,7 @@
 | `SDD-007` | 更新 Worklog | `tools/check-sdd.sh`：真实时间标题、历史补录标题和每轮四段顺序检查 | `Codex_worklog.md`、`AGENTS.md`、`spec/SESSION_START.md` | ✅ |
 | `SDD-008` | 提炼 Learnings | `./tools/check-sdd.sh`：治理章节检查 | `LEARNINGS.md`“SDD 治理约定” | ✅ |
 | `SDD-009` | 关闭门禁 | `bash -n ./tools/check-sdd.sh`；`./tools/check-sdd.sh` | `AGENTS.md`、`docs/development-workflow.md`、`README.md` | ✅ |
+| `SDD-010` | 三端同步原则 | 代码审查：所有 UI 结构/行为变更涉及三端 | `AGENTS.md`、`LEARNINGS.md`、`spec/sdd-workflow.md` | ✅ |
 
 ---
 
@@ -248,6 +249,25 @@
 | `HLTH-MAINT-004` | iOS 移除 `HealthCard` 和 `defaultHealthCards` | 人工验收：iOS 构建通过 + 健康仪表盘展示一致 | `HealthDashboardView.swift`（精简 `HealthCard`） / `HealthDashboardViewModel.swift`（直接映射） | ✅ |
 | `HLTH-MAINT-005` | HarmonyOS `SignedInPage.ets` 按职责拆分 | 人工验收：HarmonyOS 构建通过 + 页面交互无差异 | `health/HealthDashboardTypes.ets` / `SignedInPage.ets`（精简） | ✅ |
 | `HLTH-MAINT-006` | 登录后导航规则由 `LoginEffect` 携带 | `LoginUseCaseTest.loginSuccessCarriesSignedInRouteWhenProfileComplete` / `loginSuccessCarriesProfileCompletionRouteWhenProfileIncomplete` | `LoginModels.kt` `PostLoginRoute` + `LoginEffect.AuthSucceeded.nextRoute`；三端导航文件已更新 | ✅ |
+
+---
+
+---
+
+## health-ui-refactor.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `HLTH-UI-ARCH-001` | DashboardCard 按视觉种类拆为独立文件 | `./gradlew :androidApp:assembleDebug`；`xcodebuild`；截图人工对比 | Android `DashboardCard.kt`（骨架）+ `visuals/` 10 文件；iOS `HealthDashboardView.swift`（256 行）+ `Visuals/` 11 文件；HarmonyOS `DashboardCardComp.ets`（109 行）+ `visuals/` 10 文件 | ✅ |
+| `HLTH-UI-ARCH-002` | 页面子模式改为密封类状态驱动 | 待补 | 待补 | ⏳ |
+| `HLTH-UI-ARCH-003` | 下拉刷新抽取为独立组件 | 待补 | 待补 | ⏳ |
+| `HLTH-UI-ARCH-004` | 创建独立 HealthDashboardViewModel | 待补 | 待补 | ⏳ |
+| `HLTH-UI-ARCH-005` | 引入 HealthDashboardEffect | 待补 | 待补 | ⏳ |
+| `HLTH-UI-ARCH-006` | Screen 状态归约为单一对象 | 待补 | 待补 | ⏳ |
+| `HLTH-UI-ARCH-007` | selectedWeeklyDay 下放到 WeeklyVisual/WeeklyPlan | Android `./gradlew :androidApp:assembleDebug`；代码审查 | Android `WeeklyVisual.kt` 内部 `selectedDay`；iOS `WeeklyPlanView.swift` 内部 `@State selectedDay`；HarmonyOS `WeeklyPlanVisualComp.ets` 内部 `@State selectedDay` | ✅ |
+| `HLTH-UI-ARCH-008` | 三端同一子模式状态驱动对齐 | 待补 | 待补 | ⏳ |
+| `HLTH-UI-ARCH-009` | iOS `HealthDashboardView.swift` 按视觉种类拆分 | `xcodebuild`（待运行） | iOS `HealthDashboardView.swift`（256 行）+ `Visuals/` 11 个独立文件 | ✅（待验证） |
+| `HLTH-UI-ARCH-010` | HarmonyOS `DashboardCardComp.ets` 按视觉种类拆分 | `hvigorw assembleApp`（待运行） | HarmonyOS `DashboardCardComp.ets`（109 行）+ `visuals/` 10 个独立文件 | ✅（待验证） |
 
 ---
 

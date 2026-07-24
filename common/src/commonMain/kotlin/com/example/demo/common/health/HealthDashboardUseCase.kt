@@ -20,7 +20,7 @@ class LocalHealthDashboardDataSource(
     }
 
     private fun sample(scenario: HealthMockScenario): HealthDashboardData = when (scenario) {
-        HealthMockScenario.Normal -> normalDashboardData(SimulatedHeartRateSamples.normal1)
+        HealthMockScenario.Normal -> normalDashboardData(SimulatedHeartRateSamples.normal3)
         HealthMockScenario.PartialMissing -> HealthDashboardData(
             dailySummary = DailySummary(null, 310, 32),
             todayActivity = TodayActivity(5.2, 390, LocalizedTextSpec("health_visual_activity_easy_run"), 45),

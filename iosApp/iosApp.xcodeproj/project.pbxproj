@@ -16,6 +16,18 @@
 		92527866300F557000D53B2B /* ScrollViewAccessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527861300F557000D53B2B /* ScrollViewAccessor.swift */; };
 		92527867300F557000D53B2B /* HeroArcView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9252785A300F557000D53B2B /* HeroArcView.swift */; };
 		92527868300F557000D53B2B /* HealthCardEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527860300F557000D53B2B /* HealthCardEditor.swift */; };
+		925278763013368000D53B2B /* RangeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9252786F3013368000D53B2B /* RangeView.swift */; };
+		925278773013368000D53B2B /* BodyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9252786A3013368000D53B2B /* BodyView.swift */; };
+		925278783013368000D53B2B /* MiniBarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9252786E3013368000D53B2B /* MiniBarsView.swift */; };
+		925278793013368000D53B2B /* HealthCardHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9252786C3013368000D53B2B /* HealthCardHelpers.swift */; };
+		9252787A3013368000D53B2B /* TrendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278733013368000D53B2B /* TrendView.swift */; };
+		9252787B3013368000D53B2B /* WeeklyPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278743013368000D53B2B /* WeeklyPlanView.swift */; };
+		9252787C3013368000D53B2B /* SleepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278703013368000D53B2B /* SleepView.swift */; };
+		9252787D3013368000D53B2B /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278693013368000D53B2B /* ActivityView.swift */; };
+		9252787E3013368000D53B2B /* TrainingLoadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278723013368000D53B2B /* TrainingLoadView.swift */; };
+		9252787F3013368000D53B2B /* HealthGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9252786D3013368000D53B2B /* HealthGridView.swift */; };
+		925278803013368000D53B2B /* TrainingAssessmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278713013368000D53B2B /* TrainingAssessmentView.swift */; };
+		925278813013368000D53B2B /* GaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9252786B3013368000D53B2B /* GaugeView.swift */; };
 		92E93E1C300F51B3000DD533 /* HealthCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92E93E11300F51B3000DD533 /* HealthCard.swift */; };
 		92E93E21300F51D1000DD533 /* RecordsPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92E93E20300F51D1000DD533 /* RecordsPlaceholderView.swift */; };
 		92E93E22300F51D1000DD533 /* ExplorePlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92E93E1F300F51D1000DD533 /* ExplorePlaceholderView.swift */; };
@@ -47,8 +59,8 @@
 		C10000000000000000000003 /* HealthDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000003 /* HealthDashboardView.swift */; };
 		C10000000000000000000004 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000004 /* AccountView.swift */; };
 		D10000000000000000000001 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000001 /* Localizable.xcstrings */; };
-		F10000000000000000000001 /* COROS-APP-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000001 /* COROS-APP-Bold.ttf */; };
-		F10000000000000000000002 /* COROS-APP-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000002 /* COROS-APP-Regular.ttf */; };
+		F10000000000000000000001 /* Fonts/COROS-APP-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000001 /* Fonts/COROS-APP-Bold.ttf */; };
+		F10000000000000000000002 /* Fonts/COROS-APP-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000002 /* Fonts/COROS-APP-Regular.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -60,6 +72,18 @@
 		9252785E300F557000D53B2B /* HealthDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDetailView.swift; sourceTree = "<group>"; };
 		92527860300F557000D53B2B /* HealthCardEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCardEditor.swift; sourceTree = "<group>"; };
 		92527861300F557000D53B2B /* ScrollViewAccessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollViewAccessor.swift; sourceTree = "<group>"; };
+		925278693013368000D53B2B /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
+		9252786A3013368000D53B2B /* BodyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyView.swift; sourceTree = "<group>"; };
+		9252786B3013368000D53B2B /* GaugeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GaugeView.swift; sourceTree = "<group>"; };
+		9252786C3013368000D53B2B /* HealthCardHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCardHelpers.swift; sourceTree = "<group>"; };
+		9252786D3013368000D53B2B /* HealthGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthGridView.swift; sourceTree = "<group>"; };
+		9252786E3013368000D53B2B /* MiniBarsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniBarsView.swift; sourceTree = "<group>"; };
+		9252786F3013368000D53B2B /* RangeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RangeView.swift; sourceTree = "<group>"; };
+		925278703013368000D53B2B /* SleepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepView.swift; sourceTree = "<group>"; };
+		925278713013368000D53B2B /* TrainingAssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingAssessmentView.swift; sourceTree = "<group>"; };
+		925278723013368000D53B2B /* TrainingLoadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingLoadView.swift; sourceTree = "<group>"; };
+		925278733013368000D53B2B /* TrendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendView.swift; sourceTree = "<group>"; };
+		925278743013368000D53B2B /* WeeklyPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyPlanView.swift; sourceTree = "<group>"; };
 		92E93E11300F51B3000DD533 /* HealthCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCard.swift; sourceTree = "<group>"; };
 		92E93E1F300F51D1000DD533 /* ExplorePlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorePlaceholderView.swift; sourceTree = "<group>"; };
 		92E93E20300F51D1000DD533 /* RecordsPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordsPlaceholderView.swift; sourceTree = "<group>"; };
@@ -92,8 +116,8 @@
 		C20000000000000000000003 /* HealthDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDashboardView.swift; sourceTree = "<group>"; };
 		C20000000000000000000004 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		D20000000000000000000001 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
-		F20000000000000000000001 /* COROS-APP-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/COROS-APP-Bold.ttf"; sourceTree = "<group>"; };
-		F20000000000000000000002 /* COROS-APP-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/COROS-APP-Regular.ttf"; sourceTree = "<group>"; };
+		F20000000000000000000001 /* Fonts/COROS-APP-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/COROS-APP-Bold.ttf"; sourceTree = "<group>"; };
+		F20000000000000000000002 /* Fonts/COROS-APP-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Fonts/COROS-APP-Regular.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -111,6 +135,7 @@
 		9252785D300F557000D53B2B /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				925278753013368000D53B2B /* Visuals */,
 				9252785A300F557000D53B2B /* HeroArcView.swift */,
 				9252785B300F557000D53B2B /* HeroTopRow.swift */,
 				9252785C300F557000D53B2B /* ScenarioPickerView.swift */,
@@ -133,6 +158,25 @@
 				92527861300F557000D53B2B /* ScrollViewAccessor.swift */,
 			);
 			path = Editor;
+			sourceTree = "<group>";
+		};
+		925278753013368000D53B2B /* Visuals */ = {
+			isa = PBXGroup;
+			children = (
+				925278693013368000D53B2B /* ActivityView.swift */,
+				9252786A3013368000D53B2B /* BodyView.swift */,
+				9252786B3013368000D53B2B /* GaugeView.swift */,
+				9252786C3013368000D53B2B /* HealthCardHelpers.swift */,
+				9252786D3013368000D53B2B /* HealthGridView.swift */,
+				9252786E3013368000D53B2B /* MiniBarsView.swift */,
+				9252786F3013368000D53B2B /* RangeView.swift */,
+				925278703013368000D53B2B /* SleepView.swift */,
+				925278713013368000D53B2B /* TrainingAssessmentView.swift */,
+				925278723013368000D53B2B /* TrainingLoadView.swift */,
+				925278733013368000D53B2B /* TrendView.swift */,
+				925278743013368000D53B2B /* WeeklyPlanView.swift */,
+			);
+			path = Visuals;
 			sourceTree = "<group>";
 		};
 		A40000000000000000000001 = {
@@ -182,8 +226,8 @@
 		A40000000000000000000005 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				F20000000000000000000001 /* COROS-APP-Bold.ttf */,
-				F20000000000000000000002 /* COROS-APP-Regular.ttf */,
+				F20000000000000000000001 /* Fonts/COROS-APP-Bold.ttf */,
+				F20000000000000000000002 /* Fonts/COROS-APP-Regular.ttf */,
 				921197FA30087A90008AB802 /* watch_status.json */,
 				C20000000000000000000001 /* AppResources.swift */,
 				D20000000000000000000001 /* Localizable.xcstrings */,
@@ -314,8 +358,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F10000000000000000000001 /* COROS-APP-Bold.ttf in Resources */,
-				F10000000000000000000002 /* COROS-APP-Regular.ttf in Resources */,
+				F10000000000000000000001 /* Fonts/COROS-APP-Bold.ttf in Resources */,
+				F10000000000000000000002 /* Fonts/COROS-APP-Regular.ttf in Resources */,
 				A10000000000000000000008 /* Assets.xcassets in Resources */,
 				A10000000000000000000009 /* home.mp4 in Resources */,
 				A10000000000000000000025 /* LaunchScreen.storyboard in Resources */,
@@ -362,6 +406,18 @@
 				92E93E22300F51D1000DD533 /* ExplorePlaceholderView.swift in Sources */,
 				C10000000000000000000003 /* HealthDashboardView.swift in Sources */,
 				C10000000000000000000004 /* AccountView.swift in Sources */,
+				925278763013368000D53B2B /* RangeView.swift in Sources */,
+				925278773013368000D53B2B /* BodyView.swift in Sources */,
+				925278783013368000D53B2B /* MiniBarsView.swift in Sources */,
+				925278793013368000D53B2B /* HealthCardHelpers.swift in Sources */,
+				9252787A3013368000D53B2B /* TrendView.swift in Sources */,
+				9252787B3013368000D53B2B /* WeeklyPlanView.swift in Sources */,
+				9252787C3013368000D53B2B /* SleepView.swift in Sources */,
+				9252787D3013368000D53B2B /* ActivityView.swift in Sources */,
+				9252787E3013368000D53B2B /* TrainingLoadView.swift in Sources */,
+				9252787F3013368000D53B2B /* HealthGridView.swift in Sources */,
+				925278803013368000D53B2B /* TrainingAssessmentView.swift in Sources */,
+				925278813013368000D53B2B /* GaugeView.swift in Sources */,
 				A10000000000000000000004 /* SharedLoginAdapter.swift in Sources */,
 				A10000000000000000000005 /* LoginViewModel.swift in Sources */,
 				A10000000000000000000010 /* AuthCoordinator.swift in Sources */,
@@ -525,10 +581,7 @@
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = COROS_DEMO;
-				INFOPLIST_KEY_UIAppFonts = (
-					"COROS-APP-Bold.ttf",
-					"COROS-APP-Regular.ttf",
-				);
+				INFOPLIST_KEY_UIAppFonts = "COROS-APP-Bold.ttf COROS-APP-Regular.ttf";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = NO;
@@ -571,10 +624,7 @@
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = COROS_DEMO;
-				INFOPLIST_KEY_UIAppFonts = (
-					"COROS-APP-Bold.ttf",
-					"COROS-APP-Regular.ttf",
-				);
+				INFOPLIST_KEY_UIAppFonts = "COROS-APP-Bold.ttf COROS-APP-Regular.ttf";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = NO;

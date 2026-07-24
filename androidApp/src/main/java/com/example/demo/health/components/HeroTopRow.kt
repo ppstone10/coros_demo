@@ -105,7 +105,7 @@ fun HeroTopRow(
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Preview(showBackground = true, backgroundColor = 0xFF000000, locale = "zh")
 @Composable
 private fun HeroTopRowPreview() {
     DemoTheme {
