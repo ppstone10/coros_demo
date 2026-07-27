@@ -124,6 +124,8 @@
     <string name="health_card_weekly_plan_title">本周计划</string>
     <string name="health_data_corrupted">数据已损坏，下拉尝试重新同步</string>
     <string name="health_data_syncing">数据同步中</string>
+    <string name="health_pull_to_refresh">下拉刷新</string>
+    <string name="health_release_to_refresh">释放刷新</string>
     <string name="health_data_unavailable">健康数据暂时不可用</string>
     <string name="health_demo_date">7月15日 星期三</string>
     <string name="health_edit_cards">编辑卡片</string>

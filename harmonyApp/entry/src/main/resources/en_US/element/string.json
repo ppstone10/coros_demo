@@ -128,6 +128,8 @@
     { "name": "health_card_weekly_plan_title", "value": "Weekly Plan" },
     { "name": "health_data_corrupted", "value": "Data is corrupted. Pull down to sync again" },
     { "name": "health_data_syncing", "value": "Syncing data" },
+    { "name": "health_pull_to_refresh", "value": "Pull to refresh" },
+    { "name": "health_release_to_refresh", "value": "Release to refresh" },
     { "name": "health_data_unavailable", "value": "Health data is temporarily unavailable" },
     { "name": "health_demo_date", "value": "Wed, Jul 15" },
     { "name": "health_edit_cards", "value": "Edit Cards" },

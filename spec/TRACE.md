@@ -319,6 +319,10 @@
 | `HLTH-UI-ARCH-008` | 三端同一子模式状态驱动对齐 | `./gradlew :androidApp:assembleDebug`；代码审查 | 三端均使用枚举/密封类 + `when`/`switch` 管理子页面，不再使用 `if {} return` 或 `if/else` 条件截断 | ✅ |
 | `HLTH-UI-ARCH-009` | iOS `HealthDashboardView.swift` 按视觉种类拆分 | `xcodebuild`（待运行） | iOS `HealthDashboardView.swift`（256 行）+ `Visuals/` 11 个独立文件 | ✅（待验证） |
 | `HLTH-UI-ARCH-010` | HarmonyOS `DashboardCardComp.ets` 按视觉种类拆分 | `hvigorw assembleApp`（待运行） | HarmonyOS `DashboardCardComp.ets`（109 行）+ `visuals/` 10 个独立文件 | ✅（待验证） |
+| `HLTH-UI-ARCH-011` | Android 健康首页固定 Hero、仅主体下移，拖动提示与主体固定间距联动 | `PullToRefreshStateTest.draggingIndicatorKeepsFixedGapAndMovesWithBody` 红灯后转绿；`:androidApp:assembleDebug`、`:androidApp:lintDebug`；emulator-5554 同一手势阈值前后截图 | `indicatorTopAttachedToBody` 使用主体顶部、提示高度和当前 80dp 固定间距；Dragging/Armed 直接使用随动位置并绕过停靠插值；三态/层级/提前淡入保持 | ✅ |
+| `HLTH-UI-ARCH-012` | Android 达阈值后主体固定吸附，刷新与复位仍保持提示固定间距，4460ms Lottie 同步 | `PullToRefreshStateTest.refreshAndResetKeepTheSameBodyAttachment` 红灯后转绿；`:androidApp:assembleDebug`、`:androidApp:lintDebug`；emulator-5554 阈值保持态与松手同步态截图 | `indicatorTopForPhase` 将五个阶段统一映射为 `bodyTop - indicatorHeight - 80dp`，主体吸附到当前 34dp，删除刷新停靠插值与复位额外上移 | ✅ |
+| `HLTH-UI-ARCH-013` | iOS/HarmonyOS 对齐 Android 最终分层下拉刷新与 `80/34/80/0.4/300/4460` 视觉参数 | 五态/参数静态检查由无匹配红灯转绿；`xcodebuild ... -scheme IOSDemo ... build`；HarmonyOS `hvigorw assembleApp --no-daemon`；Android 基准测试/构建/Lint 回归 | iOS `HealthDashboardView` + `ScrollViewPanObserver`；HarmonyOS `PullToRefreshState.ets` + `SignedInPage.HealthDashboard`；三端中英刷新文案与资源清单同步 | ✅（编译与静态验证；双端交互截图待设备人工复核） |
+| `HLTH-UI-ARCH-014` | HarmonyOS 刷新阈值与主体停留高度独立可调 | `.refreshOffset(PULL_REFRESH_HOLD_OFFSET)`、`.pullToRefresh(false)`、手动释放资格静态检查由无匹配红灯转绿；HarmonyOS `hvigorw assembleApp --no-daemon` | `SignedInPage.handleRefreshOffset/finishRefreshGesture/beginHarmonyRefresh`；有效 `refreshOffset` 使用停留高度，80 阈值由页面独立判定 | ✅ |
 
 ---
 

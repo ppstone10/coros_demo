@@ -51,7 +51,9 @@ final class HealthDashboardViewModel: ObservableObject {
         guard !isLoading else { return }
         syncCycle += 1
         isLoading = true
-        try? await Task.sleep(nanoseconds: 4_460_000_000)
+        try? await Task.sleep(
+            nanoseconds: HealthPullRefreshConfiguration.syncingDurationNanoseconds
+        )
         adapter.refreshHealth()
         apply(adapter.healthState())
         if let effect = adapter.consumeHealthEffect() {

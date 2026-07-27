@@ -1,6 +1,43 @@
 import SwiftUI
 import UIKit
 
+enum HealthPullRefreshPhase {
+    case idle
+    case dragging
+    case armed
+    case refreshing
+    case resetting
+}
+
+enum HealthPullRefreshConfiguration {
+    static let refreshThreshold: CGFloat = 80
+    static let refreshHoldOffset: CGFloat = 44
+    static let maxPullOffset: CGFloat = 180
+    static let indicatorBodyGap: CGFloat = 80
+    static let pullResistance: CGFloat = 0.4
+    static let settleDuration: Double = 0.3
+    static let settleDurationNanoseconds: UInt64 = 300_000_000
+    static let syncingDurationNanoseconds: UInt64 = 4_460_000_000
+}
+
+func healthPullRefreshPhase(
+    offset: CGFloat,
+    threshold: CGFloat = HealthPullRefreshConfiguration.refreshThreshold
+) -> HealthPullRefreshPhase {
+    if offset <= 0 {
+        return .idle
+    }
+    return offset >= threshold ? .armed : .dragging
+}
+
+func healthRefreshIndicatorTop(
+    bodyTop: CGFloat,
+    indicatorHeight: CGFloat,
+    fixedGap: CGFloat = HealthPullRefreshConfiguration.indicatorBodyGap
+) -> CGFloat {
+    bodyTop - indicatorHeight - fixedGap
+}
+
 struct ScrollViewPanObserver: UIViewRepresentable {
     let isRefreshing: Bool
     let onPullChanged: (CGFloat) -> Void
@@ -29,6 +66,7 @@ struct ScrollViewPanObserver: UIViewRepresentable {
         var onPullChanged: ((CGFloat) -> Void)?
         var onPullEnded: ((CGFloat, Bool) -> Void)?
         private var gestureBeganAtTop = false
+        private var originalBounces: Bool?
 
         override func didMoveToWindow() {
             super.didMoveToWindow()
@@ -43,6 +81,8 @@ struct ScrollViewPanObserver: UIViewRepresentable {
             while let view = ancestor {
                 if let scrollView = view as? UIScrollView {
                     observedScrollView = scrollView
+                    originalBounces = scrollView.bounces
+                    scrollView.bounces = false
                     scrollView.panGestureRecognizer.addTarget(self, action: #selector(handlePan(_:)))
                     return
                 }
@@ -73,6 +113,9 @@ struct ScrollViewPanObserver: UIViewRepresentable {
 
         deinit {
             observedScrollView?.panGestureRecognizer.removeTarget(self, action: #selector(handlePan(_:)))
+            if let originalBounces {
+                observedScrollView?.bounces = originalBounces
+            }
         }
     }
 }

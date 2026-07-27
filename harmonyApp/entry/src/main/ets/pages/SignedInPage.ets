@@ -27,6 +27,16 @@ import { BottomNavBarComp } from './BottomNavBarComp';
 import { CardEditorComp } from '../health/editor/CardEditorComp';
 import { MetricComp } from '../health/components/MetricComp';
 import { DashboardCardComp } from '../health/components/DashboardCardComp';
+import {
+  HealthPullRefreshPhase,
+  PULL_REFRESH_HOLD_OFFSET,
+  PULL_REFRESH_RESISTANCE,
+  PULL_REFRESH_SETTLE_DURATION,
+  PULL_REFRESH_SYNC_DURATION,
+  PULL_REFRESH_THRESHOLD,
+  pullRefreshIndicatorTop,
+  pullRefreshPhaseForOffset
+} from '../health/components/PullToRefreshState';
 
 const PAGE_MAIN: string = 'main';
 const PAGE_DETAIL: string = 'detail';
@@ -43,6 +53,12 @@ struct SignedInPage {
   @State detailCardId: string = '';
   @State refreshing: boolean = false;
   @State dragOffset: number = 0;
+  @State refreshPhase: HealthPullRefreshPhase = HealthPullRefreshPhase.Idle;
+  @State healthHeroHeight: number = 0;
+  @State refreshIndicatorHeight: number = 0;
+  private refreshGestureActive: boolean = false;
+  private nativeRefreshDragging: boolean = false;
+  private releaseShouldRefresh: boolean = false;
   private isAtScrollTop: boolean = true;
   @State showDeleteDialog: boolean = false;
   @State localError: string = '';
@@ -176,57 +192,192 @@ struct SignedInPage {
 
   @Builder
   HealthDashboard() {
-    Column() {
-      HeroTopRowComp({
-        dateLabel: this.healthVM.healthDateLabel,
-        isSyncing: this.refreshing,
-        onTap: () => { this.selectedTab = 3; this.syncState(); },
-        onLongPress: () => { this.currentPage = PAGE_SCENARIO_PICKER; }
-      })
-      Refresh({ refreshing: $$this.refreshing }) {
-        Scroll() {
-          Column() {
-            if (this.healthVM.healthDataCorrupted) {
-              Text($r('app.string.health_data_corrupted'))
-                .fontSize(AppTypography.SUPPORTING).fontColor(AppColors.MUTED).textAlign(TextAlign.Center)
-                .width('100%').height(360).padding({ left: 20, right: 20 })
-            } else {
-              Column() {
-                this.ArcMetrics();
-              }
-              .id(`arc_${this.healthVM.dashboardVersion}`)
-              ForEach(this.healthVM.healthCards, (card: HealthCardModel) => {
-                DashboardCardComp({
-                  card: card,
-                  onTap: () => { this.detailCardId = card.id; this.currentPage = PAGE_DETAIL; }
-                })
-              }, (card: HealthCardModel) => `${card.id}_v${this.healthVM.dashboardVersion}`)
+    Stack({ alignContent: Alignment.Top }) {
+      Column() {
+        HeroTopRowComp({
+          dateLabel: this.healthVM.healthDateLabel,
+          isSyncing: this.refreshing,
+          onTap: () => { this.selectedTab = 3; this.syncState(); },
+          onLongPress: () => { this.currentPage = PAGE_SCENARIO_PICKER; }
+        })
+          .onAreaChange((_oldValue: Area, newValue: Area) => {
+            this.healthHeroHeight = this.lengthValue(newValue.height);
+          })
+        Refresh({
+          refreshing: $$this.refreshing,
+          builder: this.EmptyRefreshIndicator
+        }) {
+          Scroll() {
+            Column() {
+              if (this.healthVM.healthDataCorrupted) {
+                Text($r('app.string.health_data_corrupted'))
+                  .fontSize(AppTypography.SUPPORTING).fontColor(AppColors.MUTED).textAlign(TextAlign.Center)
+                  .width('100%').height(360).padding({ left: 20, right: 20 })
+              } else {
+                Column() {
+                  this.ArcMetrics();
+                }
+                .id(`arc_${this.healthVM.dashboardVersion}`)
+                ForEach(this.healthVM.healthCards, (card: HealthCardModel) => {
+                  DashboardCardComp({
+                    card: card,
+                    onTap: () => { this.detailCardId = card.id; this.currentPage = PAGE_DETAIL; }
+                  })
+                }, (card: HealthCardModel) => `${card.id}_v${this.healthVM.dashboardVersion}`)
 
-              Text($r('app.string.health_edit_cards'))
-                .fontSize(AppTypography.LABEL)
-                .fontColor(AppColors.HEALTH_EDIT_TEXT)
-                .padding({ left: AppSpacing.ACTION_HORIZONTAL, right: AppSpacing.ACTION_HORIZONTAL,
-                  top: AppSpacing.MEDIUM, bottom: AppSpacing.MEDIUM })
-                .backgroundColor(AppColors.HEALTH_CARD)
-                .borderRadius(22)
-                .margin({ top: AppSpacing.LARGE, bottom: 42 })
-                .onClick(() => { this.currentPage = PAGE_EDITOR; })
+                Text($r('app.string.health_edit_cards'))
+                  .fontSize(AppTypography.LABEL)
+                  .fontColor(AppColors.HEALTH_EDIT_TEXT)
+                  .padding({ left: AppSpacing.ACTION_HORIZONTAL, right: AppSpacing.ACTION_HORIZONTAL,
+                    top: AppSpacing.MEDIUM, bottom: AppSpacing.MEDIUM })
+                  .backgroundColor(AppColors.HEALTH_CARD)
+                  .borderRadius(22)
+                  .margin({ top: AppSpacing.LARGE, bottom: 42 })
+                  .onClick(() => { this.currentPage = PAGE_EDITOR; })
+              }
             }
+            .width('100%')
+            .alignItems(HorizontalAlign.Center)
           }
-          .width('100%')
-          .alignItems(HorizontalAlign.Center)
+          .scrollBar(BarState.Off)
+          .id(`scrollData_${this.healthVM.dashboardVersion}`)
         }
-        .scrollBar(BarState.Off)
-        .id(`scrollData_${this.healthVM.dashboardVersion}`)
+        .layoutWeight(1)
+        .refreshOffset(PULL_REFRESH_HOLD_OFFSET)
+        .pullToRefresh(false)
+        .pullDownRatio(PULL_REFRESH_RESISTANCE)
+        .onOffsetChange((offset: number) => {
+          this.handleRefreshOffset(offset);
+        })
+        .onStateChange((status: RefreshStatus) => {
+          this.updateRefreshPhase(status);
+        })
       }
-      .layoutWeight(1)
-      .onRefreshing(() => {
-        this.refreshing = true;
-        setTimeout(() => { this.performRefresh(); }, 4460);
-      })
+      .width('100%')
+      .height('100%')
+
+      if (this.refreshPhase !== HealthPullRefreshPhase.Idle) {
+        Row({ space: 8 }) {
+          LoadingProgress()
+            .width(16)
+            .height(16)
+            .color(AppColors.STEPS)
+            .rotate({
+              angle: this.refreshPhase === HealthPullRefreshPhase.Dragging ||
+                this.refreshPhase === HealthPullRefreshPhase.Armed ?
+                this.pullRefreshProgress() * 45 : 0
+            })
+          Text(this.refreshPrompt())
+            .fontSize(AppTypography.SUPPORTING)
+            .fontColor(AppColors.MUTED)
+        }
+        .onAreaChange((_oldValue: Area, newValue: Area) => {
+          this.refreshIndicatorHeight = this.lengthValue(newValue.height);
+        })
+        .translate({
+          y: pullRefreshIndicatorTop(
+            this.healthHeroHeight + this.dragOffset,
+            this.refreshIndicatorHeight
+          )
+        })
+        .opacity(this.refreshIndicatorOpacity())
+        .scale({
+          x: 0.94 + 0.06 * this.refreshIndicatorOpacity(),
+          y: 0.94 + 0.06 * this.refreshIndicatorOpacity()
+        })
+        .zIndex(4)
+      }
     }
     .width('100%')
     .layoutWeight(1)
+  }
+
+  @Builder
+  EmptyRefreshIndicator() {
+    Blank().width(0).height(0)
+  }
+
+  private updateRefreshPhase(status: RefreshStatus): void {
+    if (status === RefreshStatus.Drag || status === RefreshStatus.OverDrag) {
+      this.nativeRefreshDragging = true;
+      this.refreshGestureActive = true;
+    } else if (status === RefreshStatus.Refresh) {
+      this.nativeRefreshDragging = false;
+      this.refreshPhase = HealthPullRefreshPhase.Refreshing;
+    } else if (status === RefreshStatus.Done) {
+      this.nativeRefreshDragging = false;
+      this.refreshPhase = HealthPullRefreshPhase.Resetting;
+    } else if (status === RefreshStatus.Inactive) {
+      this.nativeRefreshDragging = false;
+      if (this.refreshGestureActive && !this.refreshing) {
+        this.finishRefreshGesture();
+      }
+    }
+  }
+
+  private handleRefreshOffset(offset: number): void {
+    this.dragOffset = Math.max(0, offset);
+    if (this.refreshing) {
+      this.refreshPhase = HealthPullRefreshPhase.Refreshing;
+      return;
+    }
+    if (this.nativeRefreshDragging && this.dragOffset > 0) {
+      this.refreshGestureActive = true;
+      this.releaseShouldRefresh = this.dragOffset >= PULL_REFRESH_THRESHOLD;
+      this.refreshPhase = pullRefreshPhaseForOffset(this.dragOffset);
+    }
+  }
+
+  private finishRefreshGesture(): void {
+    const shouldRefresh: boolean = this.releaseShouldRefresh;
+    this.refreshGestureActive = false;
+    this.releaseShouldRefresh = false;
+    if (shouldRefresh) {
+      this.beginHarmonyRefresh();
+    } else {
+      this.beginHarmonyReset();
+    }
+  }
+
+  private beginHarmonyRefresh(): void {
+    this.refreshing = true;
+    this.refreshPhase = HealthPullRefreshPhase.Refreshing;
+    setTimeout(() => { this.performRefresh(); }, PULL_REFRESH_SYNC_DURATION);
+  }
+
+  private beginHarmonyReset(): void {
+    this.refreshPhase = HealthPullRefreshPhase.Resetting;
+    setTimeout(() => {
+      if (!this.refreshing) {
+        this.dragOffset = 0;
+        this.refreshPhase = HealthPullRefreshPhase.Idle;
+      }
+    }, PULL_REFRESH_SETTLE_DURATION);
+  }
+
+  private pullRefreshProgress(): number {
+    return Math.max(0, Math.min(1, this.dragOffset / PULL_REFRESH_THRESHOLD));
+  }
+
+  private refreshIndicatorOpacity(): number {
+    if (this.refreshPhase === HealthPullRefreshPhase.Idle) return 0;
+    if (this.refreshPhase === HealthPullRefreshPhase.Dragging) {
+      return Math.min(1, this.pullRefreshProgress() / 0.4);
+    }
+    if (this.refreshPhase === HealthPullRefreshPhase.Resetting) {
+      return Math.max(0, Math.min(1, this.dragOffset / PULL_REFRESH_HOLD_OFFSET));
+    }
+    return 1;
+  }
+
+  private refreshPrompt(): ResourceStr {
+    if (this.refreshPhase === HealthPullRefreshPhase.Dragging) {
+      return $r('app.string.health_pull_to_refresh');
+    }
+    if (this.refreshPhase === HealthPullRefreshPhase.Armed) {
+      return $r('app.string.health_release_to_refresh');
+    }
+    return $r('app.string.health_data_syncing');
   }
 
   @Builder
@@ -338,7 +489,14 @@ struct SignedInPage {
     if (!this.healthVM.healthDataCorrupted) {
       saveStoreSnapshot();
     }
+    this.refreshPhase = HealthPullRefreshPhase.Resetting;
     this.refreshing = false;
+    setTimeout(() => {
+      if (!this.refreshing) {
+        this.dragOffset = 0;
+        this.refreshPhase = HealthPullRefreshPhase.Idle;
+      }
+    }, PULL_REFRESH_SETTLE_DURATION);
   }
 
   private confirmDeleteAccount(): void {
@@ -379,5 +537,14 @@ struct SignedInPage {
       case 'JP': return getContext(this).resourceManager.getStringSync($r('app.string.common_japan').id);
       default: return getContext(this).resourceManager.getStringSync($r('app.string.common_china').id);
     }
+  }
+
+  private lengthValue(value: Length | undefined): number {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      let parsed: number = parseFloat(value);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
   }
 }

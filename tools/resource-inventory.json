@@ -152,6 +152,8 @@
     "health_minimum_cards",
     "health_more_daily_data",
     "health_pending_feature",
+    "health_pull_to_refresh",
+    "health_release_to_refresh",
     "health_remove",
     "health_restore_defaults",
     "health_scenario_abnormal",

@@ -71,6 +71,50 @@
 - Then：Android 抽取为 `Modifier.pullToRefresh(isRefreshing, onRefresh, onOffsetChanged)` 扩展，iOS 将 `ScrollViewPanObserver` 抽取为独立 `PullToRefreshModifier.swift` 文件，HarmonyOS 保持已有原生 `Refresh` 不变
 - 回退：恢复内联实现
 
+### `HLTH-UI-ARCH-011`：Android 健康首页分层下拉刷新
+
+- Given：Android 健康首页由固定的 `HeroTopRow` 与可滚动健康数据主体组成
+- When：用户从列表顶部开始下拉
+- Then：页面根节点使用覆盖全页的 `Box`；`HeroTopRow` 保持固定，只有包含 `ArcAndMetricsSection`、全部 `DashboardCard`、编辑入口和空/异常态的 `LazyColumn` 按 `pullOffset` 下移
+- And：刷新提示是根 `Box` 的独立覆盖层，不进入 `LazyColumn`、不占普通布局空间；`Dragging`、`Armed`、`Refreshing`、`Resetting` 时提示底部和移动主体顶部始终保持固定 `indicatorBodyGap`，因此主体每移动 1px，提示也同步移动 1px
+- And：提示从 Hero 覆盖区域内随主体下滑出现，并按下拉进度改变透明度和轻微缩放；提示最迟在刷新阈值约 40% 的拉动距离达到完整不透明，避免小幅下拉时肉眼不可见
+- And：提示的 `Row` 和文字始终保持水平，不得对整行应用 `rotationZ`；若保留拖动旋转反馈，只允许刷新图标自身轻微旋转
+- And：未达到阈值显示“下拉刷新”，达到阈值显示“释放刷新”；松手未达阈值时进入复位并在约 300ms 内让主体归零、提示隐藏，不调用刷新
+- And：`Dragging`、`Armed`、`Refreshing` 三个可见阶段的提示层级必须始终高于 `HeroTopRow` 的不透明背景；不得只在刷新后提高 `zIndex`，导致松手前的“下拉刷新/释放刷新”被遮挡
+- 异常/边界：手势仅在列表已无法继续向下消费且刷新状态空闲时累计；刷新或复位期间忽略新的下拉累计
+
+### `HLTH-UI-ARCH-012`：Android 刷新吸附、Lottie 同步与连续复位
+
+- Given：下拉距离已经达到刷新阈值
+- When：用户松手
+- Then：状态依次表达 `Idle`、`Dragging`、`Armed`、`Refreshing`、`Resetting`；主体先动画吸附到统一的 `refreshHoldOffset`，不得停在松手时的随机位置
+- And：主体吸附过程中提示继续保持固定间距并同步移动；进入 `Refreshing` 后不得再停靠到独立 Hero 坐标，提示在固定间距位置显示“数据同步中”
+- And：刷新提示继续使用现有 16dp、2dp 描边的 `CircularProgressIndicator`、8dp 图文间距、`health_data_syncing` 文案及现有颜色字号；右上角 `watch_status` Lottie 与 `Refreshing` 同步播放固定 4460ms，期间进度图标持续旋转，动画结束后调用 `healthViewModel.refresh()`
+- When：刷新调用完成
+- Then：进入 `Resetting`，提示只按复位进度淡出并与主体等距上移，不得叠加独立向上退出位移；主体以约 300ms 连续动画回到原位，最后回到 `Idle`
+- 异常/边界：若“数据同步中”在当前吸附高度内空间不足，只增大统一 `indicatorBodyGap`，不得为刷新态建立另一套位置；Android 本轮先行，iOS/HarmonyOS 等价自定义分层与五态动画记为跨端债务，不宣称三端同步完成
+
+### `HLTH-UI-ARCH-013`：iOS/HarmonyOS 对齐 Android 分层下拉刷新
+
+- Given：Android 已由用户验收当前刷新参数和视觉效果，最终视觉基准为刷新阈值 `80`、主体刷新停留高度 `34`、提示与主体固定间距 `80`、阻尼系数 `0.4`、吸附/复位时长约 `300ms`
+- When：iOS 与 HarmonyOS 健康首页同步实现
+- Then：三端都使用覆盖整个健康页面的根层，固定 `HeroTopRow`，只有包含顶部圆弧指标、全部健康卡片和编辑入口的滚动主体随下拉偏移移动
+- And：三端状态语义一致为 `Idle/Dragging/Armed/Refreshing/Resetting`；未达 `80` 显示“下拉刷新”，达到阈值未松手显示“释放刷新”，触发后显示“数据同步中”
+- And：提示为滚动主体之外的独立水平覆盖层；所有非空闲阶段的位置都由 `bodyTop - indicatorHeight - 80` 计算，吸附到 `34` 和复位到 `0` 时仍与主体同步移动，不得建立刷新态独立停靠坐标
+- And：提示使用平台原生圆形进度图标、现有健康页颜色与 Supporting 字号、16 尺寸和 8 图文间距；拖动阶段可以只旋转图标，不得旋转整行文字；透明度在阈值 40% 前完成淡入
+- And：达到阈值松手后，主体约 `300ms` 吸附到 `34`；刷新状态持续 `4460ms` 并同步播放右上角手表 Lottie，随后调用平台现有 `refresh`，再进入约 `300ms` 的等距复位
+- And：未达到阈值松手不刷新，主体和提示连续复位；刷新/复位期间忽略新的下拉手势
+- 异常/边界：iOS 继续观察原生 `UIScrollView.panGestureRecognizer`，不得叠加冲突手势；HarmonyOS 使用原生 `Refresh` 的状态、偏移回调和自定义覆盖提示，不恢复默认刷新提示。项目兼容 API 12，不能调用 API 20 才提供的 `maxPullDownDistance`；HarmonyOS 极限拉距沿用原生安全边界，但阈值、阻尼、停留位置和提示等距规则必须与 Android 一致
+
+### `HLTH-UI-ARCH-014`：HarmonyOS 刷新阈值与停留高度独立可调
+
+- Given：HarmonyOS API 12 的废弃 `RefreshOptions.offset` 不再控制实际刷新停留位置，而 `.refreshOffset` 同时参与原生触发和停留
+- When：产品修改 `PULL_REFRESH_HOLD_OFFSET`
+- Then：HarmonyOS 必须把有效 `.refreshOffset` 绑定到 `PULL_REFRESH_HOLD_OFFSET`，修改 `34 → 4` 时刷新主体停留高度应同步改变
+- And：`PULL_REFRESH_THRESHOLD = 80` 继续独立决定是否刷新；原生自动触发关闭，由 `onOffsetChange` 记录当前释放资格，并在本次下拉结束时决定触发刷新或复位
+- And：未达到阈值不得刷新；达到阈值后再回推到阈值以下并松手也不得刷新；刷新与复位期间提示继续使用真实主体偏移保持固定间距
+- 异常/边界：程序化进入 `refreshing` 后只启动一次 4460ms 定时刷新，不得与 `onRefreshing` 重复调度
+
 ### `HLTH-UI-ARCH-004`：创建独立 HealthDashboardViewModel
 
 - Given：健康模块数据加载挂在 `LoginViewModel` 上（`loadHealthDashboard()`、`refreshHealthDashboard()`、`saveHealthCardConfiguration()`）
@@ -180,6 +224,10 @@
 | `HLTH-UI-ARCH-008` | 代码审查：三端都不再使用早期返回截断主页面渲染 | 各端主 Screen 文件顶部无 `if (condition) { subPage; return }` 模式 |
 | `HLTH-UI-ARCH-009` | `xcodebuild` 构建通过；截图人工对比视觉无差异 | iOS 构建成功，卡片渲染与拆分前一致 |
 | `HLTH-UI-ARCH-010` | `hvigorw assembleApp` 构建通过；截图人工对比视觉无差异 | HarmonyOS 构建成功，卡片渲染与拆分前一致 |
+| `HLTH-UI-ARCH-011` | `PullToRefreshStateTest`；Android 构建；人工拖动验收 | 阈值前显示“下拉刷新”、阈值后未松手显示“释放刷新”，三阶段提示均位于 Hero 之上 |
+| `HLTH-UI-ARCH-012` | `PullToRefreshStateTest`；Android 构建；人工观察 4460ms Lottie/提示随主体吸附/复位 | 达阈值后主体固定吸附，提示全程保持统一间距，同步刷新并约 300ms 连续复位 |
+| `HLTH-UI-ARCH-013` | iOS/HarmonyOS 构建；跨端刷新状态与参数静态门禁；人工拖动验收 | 两端与 Android 使用 `80/34/80/0.4/300/4460` 视觉基准，Hero 固定、主体独立移动、三态提示全程等距 |
+| `HLTH-UI-ARCH-014` | HarmonyOS 静态门禁；`hvigorw assembleApp`；人工修改 `PULL_REFRESH_HOLD_OFFSET` 对比 | `.refreshOffset` 使用停留高度，阈值由页面独立判断，修改停留参数能直接改变刷新主体位置 |
 
 ## 验收标准
 

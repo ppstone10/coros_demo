@@ -131,6 +131,8 @@
     { "name": "health_card_weekly_plan_title", "value": "本周计划" },
     { "name": "health_data_corrupted", "value": "数据已损坏，下拉尝试重新同步" },
     { "name": "health_data_syncing", "value": "数据同步中" },
+    { "name": "health_pull_to_refresh", "value": "下拉刷新" },
+    { "name": "health_release_to_refresh", "value": "释放刷新" },
     { "name": "health_data_unavailable", "value": "健康数据暂时不可用" },
     { "name": "health_demo_date", "value": "7月15日 星期三" },
     { "name": "health_edit_cards", "value": "编辑卡片" },

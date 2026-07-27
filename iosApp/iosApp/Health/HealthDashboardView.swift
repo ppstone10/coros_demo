@@ -12,6 +12,7 @@ enum DashboardPage: Equatable {
 struct DashboardScreenState {
     var page: DashboardPage = .main
     var dragOffset: CGFloat = 0
+    var refreshPhase: HealthPullRefreshPhase = .idle
 }
 
 struct HealthDashboardView: View {
@@ -20,6 +21,9 @@ struct HealthDashboardView: View {
     @EnvironmentObject private var languageStore: AppLanguageStore
     @StateObject private var viewModel = HealthDashboardViewModel()
     @State private var screenState = DashboardScreenState()
+    @State private var heroHeight: CGFloat = 0
+    @State private var refreshIndicatorHeight: CGFloat = 0
+    @State private var refreshTask: Task<Void, Never>?
     var body: some View {
         Group {
             switch screenState.page {
@@ -44,82 +48,233 @@ struct HealthDashboardView: View {
     }
 
     private var mainDashboard: some View {
-        VStack(spacing: 0) {
-            HeroTopRow(dateLabel: viewModel.dateLabel, isSyncing: viewModel.isLoading,
-                       syncCycle: viewModel.syncCycle,
-                       onTapWatch: onWatchTap,
-                       onLongPressWatch: { screenState.page = .scenarioPicker })
-            ZStack(alignment: .top) {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        if viewModel.isDataCorrupted {
-                            Text(appLocalized("health_data_corrupted"))
-                                .font(.system(size: AppTypography.supporting))
-                                .foregroundStyle(AppColors.Health.muted)
-                                .multilineTextAlignment(.center)
-                                .frame(maxWidth: .infinity, minHeight: 360)
-                                .padding(.horizontal, AppSpacing.screen)
-                        } else {
-                            HeroArcView(steps: viewModel.steps, calories: viewModel.calories,
-                                        minutes: viewModel.activeMinutes)
+        ZStack(alignment: .top) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    if viewModel.isDataCorrupted {
+                        Text(appLocalized("health_data_corrupted"))
+                            .font(.system(size: AppTypography.supporting))
+                            .foregroundStyle(AppColors.Health.muted)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity, minHeight: 360)
+                            .padding(.horizontal, AppSpacing.screen)
+                    } else {
+                        HeroArcView(steps: viewModel.steps, calories: viewModel.calories,
+                                    minutes: viewModel.activeMinutes)
 
-                            ForEach(viewModel.cards) { card in
-                                Button {
-                                    screenState.page = .detail(card); isFullscreen = true
-                                } label: {
-                                    cardRow(card)
-                                }.buttonStyle(.plain)
-                                    .padding(.horizontal, AppSpacing.screen)
-                                    .padding(.vertical, AppSpacing.xSmall)
-                            }
-
+                        ForEach(viewModel.cards) { card in
                             Button {
-                                screenState.page = .editor; isFullscreen = true
+                                screenState.page = .detail(card); isFullscreen = true
                             } label: {
-                                Text(appLocalized("health_edit_cards"))
-                                    .font(.system(size: AppTypography.label))
-                                    .foregroundStyle(AppColors.Health.editText)
-                                    .padding(.horizontal, AppSpacing.actionHorizontal).padding(.vertical, AppSpacing.medium)
-                                    .background(AppColors.Health.card).clipShape(Capsule())
-                            }.buttonStyle(.plain).padding(AppSpacing.large)
+                                cardRow(card)
+                            }.buttonStyle(.plain)
+                                .padding(.horizontal, AppSpacing.screen)
+                                .padding(.vertical, AppSpacing.xSmall)
                         }
+
+                        Button {
+                            screenState.page = .editor; isFullscreen = true
+                        } label: {
+                            Text(appLocalized("health_edit_cards"))
+                                .font(.system(size: AppTypography.label))
+                                .foregroundStyle(AppColors.Health.editText)
+                                .padding(.horizontal, AppSpacing.actionHorizontal).padding(.vertical, AppSpacing.medium)
+                                .background(AppColors.Health.card).clipShape(Capsule())
+                        }.buttonStyle(.plain).padding(AppSpacing.large)
                     }
-                    .offset(y: max(0, screenState.dragOffset))
-                    .background(
-                        ScrollViewPanObserver(
-                            isRefreshing: viewModel.isLoading,
-                            onPullChanged: { distance in
-                                guard !viewModel.isLoading else { return }
-                                screenState.dragOffset = min(distance * 0.4, 250)
-                            },
-                            onPullEnded: { distance, gestureBeganAtTop in
-                                let shouldRefresh = gestureBeganAtTop && distance >= 64 && !viewModel.isLoading
-                                if shouldRefresh {
-                                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { screenState.dragOffset = 55 }
-                                    Task { await viewModel.refresh() }
-                                } else {
-                                    withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { screenState.dragOffset = 0 }
-                                }
-                            }
+                }
+                .offset(y: max(0, screenState.dragOffset))
+                .background(
+                    ScrollViewPanObserver(
+                        isRefreshing: isPullInteractionLocked,
+                        onPullChanged: updatePull,
+                        onPullEnded: endPull
+                    )
+                )
+            }
+            .padding(.top, heroHeight)
+            .scrollIndicators(.hidden)
+            .zIndex(1)
+
+            if screenState.refreshPhase != .idle {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: AppColors.Health.steps))
+                        .scaleEffect(0.8)
+                        .frame(width: 16, height: 16)
+                        .rotationEffect(.degrees(refreshIconRotation))
+                    Text(refreshPrompt)
+                        .font(.system(size: AppTypography.supporting))
+                        .foregroundColor(AppColors.Health.muted)
+                }
+                .fixedSize()
+                .background(
+                    GeometryReader { proxy in
+                        AppColors.Core.clear.preference(
+                            key: RefreshIndicatorHeightPreferenceKey.self,
+                            value: proxy.size.height
                         )
+                    }
+                )
+                .onPreferenceChange(RefreshIndicatorHeightPreferenceKey.self) {
+                    refreshIndicatorHeight = $0
+                }
+                .offset(y: refreshIndicatorTop)
+                .opacity(refreshIndicatorOpacity)
+                .scaleEffect(0.94 + 0.06 * refreshIndicatorOpacity)
+                .zIndex(4)
+            }
+
+            HeroTopRow(
+                dateLabel: viewModel.dateLabel,
+                isSyncing: screenState.refreshPhase == .refreshing || viewModel.isLoading,
+                syncCycle: viewModel.syncCycle,
+                onTapWatch: onWatchTap,
+                onLongPressWatch: { screenState.page = .scenarioPicker }
+            )
+            .background(
+                GeometryReader { proxy in
+                    AppColors.Core.clear.preference(
+                        key: HeroHeightPreferenceKey.self,
+                        value: proxy.size.height
                     )
                 }
-                .scrollIndicators(.hidden)
-                .onChange(of: viewModel.isLoading) { _, loading in
-                    if !loading {
-                        withAnimation(.interpolatingSpring(stiffness: 300, damping: 30)) { screenState.dragOffset = 0 }
-                    }
-                }
-
-                if screenState.dragOffset > 10 || viewModel.isLoading {
-                    HStack(spacing: 8) {
-                        ProgressView().progressViewStyle(CircularProgressViewStyle(tint: AppColors.Health.steps)).scaleEffect(0.8)
-                        Text(appLocalized("health_data_syncing")).font(.system(size: AppTypography.supporting)).foregroundColor(AppColors.Health.muted)
-                    }.padding(.top, 6)
-                }
+            )
+            .onPreferenceChange(HeroHeightPreferenceKey.self) {
+                heroHeight = $0
             }
+            .zIndex(3)
         }
+        .background(AppColors.Core.black)
         .ignoresSafeArea(edges: .top)
+        .onDisappear {
+            refreshTask?.cancel()
+            refreshTask = nil
+            screenState.dragOffset = 0
+            screenState.refreshPhase = .idle
+        }
+    }
+
+    private var isPullInteractionLocked: Bool {
+        screenState.refreshPhase == .refreshing ||
+            screenState.refreshPhase == .resetting ||
+            viewModel.isLoading
+    }
+
+    private var pullProgress: CGFloat {
+        min(max(screenState.dragOffset / HealthPullRefreshConfiguration.refreshThreshold, 0), 1)
+    }
+
+    private var refreshIndicatorTop: CGFloat {
+        healthRefreshIndicatorTop(
+            bodyTop: heroHeight + screenState.dragOffset,
+            indicatorHeight: refreshIndicatorHeight
+        )
+    }
+
+    private var refreshIndicatorOpacity: CGFloat {
+        switch screenState.refreshPhase {
+        case .idle:
+            return 0
+        case .dragging:
+            return min(pullProgress / 0.4, 1)
+        case .armed, .refreshing:
+            return 1
+        case .resetting:
+            return min(
+                max(
+                    screenState.dragOffset / HealthPullRefreshConfiguration.refreshHoldOffset,
+                    0
+                ),
+                1
+            )
+        }
+    }
+
+    private var refreshIconRotation: Double {
+        switch screenState.refreshPhase {
+        case .dragging, .armed:
+            return Double(pullProgress * 45)
+        default:
+            return 0
+        }
+    }
+
+    private var refreshPrompt: String {
+        switch screenState.refreshPhase {
+        case .dragging:
+            return appLocalized("health_pull_to_refresh")
+        case .armed:
+            return appLocalized("health_release_to_refresh")
+        case .refreshing, .resetting:
+            return appLocalized("health_data_syncing")
+        case .idle:
+            return ""
+        }
+    }
+
+    private func updatePull(_ distance: CGFloat) {
+        guard !isPullInteractionLocked else { return }
+        let offset = min(
+            max(distance * HealthPullRefreshConfiguration.pullResistance, 0),
+            HealthPullRefreshConfiguration.maxPullOffset
+        )
+        screenState.dragOffset = offset
+        screenState.refreshPhase = healthPullRefreshPhase(offset: offset)
+    }
+
+    private func endPull(_: CGFloat, _ gestureBeganAtTop: Bool) {
+        guard gestureBeganAtTop, !isPullInteractionLocked else {
+            resetPullWithoutRefresh()
+            return
+        }
+        if screenState.refreshPhase == .armed {
+            beginRefresh()
+        } else {
+            resetPullWithoutRefresh()
+        }
+    }
+
+    private func beginRefresh() {
+        refreshTask?.cancel()
+        withAnimation(.easeOut(duration: HealthPullRefreshConfiguration.settleDuration)) {
+            screenState.dragOffset = HealthPullRefreshConfiguration.refreshHoldOffset
+        }
+        refreshTask = Task { @MainActor in
+            try? await Task.sleep(
+                nanoseconds: HealthPullRefreshConfiguration.settleDurationNanoseconds
+            )
+            guard !Task.isCancelled else { return }
+            screenState.refreshPhase = .refreshing
+            await viewModel.refresh()
+            guard !Task.isCancelled else { return }
+            screenState.refreshPhase = .resetting
+            withAnimation(.easeOut(duration: HealthPullRefreshConfiguration.settleDuration)) {
+                screenState.dragOffset = 0
+            }
+            try? await Task.sleep(
+                nanoseconds: HealthPullRefreshConfiguration.settleDurationNanoseconds
+            )
+            guard !Task.isCancelled else { return }
+            screenState.refreshPhase = .idle
+            refreshTask = nil
+        }
+    }
+
+    private func resetPullWithoutRefresh() {
+        refreshTask?.cancel()
+        screenState.refreshPhase = .resetting
+        withAnimation(.easeOut(duration: HealthPullRefreshConfiguration.settleDuration)) {
+            screenState.dragOffset = 0
+        }
+        refreshTask = Task { @MainActor in
+            try? await Task.sleep(
+                nanoseconds: HealthPullRefreshConfiguration.settleDurationNanoseconds
+            )
+            guard !Task.isCancelled else { return }
+            screenState.refreshPhase = .idle
+            refreshTask = nil
+        }
     }
 
     private func cardRow(_ card: HealthCard) -> some View {
@@ -154,6 +309,22 @@ struct HealthDashboardView: View {
     private func saveCards(_ value: [HealthCard]) {
         viewModel.saveCardConfiguration(value.map { $0.id })
         viewModel.load(); closeEditor()
+    }
+}
+
+private struct HeroHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+private struct RefreshIndicatorHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 

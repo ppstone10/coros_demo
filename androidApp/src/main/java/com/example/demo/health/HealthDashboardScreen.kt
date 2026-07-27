@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -25,15 +26,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.example.demo.R
 import com.example.demo.common.health.BodyManagement
 import com.example.demo.common.health.CyclingAbility
@@ -63,7 +69,9 @@ import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppSpacing
 import com.example.demo.ui.resources.AppTypography
 import com.example.demo.ui.theme.DemoTheme
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.milliseconds
 
 sealed interface DashboardPage {
@@ -98,13 +106,14 @@ fun HealthDashboardScreen(
     }
 
     val pullState = rememberPullToRefreshState()
-    pullState.ResetAnimation()
 
     LaunchedEffect(pullState.isRefreshing) {
         if (pullState.isRefreshing) {
             delay(4460L.milliseconds)
             healthViewModel.refresh()
-            pullState.isRefreshing = false
+            withContext(NonCancellable) {
+                pullState.completeRefresh()
+            }
         }
     }
     val showRefreshIndicator = state.isRefreshing || pullState.isRefreshing
@@ -141,96 +150,169 @@ fun HealthDashboardScreen(
             )
         }
         DashboardPage.Main -> {
-            Column(
-                Modifier.fillMaxSize().background(AppColors.Health.Page)
+            var heroHeightPx by remember { mutableIntStateOf(0) }
+            var refreshIndicatorHeightPx by remember { mutableIntStateOf(0) }
+            val density = LocalDensity.current
+            val heroHeight = with(density) { heroHeightPx.toDp() }
+            val indicatorBodyGapPx = with(density) {
+                PullRefreshDefaults.IndicatorBodyGap.toPx()
+            }
+            val indicatorAlphaProgress = when (pullState.phase) {
+                PullRefreshPhase.Resetting -> (
+                    pullState.pullOffset / pullState.refreshHoldOffsetPx
+                    ).coerceIn(0f, 1f)
+                else -> pullState.pullProgress
+            }
+            val indicatorAlpha = indicatorAlphaForPhase(
+                phase = pullState.phase,
+                progress = indicatorAlphaProgress
+            )
+            val indicatorTopPx = indicatorTopForPhase(
+                phase = pullState.phase,
+                bodyTop = heroHeightPx + pullState.pullOffset,
+                indicatorHeight = refreshIndicatorHeightPx.toFloat(),
+                fixedGap = indicatorBodyGapPx
+            )
+            val refreshLabel = when (promptForPullRefreshPhase(pullState.phase)) {
+                PullRefreshPrompt.Pull -> stringResource(R.string.health_pull_to_refresh)
+                PullRefreshPrompt.Release -> stringResource(R.string.health_release_to_refresh)
+                PullRefreshPrompt.Syncing -> stringResource(R.string.health_data_syncing)
+                PullRefreshPrompt.Hidden -> ""
+            }
+
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(AppColors.Health.Page)
+                    .pullToRefresh(pullState)
             ) {
-                HeroTopRow(
-                    dateLabel = state.uiState?.dateLabel?.let { localizedHealthText(it) }.orEmpty(),
-                    isSyncing = showRefreshIndicator,
-                    onClickWatch = onWatchClick,
-                    onLongPressWatch = {
-                        screenState = screenState.copy(page = DashboardPage.ScenarioPicker)
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(top = heroHeight)
+                        .pullTranslation(pullState)
+                        .zIndex(1f)
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        state = rememberLazyListState()
+                    ) {
+                        when {
+                            isAuthError -> {
+                                item {
+                                    Box(Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
+                                        Text(stringResource(R.string.health_data_unavailable), color = AppColors.Core.White)
+                                    }
+                                }
+                            }
+                            isCorrupted -> {
+                                item { Spacer(Modifier.height(46.dp)) }
+                                item {
+                                    Column(
+                                        Modifier.fillMaxWidth().padding(horizontal = AppSpacing.Page),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Spacer(Modifier.height(80.dp))
+                                        Text(stringResource(R.string.health_data_corrupted), color = AppColors.Health.Risk, fontSize = AppTypography.Action)
+                                    }
+                                }
+                            }
+                            state.uiState != null -> {
+                                item { Spacer(Modifier.height(8.dp)) }
+                                item { ArcAndMetricsSection(state.uiState!!) }
+                                itemsIndexed(
+                                    items = state.uiState!!.cards,
+                                    key = { _, card -> card.type.name }
+                                ) { _, card ->
+                                    DashboardCard(card) {
+                                        screenState = screenState.copy(page = DashboardPage.Detail(card))
+                                        onFullscreenChange(true)
+                                    }
+                                }
+                                item {
+                                    Text(
+                                        text = stringResource(R.string.health_edit_cards),
+                                        color = AppColors.Health.EditText,
+                                        fontSize = AppTypography.Label,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(AppSpacing.Large)
+                                            .clip(RoundedCornerShape(22.dp))
+                                            .background(AppColors.Health.Card)
+                                            .clickable {
+                                                screenState = screenState.copy(page = DashboardPage.Editor)
+                                                onFullscreenChange(true)
+                                            }
+                                            .padding(horizontal = AppSpacing.ActionHorizontal, vertical = AppSpacing.Medium)
+                                    )
+                                }
+                                item { Spacer(Modifier.height(24.dp)) }
+                            }
+                        }
                     }
-                )
+                }
+
+                if (pullState.phase != PullRefreshPhase.Idle) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .widthIn(max = PullRefreshDefaults.IndicatorMaxWidth)
+                            .onGloballyPositioned {
+                                refreshIndicatorHeightPx = it.size.height
+                            }
+                            .graphicsLayer {
+                                translationY = indicatorTopPx
+                                alpha = indicatorAlpha
+                                val scale = 0.94f + 0.06f * indicatorAlpha
+                                scaleX = scale
+                                scaleY = scale
+                            }
+                            .zIndex(indicatorZIndexForPhase(pullState.phase)),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .graphicsLayer {
+                                    rotationZ = if (
+                                        pullState.phase == PullRefreshPhase.Dragging ||
+                                        pullState.phase == PullRefreshPhase.Armed
+                                    ) {
+                                        pullIndicatorIconRotation(pullState.pullProgress)
+                                    } else {
+                                        0f
+                                    }
+                                },
+                            color = AppColors.Health.Steps,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            refreshLabel,
+                            color = AppColors.Health.Muted,
+                            fontSize = AppTypography.Supporting
+                        )
+                    }
+                }
 
                 Box(
-                    modifier = Modifier.weight(1f).fillMaxWidth().pullToRefresh(pullState)
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .onGloballyPositioned { heroHeightPx = it.size.height }
+                        .zIndex(3f)
                 ) {
-                    Box(Modifier.fillMaxSize()) {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize().pullTranslation(pullState),
-                            state = rememberLazyListState()
-                        ) {
-                            when {
-                                isAuthError -> {
-                                    item {
-                                        Box(Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
-                                            Text(stringResource(R.string.health_data_unavailable), color = AppColors.Core.White)
-                                        }
-                                    }
-                                }
-                                isCorrupted -> {
-                                    item { Spacer(Modifier.height(46.dp)) }
-                                    item {
-                                        Column(
-                                            Modifier.fillMaxWidth().padding(horizontal = AppSpacing.Page),
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            Spacer(Modifier.height(80.dp))
-                                            Text(stringResource(R.string.health_data_corrupted), color = AppColors.Health.Risk, fontSize = AppTypography.Action)
-                                        }
-                                    }
-                                }
-                                state.uiState != null -> {
-                                    item { Spacer(Modifier.height(8.dp)) }
-                                    item { ArcAndMetricsSection(state.uiState!!) }
-                                    itemsIndexed(
-                                        items = state.uiState!!.cards,
-                                        key = { _, card -> card.type.name }
-                                    ) { _, card ->
-                                        DashboardCard(card) {
-                                            screenState = screenState.copy(page = DashboardPage.Detail(card))
-                                            onFullscreenChange(true)
-                                        }
-                                    }
-                                    item {
-                                        Text(
-                                            text = stringResource(R.string.health_edit_cards),
-                                            color = AppColors.Health.EditText,
-                                            fontSize = AppTypography.Label,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(AppSpacing.Large)
-                                                .clip(RoundedCornerShape(22.dp))
-                                                .background(AppColors.Health.Card)
-                                                .clickable {
-                                                    screenState = screenState.copy(page = DashboardPage.Editor)
-                                                    onFullscreenChange(true)
-                                                }
-                                                .padding(horizontal = AppSpacing.ActionHorizontal, vertical = AppSpacing.Medium)
-                                        )
-                                    }
-                                    item { Spacer(Modifier.height(24.dp)) }
-                                }
-                            }
+                    HeroTopRow(
+                        dateLabel = state.uiState?.dateLabel?.let {
+                            localizedHealthText(it)
+                        }.orEmpty(),
+                        isSyncing = showRefreshIndicator,
+                        onClickWatch = onWatchClick,
+                        onLongPressWatch = {
+                            screenState = screenState.copy(page = DashboardPage.ScenarioPicker)
                         }
-
-                        if (showRefreshIndicator) {
-                            Row(
-                                Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top = AppSpacing.Page),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    color = AppColors.Health.Steps,
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(stringResource(R.string.health_data_syncing), color = AppColors.Health.Muted, fontSize = AppTypography.Supporting)
-                            }
-                        }
-                    }
+                    )
                 }
             }
         }

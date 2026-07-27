@@ -40,6 +40,13 @@
 | SwiftUI 全局本地化函数直接读取单例 Bundle 不会自动让同级页面订阅语言变化 | 提供语言切换入口的页面及同屏导航必须通过 `@EnvironmentObject` 观察并读取 `AppLanguageStore.current`，触发局部 body 重算；不要用根视图 `.id(language)` 强制重建，否则可能丢失导航或页面状态 |
 | Compose 中通过 `LocalContext.current.resources.configuration` 或 `Context.getString()` 查询资源会被新版 Lint 判为 Error | Composable 配置使用 `LocalConfiguration.current`；字符串等资源使用 `LocalResources.current`，协程副作用把 Resources 纳入 key；资源消息解析器以 `Resources` 为接收者，保证语言/Configuration 变化触发重组 |
 | Compose 调用 `stringResource(id, *emptyArray())` 仍会选择格式化重载，资源中的裸 `%` 会触发 `UnknownFormatConversionException` | 本地化解析器必须按参数是否为空分支：无参数调用 `Resources.getString(id)`，仅非空参数调用格式化重载；百分比单位资源保持字面量 `%` |
+| Compose `LaunchedEffect` 以刷新布尔值为 key，并在 effect 内切换该值后立即执行复位动画，可能因重组取消自身协程而停在复位中间 | 刷新收尾必须由稳定生命周期协程托管，或把状态切换后的有限复位段放入 `NonCancellable`；仍需保证离开页面前的长等待可以正常取消 |
+| Compose 对承载图标和文字的父 `Row` 使用 `graphicsLayer.rotationZ` 会让整组内容旋转，横排文字在拖动中变成竖排 | 父层只负责整体位移、透明度和轻微缩放；旋转反馈必须下放到图标子节点，并限制角度，文字布局始终保持水平 |
+| Compose 覆盖提示即使已组合也可能因 `zIndex` 低于带不透明背景的固定 Hero 而在拖动阶段完全不可见；线性 alpha 在高密度屏幕的小幅拉动下也可能过暗 | 所有可见刷新阶段统一高于 Hero，并将提示文案映射和层级提取为可测试纯函数；拖动提示应在阈值前较早完成淡入，不能只验证松手后的刷新态 |
+| 下拉提示需要在拖动、达阈值、刷新和复位全生命周期与主体严格等距；刷新态独立停靠或复位额外退出位移都会造成松手后距离断开 | 所有阶段统一以 `bodyTop - indicatorHeight - fixedGap` 计算提示位置，不使用任何阶段专属停靠插值；复位只随主体移动并按进度淡出 |
+| iOS 用原生 `UIScrollView` 手势读取下拉距离后再给内容施加自定义 offset，如果保留系统 bounce，会同时产生原生橡皮筋位移和自定义位移 | 自定义下拉期间由观察器关闭该 ScrollView 的 `bounces`，仅保留原生 pan 识别和滚动；观察器销毁时恢复原值 |
+| HarmonyOS API 12 的 `Refresh` 已提供状态、阈值、阻尼和 offset 回调，但可配置最大下拉距离的 `maxPullDownDistance` 从 API 20 才可用 | API 12 项目使用原生 Refresh 边界，不调用高版本 API；覆盖提示必须消费未截断的真实 `onOffsetChange`，否则极限下拉时提示会与主体失去固定间距 |
+| HarmonyOS API 12 中废弃的 `RefreshOptions.offset` 不再可靠控制刷新停留位置；直接把 `.refreshOffset` 用作 80 阈值又会让主体停留参数失效 | `.refreshOffset` 专门绑定 `PULL_REFRESH_HOLD_OFFSET`，关闭原生 `pullToRefresh`；通过状态回调锁定手势结束点，并用真实 offset 独立判断 80 阈值后程序化刷新 |
 | Compose 本地化层用 `createConfigurationContext` 覆盖 `LocalContext` 后，`rememberLauncherForActivityResult` 找不到 Activity owner 并在组合时崩溃 | 覆盖前读取 `LocalActivityResultRegistryOwner.current`，覆盖 Context 后在子树显式继续提供；预览等 owner 为空的宿主保持可组合。仅升级 `activity-compose` 不能修复，因为当前实现仍从 `LocalContext` 查找该 owner |
 | iOS KMP 导出：`AuthMode.Register` 在 Swift 中为 `AuthMode.register_`（尾随下划线） | 适配层需使用正确的导出名 |
 | HarmonyOS KNOI `@ServiceProvider` 实例模型不确定是 singleton 还是 factory | 持久化操作前需确认 service 实例一致性；`restoreStoreSnapshot` 后需同步 adapter 状态 |

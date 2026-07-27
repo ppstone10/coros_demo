@@ -124,6 +124,8 @@
     <string name="health_card_weekly_plan_title">Weekly Plan</string>
     <string name="health_data_corrupted">Data is corrupted. Pull down to sync again</string>
     <string name="health_data_syncing">Syncing data</string>
+    <string name="health_pull_to_refresh">Pull to refresh</string>
+    <string name="health_release_to_refresh">Release to refresh</string>
     <string name="health_data_unavailable">Health data is temporarily unavailable</string>
     <string name="health_demo_date">Wed, Jul 15</string>
     <string name="health_edit_cards">Edit Cards</string>
