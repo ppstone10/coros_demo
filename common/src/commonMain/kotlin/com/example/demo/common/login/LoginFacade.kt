@@ -226,7 +226,11 @@ class LoginFacade(
     }
 
     fun restoreSession() {
-        store.resumeSession()
+        store.restoreSessionOnColdStart()
+    }
+
+    fun resumeSessionInSameProcess() {
+        store.resumeSessionInSameProcess()
     }
 
     fun pauseSession() {

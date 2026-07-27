@@ -1173,28 +1173,50 @@ struct ProfileCompletionPage {
     return true;
   }
 
+  @Builder
+  ProfileEditHeader() {
+    Row() {
+      Text($r('app.string.common_back'))
+        .fontSize(34)
+        .fontColor(COROS_WHITE)
+        .width(64)
+        .onClick(() => { this.handleProfileBack(); })
+      Text($r('app.string.profile_personal_info'))
+        .fontSize(18)
+        .fontColor(COROS_WHITE)
+        .fontWeight(FontWeight.Medium)
+        .layoutWeight(1)
+        .textAlign(TextAlign.Center)
+      Text($r('app.string.common_save'))
+        .fontSize(14)
+        .fontColor(COROS_WHITE)
+        .width(64)
+        .textAlign(TextAlign.Center)
+        .padding({ top: 8, bottom: 8 })
+        .backgroundColor(this.isProfileActionEnabled() ? AppColors.ACTION : AppColors.PROFILE_SAVE_DISABLED)
+        .borderRadius(6)
+        .enabled(this.isProfileActionEnabled())
+        .onClick(() => {
+          if (this.isProfileActionEnabled()) this.submitProfile();
+        })
+    }
+    .width('100%')
+    .height(62)
+    .padding({ left: 18, right: 18 })
+    .alignItems(VerticalAlign.Center)
+  }
+
   build() {
     Stack() {
       Column() {
+        if (this.editMode) {
+          this.ProfileEditHeader();
+        }
+
         Scroll() {
           Column() {
             if (this.editMode) {
-              Row() {
-                Text($r('app.string.common_back')).fontSize(34).fontColor(COROS_WHITE).width(64)
-                  .onClick(() => { this.handleProfileBack(); })
-                Text($r('app.string.profile_personal_info')).fontSize(18).fontColor(COROS_WHITE).fontWeight(FontWeight.Medium)
-                  .layoutWeight(1).textAlign(TextAlign.Center)
-                Text($r('app.string.common_save')).fontSize(14).fontColor(COROS_WHITE).width(64).textAlign(TextAlign.Center)
-                  .padding({ top: 8, bottom: 8 })
-                  .backgroundColor(this.isProfileActionEnabled() ? AppColors.ACTION : AppColors.PROFILE_SAVE_DISABLED)
-                  .borderRadius(6)
-                  .enabled(this.isProfileActionEnabled())
-                  .onClick(() => {
-                    if (this.isProfileActionEnabled()) this.submitProfile();
-                  })
-              }
-              .width('100%').height(62).alignItems(VerticalAlign.Center)
-              Blank().height(20)
+              Blank().height(8)
             } else {
               AuthHeader({ showBack: true, showFeedback: false,
                 backRequested: () => { this.handleProfileBack(); } });
@@ -1222,7 +1244,7 @@ struct ProfileCompletionPage {
               tapRequested: () => { this.avatarSheetVisible = true; }
             });
 
-            Blank().height(20)
+            Blank().height(8)
 
             ProfileTextRowComponent({
               label: $r('app.string.profile_username'),
@@ -1298,7 +1320,14 @@ struct ProfileCompletionPage {
             Blank().height(16)
           }
           .width('100%')
-          .padding({ left: 18, right: 18 })
+          .constraintSize({
+            minHeight: '100%'
+          })
+          .justifyContent(FlexAlign.Start)
+          .padding({
+            left: this.editMode ? 26 : 18,
+            right: this.editMode ? 26 : 18
+          })
         }
         .layoutWeight(1)
 

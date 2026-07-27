@@ -80,11 +80,33 @@ UI (用户操作)
   → UI 清理会话 → 引导重新登录
 ```
 
+### 会话生命周期与单一 TTL
+
+会话只有一套用于冷启动恢复的 TTL：
+
+```
+进入后台
+  → pauseSession() 保存 expireAt
+  → 同进程回前台
+      → resumeSessionInSameProcess()
+      → 不检查 expireAt 是否已到期，清除 expireAt 并继续登录
+  → 进程终止后重新启动
+      → restoreSessionOnColdStart()
+      → 未到期：清除 expireAt 并恢复
+      → 已到期：清除 session 并产生 SessionExpired
+```
+
+Android 由单一 `ON_START` 入口串行调度恢复：每个新建的 `SessionLifecycleCoordinator` 第一次启动执行冷恢复，后续启动才执行暖恢复，避免 Compose `LaunchedEffect` 与生命周期补发事件竞争并提前清除 TTL。iOS adapter 初始化和 HarmonyOS 持久化恢复承担冷启动校验；iOS `.active`、HarmonyOS `onForeground()` 承担同进程暖恢复。强制终止没有可靠回调，因此冷启动 TTL 以“上一次进入后台”的时间为起点。
+
 ## Protobuf 数据结构
 
 文件：`common/src/commonMain/proto/auth_mock.proto`
 
 当前 `.proto` 是结构契约，项目未使用 `protoc` 生成 Kotlin Message 类；`Mock*` data class 是对 Proto 的手工镜像。完整说明见 `docs/proto与domain model之间的关系.md`。
+
+健康首页采用相同边界：`health_dashboard_mock.proto` 定义 `HealthMockScenarioCode`、`HealthMockErrorCode`、`HealthMockError` 与快照 message；`HealthMockContracts.kt` 负责 Proto 镜像和 Domain 双向映射。新 JSON 快照写 Proto enum 名称，codec 继续兼容旧 Kotlin 场景名称。
+
+空态引导不是独立卡片类型。common 为现有业务卡输出 `HealthCardStatus.Empty`、稳定摘要 key 和 action；三端只解析原生资源并渲染。场景选择目录由 `HealthScenarios.entries` 输出，iOS 与 HarmonyOS 不再维护业务字符串数组。
 
 ### Message 与 Domain Model 转换关系
 

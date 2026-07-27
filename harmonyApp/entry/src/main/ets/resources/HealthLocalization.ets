@@ -110,6 +110,11 @@ export function healthResource(key: string): Resource {
     case 'health_visual_day_fri': return $r('app.string.health_visual_day_fri');
     case 'health_visual_day_sat': return $r('app.string.health_visual_day_sat');
     case 'health_visual_day_sun': return $r('app.string.health_visual_day_sun');
+    case 'health_scenario_normal': return $r('app.string.health_scenario_normal');
+    case 'health_scenario_partial_missing': return $r('app.string.health_scenario_partial_missing');
+    case 'health_scenario_all_empty': return $r('app.string.health_scenario_all_empty');
+    case 'health_scenario_abnormal': return $r('app.string.health_scenario_abnormal');
+    case 'health_scenario_read_failure': return $r('app.string.health_scenario_read_failure');
     default: return $r('app.string.health_data_unavailable');
   }
 }

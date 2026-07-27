@@ -120,6 +120,56 @@ class LoginUseCaseTest {
     }
 
     @Test
+    fun warmResumeKeepsSessionActiveAfterBackgroundTtlAndClearsDeadline() {
+        var now = 1_000L
+        val dataSource = InMemoryAuthStoreDataSource()
+        val repository = LocalMockAuthRepository(dataSource, nowEpochMs = { now })
+
+        register(repository, account = "warm-resume@example.com")
+        assertIs<MockResult.Success<Unit>>(repository.pauseSession())
+        now += LocalMockAuthRepository.SessionTtlMs * 2
+
+        val resumed = assertIs<SessionResumeResult.Active>(repository.resumeSessionInSameProcess())
+
+        assertEquals(0L, resumed.session.expireAtEpochMs)
+        assertEquals(0L, repository.currentSession()?.expireAtEpochMs)
+    }
+
+    @Test
+    fun warmResumePreventsStaleDeadlineFromExpiringNextColdStart() {
+        var now = 1_000L
+        val dataSource = InMemoryAuthStoreDataSource()
+        val repository = LocalMockAuthRepository(dataSource, nowEpochMs = { now })
+
+        register(repository, account = "warm-then-cold@example.com")
+        assertIs<MockResult.Success<Unit>>(repository.pauseSession())
+        now += LocalMockAuthRepository.SessionTtlMs * 2
+        assertIs<SessionResumeResult.Active>(repository.resumeSessionInSameProcess())
+        now += LocalMockAuthRepository.SessionTtlMs * 2
+
+        assertIs<SessionResumeResult.Active>(
+            LocalMockAuthRepository(dataSource, nowEpochMs = { now }).restoreSessionOnColdStart()
+        )
+    }
+
+    @Test
+    fun coldStartRestoreExpiresSessionAfterPersistedDeadline() {
+        var now = 1_000L
+        val dataSource = InMemoryAuthStoreDataSource()
+        val repository = LocalMockAuthRepository(dataSource, nowEpochMs = { now })
+
+        register(repository, account = "cold-restore@example.com")
+        assertIs<MockResult.Success<Unit>>(repository.pauseSession())
+        now += LocalMockAuthRepository.SessionTtlMs
+
+        assertEquals(
+            SessionResumeResult.Expired,
+            LocalMockAuthRepository(dataSource, nowEpochMs = { now }).restoreSessionOnColdStart()
+        )
+        assertEquals(null, dataSource.load().currentSession)
+    }
+
+    @Test
     fun verifyCodeRemainingSecondsUsesTheSameClockAsExpiration() {
         var now = 1_000L
         val repository = LocalMockAuthRepository(
@@ -297,6 +347,16 @@ class LoginUseCaseTest {
 
         val success = assertIs<LoginResult.Success>(result)
         assertEquals(account, success.session.account)
+    }
+
+    @Test
+    fun loginWithNonExistentAccountFails() {
+        val repository = repository()
+
+        val result = LoginUseCase(repository).execute("never-registered@example.com", "password1")
+
+        val failure = assertIs<LoginResult.Failure>(result)
+        assertEquals(MockError.AccountNotFound.code, failure.code)
     }
 
     @Test

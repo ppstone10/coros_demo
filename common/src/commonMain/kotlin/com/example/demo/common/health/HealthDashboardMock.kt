@@ -67,7 +67,7 @@ data class HealthDashboardMockData(
 
 data class HealthDashboardSnapshotMock(
     val user_id: String,
-    val scenario: String,
+    val scenario: HealthMockScenarioCode,
     val enabled_card_types: List<String>,
     val dashboard_data: HealthDashboardMockData? = null,
     val schema_version: Int = CurrentHealthDashboardSchemaVersion
@@ -107,7 +107,7 @@ fun HealthDashboardData.toMock() = HealthDashboardMockData(
 
 fun HealthDashboardSnapshot.toMock() = HealthDashboardSnapshotMock(
     user_id = userId,
-    scenario = sourceScenario.name,
+    scenario = sourceScenario.toProtoCode(),
     enabled_card_types = enabledCardTypes.map { it.name },
     dashboard_data = dashboardData?.toMock(),
     schema_version = schemaVersion
@@ -155,11 +155,10 @@ fun HealthDashboardMockData.toDomain() = HealthDashboardData(
 )
 
 fun HealthDashboardSnapshotMock.toDomain(): HealthDashboardSnapshot? {
-    val scenario = runCatching { HealthMockScenario.valueOf(scenario) }.getOrDefault(HealthMockScenario.Normal)
     val types = enabled_card_types.mapNotNull { name -> runCatching { HealthCardType.valueOf(name) }.getOrNull() }
     return HealthDashboardSnapshot(
         userId = user_id,
-        sourceScenario = scenario,
+        sourceScenario = scenario.toDomain(),
         enabledCardTypes = types.ifEmpty { DefaultHealthCardOrder },
         dashboardData = dashboard_data?.toDomain(),
         schemaVersion = schema_version

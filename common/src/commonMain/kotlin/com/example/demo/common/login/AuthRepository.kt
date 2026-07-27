@@ -35,6 +35,8 @@ interface AuthRepository {
     fun clearSession(): MockResult<Unit>
     fun markSessionExpired(): MockResult<Unit>
     fun pauseSession(): MockResult<Unit>
+    fun restoreSessionOnColdStart(): SessionResumeResult
+    fun resumeSessionInSameProcess(): SessionResumeResult
     fun resumeSession(): SessionResumeResult
     fun changePassword(account: String, oldPassword: String, newPassword: String): MockResult<Unit>
     fun resetPassword(account: String, newPassword: String): MockResult<Unit>
@@ -215,7 +217,7 @@ class LocalMockAuthRepository(
         }
     }
 
-    override fun resumeSession(): SessionResumeResult {
+    override fun restoreSessionOnColdStart(): SessionResumeResult {
         val store = loadStore()
         val session = store.currentSession?.toDomainOrNull()
             ?: return SessionResumeResult.NoSession
@@ -239,6 +241,27 @@ class LocalMockAuthRepository(
             SessionResumeResult.Failure(MockError.PersistFailed)
         }
     }
+
+    override fun resumeSessionInSameProcess(): SessionResumeResult {
+        val store = loadStore()
+        val session = store.currentSession?.toDomainOrNull()
+            ?: return SessionResumeResult.NoSession
+        if (!session.isValid) {
+            return when (clearSession()) {
+                is MockResult.Success -> SessionResumeResult.Expired
+                is MockResult.Failure -> SessionResumeResult.Failure(MockError.PersistFailed)
+            }
+        }
+        if (session.expireAtEpochMs == 0L) return SessionResumeResult.Active(session)
+        val activeSession = session.copy(expireAtEpochMs = 0L)
+        return if (dataSource.save(store.copy(currentSession = activeSession.toMockSession()))) {
+            SessionResumeResult.Active(activeSession)
+        } else {
+            SessionResumeResult.Failure(MockError.PersistFailed)
+        }
+    }
+
+    override fun resumeSession(): SessionResumeResult = restoreSessionOnColdStart()
 
     override fun changePassword(
         account: String,

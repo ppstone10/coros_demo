@@ -27,6 +27,9 @@
 | 登录防重复提交 | `isLoading` 为 true 时 `canSubmit` 返回 false |
 | 登出行为 | `clearSession()` 清理 session，不清除 `accounts` |
 | 会话失效 | `markSessionExpired()` 将 `isValid` 置 false |
+| 会话 TTL | 只保留一套冷启动 TTL：进入后台时保存截止时间；同进程暖恢复保持登录并清除截止时间；进程终止后的下次冷启动才校验是否超时 |
+| 生命周期边界 | 移动平台无法可靠获得强杀时刻，因此 TTL 从上一次进入后台开始计算，不声明从“清除 App”动作发生时开始 |
+| Android 恢复顺序 | Android 每个新建登录生命周期协调器的第一次 `ON_START` 只执行冷恢复，后续 `ON_START` 才执行暖恢复；禁止用两个独立副作用并发触发 |
 | 本地持久化 | 使用 `AuthStoreDataSource` 接口 + 各平台实现；三端只读写由 KMP common 统一编解码的认证 JSON 快照 |
 | 数据结构定义 | `auth_mock.proto` 是唯一字段契约；当前使用手工镜像的 Kotlin `Mock*` 模型与集中 JSON 编解码，不使用生成的 protobuf Message 类 |
 
@@ -53,7 +56,7 @@
 | 模块 | 说明 |
 | --- | --- |
 | Mock 数据源 | DailySummary（日摘要）、SleepSummary（睡眠摘要）、TrainingLoad（训练负荷）、Recovery（恢复状态）四种本地 mock 数据源，支持按场景切换数据内容 |
-| 卡片类型 | 睡眠卡、今日运动卡、训练负荷卡、恢复状态卡、空态引导卡五种 |
+| 卡片类型 | 睡眠卡、今日运动卡、训练负荷卡、恢复状态卡；各卡自身的 Empty 状态、引导摘要和 action 共同承担空态引导 |
 | 卡片排序引擎 | 读取各数据源状态后，按有风险提醒优先、今日有数据优先、无数据降级的规则输出有序卡片列表 |
 | UI Model 层 | 每张卡片统一输出 title（标题）、summary（摘要）、status（状态）、action（操作入口），Native UI 直接消费渲染 |
 | Mock 场景切换 | 提供场景选择能力，支持正常、部分缺失、全空、异常值和读取失败五种场景 |
@@ -65,10 +68,17 @@
 | 规则 | 内容 |
 | --- | --- |
 | 数据源类型 | 必须包含 DailySummary、SleepSummary、TrainingLoad、Recovery 四种 mock 数据源 |
-| 卡片类型 | 必须实现睡眠、今日运动、训练负荷、恢复状态、空态引导五种卡片 |
+| 卡片类型 | 必须实现睡眠、今日运动、训练负荷、恢复状态四类核心业务卡；不新增独立 EmptyGuide 类型 |
+| 全空策略 | 保留用户当前启用的业务卡片并全部降级为 Empty 状态，每张卡说明如何产生对应数据 |
 | UI Model 结构 | 每张卡片必须输出 title、summary、status、action |
 | 排序优先级 | 有风险提醒 > 今日有数据 > 无数据降级；优先级规则须可解释、可测试 |
 | Mock 场景 | 必须支持正常（全量）、部分缺失（单种缺失）、全空（所有缺失）、异常值（如恢复分数异常）、读取失败五种 |
+| 场景目录 | common 输出稳定 code 与显示键，三端选择器不得维护独立场景字符串数组 |
+| 错误契约 | health proto 定义类型化场景、错误码和错误 message；新快照写 Proto enum 名称并兼容旧 Kotlin 场景名 |
+| 风险阈值 | 由 common `HealthDashboardUseCase` 统一判定，Native UI 不重复计算；恢复、睡眠、训练负荷等阈值以共享测试为验收依据 |
+| 卡片配置 | 作为已完成挑战档能力，配置按 userId 与完整健康快照一起持久化 |
+| 趋势范围 | 当前按卡片稳定数据契约输出：训练相关采用七日摘要，心率采用全天 48 个半小时区间 |
+| 场景入口 | 三端统一由健康首页右上角手表长按进入，短按进入“我” |
 | 聚合规则位置 | 数据和排序聚合在 KMP common 层完成，输出稳定 UI model；Native UI 不拼接多源数据 |
 | 验收标准 | 正常 / 空数据 / 部分数据 / 异常数据均可展示且不崩溃；卡片展示优先级可解释；业务规则层输出稳定 UI model |
 | 测试覆盖 | 至少 12 条单元测试，必须覆盖全量数据、睡眠缺失、今日运动缺失、恢复状态异常、卡片排序 |
@@ -78,16 +88,12 @@
 
 ## 健康首页总览卡片 — 与 Mock 规范的对应说明
 
-- `common/src/commonMain/proto/health_dashboard_mock.proto` 定义 DailySummaryMock、SleepSummaryMock、TrainingLoadMock、RecoveryMock、HealthDashboardMock 和 HealthDashboardSnapshotMock message；不含真实服务端字段或协议。
+- `common/src/commonMain/proto/health_dashboard_mock.proto` 定义 DailySummaryMock、SleepSummaryMock、TrainingLoadMock、RecoveryMock、HealthDashboardMock、HealthDashboardSnapshotMock、HealthMockScenarioCode 和 HealthMockError；不含真实服务端字段或协议。
 - Domain 模型 `DailySummary`、`SleepSummary`、`TrainingLoad`、`Recovery` 分别对应同名 proto message，通过 `toDomain()` / `toMock()` 双向映射。
 - `HealthCardType`、`HealthCardStatus`、`HealthCardAction` 等枚举定义卡片分类和交互类型，不在 proto 中定义，属于 domain 层常量。
-- `HealthDashboardSnapshotMock` 用于持久化保存用户场景选择和卡片配置，与 `HealthDashboardSnapshot` domain 模型对应。
+- `HealthDashboardSnapshotMock` 用于持久化保存用户场景选择和卡片配置，与 `HealthDashboardSnapshot` domain 模型对应；字段 2 保留旧字符串兼容位，新场景使用字段 6 的 enum。
 - Proto 定义的数据字段均为 `optional`，天然支持缺失场景；domain 层通过 nullable 字段向下传递空状态。
 
 ## 健康首页总览卡片 — 待确认问题
 
-- 风险提醒的具体触发标准：哪些数据条件（如恢复分数低于阈值、训练负荷过高）标记为 Risk 状态？
-- 空态引导卡片的展示策略：当所有卡片无数据时只显示空态引导卡片，还是同时展示空态的各类卡片骨架？
-- 卡片配置功能是否属于本次标准档范围，还是仅作为挑战档目标？
-- 趋势摘要的展现形式和时间跨度（7 天 / 30 天）需确认产品方向。
-- Mock 场景切换的 UI 入口位置：开发者菜单 / 设置页 / 首页长按？
+本轮涉及的风险阈值、全空策略、卡片配置、趋势范围和场景入口均已形成实现决策，不再作为待确认项。后续若产品口径变化，先更新对应 Spec 与 TRACE。

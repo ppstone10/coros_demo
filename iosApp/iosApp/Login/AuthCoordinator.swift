@@ -125,6 +125,8 @@ struct AuthCoordinator: View {
         .onChange(of: scenePhase) { phase in
             if phase == .background {
                 viewModel.pauseSession()
+            } else if phase == .active {
+                viewModel.resumeSession()
             }
         }
         .onAppear {

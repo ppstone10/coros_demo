@@ -18,7 +18,7 @@ object MockHealthDashboardStoreJson {
 
     private fun HealthDashboardSnapshot.toJson() = buildJsonObject {
         put("userId", userId)
-        put("scenario", sourceScenario.name)
+        put("scenario", sourceScenario.toProtoCode().name)
         put("enabledCardTypes", strings(enabledCardTypes.map { it.name }))
         dashboardData?.let { put("dashboardData", it.toJson()) }
         put("schemaVersion", schemaVersion)
@@ -26,9 +26,9 @@ object MockHealthDashboardStoreJson {
 
     private fun JsonObject.toSnapshot(): HealthDashboardSnapshot {
         val userId = string("userId", "user_id") ?: error("Missing userId")
-        val sourceScenario = string("scenario")
-            ?.let { name -> HealthMockScenario.entries.firstOrNull { it.name == name } }
-            ?: HealthMockScenario.Normal
+        val sourceScenario = healthScenarioFromPersistedCode(
+            string("scenario", "legacyScenario", "legacy_scenario")
+        )
         val enabled = array("enabledCardTypes", "enabled_card_types")
             .mapNotNull { it.asPrimitive().contentOrNull }
             .mapNotNull { name -> HealthCardType.entries.firstOrNull { it.name == name } }

@@ -24,6 +24,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.demo.R
 import com.example.demo.common.health.HealthMockScenario
+import com.example.demo.common.health.HealthScenarios
+import com.example.demo.common.health.LocalizedTextSpec
 import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppTypography
 import com.example.demo.ui.theme.DemoTheme
@@ -42,7 +44,8 @@ fun ScenarioPickerDialog(
         title = { Text(stringResource(R.string.health_select_scenario), color = AppColors.Core.White) },
         text = {
             Column {
-                HealthMockScenario.entries.forEach { scenario ->
+                HealthScenarios.entries.forEach { descriptor ->
+                    val scenario = HealthMockScenario.valueOf(descriptor.code)
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { onSelect(scenario) }.padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -53,7 +56,11 @@ fun ScenarioPickerDialog(
                             colors = RadioButtonDefaults.colors(selectedColor = AppColors.Health.Steps, unselectedColor = Muted)
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text(scenario.displayName(), color = AppColors.Core.White, fontSize = AppTypography.Action)
+                        Text(
+                            localizedHealthText(LocalizedTextSpec(descriptor.displayKey)),
+                            color = AppColors.Core.White,
+                            fontSize = AppTypography.Action
+                        )
                     }
                 }
             }
@@ -62,15 +69,6 @@ fun ScenarioPickerDialog(
         containerColor = CardBlack
     )
 }
-
-@Composable
-fun HealthMockScenario.displayName() = stringResource(when (this) {
-    HealthMockScenario.Normal -> R.string.health_scenario_normal
-    HealthMockScenario.PartialMissing -> R.string.health_scenario_partial_missing
-    HealthMockScenario.AllEmpty -> R.string.health_scenario_all_empty
-    HealthMockScenario.Abnormal -> R.string.health_scenario_abnormal
-    HealthMockScenario.ReadFailure -> R.string.health_scenario_read_failure
-})
 
 @Preview(showBackground = true, backgroundColor = 0xFF000000)
 @Composable

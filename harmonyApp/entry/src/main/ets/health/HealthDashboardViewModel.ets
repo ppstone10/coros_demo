@@ -1,4 +1,4 @@
-import { CardEntry, HealthCardModel, HealthSnapshot, cardIconIndex, createDefaultHealthCards, localizedHealthText } from './HealthDashboardTypes';
+import { CardEntry, HealthCardModel, HealthScenarioEntry, HealthSnapshot, cardIconIndex, createDefaultHealthCards, localizedHealthText } from './HealthDashboardTypes';
 import { getService } from '../login/HarmonyServiceProvider';
 
 @Observed
@@ -11,16 +11,26 @@ export class HealthDashboardViewModel {
   healthDataCorrupted: boolean = false;
   refreshing: boolean = false;
   currentScenario: string = 'Normal';
+  scenarios: HealthScenarioEntry[] = [];
   dashboardVersion: number = 0;
   effectMessage: string | undefined = undefined;
 
   load(context?: object): void {
     this.clearEffectMessage();
     try {
+      this.loadScenarioCatalog();
       this.applySnapshot(context);
       this.dashboardVersion++;
     } catch (e) {
       // keep defaults
+    }
+  }
+
+  private loadScenarioCatalog(): void {
+    const json: string = getService().healthScenarioDescriptorsJson();
+    const entries: HealthScenarioEntry[] = JSON.parse(json) as HealthScenarioEntry[];
+    if (entries.length > 0) {
+      this.scenarios = entries;
     }
   }
 

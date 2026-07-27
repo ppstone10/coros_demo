@@ -137,8 +137,20 @@ class LoginStore(
         authRepository.pauseSession()
     }
 
+    fun restoreSessionOnColdStart() {
+        applySessionResumeResult(authRepository.restoreSessionOnColdStart())
+    }
+
+    fun resumeSessionInSameProcess() {
+        applySessionResumeResult(authRepository.resumeSessionInSameProcess())
+    }
+
     fun resumeSession() {
-        when (val result = authRepository.resumeSession()) {
+        restoreSessionOnColdStart()
+    }
+
+    private fun applySessionResumeResult(result: SessionResumeResult) {
+        when (result) {
             is SessionResumeResult.Active -> {
                 state = state.copy(currentSession = result.session, isLoggedIn = true, errorMessage = null)
             }
@@ -290,7 +302,7 @@ class LoginStore(
         }
     }
 
-    private fun restoreSession() = resumeSession()
+    private fun restoreSession() = restoreSessionOnColdStart()
 
     companion object {
         fun createFake(): LoginStore {

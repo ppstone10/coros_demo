@@ -44,7 +44,7 @@
 | iOS KMP 导出：`AuthMode.Register` 在 Swift 中为 `AuthMode.register_`（尾随下划线） | 适配层需使用正确的导出名 |
 | HarmonyOS KNOI `@ServiceProvider` 实例模型不确定是 singleton 还是 factory | 持久化操作前需确认 service 实例一致性；`restoreStoreSnapshot` 后需同步 adapter 状态 |
 | `LoginFacade` 在 Android IDE 中显示 unused warning | 保留 `@Suppress("unused")`，它是给 iOS/HarmonyOS 用的跨语言导出 API |
-| 会话 TTL 仅从 App 进入后台开始倒计时，前台期间不计时 | `AuthRepository.pauseSession()` / `resumeSession()` 实现；`SessionTtlMs = 10 * 1000`（仅 demo） |
+| 会话只保留一套冷启动 TTL，冷/暖恢复必须分离 | `pauseSession()` 在后台保存截止时间；`restoreSessionOnColdStart()` 仅冷启动校验；`resumeSessionInSameProcess()` 暖恢复不判过期并清除旧截止时间。Android 不得让独立 `LaunchedEffect` 与 `ON_START` 分别触发冷/暖恢复，否则生命周期补发可能先清除 TTL；应由单一 `ON_START` 协调器保证首次冷恢复、后续暖恢复。强杀时刻不可可靠观测，TTL 从上一次进入后台计算；`SessionTtlMs = 10 * 1000` 仅用于 Demo |
 | Xcode KMP framework 构建：`ENABLE_USER_SCRIPT_SANDBOXING` 必须为 NO | 否则 Run Script phase 被沙箱拦截 |
 | Xcode `FRAMEWORK_SEARCH_PATHS` 需包含所有架构路径 | `iosSimulatorArm64`、`iosX64`、`iosArm64` 的 debug/release 路径 |
 | HarmonyOS hvigor 插件版本必须与本机 DevEco Studio 版本匹配 | DevEco 自动调整后需同步更新 `oh-package.json5` |
@@ -97,6 +97,7 @@
 | **iOS Lottie 刷新同步** | SwiftUI `LottieView.playbackMode`、随机/周期 ID 重建都不能替代实际播放验证；需要严格同步时用 `UIViewRepresentable` 持有 `LottieAnimationView`，刷新开始显式 `stop → progress 0 → play`，结束显式 `stop → progress 0` |
 | **iOS UIKit 动画尺寸** | `UIViewRepresentable` 直接返回具有固有 composition 尺寸的 `LottieAnimationView` 时，外部 SwiftUI `.frame` 可能只约束包装层而允许动画溢出；返回裁剪 UIView 容器，把动画关闭 autoresizing mask 后四边约束填充，并在 SwiftUI 层再次 `.clipped()` |
 | **HarmonyOS 卡片尺寸所有权** | 百分比宽度、内外边距与固定宽子图共同参与 ArkUI 测量时，由全宽 Row 扣页面 padding、卡片 Column 仅 `layoutWeight(1)` 占剩余宽度；更关键的是 Scroll/Refresh 内的数据 renderer 禁止 `height('100%')`，否则百分比高度会解析为滚动视口并让一张普通卡占满整屏 |
+| **三端资料编辑页滚动边界** | 返回/标题/保存属于固定页面栏，必须位于资料滚动容器之外；头像和字段单独滚动。HarmonyOS 的短内容还需显式 `Alignment.TopStart`，避免内容不足一屏时整体垂直居中 |
 | **HarmonyOS Path 与图片着色单位边界** | ArkUI `Path.commands` 的数值坐标按物理像素解释，而 `.width/.height/.margin` 等布局尺寸按 vp；把设计稿 vp 坐标直接写进 Path 会在高密度设备上缩小并向左上错位，生成命令前应以 `vp2px` 换算且不能重复换算布局值。PNG 的 `fillColor` 单独使用不会覆盖原图颜色，单色语义图标需先启用 `ImageRenderMode.Template` |
 | **HarmonyOS common JSON 依赖边界** | `ohos_arm64` 无法解析官方 kotlinx-serialization JSON Native 变体；会进入 Harmony bridge 的 common JSON codec 必须保持自包含或使用明确提供 OHOS 变体的依赖，不能仅因 Android/iOS 可编译就引入普通 Kotlin/Native 库 |
 
@@ -113,3 +114,4 @@
 - `spec/resource-maintainability.md` — 全模块资源清单、跨端一致性和分批债务收敛规范
 - `spec/app-language-switching.md` — 应用内中英文切换、平台持久化与国家代码化规范
 - `spec/android-profile-activity-result.md` — Android 本地化 Context 与资料头像 Activity Result 宿主兼容性规范
+- `spec/profile-edit-layout.md` — 三端个人资料编辑页固定标题栏与滚动内容边界规范

@@ -140,7 +140,7 @@
     <string name="health_scenario_read_failure">Corrupted Data</string>
     <string name="health_select_scenario">Select Data Scenario</string>
     <string name="health_sport_device">Sports Device</string>
-    <string name="health_summary_activity_empty">No activity data yet today</string>
+    <string name="health_summary_activity_empty">Record a workout to see today’s activity here</string>
     <string name="health_summary_activity_normal">%1$s steps · %2$s Kcal · %3$s min</string>
     <string name="health_summary_body_empty">Weight --- kg · Main training areas this week</string>
     <string name="health_summary_body_normal">Weight %1$s kg · BMI %2$s</string>
@@ -166,7 +166,7 @@
     <string name="health_summary_running_empty">Record an outdoor run longer than 25 min</string>
     <string name="health_summary_running_normal">VO2Max %1$s · Score %2$s</string>
     <string name="health_summary_running_risk">VO2Max %1$s · Score %2$s. Add more aerobic training</string>
-    <string name="health_summary_sleep_empty">No sleep data from last night</string>
+    <string name="health_summary_sleep_empty">Wear your watch to sleep to see sleep data tomorrow</string>
     <string name="health_summary_sleep_normal">Last night: %1$s hr %2$s min · Quality %3$s</string>
     <string name="health_summary_sleep_risk">Sleep quality is low. Make time to rest today</string>
     <string name="health_summary_stress_empty">Wear your watch or run Health Check to measure stress</string>
@@ -175,7 +175,7 @@
     <string name="health_summary_training_assessment_empty">Training volume will be assessed 7 days after your first workout</string>
     <string name="health_summary_training_assessment_normal">Score %1$s · Trend %2$s</string>
     <string name="health_summary_training_assessment_risk">Training volume is low. Score %1$s · Trend %2$s</string>
-    <string name="health_summary_training_load_empty">No training-load data</string>
+    <string name="health_summary_training_load_empty">Finish a workout and sync your watch to generate training load</string>
     <string name="health_summary_training_load_normal">Weekly load %1$s · Recommended %2$s-%3$s</string>
     <string name="health_summary_training_load_risk">Load %1$s exceeds the recommended range. Schedule recovery</string>
     <string name="health_summary_weekly_custom">%1$s</string>

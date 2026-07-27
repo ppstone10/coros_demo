@@ -101,6 +101,7 @@ struct SignedInPage {
         if (this.currentPage === PAGE_SCENARIO_PICKER) {
           ScenarioPickerComp({
             selectedScenario: this.healthVM.currentScenario,
+            scenarios: this.healthVM.scenarios,
             onSelect: (name: string) => {
               this.healthVM.selectScenario(name);
               this.currentPage = PAGE_MAIN;

@@ -3,6 +3,30 @@ package training.health;
 
 // 仅用于脱敏、本地 mock 健康首页，不包含真实服务端字段或协议。
 
+enum HealthMockScenarioCode {
+  HEALTH_MOCK_SCENARIO_UNSPECIFIED = 0;
+  HEALTH_MOCK_SCENARIO_NORMAL = 1;
+  HEALTH_MOCK_SCENARIO_PARTIAL_MISSING = 2;
+  HEALTH_MOCK_SCENARIO_ALL_EMPTY = 3;
+  HEALTH_MOCK_SCENARIO_ABNORMAL = 4;
+  HEALTH_MOCK_SCENARIO_READ_FAILURE = 5;
+}
+
+enum HealthMockErrorCode {
+  HEALTH_MOCK_ERROR_UNSPECIFIED = 0;
+  HEALTH_MOCK_ERROR_AUTH_REQUIRED = 1;
+  HEALTH_MOCK_ERROR_EMPTY_DATA = 2;
+  HEALTH_MOCK_ERROR_CORRUPTED_DATA = 3;
+  HEALTH_MOCK_ERROR_READ_FAILED = 4;
+  HEALTH_MOCK_ERROR_PERSIST_FAILED = 5;
+  HEALTH_MOCK_ERROR_MINIMUM_CARDS_REQUIRED = 6;
+}
+
+message HealthMockError {
+  HealthMockErrorCode code = 1;
+  string message_key = 2;
+}
+
 message DailySummaryMock { optional int32 steps = 1; optional int32 calories = 2; optional int32 active_minutes = 3; }
 message TodayActivityMock { optional double distance_km = 1; optional int32 pace_seconds_per_km = 2; optional string activity_name_key = 3; optional int32 training_load = 4; }
 message SleepStageSegmentMock { string stage = 1; int32 start_minute = 2; int32 duration_minutes = 3; }
@@ -61,12 +85,14 @@ message HealthDashboardMock {
 }
 message HealthDashboardSnapshotMock {
   string user_id = 1;
-  // 仅作为 Demo 数据模板来源元数据；恢复时以 dashboard_data 为权威。
-  string scenario = 2;
+  // 旧二进制/JSON 字符串场景兼容位；新快照写入字段 6。
+  string legacy_scenario = 2 [deprecated = true];
   repeated string enabled_card_types = 3;
   HealthDashboardMock dashboard_data = 4;
   int32 schema_version = 5;
-  reserved 6;
+  // 仅作为 Demo 数据模板来源元数据；恢复时以 dashboard_data 为权威。
+  HealthMockScenarioCode scenario = 6;
+  optional HealthMockError error = 7;
 }
 
 message HealthDashboardStoreMock { repeated HealthDashboardSnapshotMock snapshots = 1; }

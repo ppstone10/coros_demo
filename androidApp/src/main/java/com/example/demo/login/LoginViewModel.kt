@@ -23,6 +23,11 @@ class LoginViewModel(
     private val store: LoginStore = LoginStore.createFake(),
     healthStore: HealthStore? = null
 ) {
+    private val sessionLifecycleCoordinator = SessionLifecycleCoordinator(
+        restoreOnColdStart = store::restoreSessionOnColdStart,
+        resumeInSameProcess = store::resumeSessionInSameProcess
+    )
+
     val healthStore: HealthStore = healthStore ?: HealthStore(
         LocalMockAuthRepository(InMemoryAuthStoreDataSource()),
         InMemoryHealthDashboardStateDataSource()
@@ -88,8 +93,8 @@ class LoginViewModel(
         state = store.state
     }
 
-    fun onAppForegrounded() {
-        store.resumeSession()
+    fun onAppStarted() {
+        sessionLifecycleCoordinator.onStart()
         state = store.state
         effect = store.consumeEffect()
     }

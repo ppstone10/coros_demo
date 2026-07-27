@@ -7,6 +7,7 @@ import com.example.demo.common.health.HealthFacade
 import com.example.demo.common.health.HealthFacadeFactory
 import com.example.demo.common.health.HealthMockScenario
 import com.example.demo.common.health.HealthState
+import com.example.demo.common.health.healthScenarioFromPersistedCode
 import com.example.demo.common.health.InMemoryHealthDashboardStateDataSource
 import com.example.demo.common.health.MockHealthDashboardStoreJson
 import com.example.demo.common.health.PersistedDashboard
@@ -68,6 +69,17 @@ open class HarmonyLoginService {
     fun pauseSession() {
         syncClock()
         facade.pauseSession()
+    }
+
+    fun resumeSessionInSameProcess() {
+        syncClock()
+        facade.resumeSessionInSameProcess()
+    }
+
+    fun healthScenarioDescriptorsJson(): String {
+        return healthFacade.scenarioDescriptors().joinToString(prefix = "[", postfix = "]") {
+            """{"code":"${it.code.esc()}","displayKey":"${it.displayKey.esc()}"}"""
+        }
     }
 
     fun consumeEffectSnapshot(): String {
@@ -293,8 +305,10 @@ open class HarmonyLoginService {
             if (scenarioIdx >= 0) {
                 val sStart = scenarioIdx + scenarioKey.length
                 val sEnd = body.indexOf('"', sStart)
-                val scenario = body.substring(sStart, if (sEnd >= 0) sEnd else body.length)
-                if (scenario.isNotBlank() && healthFacade.selectScenario(scenario)) {
+                val scenario = healthScenarioFromPersistedCode(
+                    body.substring(sStart, if (sEnd >= 0) sEnd else body.length)
+                ).name
+                if (healthFacade.selectScenario(scenario)) {
                     healthFacade.refresh()
                 }
             }

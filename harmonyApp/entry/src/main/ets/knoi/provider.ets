@@ -19,6 +19,10 @@ export interface HarmonyLoginService {
 
    pauseSession(): void;
 
+   resumeSessionInSameProcess(): void;
+
+   healthScenarioDescriptorsJson(): string;
+
    consumeEffectSnapshot(): string;
 
    setLoginMode(): void;

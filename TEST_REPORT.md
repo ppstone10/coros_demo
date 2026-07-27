@@ -1,5 +1,17 @@
 # 注册登录模块 — 测试报告
 
+## Android 会话启动竞态修复（2026-07-27）
+
+- 新增 `SessionLifecycleCoordinatorTest` 2 条，覆盖首次 `ON_START` 冷恢复、后续 `ON_START` 暖恢复，以及协调器重建后重新执行冷恢复。
+- 红灯阶段测试因缺少 `SessionLifecycleCoordinator` 编译失败；实现串行协调器并移除独立冷启动 `LaunchedEffect` 后转绿。
+- `./gradlew :androidApp:testDebugUnitTest`、`:common:check`、`:androidApp:assembleDebug` 均通过。
+
+## 会话与健康契约收口（2026-07-27）
+
+- 新增会话冷启动/暖恢复测试 3 条，覆盖暖恢复不失效、清除旧截止时间和冷启动超时清理。
+- 新增健康契约测试 3 条，覆盖场景/错误双向映射、Proto enum 名称写入、旧场景字符串迁移和核心卡片空态引导。
+- `./gradlew :common:check`、Android assemble、iOS simulator build、HarmonyOS KNOI bridge + `assembleApp` 均通过。
+
 ## 健康首页（2026-07-14）
 
 - 命令：`./gradlew :common:testAndroidHostTest :androidApp:compileDebugKotlin`
@@ -14,13 +26,16 @@ KMP `common` 共享业务层的认证与业务 mock 模块，以及 Android 本�
 | 测试类 | 文件 | 测试数 |
 | --- | --- | --- |
 | `LoginRulesTest` | `common/src/commonTest/.../LoginRulesTest.kt` | 8 |
-| `LoginUseCaseTest` | `common/src/commonTest/.../LoginUseCaseTest.kt` | 31 |
+| `LoginUseCaseTest` | `common/src/commonTest/.../LoginUseCaseTest.kt` | 35 |
 | `BusinessMockDataSourceTest` | `common/src/commonTest/.../BusinessMockDataSourceTest.kt` | 4 |
-| `HealthDashboardUseCaseTest` | `common/src/commonTest/.../HealthDashboardUseCaseTest.kt` | 39 |
-| **common 合计** | | **82** |
+| `HealthDashboardUseCaseTest` | `common/src/commonTest/.../HealthDashboardUseCaseTest.kt` | 42 |
+| `HealthStoreTest` | `common/src/commonTest/.../HealthStoreTest.kt` | 10 |
+| **业务需求映射小计** | | **89** |
+| **common 全部合计（含 HealthStore）** | | **99** |
+| `SessionLifecycleCoordinatorTest` | `androidApp/src/test/.../SessionLifecycleCoordinatorTest.kt` | 2 |
 | `AndroidAuthStoreDataSourceTest` | `androidApp/src/androidTest/.../AndroidAuthStoreDataSourceTest.kt` | 1 |
 
-共享业务测试合计：**82 条**。计数由 `tools/check-docs.sh` 与源码中的 `@Test` 动态核对。
+共享业务测试合计：**89 条**；另有 `HealthStoreTest` 10 条架构测试，common 当前共 **99 条**。Android JVM 单元测试当前共 **9 条**，其中本轮会话生命周期调度测试 2 条。计数由源码中的 `@Test` 动态核对。
 
 ## 运行命令
 
@@ -43,7 +58,7 @@ KMP `common` 共享业务层的认证与业务 mock 模块，以及 Android 本�
 | `loginReadinessUsesSharedRule` | 登录按钮可用判断（loading、空输入、密码长度） |
 | `validationFailuresExposeStableLocalizationKeys` | 共享认证校验失败只输出稳定的 `auth_*` 本地化语义键 |
 
-### LoginUseCaseTest（31 条）
+### LoginUseCaseTest（35 条）
 
 | 测试 | 验证内容 | 异常态 |
 | --- | --- | --- |
@@ -54,6 +69,9 @@ KMP `common` 共享业务层的认证与业务 mock 模块，以及 Android 本�
 | `resentVerifyCodeReplacesOriginalCode` | 重发验证码替换原码 | — |
 | `verifyCodeExpiresAfterTtl` | 验证码过期返回 `VerifyCodeExpired` | — |
 | `sessionExpiresAfterBackgroundTtlAndIsRemovedFromPersistence` | 后台 TTL 到期后清理 Session | — |
+| `warmResumeKeepsSessionActiveAfterBackgroundTtlAndClearsDeadline` | 同进程暖恢复保持登录并清除旧截止时间 | — |
+| `warmResumePreventsStaleDeadlineFromExpiringNextColdStart` | 暖恢复后的后续冷启动不受旧截止时间影响 | — |
+| `coldStartRestoreExpiresSessionAfterPersistedDeadline` | 冷启动超过持久化截止时间后清理 Session | — |
 | `verifyCodeRemainingSecondsUsesTheSameClockAsExpiration` | 倒计时与过期判断使用同一时间源 | — |
 | `loginSuccessSavesSession` | 登录成功，session 保存 | — |
 | `businessAccessSucceedsAfterLogin` | 登录后业务访问可读取当前 Session | — |
@@ -62,6 +80,7 @@ KMP `common` 共享业务层的认证与业务 mock 模块，以及 Android 本�
 | `incompleteProfileCannotBeSaved` | 不完整 profile 保存失败 | — |
 | `defaultMockAccountCanLogin` | 默认预置账号可登录 | — |
 | `registeredAccountCanLoginAgainFromMockStore` | 重新构造 repository 后账号仍可登录 | — |
+| `loginWithNonExistentAccountFails` | 登录未注册账号返回 `AccountNotFound` | — |
 | `incorrectPasswordFails` | 密码错误返回 `PasswordIncorrect` | — |
 | `changePasswordRequiresCorrectOldPassword` | 修改密码需旧密码正确 | — |
 | `changedPasswordReplacesOldPassword` | 修改密码后旧密码失效 | — |
@@ -86,9 +105,13 @@ KMP `common` 共享业务层的认证与业务 mock 模块，以及 Android 本�
 | `loggedOutUserCannotReadBusinessMockData` | 登出后读取业务摘要返回 `AuthRequired` |
 | `expiredSessionCannotReadBusinessMockData` | 会话失效后读取业务摘要返回 `AuthRequired` |
 
-### HealthDashboardUseCaseTest（39 条）
+### HealthDashboardUseCaseTest（42 条）
 
-覆盖 14 类卡片目录、稳定优先级、正常/部分缺失/全空/异常/读取失败场景、完整领域快照与多用户集合 JSON 往返、旧配置及旧心率单值样本迁移、288 个 5 分钟模拟采样聚合为 48 个半小时最低/最高/平均心率区间、七日计划结构、健康快测可选测量时间、账户删除清理、模块数据优先、场景选择不立即提交、刷新成功提交及失败回滚、健康 UI model 的语义键/参数契约，以及卡片选择与顺序持久化。具体测试名以 `common/src/commonTest/kotlin/com/example/demo/common/health/HealthDashboardUseCaseTest.kt` 为准。
+覆盖 14 类卡片目录、稳定优先级、正常/部分缺失/全空/异常/读取失败场景、类型化场景与错误契约、Proto enum 快照写入、旧字符串场景迁移、核心 Empty 引导、完整领域快照与多用户集合 JSON 往返、旧配置及旧心率单值样本迁移、288 个 5 分钟模拟采样聚合为 48 个半小时最低/最高/平均心率区间、七日计划结构、健康快测可选测量时间、账户删除清理、模块数据优先、场景选择不立即提交、刷新成功提交及失败回滚、健康 UI model 的语义键/参数契约，以及卡片选择与顺序持久化。具体测试名以 `common/src/commonTest/kotlin/com/example/demo/common/health/HealthDashboardUseCaseTest.kt` 为准。
+
+### HealthStoreTest（10 条）
+
+覆盖 Health MVI Action、State、Effect、认证拦截和卡片配置校验。
 
 ### AndroidAuthStoreDataSourceTest（1 条）
 

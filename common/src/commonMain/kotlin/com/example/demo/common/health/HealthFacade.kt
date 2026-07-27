@@ -18,6 +18,8 @@ class HealthFacade(
     val state: HealthState
         get() = store.state
 
+    fun scenarioDescriptors(): List<HealthScenarioDescriptor> = HealthScenarios.entries
+
     fun load() {
         store.dispatch(HealthAction.Load)
     }

@@ -68,6 +68,15 @@
 | §14.7 登出后访问业务数据 | `BusinessMockDataSourceTest.kt:20-29`（loggedOutUserCannotReadBusinessMockData） | ✅ |
 | §14.8 会话失效后访问业务数据 | `BusinessMockDataSourceTest.kt:31-40`（expiredSessionCannotReadBusinessMockData） | ✅ |
 | §14.9 本地登录态保存和恢复 | `LoginUseCaseTest.kt:381-398`（localSessionCanBeRestoredAfterLogin） | ✅ |
+| **§12 iOS 头像持久化** | `AppResources.swift:242-263`（`ProfileImageStore`），以 `UserDefaults` 替代文件系统 | ✅ |
+
+### 会话生命周期增量追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `AUTH-SESSION-001` | 单一 TTL 仅在冷启动恢复时判定 | `LoginUseCaseTest.sessionExpiresAfterBackgroundTtlAndIsRemovedFromPersistence`、`coldStartRestoreExpiresSessionAfterPersistedDeadline`；`:common:check` | `AuthRepository.pauseSession/restoreSessionOnColdStart` | ✅ |
+| `AUTH-SESSION-002` | 冷启动恢复与同进程暖恢复分离并同步三端 | `warmResumeKeepsSessionActiveAfterBackgroundTtlAndClearsDeadline`、`warmResumePreventsStaleDeadlineFromExpiringNextColdStart`；Android/iOS/HarmonyOS 构建 | `resumeSessionInSameProcess`；Android `AuthNavGraph`、iOS `AuthCoordinator`、HarmonyOS `EntryAbility` | ✅ |
+| `AUTH-SESSION-003` | Android 首次 `ON_START` 串行执行冷恢复，后续才暖恢复 | `SessionLifecycleCoordinatorTest.firstStartRestoresColdSessionAndLaterStartsResumeWarmSession`、`recreatedCoordinatorTreatsItsFirstStartAsColdEvenInSameProcess`；红灯后 `:androidApp:testDebugUnitTest` 通过 | Android `SessionLifecycleCoordinator`、`LoginViewModel.onAppStarted`、`AuthNavGraph` 单一 `ON_START` 接线 | ✅ |
 
 ---
 
@@ -109,6 +118,15 @@
 | 测试：今日运动缺失 | `HealthDashboardUseCaseTest.kt:20`（partialMissingKeepsAvailableTodayActivity） | ✅ |
 | 测试：恢复状态异常 | `HealthDashboardUseCaseTest.kt:7`（abnormalRecoveryIsFirst） | ✅ |
 | 测试：卡片排序 | `HealthDashboardUseCaseTest.kt:26`（cardsUseStablePriorityOrder） | ✅ |
+
+### 健康契约与空态增量追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `HLTH-EMPTY-001` | 业务卡自身 Empty 状态承担空态引导 | `HealthDashboardUseCaseTest.coreEmptyCardsExposeGuidanceKeysAndActions`；资源门禁与三端构建 | `HealthDashboardUseCase.empty`；三端 `health_summary_*_empty` 原生资源 | ✅ |
+| `HLTH-CONTRACT-001` | Proto 定义类型化健康场景和错误契约 | `healthProtoScenarioAndErrorContractsRoundTrip`；`:common:check` | `health_dashboard_mock.proto`、`HealthMockContracts.kt`、`HealthModels.kt` | ✅ |
+| `HLTH-CONTRACT-002` | 旧字符串场景快照兼容迁移 | `snapshotsEncodeProtoScenarioNamesAndDecodeLegacyNames`、`legacyScenarioSnapshotMigratesToFullData` | `MockHealthDashboardStoreJson`、schema version 5、`HealthDashboardSnapshotMock` 字段 2/6 | ✅ |
+| `HLTH-SCENARIO-001` | 三端场景选择器消费 common 场景目录 | `healthScenariosMatchMockEntries`；Android/iOS/HarmonyOS 构建 | `HealthScenarios.entries`、`HealthFacade.scenarioDescriptors`、三端 ScenarioPicker | ✅ |
 
 ---
 
@@ -185,16 +203,27 @@
 
 ---
 
+## profile-edit-layout.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `PROFILE-EDIT-001` | 三端个人资料编辑标题栏固定在资料滚动区外 | `./tools/check-profile-edit-layout.sh`；HarmonyOS `hvigorw assembleApp --no-daemon` 通过；设备人工滚动待复验 | Android `PersonalProfileEditContent`、iOS `PersonalProfileEditView` 既有固定标题结构；HarmonyOS `ProfileCompletionPage.ProfileEditHeader` | ⚠️（自动验证完成，无连接设备） |
+| `PROFILE-EDIT-002` | 短资料内容从滚动视口顶部起排，不整体垂直居中 | 结构门禁先因鸿蒙标题仍在 `Scroll` 内红灯，实施后通过；设备截图待复验 | HarmonyOS `ProfileCompletionPage` 滚动内容显式 `Alignment.TopStart` | ⚠️（自动验证完成，无连接设备） |
+
+---
+
 ## 测试总览
 
 | 测试类 | 测试数 | 所属 Spec |
 |--------|--------|-----------|
 | `LoginRulesTest.kt` | 8 | auth-mock-spec §7, §8, §9；RES-LOC-001 |
-| `LoginUseCaseTest.kt` | 31 | auth-mock-spec §14 |
+| `LoginUseCaseTest.kt` | 35 | auth-mock-spec §14；AUTH-SESSION-001~002 |
 | `BusinessMockDataSourceTest.kt` | 4 | auth-mock-spec §10, §11, §14 |
-| `HealthDashboardUseCaseTest.kt` | 39 (1 pre-existing data assertion corrected) | health-dashboard-cards 测试要求；RES-MAINT-008；HLTH-VIS-001~003、027~032；HLTH-PERSIST-001~007 |
+| `HealthDashboardUseCaseTest.kt` | 42 | health-dashboard-cards 测试要求；HLTH-EMPTY-001；HLTH-CONTRACT-001~002；HLTH-SCENARIO-001；RES-MAINT-008；HLTH-VIS-001~003、027~032；HLTH-PERSIST-001~007 |
+| **合计** | **89** | 业务需求映射测试 |
 | `HealthStoreTest.kt` | 10 | HLTH-MVI-001~004、HLTH-MVI-010 |
-| **合计** | **92** | |
+| **common 全部合计** | **99** | 含 Health MVI 架构测试 |
+| `SessionLifecycleCoordinatorTest.kt` | 2 | AUTH-SESSION-003（Android JVM） |
 
 ---
 

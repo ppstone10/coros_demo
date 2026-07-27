@@ -12,6 +12,7 @@ final class HealthDashboardViewModel: ObservableObject {
     @Published private(set) var syncCycle = 0
     @Published private(set) var isDataCorrupted = false
     @Published private(set) var selectedScenario = "Normal"
+    @Published private(set) var scenarios: [HealthScenarioDescriptor] = []
 
     var onEffect: ((HealthEffect) -> Void)?
 
@@ -19,6 +20,7 @@ final class HealthDashboardViewModel: ObservableObject {
 
     init(adapter: SharedLoginAdapterProtocol = SharedLoginAdapter()) {
         self.adapter = adapter
+        self.scenarios = adapter.healthScenarioDescriptors()
         load()
     }
 

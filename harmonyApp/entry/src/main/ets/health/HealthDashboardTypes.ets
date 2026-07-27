@@ -51,6 +51,11 @@ export interface HealthSnapshot {
   enabledTypes: string;
 }
 
+export interface HealthScenarioEntry {
+  code: string;
+  displayKey: string;
+}
+
 export class HealthCardModel {
   id: string;
   title: ResourceStr;

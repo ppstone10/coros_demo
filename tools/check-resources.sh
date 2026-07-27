@@ -143,7 +143,7 @@ language_entrypoints = {
 }
 for label, path in language_entrypoints.items():
     source = path.read_text(encoding="utf-8")
-    if not any(token in source for token in ("LanguageIconButton", "LanguageSelectionButton", "sys.symbol.worldclock")):
+    if not any(token in source for token in ("LanguageIconButton", "LanguageSelectionButton", "sys.symbol.worldclock", "onLanguageClick")):
         errors.append(f"{label} is missing the language selector entry point")
 
 ios_refresh_contracts = {

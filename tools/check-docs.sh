@@ -93,7 +93,6 @@ obsolete_paths=(
   "contract/openapi"
   "tools/generate-contracts.sh"
   "docs/android_app_resource_management_guide.md"
-  "docs/ios_harmonyos_app_resource_management_guide.md"
   "docs/harmonyos-plan.md"
   "docs/harmonyos-kmp-experiment.md"
   "docs/kmp-boundary.md"
@@ -172,7 +171,6 @@ stale_references=(
   "docs/ios-integration.md"
   "docs/注册登陆模块介绍.md"
   "docs/android_app_resource_management_guide.md"
-  "docs/ios_harmonyos_app_resource_management_guide.md"
   "tools/generate-contracts.sh"
 )
 

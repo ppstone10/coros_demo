@@ -61,6 +61,7 @@ protocol SharedLoginAdapterProtocol {
     func refreshHealth()
     func saveHealthCardConfiguration(_ typeNames: [String]) -> String?
     func consumeHealthEffect() -> HealthEffect?
+    func healthScenarioDescriptors() -> [HealthScenarioDescriptor]
 }
 
 final class SharedLoginAdapter: SharedLoginAdapterProtocol {
@@ -290,7 +291,7 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
 
     func resumeSession() {
         syncClock()
-        facade.restoreSession()
+        facade.resumeSessionInSameProcess()
     }
 
     func consumeEffect() -> LoginEffect? {
@@ -319,6 +320,10 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
 
     func consumeHealthEffect() -> HealthEffect? {
         healthFacade.consumeEffect()
+    }
+
+    func healthScenarioDescriptors() -> [HealthScenarioDescriptor] {
+        healthFacade.scenarioDescriptors()
     }
 
     private func syncClock() {

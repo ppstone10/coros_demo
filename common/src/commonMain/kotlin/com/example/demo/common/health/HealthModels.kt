@@ -27,13 +27,16 @@ sealed interface HealthEffect {
 
 enum class HealthError {
     AuthRequired,
+    EmptyData,
     CorruptedData,
+    ReadFailed,
     PersistFailed,
     MinimumCardsRequired;
 
     companion object {
         fun fromMockError(error: MockError): HealthError = when (error) {
             MockError.AuthRequired -> AuthRequired
+            MockError.EmptyData -> EmptyData
             MockError.CorruptedData -> CorruptedData
             MockError.PersistFailed -> PersistFailed
             MockError.MinimumCardsRequired -> MinimumCardsRequired

@@ -240,24 +240,25 @@ enum AppImages {
 }
 
 enum ProfileImageStore {
-    static let baseName = "profile-avatar"
+    private static let userDefaultsPrefix = "profile_avatar_data_"
 
-    static func save(_ data: Data, userId: String) -> String? {
-        guard let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            return nil
-        }
-        do {
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            let url = directory.appendingPathComponent("\(baseName)-\(userId).jpg")
-            try data.write(to: url, options: .atomic)
-            return url.path
-        } catch {
-            return nil
-        }
+    /// Key used to look up the avatar data for a given userId.
+    private static func storageKey(_ userId: String) -> String {
+        "\(userDefaultsPrefix)\(userId)"
     }
 
-    static func image(at path: String?) -> UIImage? {
-        guard let path, !path.isEmpty else { return nil }
-        return UIImage(contentsOfFile: path)
+    static func save(_ data: Data, userId: String) -> String? {
+        let key = storageKey(userId)
+        UserDefaults.standard.set(data, forKey: key)
+        return key
+    }
+
+    static func image(at key: String?) -> UIImage? {
+        guard let key, !key.isEmpty else { return nil }
+        if key.hasPrefix(userDefaultsPrefix) {
+            guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+            return UIImage(data: data)
+        }
+        return UIImage(contentsOfFile: key)
     }
 }

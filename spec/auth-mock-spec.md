@@ -187,11 +187,36 @@ enum class MockError {
 
 会话失效由本地 mock 开关或测试入口触发，不依赖服务端。
 
+### AUTH-SESSION-001：单一冷启动 TTL
+
+- 前台运行期间不计算会话 TTL。
+- App 进入后台时只持久化一个冷启动恢复截止时间，不增加第二套“后台 TTL”或“退出 TTL”。
+- 同一进程仍存活并从后台回到前台属于暖恢复，不因后台停留时长失效。
+- App 进程被回收或用户清除后台后，下一次冷启动根据上一次进入后台时持久化的截止时间判断会话是否失效。
+- 移动平台无法可靠获得强制终止发生的准确时刻，因此 TTL 从“上一次进入后台”开始计算，不声明从“用户清除 App”动作发生时开始计算。
+
+### AUTH-SESSION-002：冷启动与暖恢复分离
+
+- 冷启动恢复必须调用可校验持久化截止时间的接口；超过 TTL 时清除会话并产生 `SessionExpired` 效果。
+- 同进程暖恢复必须调用不判定过期的接口；该接口将会话恢复为前台活跃状态并清除旧截止时间。
+- Android、iOS、HarmonyOS 必须分别把冷启动恢复和前台暖恢复接入对应生命周期，不得用同一个恢复动作混淆两种语义。
+- 暖恢复后继续使用并在前台终止进程时，下次立即冷启动不得被旧的后台截止时间误判为过期。
+
+### AUTH-SESSION-003：Android 首次启动串行恢复
+
+- Android 不得通过彼此独立的 Compose `LaunchedEffect` 和 `Lifecycle.Event.ON_START` 同时触发冷恢复与暖恢复，避免暖恢复抢先清除持久化 TTL。
+- 每个新建的登录生命周期协调器第一次收到 `ON_START` 时必须只执行冷启动恢复；同一协调器后续收到 `ON_START` 时才执行同进程暖恢复。
+- 从最近任务清除 App 后，即使 Android 进程仍被系统缓存，只要 Activity 与登录生命周期协调器重新创建，首次 `ON_START` 仍按冷启动恢复处理。
+- 冷启动恢复产生的 `SessionExpired` 不得被同一次启动过程中的暖恢复覆盖或提前消费。
+
 验收重点：
 
 - 可手动或通过测试用例将当前会话标记为失效。
 - 业务 mock 数据源检测到失效会话后返回未登录错误。
 - 页面收到未登录错误后清理会话并引导重新登录。
+- 冷启动超过 TTL 后清理会话；未超过 TTL 时恢复会话。
+- 同进程暖恢复不因后台停留超过 Demo TTL 而清理会话。
+- Android 首次 `ON_START` 执行冷恢复，第二次及以后 `ON_START` 才执行暖恢复。
 
 ## 12. 本地状态保存
 
@@ -204,6 +229,8 @@ enum class MockError {
 
 可以使用 JSON 文件、SQLite、DataStore、UserDefaults、KeyValue 存储或等价本地方案。不得使用真实服务器同步。
 无论使用哪种持久化方案，状态结构必须能追溯到 protobuf message 定义；如果使用 JSON，也应使用 protobuf JSON 映射，而不是手写无约束 JSON。
+
+**iOS 头像图片持久化**：`UserProfile.avatarUri`（protobuf `avatar_uri`）在 iOS 上存储为 `UserDefaults` 中的一个 UserDefaults key（前缀 `profile_avatar_data_`），头像图片二进制数据直接存入 `UserDefaults`。头像图片的持久化机制必须与账号/健康卡片数据一致（统一使用 `UserDefaults`），不得单独使用文件系统路径，否则 App 重建后文件可能丢失而 URI 依然存在，导致加载失败回退为首字母占位。
 
 ## 13. 验收标准
 

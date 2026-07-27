@@ -59,6 +59,8 @@ export default class EntryAbility extends UIAbility {
 
   onForeground(): void {
     hilog.info(0x0001, 'demo_persist', 'onForeground');
+    getService().resumeSessionInSameProcess();
+    this.persistCurrentLoginStore('foreground');
   }
 
   onBackground(): void {

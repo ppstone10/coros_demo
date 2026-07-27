@@ -81,13 +81,10 @@ fun AuthNavGraph() {
     val resources = LocalResources.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    LaunchedEffect(Unit) {
-        viewModel.onAppForegrounded()
-    }
-
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
+                Lifecycle.Event.ON_START -> viewModel.onAppStarted()
                 Lifecycle.Event.ON_STOP -> viewModel.onAppBackgrounded()
                 else -> Unit
             }

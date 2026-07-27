@@ -81,6 +81,54 @@ class HealthDashboardUseCaseTest {
     @Test fun healthScenariosMatchMockEntries() {
         assertEquals(HealthMockScenario.entries.map { it.name }, HealthScenarios.names)
         assertEquals(HealthMockScenario.entries.size, HealthScenarios.displayKeys.size)
+        assertEquals(
+            HealthMockScenario.entries.map { it.name },
+            HealthScenarios.entries.map { it.code }
+        )
+        assertEquals(
+            HealthScenarios.displayKeys,
+            HealthScenarios.entries.map { it.displayKey }
+        )
+    }
+    @Test fun healthProtoScenarioAndErrorContractsRoundTrip() {
+        HealthMockScenario.entries.forEach { scenario ->
+            assertEquals(scenario, scenario.toProtoCode().toDomain())
+        }
+        HealthError.entries.forEach { error ->
+            assertEquals(error, error.toProtoMessage().toDomain())
+        }
+    }
+    @Test fun snapshotsEncodeProtoScenarioNamesAndDecodeLegacyNames() {
+        val snapshot = HealthDashboardSnapshot(
+            userId = "typed-scenario",
+            sourceScenario = HealthMockScenario.Abnormal
+        )
+        val encoded = MockHealthDashboardStoreJson.encode(snapshot)
+
+        assertTrue(encoded.contains("\"scenario\":\"HEALTH_MOCK_SCENARIO_ABNORMAL\""))
+        assertEquals(snapshot, MockHealthDashboardStoreJson.decode(encoded))
+        assertEquals(
+            HealthMockScenario.Abnormal,
+            MockHealthDashboardStoreJson.decode(
+                """{"userId":"legacy-scenario","scenario":"Abnormal"}"""
+            ).sourceScenario
+        )
+    }
+    @Test fun coreEmptyCardsExposeGuidanceKeysAndActions() {
+        val cards = state(HealthMockScenario.AllEmpty).cards.associateBy { it.type }
+        val expected = mapOf(
+            HealthCardType.Sleep to "health_summary_sleep_empty",
+            HealthCardType.TodayActivity to "health_summary_activity_empty",
+            HealthCardType.TrainingLoad to "health_summary_training_load_empty",
+            HealthCardType.Recovery to "health_summary_recovery_empty"
+        )
+
+        expected.forEach { (type, summaryKey) ->
+            val card = cards.getValue(type)
+            assertEquals(HealthCardStatus.Empty, card.status)
+            assertEquals(summaryKey, card.summary.key)
+            assertTrue(card.action != HealthCardAction.OpenCard)
+        }
     }
     @Test fun normalScenarioProvidesFigmaVisualData() {
         val byType = state(HealthMockScenario.Normal).cards.associateBy { it.type }
@@ -324,6 +372,8 @@ class HealthDashboardUseCaseTest {
         assertEquals("3", restored.uiState.cards.first { it.type == HealthCardType.Sleep }.visual.primaryValue)
         assertEquals(domain(HealthMockScenario.Abnormal), requireNotNull(persistence.load(userId)).dashboardData)
         assertTrue(raw.contains("\"dashboardData\""))
+        assertTrue(raw.contains("\"scenario\":\"HEALTH_MOCK_SCENARIO_ABNORMAL\""))
+        assertTrue(raw.contains("\"schemaVersion\":$CurrentHealthDashboardSchemaVersion"))
     }
 
     @Test fun fullDashboardSnapshotsAreIsolatedByUserId() {

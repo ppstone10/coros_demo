@@ -130,5 +130,10 @@ private fun healthStringResource(key: String): Int = when (key) {
     "health_visual_day_fri" -> R.string.health_visual_day_fri
     "health_visual_day_sat" -> R.string.health_visual_day_sat
     "health_visual_day_sun" -> R.string.health_visual_day_sun
+    "health_scenario_normal" -> R.string.health_scenario_normal
+    "health_scenario_partial_missing" -> R.string.health_scenario_partial_missing
+    "health_scenario_all_empty" -> R.string.health_scenario_all_empty
+    "health_scenario_abnormal" -> R.string.health_scenario_abnormal
+    "health_scenario_read_failure" -> R.string.health_scenario_read_failure
     else -> R.string.health_data_unavailable
 }

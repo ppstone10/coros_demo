@@ -183,15 +183,23 @@ data class HealthDashboardSnapshot(
     val schemaVersion: Int = CurrentHealthDashboardSchemaVersion
 )
 
-const val CurrentHealthDashboardSchemaVersion = 4
+const val CurrentHealthDashboardSchemaVersion = 5
+
+data class HealthScenarioDescriptor(
+    val code: String,
+    val displayKey: String
+)
 
 object HealthScenarios {
-    val names: List<String> = HealthMockScenario.entries.map { it.name }
-    val displayKeys: List<String> = listOf(
-        "health_scenario_normal", "health_scenario_partial_missing",
-        "health_scenario_all_empty", "health_scenario_abnormal",
-        "health_scenario_read_failure"
+    val entries: List<HealthScenarioDescriptor> = listOf(
+        HealthScenarioDescriptor(HealthMockScenario.Normal.name, "health_scenario_normal"),
+        HealthScenarioDescriptor(HealthMockScenario.PartialMissing.name, "health_scenario_partial_missing"),
+        HealthScenarioDescriptor(HealthMockScenario.AllEmpty.name, "health_scenario_all_empty"),
+        HealthScenarioDescriptor(HealthMockScenario.Abnormal.name, "health_scenario_abnormal"),
+        HealthScenarioDescriptor(HealthMockScenario.ReadFailure.name, "health_scenario_read_failure")
     )
+    val names: List<String> = entries.map { it.code }
+    val displayKeys: List<String> = entries.map { it.displayKey }
 }
 
 val DefaultHealthCardOrder = listOf(

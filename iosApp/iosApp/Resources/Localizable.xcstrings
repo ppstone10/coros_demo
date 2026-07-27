@@ -2352,13 +2352,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No activity data yet today"
+            "value" : "Record a workout to see today's activity here"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "今天还没有运动数据"
+            "value" : "记录一次运动后，这里将显示今日活动"
           }
         }
       }
@@ -2794,13 +2794,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No sleep data from last night"
+            "value" : "Wear your watch to sleep to see sleep data tomorrow"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "暂无昨夜睡眠数据"
+            "value" : "睡眠时佩戴手表，明早可查看睡眠数据"
           }
         }
       }
@@ -2947,13 +2947,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No training-load data"
+            "value" : "Finish a workout and sync your watch to generate training load"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "暂无训练负荷数据"
+            "value" : "完成运动并同步手表后生成训练负荷"
           }
         }
       }

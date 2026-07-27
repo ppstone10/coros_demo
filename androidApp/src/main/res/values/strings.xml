@@ -140,7 +140,7 @@
     <string name="health_scenario_read_failure">数据损坏</string>
     <string name="health_select_scenario">选择数据场景</string>
     <string name="health_sport_device">运动设备</string>
-    <string name="health_summary_activity_empty">今天还没有运动数据</string>
+    <string name="health_summary_activity_empty">记录一次运动后，这里将显示今日活动</string>
     <string name="health_summary_activity_normal">%1$s 步 · %2$s Kcal · %3$s 分钟</string>
     <string name="health_summary_body_empty">体重 --- kg · 本周主要锻炼部位</string>
     <string name="health_summary_body_normal">体重 %1$s kg · BMI %2$s</string>
@@ -166,7 +166,7 @@
     <string name="health_summary_running_empty">记录一笔 25min 以上的户外跑步运动</string>
     <string name="health_summary_running_normal">VO2Max %1$s · 评分 %2$s</string>
     <string name="health_summary_running_risk">VO2Max %1$s · 评分 %2$s，建议增加有氧训练</string>
-    <string name="health_summary_sleep_empty">暂无昨夜睡眠数据</string>
+    <string name="health_summary_sleep_empty">睡眠时佩戴手表，明早可查看睡眠数据</string>
     <string name="health_summary_sleep_normal">昨夜睡眠 %1$s小时%2$s分，质量 %3$s</string>
     <string name="health_summary_sleep_risk">睡眠质量偏低，今天注意安排休息</string>
     <string name="health_summary_stress_empty">佩戴手表或进行健康快测获取压力</string>
@@ -175,7 +175,7 @@
     <string name="health_summary_training_assessment_empty">将在第一次运动后 7 天评估您的训练量</string>
     <string name="health_summary_training_assessment_normal">评分 %1$s · 趋势 %2$s</string>
     <string name="health_summary_training_assessment_risk">训练量偏低，评分 %1$s，趋势 %2$s</string>
-    <string name="health_summary_training_load_empty">暂无训练负荷数据</string>
+    <string name="health_summary_training_load_empty">完成运动并同步手表后生成训练负荷</string>
     <string name="health_summary_training_load_normal">本周负荷 %1$s，建议范围 %2$s-%3$s</string>
     <string name="health_summary_training_load_risk">负荷 %1$s，超过建议范围，建议安排恢复</string>
     <string name="health_summary_weekly_custom">%1$s</string>

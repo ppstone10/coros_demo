@@ -1,5 +1,6 @@
 import { AppColors } from '../../resources/AppResources';
-import { getService } from '../../login/HarmonyServiceProvider';
+import { healthResource } from '../../resources/HealthLocalization';
+import { HealthScenarioEntry } from '../HealthDashboardTypes';
 
 @Component
 export struct ScenarioPickerComp {
@@ -7,39 +8,28 @@ export struct ScenarioPickerComp {
   onSelect?: (name: string) => void;
   onDismiss?: () => void;
 
-  private scenarios: string[] = ['Normal', 'PartialMissing', 'AllEmpty', 'Abnormal', 'ReadFailure'];
+  @Prop scenarios: HealthScenarioEntry[] = [];
 
   build() {
     Column() {
       Column({ space: 8 }) {
-        ForEach(this.scenarios, (scenario: string) => {
+        ForEach(this.scenarios, (scenario: HealthScenarioEntry) => {
           Row() {
-            Text(this.scenarioLabel(scenario)).fontSize(15).fontColor(AppColors.WHITE)
+            Text(healthResource(scenario.displayKey)).fontSize(15).fontColor(AppColors.WHITE)
             Blank().layoutWeight(1)
-            if (scenario === this.selectedScenario) {
+            if (scenario.code === this.selectedScenario) {
               Text('✓').fontSize(16).fontColor(AppColors.STEPS)
             }
           }
           .width('100%').padding(14)
           .onClick(() => {
-            if (this.onSelect) this.onSelect(scenario);
+            if (this.onSelect) this.onSelect(scenario.code);
           })
-        }, (scenario: string) => scenario)
+        }, (scenario: HealthScenarioEntry) => scenario.code)
       }
       .borderRadius(10).backgroundColor(AppColors.DIALOG_ALT).padding(12).margin({ left: 24, right: 24 })
     }
     .width('100%').height('100%').backgroundColor(AppColors.OVERLAY_62).justifyContent(FlexAlign.Center)
     .onClick(() => { if (this.onDismiss) this.onDismiss(); })
-  }
-
-  private scenarioLabel(name: string): ResourceStr {
-    switch (name) {
-      case 'Normal': return $r('app.string.health_scenario_normal');
-      case 'PartialMissing': return $r('app.string.health_scenario_partial_missing');
-      case 'AllEmpty': return $r('app.string.health_scenario_all_empty');
-      case 'Abnormal': return $r('app.string.health_scenario_abnormal');
-      case 'ReadFailure': return $r('app.string.health_scenario_read_failure');
-      default: return name;
-    }
   }
 }
