@@ -117,6 +117,18 @@ class HealthStoreTest {
         assertIs<HealthEffect.ShowMessage>(effect, "Less than 3 cards should produce error message")
     }
 
+    @Test
+    fun bodyWeightChangedActionUpdatesCardAndProducesSavedEffect() {
+        val store = createStore()
+        store.dispatch(HealthAction.Load)
+        store.dispatch(HealthAction.BodyWeightChanged(61.0))
+
+        val bodyCard = requireNotNull(store.state.uiState)
+            .cards.first { it.type == HealthCardType.BodyManagement }
+        assertEquals("61.0", bodyCard.visual.primaryValue)
+        assertEquals(61.0, assertIs<HealthEffect.BodyWeightSaved>(store.consumeEffect()).weightKg)
+    }
+
     private fun createStore(): HealthStore {
         val repo = repository(true)
         val persistence = InMemoryHealthDashboardStateDataSource()

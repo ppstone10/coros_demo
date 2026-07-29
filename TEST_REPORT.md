@@ -28,14 +28,14 @@ KMP `common` 共享业务层的认证与业务 mock 模块，以及 Android 本�
 | `LoginRulesTest` | `common/src/commonTest/.../LoginRulesTest.kt` | 8 |
 | `LoginUseCaseTest` | `common/src/commonTest/.../LoginUseCaseTest.kt` | 35 |
 | `BusinessMockDataSourceTest` | `common/src/commonTest/.../BusinessMockDataSourceTest.kt` | 4 |
-| `HealthDashboardUseCaseTest` | `common/src/commonTest/.../HealthDashboardUseCaseTest.kt` | 42 |
-| `HealthStoreTest` | `common/src/commonTest/.../HealthStoreTest.kt` | 10 |
-| **业务需求映射小计** | | **89** |
-| **common 全部合计（含 HealthStore）** | | **99** |
+| `HealthDashboardUseCaseTest` | `common/src/commonTest/.../HealthDashboardUseCaseTest.kt` | 46 |
+| `HealthStoreTest` | `common/src/commonTest/.../HealthStoreTest.kt` | 11 |
+| **业务需求映射小计** | | **93** |
+| **common 全部合计（含 HealthStore）** | | **104** |
 | `SessionLifecycleCoordinatorTest` | `androidApp/src/test/.../SessionLifecycleCoordinatorTest.kt` | 2 |
 | `AndroidAuthStoreDataSourceTest` | `androidApp/src/androidTest/.../AndroidAuthStoreDataSourceTest.kt` | 1 |
 
-共享业务测试合计：**89 条**；另有 `HealthStoreTest` 10 条架构测试，common 当前共 **99 条**。Android JVM 单元测试当前共 **9 条**，其中本轮会话生命周期调度测试 2 条。计数由源码中的 `@Test` 动态核对。
+共享业务测试合计：**93 条**；另有 `HealthStoreTest` 11 条架构测试，common 当前共 **104 条**。Android JVM 单元测试当前共 **9 条**，其中本轮会话生命周期调度测试 2 条。计数由源码中的 `@Test` 动态核对。
 
 ## 运行命令
 
@@ -105,9 +105,9 @@ KMP `common` 共享业务层的认证与业务 mock 模块，以及 Android 本�
 | `loggedOutUserCannotReadBusinessMockData` | 登出后读取业务摘要返回 `AuthRequired` |
 | `expiredSessionCannotReadBusinessMockData` | 会话失效后读取业务摘要返回 `AuthRequired` |
 
-### HealthDashboardUseCaseTest（42 条）
+### HealthDashboardUseCaseTest（46 条）
 
-覆盖 14 类卡片目录、稳定优先级、正常/部分缺失/全空/异常/读取失败场景、类型化场景与错误契约、Proto enum 快照写入、旧字符串场景迁移、核心 Empty 引导、完整领域快照与多用户集合 JSON 往返、旧配置及旧心率单值样本迁移、288 个 5 分钟模拟采样聚合为 48 个半小时最低/最高/平均心率区间、七日计划结构、健康快测可选测量时间、账户删除清理、模块数据优先、场景选择不立即提交、刷新成功提交及失败回滚、健康 UI model 的语义键/参数契约，以及卡片选择与顺序持久化。具体测试名以 `common/src/commonTest/kotlin/com/example/demo/common/health/HealthDashboardUseCaseTest.kt` 为准。
+覆盖 14 类卡片目录、稳定优先级、正常/部分缺失/全空/异常/读取失败场景、类型化场景与错误契约、Proto enum 快照写入、旧字符串场景迁移、核心 Empty 引导、完整领域快照与多用户集合 JSON 往返、旧配置及旧心率单值样本迁移、体重有序重复历史往返及旧快照迁移、288 个 5 分钟模拟采样聚合为 48 个半小时最低/最高/平均心率区间、七日计划结构、健康快测可选测量时间、账户删除清理、模块数据优先、场景选择不立即提交、刷新成功提交及失败回滚、健康 UI model 的语义键/参数契约，以及卡片选择与顺序持久化。具体测试名以 `common/src/commonTest/kotlin/com/example/demo/common/health/HealthDashboardUseCaseTest.kt` 为准。
 
 ### HealthStoreTest（10 条）
 

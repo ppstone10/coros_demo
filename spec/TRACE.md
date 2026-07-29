@@ -219,10 +219,10 @@
 | `LoginRulesTest.kt` | 8 | auth-mock-spec §7, §8, §9；RES-LOC-001 |
 | `LoginUseCaseTest.kt` | 35 | auth-mock-spec §14；AUTH-SESSION-001~002 |
 | `BusinessMockDataSourceTest.kt` | 4 | auth-mock-spec §10, §11, §14 |
-| `HealthDashboardUseCaseTest.kt` | 42 | health-dashboard-cards 测试要求；HLTH-EMPTY-001；HLTH-CONTRACT-001~002；HLTH-SCENARIO-001；RES-MAINT-008；HLTH-VIS-001~003、027~032；HLTH-PERSIST-001~007 |
-| **合计** | **89** | 业务需求映射测试 |
-| `HealthStoreTest.kt` | 10 | HLTH-MVI-001~004、HLTH-MVI-010 |
-| **common 全部合计** | **99** | 含 Health MVI 架构测试 |
+| `HealthDashboardUseCaseTest.kt` | 46 | health-dashboard-cards 测试要求；HLTH-EMPTY-001；HLTH-CONTRACT-001~002；HLTH-SCENARIO-001；RES-MAINT-008；HLTH-VIS-001~003、027~032、042、044；HLTH-PERSIST-001~007 |
+| **合计** | **93** | 业务需求映射测试 |
+| `HealthStoreTest.kt` | 11 | HLTH-MVI-001~004、HLTH-MVI-010；HLTH-VIS-042 |
+| **common 全部合计** | **104** | 含 Health MVI 架构测试 |
 | `SessionLifecycleCoordinatorTest.kt` | 2 | AUTH-SESSION-003（Android JVM） |
 
 ---
@@ -262,7 +262,7 @@
 | `HLTH-VIS-027` | 三端心率按半小时最低/最高/平均区间表达 | common/Android 测试通过；三端结构门禁与构建通过 | 共享 48 个半小时区间；三端 `HeartRateIntervalOverview` 每柱按自身 minimum/maximum 绘制 | ✅ |
 | `HLTH-VIS-028` | 5 分钟模拟心率按每 6 点聚合为半小时区间；当前只启用正常 1、正常 2、异常三个有心率场景 | `fiveMinuteHeartSamplesAggregateIntoHalfHourIntervals`、`enabledHeartDataScenariosUseThreeProvidedFiveMinuteSamples`；枚举精确目录断言先因 `Normal3` 多余红灯，最终 `:common:testAndroidHostTest` 通过；emulator-5554 长按场景弹窗仅显示 5 个既有场景 | `HealthMockScenario`/`HealthScenarios` 移除 `Normal3`；`LocalHealthDashboardDataSource` 只映射 normal1/normal2/abnormal；三端场景选择入口和资源同步移除正常数据 3 | ✅ |
 | `HLTH-VIS-029` | 三端周计划日期点击仅切换卡内七日计划，其他区域进入详情 | common/Android 测试通过；三端结构门禁与构建通过；iPhone 17 模拟器确认默认日计划 | 三端各自维护卡内选中日，日期子节点消费点击并从共享 `weeklyDayPlans` 切换内容 | ✅ |
-| `HLTH-VIS-030` | 三端 HRV 与静息心率三角指针位于指标线下方 | Android 单测与模拟器通过；三端结构门禁与构建通过 | Android Compose、iOS Canvas、HarmonyOS Path 均在线下绘制朝上三角 | ✅ |
+| `HLTH-VIS-030` | 三端 HRV 与静息心率指针与指标线同层叠放，尖端朝上且底边跨过横条 | 用户 HarmonyOS 截图作为方向基准；`rangeMarkerTrianglePointsUpAndCrossesIndicatorLine`；Android 模拟器截图；三端构建 | Android/iOS 三角 Path 已对齐 HarmonyOS `rangeMarkerPath` | ✅ |
 | `HLTH-VIS-031` | 三端健康快测测量时间与标题同行且缺失时隐藏 | common 测试、三端结构门禁与构建通过 | 三端 CardHeader 右侧条件渲染 nullable caption，内容区不再重复时间行 | ✅ |
 | `HLTH-VIS-032` | 三端手表短按进入“我”，长按保留场景切换 | Android 模拟器通过；三端互斥手势结构门禁与构建通过 | Android `combinedClickable`、iOS exclusive gesture、HarmonyOS `GestureGroup(Exclusive)` 分离短按与长按 | ✅ |
 | `HLTH-VIS-033` | iOS/HarmonyOS 有数据卡采用 Android 内容安全高度 | 用户反馈作为红灯；`check-health-cross-platform-parity.sh` 19 项红灯后转绿；两端构建通过；iPhone 17 首屏截图 | iOS `contentMinimumHeight`；HarmonyOS `contentMinimumHeight()` + 仅有数据分支的 `constraintSize` | ✅ |
@@ -272,6 +272,11 @@
 | `HLTH-VIS-037` | HarmonyOS 顶部指标、范围指针、快测网格对齐 Android | 专项门禁与 `assembleApp` 通过；当前无在线 HarmonyOS 设备，真机截图待人工回归 | 独立 116×116 弧容器；`MetricComp.iconColor`；可见 `RangeMarker`；`HealthCheckGrid` 两行三列 | ✅ |
 | `HLTH-VIS-038` | HarmonyOS Path 几何按 vp 设计尺寸换算 | 用户高密度设备截图作为红灯；`check-health-cross-platform-parity.sh` 8 项坐标断言红灯后转绿；HarmonyOS `assembleApp` 通过 | `SignedInPage.calorieArcPath`、`DashboardCardComp.gaugeArcPath/abilitySegmentPath/abilityNeedlePath/rangeMarkerPath` 在生成 Path 命令前调用 `vp2px` | ✅ |
 | `HLTH-VIS-039` | HarmonyOS 顶部指标 PNG 使用模板色 | 用户截图显示白/蓝原图色作为红灯；专项门禁模板模式断言红灯后转绿；HarmonyOS `assembleApp` 通过 | `MetricComp` 使用 `ImageRenderMode.Template` 后应用 `AppColors.STEPS/CALORIES/ACTIVE` | ✅ |
+| `HLTH-VIS-040` | 14 张卡片解耦为 12 类顶层样式，仅能力双卡与趋势双卡复用 | `check-health-card-style-decoupling.sh` 实施前 30 项红灯、实施后全绿；`:common:check`；Android/iOS/HarmonyOS 构建；emulator-5554 中下段截图 | 三端 `Recovery`/`Ability`/`RestingHeartRate`/`HrvAssessment` 独立顶层组件；`DashboardCard` 按稳定卡片类型分发 | ✅ |
+| `HLTH-VIS-041` | HRV/静息心率范围信息紧凑叠放并显示近 30 天平均虚线 | Android 单测及三端构建通过；HRV 状态/均值层级、静息心率平均虚线与紧凑端点已落地，设备截图待人工回归 | 三端 `HrvAssessment` / `RestingHeartRate` 独立视觉组件 | ✅（人工运行待验收） |
+| `HLTH-VIS-042` | 体重编辑历史按确认顺序完整持久化且刷新保留 | `bodyWeightHistoryRoundTripPreservesEditOrderAndDuplicates`、`legacyBodyWeightMigratesToSingleHistoryEntry`、`bodyWeightEditsAppendInOrderAndScenarioRefreshPreservesHistory`、`BodyWeightChanged` action 测试；`:common:check` 通过 | `BodyManagement.weightHistoryKg`、`HealthDashboardStore.saveBodyWeight`、健康快照 proto/JSON schema v6 | ✅ |
+| `HLTH-VIS-043` | 三端体型管理卡提供体重滑轮编辑入口与周锻炼部位说明 | 三端构建通过；编辑图标、30.0–200.0/0.1 滑轮、确认保存入口及精确文案已落地，设备点击待人工回归 | Android `WeightSheet`；iOS `HealthWeightPickerSheet`；HarmonyOS `HealthWeightPickerSheetComp`；三端 Body 视觉组件 | ✅（人工运行待验收） |
+| `HLTH-VIS-044` | HRV 四档短状态高亮并统一三端范围指针朝向 | `hrvStatusUsesFourShortRangeLabels` 红灯后通过；Android 指针几何测试、模拟器截图及三端构建通过 | common `hrvStatusKey`；三端 HRV 32 号白色粗体/4 间距；Android/iOS 上尖三角 | ✅ |
 
 ---
 

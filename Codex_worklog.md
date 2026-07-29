@@ -280,3 +280,71 @@
 - [HLTH-NAV-002] HarmonyOS 首次构建发现新增 `@Entry` 页面必须以单一容器为根，改为 `Stack` 根节点后打包通过。
 - [HLTH-NAV-004] iOS 导航图级健康 ViewModel 移除构造期抢先加载，改由已登录健康页首次出现时按空状态加载，避免在用户会话建立前读取健康数据。
 - [HLTH-NAV-006] iOS 资源债务门禁发现既有 Preview 中文字面量，改为已有本地化键后门禁归零。
+
+# 2026-07-29 14:52 — 健康卡片 12 类样式解耦与对齐
+
+## 采纳内容
+- [HLTH-VIS-040] 依据 Figma「首页 PROGRESS Copy」节点 `16:8096`（2031），将三端健康首页 14 张卡片从 10 类顶层样式解耦为 12 类：仅跑步/骑行能力继续共用 Ability，心率/压力继续共用 Trend。
+- [HLTH-VIS-040] Android、iOS、HarmonyOS 分别新增体力恢复、能力、静息心率、HRV 四个独立顶层组件，删除原先按类型切换布局的通用 Gauge/Range 顶层组件。
+- [HLTH-VIS-040] 三端分发器改按稳定卡片类型/ID 选择样式；体力恢复 114×78、能力 121×71、静息心率与 HRV 130 宽安全区内分别完成左右内容居中对齐。
+- 公共卡片外壳、空态、点击、共享数据契约与其余卡片内容未改；iOS 工程文件只同步登记新增/移除的视觉组件。
+
+## 人工审查点
+- Android emulator-5554 已截图核对骑行能力、心率、压力、睡眠、HRV、静息心率、健康快测和体型管理；建议后续在 iOS/HarmonyOS 可交互设备上复核系统字体放大时四张解耦卡的左右安全区。
+- 工作树开始前已有两个 iOS `ScrollViewPanObserver` 文件处于 `AD` 状态；本轮未修改、恢复或覆盖这些用户变更。
+
+## 验证结果
+- [HLTH-VIS-040] `tools/check-health-card-style-decoupling.sh` 实施前 30 项失败，能够捕获 12 个缺失文件和三端旧复合分发；实现后全部通过。
+- `./gradlew :common:check` 与 `./gradlew :androidApp:assembleDebug` 通过。
+- `xcodebuild -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build` 通过。
+- 配置 DevEco 环境后执行 `hvigorw assembleApp --no-daemon` 通过；仅保留项目既有弃用与签名配置警告。
+- Android emulator-5554 安装 Debug APK 后，中下段截图确认四张解耦卡及保留复用卡未越过圆角边界，主值、说明与右侧图形对齐。
+- `./tools/check-sdd.sh` 与 `git diff --check` 通过。
+- 既有 `check-health-card-adaptive-layout.sh`、`check-health-cross-platform-parity.sh`、`check-health-card-fidelity.sh` 仍因历史硬编码路径/符号及既存三项资源哈希差异失败；`check-docs.sh` 仍仅因本轮前已有的 `docs/reference/注册登陆模块介绍.md` 与可信恢复源不一致失败，本轮未修改这些无关内容。
+
+## 人工修正点
+- iOS 新增组件首次书写时将固定宽度与最小高度合并到不存在的 SwiftUI `frame` 重载，构建前已改为两个连续 `frame` 修饰器；最终 iOS 双架构模拟器构建通过。
+- 旧通用 Range 在静息心率右侧也绘制了 HRV 的绿色范围图例；解耦后静息心率只保留 30 天平均、单色范围线、指针和端点，HRV 独立保留正常范围图例与四色分段，恢复 Figma 2031 的各自信息层级。
+
+# 2026-07-29 17:03 — HRV/静息心率紧凑布局与体重历史编辑
+
+## 采纳内容
+- [HLTH-VIS-030/041] 三端 HRV 左栏首行改为状态、次行保留均值，右栏删除冗余第三行并把指针主体叠到指标线上方；静息心率缩小端点与横条间距，增加“近 30 天平均”文字竖虚线及横条平均值竖虚线。
+- [HLTH-VIS-042] common 为体型管理增加有序 `weightHistoryKg`，每次确认按发生顺序追加并允许重复；proto/JSON schema 升至 v6，旧快照缺字段时以原体重补首条，场景刷新保留已有用户历史。
+- [HLTH-VIS-043] Android、iOS、HarmonyOS 体重值旁增加资料编辑同款图标，点击体重或图标打开 30.0–200.0 kg、0.1 kg 步进的滑轮并经 common 保存；右侧说明统一为“本周主要锻炼部位”。
+
+## 人工审查点
+- [HLTH-VIS-030/041] 建议在三端设备以正常和异常场景复核 HRV 状态、指针尖端、端点贴合度及近 30 天均值虚线位置。
+- [HLTH-VIS-043] 建议在三端设备连续确认 `60.0、61.0、62.0、60.0、59.0`，复核子按钮不会误触卡片详情、滑轮当前值正确回显，并在重启后确认最后体重和完整顺序仍保留。
+
+## 验证结果
+- [HLTH-VIS-042] 测试实现前因 `weightHistoryKg`、`saveBodyWeight`、`BodyWeightChanged`/`BodyWeightSaved` 缺失而编译红灯；实现后 `./gradlew :common:check :androidApp:testDebugUnitTest :androidApp:assembleDebug` 通过。
+- [HLTH-VIS-030/041/043] `xcodebuild -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug -destination 'generic/platform=iOS Simulator' build` 通过。
+- [HLTH-VIS-030/041/043] `./tools/build-shared-harmony.sh` 完成 KMP bridge/provider 生成；配置 DevEco 环境后执行 `hvigorw assembleApp --no-daemon` 通过。
+- `./tools/check-sdd.sh`、`./tools/check-resources.sh`、`./tools/check-resource-maintainability.sh`、`./tools/check-health-card-style-decoupling.sh` 与 `git diff --check` 通过。
+- `./tools/check-docs.sh` 仍未通过：仅剩本轮开始前已存在的 `docs/reference/注册登陆模块介绍.md` 与可信恢复源不一致；本轮新增测试计数已同步至 `TEST_REPORT.md` 和 TRACE。
+
+## 人工修正点
+- [HLTH-VIS-042] 为区分模板场景数据与用户编辑历史，模型默认历史保持空列表；仅旧持久化 JSON 缺字段时迁移为单条历史，避免场景刷新被误判为用户编辑。
+- [HLTH-VIS-043] HarmonyOS 首次构建发现 `ClickEvent` 无 `stopPropagation`，改为子体重入口 `priorityGesture`、卡片父层普通 `gesture` 后构建通过；iOS 体型卡改为独立点击容器，避免整卡 Button 吞掉内部编辑按钮。
+
+# 2026-07-29 17:31 — HRV 短状态高亮与三端指针方向修正
+
+## 采纳内容
+- [HLTH-VIS-044] common 将 HRV 状态固定为“很低、偏低、正常、偏高”四档短标签：正常下限以下按图表最小值至正常下限的中点细分，正常区间与高于上限分别映射正常、偏高。
+- [HLTH-VIS-044] 三端 HRV 状态统一为 32 号白色粗体主值样式，并在状态与平均值之间保留 4 的间距。
+- [HLTH-VIS-030/044] 以用户提供的 HarmonyOS 截图为基准，将 Android/iOS 的 HRV 与静息心率三角改为尖端朝上、底边跨过横条；HarmonyOS 已有方向保持不变。
+
+## 人工审查点
+- 用户已反馈体重编辑功能满足需求，并确认一端完整体重数据可持久化；其余平台的重启后历史顺序仍建议继续补验。
+- Android 模拟器已核对“偏低”、平均值间距及两张范围卡的上尖三角；iOS 尚未做运行时截图，HarmonyOS 本轮沿用用户截图方向基准。
+
+## 验证结果
+- [HLTH-VIS-044] `hrvStatusUsesFourShortRangeLabels` 首次因 `hrvStatusKey` 缺失编译红灯；实现后 `./gradlew :common:testAndroidHostTest --tests '*HealthDashboardUseCaseTest' :androidApp:testDebugUnitTest --tests '*DashboardVisualMathTest' :androidApp:assembleDebug` 通过。
+- iOS `xcodebuild -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug -destination 'generic/platform=iOS Simulator' build` 通过。
+- `./tools/build-shared-harmony.sh` 完成 common 检查、KNOI bridge 重新生成及 HarmonyOS `assembleApp`，构建通过；仅保留项目既有 KSP/弃用/签名警告。
+- Android emulator-5554 安装新 APK 后截图确认 HRV 显示“偏低”白色粗体，平均值位于其下方，HRV 与静息心率三角均尖端朝上并跨过横条。
+- `./tools/check-sdd.sh`、`./tools/check-resources.sh`、`./tools/check-resource-maintainability.sh`、`./tools/check-health-card-style-decoupling.sh` 与 `git diff --check` 通过；`./tools/check-docs.sh` 仅因本轮前已有的 `docs/reference/注册登陆模块介绍.md` 恢复源差异失败。
+
+## 人工修正点
+- [HLTH-VIS-030] 旧规范将指针描述为“主体在线上方、尖端贴线”，与用户验收的 HarmonyOS 实际图形方向相反；本轮按截图修订为“尖端朝上、底边跨线”，并同步修正 LEARNINGS，避免后续再次翻转。

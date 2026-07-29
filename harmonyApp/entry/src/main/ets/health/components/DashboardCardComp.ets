@@ -4,9 +4,11 @@ import { ActivityVisualComp } from './visuals/ActivityVisualComp';
 import { WeeklyPlanVisualComp } from './visuals/WeeklyPlanVisualComp';
 import { TrainingLoadVisualComp } from './visuals/TrainingLoadVisualComp';
 import { TrainingAssessmentVisualComp } from './visuals/TrainingAssessmentVisualComp';
-import { GaugeVisualComp } from './visuals/GaugeVisualComp';
+import { RecoveryVisualComp } from './visuals/RecoveryVisualComp';
+import { AbilityVisualComp } from './visuals/AbilityVisualComp';
 import { TrendVisualComp } from './visuals/TrendVisualComp';
-import { RangeIndicatorVisualComp } from './visuals/RangeIndicatorVisualComp';
+import { RestingHeartRateVisualComp } from './visuals/RestingHeartRateVisualComp';
+import { HrvAssessmentVisualComp } from './visuals/HrvAssessmentVisualComp';
 import { SleepVisualComp } from './visuals/SleepVisualComp';
 import { HealthGridVisualComp } from './visuals/HealthGridVisualComp';
 import { BodyManagementVisualComp } from './visuals/BodyManagementVisualComp';
@@ -15,6 +17,7 @@ import { BodyManagementVisualComp } from './visuals/BodyManagementVisualComp';
 export struct DashboardCardComp {
   @Prop card: HealthCardModel;
   onTap?: () => void;
+  onBodyWeightTap?: () => void;
 
   private text(key: string | undefined, args: string[] | undefined = []): string {
     if (!key) return '';
@@ -22,16 +25,17 @@ export struct DashboardCardComp {
   }
 
   private contentMinimumHeight(): number {
-    if (this.card.visual.kind === 'TodayActivity') return 58;
-    if (this.card.visual.kind === 'WeeklyPlan') return 110;
-    if (this.card.visual.kind === 'TrainingLoad') return 60;
-    if (this.card.visual.kind === 'TrainingAssessment') return 130;
-    if (this.card.visual.kind === 'RecoveryGauge' || this.card.visual.kind === 'AbilityGauge') return 78;
-    if (this.card.visual.kind === 'TrendBars' ||
-      this.card.visual.kind === 'RangeIndicator' ||
-      this.card.visual.kind === 'SleepStages') return 60;
-    if (this.card.visual.kind === 'HealthCheckGrid') return 114;
-    if (this.card.visual.kind === 'BodyMap') return 121;
+    if (this.card.id === 'TodayActivity') return 58;
+    if (this.card.id === 'WeeklyPlan') return 110;
+    if (this.card.id === 'TrainingLoad') return 60;
+    if (this.card.id === 'TrainingAssessment') return 130;
+    if (this.card.id === 'Recovery') return 78;
+    if (this.card.id === 'RunningAbility' || this.card.id === 'CyclingAbility') return 71;
+    if (this.card.id === 'HeartRate' || this.card.id === 'Stress' ||
+      this.card.id === 'RestingHeartRate' || this.card.id === 'HrvAssessment' ||
+      this.card.id === 'Sleep') return 60;
+    if (this.card.id === 'HealthCheck') return 114;
+    if (this.card.id === 'BodyManagement') return 121;
     return 0;
   }
 
@@ -59,26 +63,35 @@ export struct DashboardCardComp {
   }
 
   @Builder VisualContent() {
-    if (this.card.visual.kind === 'TodayActivity') {
+    if (this.card.id === 'TodayActivity') {
       ActivityVisualComp({ visual: this.card.visual })
-    } else if (this.card.visual.kind === 'WeeklyPlan') {
+    } else if (this.card.id === 'WeeklyPlan') {
       WeeklyPlanVisualComp({ visual: this.card.visual })
-    } else if (this.card.visual.kind === 'TrainingLoad') {
+    } else if (this.card.id === 'TrainingLoad') {
       TrainingLoadVisualComp({ visual: this.card.visual })
-    } else if (this.card.visual.kind === 'TrendBars') {
+    } else if (this.card.id === 'HeartRate' || this.card.id === 'Stress') {
       TrendVisualComp({ cardType: this.card.id, visual: this.card.visual })
-    } else if (this.card.visual.kind === 'TrainingAssessment') {
+    } else if (this.card.id === 'TrainingAssessment') {
       TrainingAssessmentVisualComp({ visual: this.card.visual })
-    } else if (this.card.visual.kind === 'RecoveryGauge' || this.card.visual.kind === 'AbilityGauge') {
-      GaugeVisualComp({ cardType: this.card.id, visual: this.card.visual })
-    } else if (this.card.visual.kind === 'RangeIndicator') {
-      RangeIndicatorVisualComp({ cardType: this.card.id, visual: this.card.visual })
-    } else if (this.card.visual.kind === 'SleepStages') {
+    } else if (this.card.id === 'Recovery') {
+      RecoveryVisualComp({ visual: this.card.visual })
+    } else if (this.card.id === 'RunningAbility' || this.card.id === 'CyclingAbility') {
+      AbilityVisualComp({ cardType: this.card.id, visual: this.card.visual })
+    } else if (this.card.id === 'RestingHeartRate') {
+      RestingHeartRateVisualComp({ visual: this.card.visual })
+    } else if (this.card.id === 'HrvAssessment') {
+      HrvAssessmentVisualComp({ visual: this.card.visual })
+    } else if (this.card.id === 'Sleep') {
       SleepVisualComp({ visual: this.card.visual })
-    } else if (this.card.visual.kind === 'HealthCheckGrid') {
+    } else if (this.card.id === 'HealthCheck') {
       HealthGridVisualComp({ visual: this.card.visual })
-    } else if (this.card.visual.kind === 'BodyMap') {
-      BodyManagementVisualComp({ visual: this.card.visual })
+    } else if (this.card.id === 'BodyManagement') {
+      BodyManagementVisualComp({
+        visual: this.card.visual,
+        onWeightTap: () => {
+          if (this.onBodyWeightTap) this.onBodyWeightTap();
+        }
+      })
     }
   }
 
@@ -101,7 +114,9 @@ export struct DashboardCardComp {
       .layoutWeight(1)
       .padding({ left: 16, right: 16, top: 14, bottom: 14 })
       .backgroundColor(AppColors.HEALTH_CARD).borderRadius(8).clip(true)
-      .onClick(() => { if (this.onTap) { this.onTap(); } })
+      .gesture(
+        TapGesture().onAction(() => { if (this.onTap) { this.onTap(); } })
+      )
     }
     .width('100%')
     .padding({ left: 16, right: 16, top: 6, bottom: 6 })

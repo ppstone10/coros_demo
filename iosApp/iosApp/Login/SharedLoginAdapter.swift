@@ -60,6 +60,7 @@ protocol SharedLoginAdapterProtocol {
     func selectHealthScenario(_ name: String) -> Bool
     func refreshHealth()
     func saveHealthCardConfiguration(_ typeNames: [String]) -> String?
+    func saveHealthBodyWeight(_ weightKg: Double) -> String?
     func consumeHealthEffect() -> HealthEffect?
     func healthScenarioDescriptors() -> [HealthScenarioDescriptor]
 }
@@ -316,6 +317,10 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
 
     func saveHealthCardConfiguration(_ typeNames: [String]) -> String? {
         healthFacade.saveCardConfiguration(typeNames: typeNames)
+    }
+
+    func saveHealthBodyWeight(_ weightKg: Double) -> String? {
+        healthFacade.saveBodyWeight(weightKg: weightKg)
     }
 
     func consumeHealthEffect() -> HealthEffect? {

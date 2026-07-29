@@ -51,7 +51,8 @@ data class HealthCheckMock(
 )
 data class BodyManagementMock(
     val weightKg: Double? = null, val bodyFat: Double? = null, val bmi: Double? = null,
-    val measuredDate: String? = null, val trainedMuscleGroups: List<String> = emptyList()
+    val measuredDate: String? = null, val trainedMuscleGroups: List<String> = emptyList(),
+    val weightHistoryKg: List<Double> = emptyList()
 )
 
 data class HealthDashboardMockData(
@@ -92,7 +93,7 @@ fun Stress.toMock() = StressMock(stressLevel, status, averageStress, samples)
 fun HrvAssessment.toMock() = HrvAssessmentMock(hrvScore, status, averageMs, normalMin, normalMax)
 fun RestingHeartRate.toMock() = RestingHeartRateMock(value, measuredTime, thirtyDayAverage, rangeMin, rangeMax)
 fun HealthCheck.toMock() = HealthCheckMock(overallScore, lastCheckDays, measuredTime, heartRate, hrvMs, stress, respiratoryRate, bloodOxygen)
-fun BodyManagement.toMock() = BodyManagementMock(weightKg, bodyFat, bmi, measuredDate, trainedMuscleGroups)
+fun BodyManagement.toMock() = BodyManagementMock(weightKg, bodyFat, bmi, measuredDate, trainedMuscleGroups, weightHistoryKg)
 
 fun HealthDashboardData.toMock() = HealthDashboardMockData(
     daily = dailySummary?.toMock(), sleep = sleepSummary?.toMock(),
@@ -141,7 +142,7 @@ fun StressMock.toDomain() = Stress(stressLevel, status, averageStress, samples)
 fun HrvAssessmentMock.toDomain() = HrvAssessment(hrvScore, status, averageMs, normalMin, normalMax)
 fun RestingHeartRateMock.toDomain() = RestingHeartRate(value, measuredTime, thirtyDayAverage, rangeMin, rangeMax)
 fun HealthCheckMock.toDomain() = HealthCheck(overallScore, lastCheckDays, measuredTime, heartRate, hrvMs, stress, respiratoryRate, bloodOxygen)
-fun BodyManagementMock.toDomain() = BodyManagement(weightKg, bodyFat, bmi, measuredDate, trainedMuscleGroups)
+fun BodyManagementMock.toDomain() = BodyManagement(weightKg, bodyFat, bmi, measuredDate, trainedMuscleGroups, weightHistoryKg)
 
 fun HealthDashboardMockData.toDomain() = HealthDashboardData(
     dailySummary = daily?.toDomain(), sleepSummary = sleep?.toDomain(),

@@ -69,6 +69,7 @@ import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppSpacing
 import com.example.demo.ui.resources.AppTypography
 import com.example.demo.ui.theme.DemoTheme
+import com.example.demo.login.profile.WeightSheet
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -98,6 +99,7 @@ fun HealthDashboardScreen(
     val isCorrupted = state.error == HealthError.CorruptedData
 
     var screenState by remember { mutableStateOf(DashboardScreenState()) }
+    var editingBodyWeight by remember { mutableStateOf<Double?>(null) }
 
     LaunchedEffect(Unit) {
         if (healthViewModel.state.uiState == null) {
@@ -208,9 +210,13 @@ fun HealthDashboardScreen(
                                     items = state.uiState!!.cards,
                                     key = { _, card -> card.type.name }
                                 ) { _, card ->
-                                    DashboardCard(card) {
-                                        onOpenDetail(card.type)
-                                    }
+                                    DashboardCard(
+                                        card = card,
+                                        onClick = { onOpenDetail(card.type) },
+                                        onBodyWeightClick = {
+                                            editingBodyWeight = card.visual.primaryValue?.toDoubleOrNull() ?: 60.0
+                                        }
+                                    )
                                 }
                                 item {
                                     Text(
@@ -298,6 +304,17 @@ fun HealthDashboardScreen(
                 }
             }
         }
+    }
+
+    editingBodyWeight?.let { current ->
+        WeightSheet(
+            current = current,
+            onDismiss = { editingBodyWeight = null },
+            onConfirm = { selected ->
+                healthViewModel.saveBodyWeight(selected)
+                editingBodyWeight = null
+            }
+        )
     }
 }
 

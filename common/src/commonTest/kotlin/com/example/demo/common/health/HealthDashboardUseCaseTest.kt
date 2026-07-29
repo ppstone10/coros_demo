@@ -279,6 +279,63 @@ class HealthDashboardUseCaseTest {
         assertEquals(snapshot, MockHealthDashboardStoreJson.decode(MockHealthDashboardStoreJson.encode(snapshot)))
     }
 
+    @Test fun bodyWeightHistoryRoundTripPreservesEditOrderAndDuplicates() {
+        val history = listOf(60.0, 61.0, 62.0, 60.0, 59.0)
+        val snapshot = HealthDashboardSnapshot(
+            userId = "weight-history",
+            dashboardData = domain(HealthMockScenario.Normal).copy(
+                bodyManagement = BodyManagement(
+                    weightKg = history.last(),
+                    bodyFat = 18.0,
+                    bmi = 21.1,
+                    measuredDate = "2026/7/29",
+                    trainedMuscleGroups = listOf("chest"),
+                    weightHistoryKg = history
+                )
+            )
+        )
+
+        val decoded = MockHealthDashboardStoreJson.decode(MockHealthDashboardStoreJson.encode(snapshot))
+
+        assertEquals(history, decoded.dashboardData?.bodyManagement?.weightHistoryKg)
+        assertEquals(59.0, decoded.dashboardData?.bodyManagement?.weightKg)
+    }
+
+    @Test fun legacyBodyWeightMigratesToSingleHistoryEntry() {
+        val decoded = MockHealthDashboardStoreJson.decode(
+            """{"userId":"legacy-weight","dashboardData":{"bodyManagement":{"weightKg":60.0}}}"""
+        )
+
+        assertEquals(listOf(60.0), decoded.dashboardData?.bodyManagement?.weightHistoryKg)
+    }
+
+    @Test fun hrvStatusUsesFourShortRangeLabels() {
+        assertEquals("health_visual_hrv_very_low", hrvStatusKey(32.0, 30.0, 52.0, 60.0))
+        assertEquals("health_visual_hrv_low", hrvStatusKey(48.0, 30.0, 52.0, 60.0))
+        assertEquals("health_visual_hrv_normal", hrvStatusKey(56.0, 30.0, 52.0, 60.0))
+        assertEquals("health_visual_hrv_high", hrvStatusKey(65.0, 30.0, 52.0, 60.0))
+    }
+
+    @Test fun bodyWeightEditsAppendInOrderAndScenarioRefreshPreservesHistory() {
+        val persistence = InMemoryHealthDashboardStateDataSource()
+        val repository = repository(true)
+        val store = HealthDashboardStore(repository, persistence)
+        assertIs<MockResult.Success<PersistedDashboard>>(store.load())
+
+        listOf(61.0, 62.0, 60.0, 59.0).forEach { weight ->
+            assertIs<MockResult.Success<PersistedDashboard>>(store.saveBodyWeight(weight))
+        }
+        assertIs<MockResult.Success<Unit>>(store.selectScenario(HealthMockScenario.Abnormal))
+        assertIs<MockResult.Success<PersistedDashboard>>(store.refresh())
+
+        val body = requireNotNull(
+            persistence.load(requireNotNull(repository.currentSession()).userId)
+                ?.dashboardData?.bodyManagement
+        )
+        assertEquals(listOf(68.2, 61.0, 62.0, 60.0, 59.0), body.weightHistoryKg)
+        assertEquals(59.0, body.weightKg)
+    }
+
     @Test fun storedDashboardDataWinsOverScenarioTemplate() {
         val persistence = InMemoryHealthDashboardStateDataSource()
         val repository = repository(true)

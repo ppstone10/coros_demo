@@ -110,13 +110,42 @@ internal fun sleepVisual(value: SleepSummary): HealthCardVisualData {
 
 internal fun hrvVisual(value: HrvAssessment): HealthCardVisualData {
     val current = (value.averageMs ?: value.hrvScore ?: 0).toDouble()
+    val minimum = 30.0
+    val maximum = 80.0
     return HealthCardVisualData(
         kind = HealthCardVisualKind.RangeIndicator,
         primaryValue = current.toInt().toString(), primaryUnit = text("health_unit_milliseconds"),
-        caption = text(if (current < (value.normalMin ?: 0)) "health_visual_hrv_low" else "health_visual_hrv_balanced"),
+        caption = text(
+            hrvStatusKey(
+                current = current,
+                minimum = minimum,
+                normalMin = value.normalMin?.toDouble(),
+                normalMax = value.normalMax?.toDouble(),
+                maximum = maximum
+            )
+        ),
         detail = text("health_visual_hrv_average", current.toInt()),
-        range = HealthRange(30.0, 80.0, current, value.normalMin?.toDouble(), value.normalMax?.toDouble())
+        range = HealthRange(minimum, maximum, current, value.normalMin?.toDouble(), value.normalMax?.toDouble())
     )
+}
+
+internal fun hrvStatusKey(
+    current: Double,
+    minimum: Double,
+    normalMin: Double?,
+    normalMax: Double?,
+    maximum: Double = 80.0
+): String {
+    val fallbackMidpoint = minimum + (maximum - minimum) / 2.0
+    val resolvedNormalMin = normalMin ?: fallbackMidpoint
+    val resolvedNormalMax = normalMax ?: fallbackMidpoint
+    val veryLowThreshold = minimum + (resolvedNormalMin - minimum) / 2.0
+    return when {
+        current < veryLowThreshold -> "health_visual_hrv_very_low"
+        current < resolvedNormalMin -> "health_visual_hrv_low"
+        current <= resolvedNormalMax -> "health_visual_hrv_normal"
+        else -> "health_visual_hrv_high"
+    }
 }
 
 internal fun restingHeartVisual(value: RestingHeartRate): HealthCardVisualData {

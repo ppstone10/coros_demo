@@ -35,12 +35,11 @@ internal fun normalizedHeartRateInterval(
 }
 
 internal fun rangeMarkerVerticalBounds(
-    indicatorBottomY: Float,
-    gap: Float = 3f,
+    indicatorTopY: Float,
     height: Float = 7f
 ): ClosedFloatingPointRange<Float> {
-    val apexY = indicatorBottomY + gap.coerceAtLeast(0f)
-    return apexY..(apexY + height.coerceAtLeast(0f))
+    val safeHeight = height.coerceAtLeast(0f)
+    return (indicatorTopY - safeHeight)..(indicatorTopY + safeHeight / 2f)
 }
 
 internal fun weeklyVisualForSelectedDay(

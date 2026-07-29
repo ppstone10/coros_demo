@@ -107,7 +107,10 @@ private fun healthStringResource(key: String): Int = when (key) {
     "health_unit_hours_short" -> R.string.health_unit_hours_short
     "health_unit_minutes_short" -> R.string.health_unit_minutes_short
     "health_unit_milliseconds" -> R.string.health_unit_milliseconds
+    "health_visual_hrv_very_low" -> R.string.health_visual_hrv_very_low
     "health_visual_hrv_low" -> R.string.health_visual_hrv_low
+    "health_visual_hrv_normal" -> R.string.health_visual_hrv_normal
+    "health_visual_hrv_high" -> R.string.health_visual_hrv_high
     "health_visual_hrv_balanced" -> R.string.health_visual_hrv_balanced
     "health_visual_hrv_average" -> R.string.health_visual_hrv_average
     "health_visual_measured_at" -> R.string.health_visual_measured_at
@@ -120,6 +123,7 @@ private fun healthStringResource(key: String): Int = when (key) {
     "health_visual_blood_oxygen" -> R.string.health_visual_blood_oxygen
     "health_unit_kilograms" -> R.string.health_unit_kilograms
     "health_visual_weight" -> R.string.health_visual_weight
+    "health_visual_weekly_primary_muscles" -> R.string.health_visual_weekly_primary_muscles
     "health_visual_measured_date" -> R.string.health_visual_measured_date
     "health_visual_muscle_chest" -> R.string.health_visual_muscle_chest
     "health_visual_muscle_quadriceps" -> R.string.health_visual_muscle_quadriceps

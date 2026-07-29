@@ -97,6 +97,8 @@ export interface HarmonyLoginService {
 
    saveCardConfig(typeNamesCsv: string): string;
 
+   saveHealthBodyWeight(weightKg: number): string;
+
    exportHealthSnapshot(): string;
 
    restoreHealthSnapshot(json: string): boolean;

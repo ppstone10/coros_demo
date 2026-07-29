@@ -279,6 +279,15 @@ open class HarmonyLoginService {
         }
     }
 
+    fun saveHealthBodyWeight(weightKg: Double): String {
+        val error = healthFacade.saveBodyWeight(weightKg)
+        return if (error != null) {
+            "{\"error\":\"${error.esc()}\"}"
+        } else {
+            healthSnapshotFromState(healthFacade.state)
+        }
+    }
+
     fun exportHealthSnapshot(): String {
         return MockHealthDashboardStoreJson.encodeCollection(healthDataSource.allSnapshots())
     }

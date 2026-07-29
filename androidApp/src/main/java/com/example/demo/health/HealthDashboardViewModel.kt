@@ -35,6 +35,10 @@ class HealthDashboardViewModel(
         dispatch(HealthAction.CardConfigurationChanged(types))
     }
 
+    fun saveBodyWeight(weightKg: Double) {
+        dispatch(HealthAction.BodyWeightChanged(weightKg))
+    }
+
     fun onEffectConsumed() {
         effect = null
     }

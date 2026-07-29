@@ -1,8 +1,11 @@
 package com.example.demo.health
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,9 +17,11 @@ import com.example.demo.common.health.HealthCardVisualData
 import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppImage
 import com.example.demo.ui.resources.AppImages
+import androidx.compose.ui.res.stringResource
+import com.example.demo.R
 
 @Composable
-fun BodyVisual(v: HealthCardVisualData) {
+fun BodyVisual(v: HealthCardVisualData, onWeightClick: () -> Unit) {
     OverviewRow(
         left = {
             Column {
@@ -27,9 +32,18 @@ fun BodyVisual(v: HealthCardVisualData) {
                         fontSize = 14.sp
                     )
                 }
-                Row(verticalAlignment = Alignment.Bottom) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable(onClick = onWeightClick)
+                ) {
                     ValueText(v.primaryValue, 32)
                     UnitText(v.primaryUnit, 20)
+                    Spacer(Modifier.width(6.dp))
+                    AppImage(
+                        AppImages.Profile.Edit,
+                        stringResource(R.string.profile_edit_username),
+                        Modifier.size(16.dp)
+                    )
                 }
                 v.detail?.let {
                     Text(
@@ -52,17 +66,12 @@ fun BodyVisual(v: HealthCardVisualData) {
                     AppImage(AppImages.Health.BodyFront, null, Modifier.width(52.dp).height(108.dp))
                     AppImage(AppImages.Health.BodyBack, null, Modifier.width(52.dp).height(108.dp))
                 }
-                Row {
-                    v.metrics.take(2).forEachIndexed { index, metric ->
-                        if (index > 0) Text(" · ", color = AppColors.Health.Muted, fontSize = 11.sp)
-                        Text(
-                            localizedHealthText(metric.label),
-                            color = AppColors.Health.Muted,
-                            fontSize = 11.sp,
-                            maxLines = 1
-                        )
-                    }
-                }
+                Text(
+                    stringResource(R.string.health_visual_weekly_primary_muscles),
+                    color = AppColors.Health.Muted,
+                    fontSize = 11.sp,
+                    maxLines = 1
+                )
             }
         },
     )

@@ -112,6 +112,7 @@ export class AppImages {
   static bodyFront(): Resource { return $r('app.media.health_body_front'); }
   static bodyBack(): Resource { return $r('app.media.health_body_back'); }
   static recoveryStatus(): Resource { return $r('app.media.health_recovery_status'); }
+  static profileEdit(): Resource { return $r('app.media.icon_edit'); }
 
   static healthCardIcon(typeName: string): Resource {
     switch (typeName) {

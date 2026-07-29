@@ -14,9 +14,6 @@
         }
       }
     },
-    "·" : {
-
-    },
     "‹" : {
 
     },
@@ -2057,40 +2054,6 @@
         }
       }
     },
-    "health_pull_to_refresh" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pull to refresh"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下拉刷新"
-          }
-        }
-      }
-    },
-    "health_release_to_refresh" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Release to refresh"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "释放刷新"
-          }
-        }
-      }
-    },
     "health_data_unavailable" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2206,6 +2169,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@功能后续实现"
+          }
+        }
+      }
+    },
+    "health_pull_to_refresh" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pull to refresh"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下拉刷新"
+          }
+        }
+      }
+    },
+    "health_release_to_refresh" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Release to refresh"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "释放刷新"
           }
         }
       }
@@ -3678,13 +3675,30 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Within balanced range"
+            "value" : "Normal"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "处于均衡区间"
+            "value" : "正常"
+          }
+        }
+      }
+    },
+    "health_visual_hrv_high" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "偏高"
           }
         }
       }
@@ -3695,13 +3709,47 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Below balanced range"
+            "value" : "Low"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "低于均衡区间"
+            "value" : "偏低"
+          }
+        }
+      }
+    },
+    "health_visual_hrv_normal" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正常"
+          }
+        }
+      }
+    },
+    "health_visual_hrv_very_low" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Very low"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "很低"
           }
         }
       }
@@ -3967,13 +4015,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "30-day average %@"
+            "value" : "Recent 30-day average %@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "30 天平均 %@"
+            "value" : "近 30 天平均 %@"
           }
         }
       }
@@ -3991,6 +4039,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "训练负荷"
+          }
+        }
+      }
+    },
+    "health_visual_weekly_primary_muscles" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Main muscle groups trained this week"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本周主要锻炼部位"
           }
         }
       }

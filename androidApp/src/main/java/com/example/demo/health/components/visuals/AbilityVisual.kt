@@ -1,6 +1,7 @@
 package com.example.demo.health
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,30 +18,25 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.demo.R
 import com.example.demo.common.health.HealthCardType
 import com.example.demo.common.health.HealthCardVisualData
 import com.example.demo.ui.resources.AppColors
-import com.example.demo.ui.resources.AppImage
-import com.example.demo.ui.resources.AppImages
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
 @Composable
-fun GaugeVisual(type: HealthCardType, v: HealthCardVisualData) {
-    val accent = when (type) {
-        HealthCardType.Recovery -> AppColors.Health.VisualCyan
-        HealthCardType.RunningAbility -> AppColors.Health.VisualOrange
-        HealthCardType.CyclingAbility -> AppColors.Health.VisualGreen
-        else -> AppColors.Health.VisualGreen
+fun AbilityVisual(type: HealthCardType, v: HealthCardVisualData) {
+    val accent = if (type == HealthCardType.RunningAbility) {
+        AppColors.Health.VisualOrange
+    } else {
+        AppColors.Health.VisualGreen
     }
     OverviewRow(
         left = {
-            Column {
+            Column(Modifier.padding(top = 8.dp)) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     ValueText(v.primaryValue, 32)
                     UnitText(v.primaryUnit, 20)
@@ -50,63 +46,13 @@ fun GaugeVisual(type: HealthCardType, v: HealthCardVisualData) {
                         localizedHealthText(it),
                         color = AppColors.Health.Muted,
                         fontSize = 12.sp,
-                        maxLines = 1
-                    )
-                }
-                v.detail?.let {
-                    Text(
-                        localizedHealthText(it),
-                        color = AppColors.Health.Muted,
-                        fontSize = 12.sp,
-                        maxLines = 1
+                        maxLines = 1,
                     )
                 }
             }
         },
-        right = {
-            if (type == HealthCardType.Recovery) RecoveryGaugeOverview(v)
-            else AbilityGaugeOverview(v, accent)
-        },
+        right = { AbilityGaugeOverview(v, accent) },
     )
-}
-
-@Composable
-private fun RecoveryGaugeOverview(v: HealthCardVisualData) {
-    val progress = clampedVisualProgress(v.progress)
-    Box(Modifier.width(114.dp).height(78.dp), contentAlignment = Alignment.TopCenter) {
-        Canvas(Modifier.width(114.dp).height(58.dp)) {
-            val stroke = 4.dp.toPx()
-            val pad = 3.dp.toPx()
-            val arcSize = Size(size.width - 2 * pad, (size.height - pad) * 2)
-            drawArc(
-                AppColors.Health.GaugeTrack, 180f, 180f, false,
-                topLeft = Offset(pad, pad), size = arcSize,
-                style = Stroke(stroke, cap = StrokeCap.Butt)
-            )
-            if (progress > 0f) {
-                drawArc(
-                    AppColors.Health.VisualCyan, 180f, 180f * progress, false,
-                    topLeft = Offset(pad, pad), size = arcSize,
-                    style = Stroke(stroke, cap = StrokeCap.Butt)
-                )
-            }
-        }
-        AppImage(
-            AppImages.Health.RecoveryStatus,
-            null,
-            Modifier.padding(top = 20.dp).width(21.dp).height(30.dp),
-        )
-        Text(
-            stringResource(
-                if (progress >= 0.7f) R.string.health_visual_recovery_ready
-                else R.string.health_visual_recovery_low
-            ),
-            color = AppColors.Health.CardTitle,
-            fontSize = 11.sp,
-            modifier = Modifier.align(Alignment.BottomCenter),
-            maxLines = 1,
-        )
-    }
 }
 
 @Composable
@@ -153,7 +99,7 @@ private fun AbilityGaugeOverview(v: HealthCardVisualData, accent: Color) {
             Modifier.align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .padding(horizontal = 2.dp),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text("0", color = AppColors.Health.Muted, fontSize = 10.sp)
             Text("100", color = AppColors.Health.Muted, fontSize = 10.sp)

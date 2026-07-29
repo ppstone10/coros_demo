@@ -23,6 +23,8 @@ struct HealthDashboardView: View {
     @State private var heroHeight: CGFloat = 0
     @State private var refreshIndicatorHeight: CGFloat = 0
     @State private var refreshTask: Task<Void, Never>?
+    @State private var weightPickerValue = 60.0
+    @State private var showsWeightPicker = false
     var body: some View {
         Group {
             switch screenState.page {
@@ -43,6 +45,11 @@ struct HealthDashboardView: View {
                 // HealthEffect subclasses from KMP are flat types, not nested
             }
         }
+        .sheet(isPresented: $showsWeightPicker) {
+            HealthWeightPickerSheet(current: weightPickerValue) { selected in
+                viewModel.saveBodyWeight(selected)
+            }
+        }
     }
 
     private var mainDashboard: some View {
@@ -61,13 +68,21 @@ struct HealthDashboardView: View {
                                     minutes: viewModel.activeMinutes)
 
                         ForEach(viewModel.cards) { card in
-                            Button {
-                                onOpenDetail(card)
-                            } label: {
+                            if card.id == "BodyManagement" {
                                 cardRow(card)
-                            }.buttonStyle(.plain)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { onOpenDetail(card) }
+                                    .padding(.horizontal, AppSpacing.screen)
+                                    .padding(.vertical, AppSpacing.xSmall)
+                            } else {
+                                Button {
+                                    onOpenDetail(card)
+                                } label: {
+                                    cardRow(card)
+                                }.buttonStyle(.plain)
                                 .padding(.horizontal, AppSpacing.screen)
                                 .padding(.vertical, AppSpacing.xSmall)
+                            }
                         }
 
                         Button {
@@ -292,7 +307,14 @@ struct HealthDashboardView: View {
                 Text(card.summary).font(.system(size: 14)).foregroundStyle(AppColors.Health.muted)
                     .padding(.top, 12)
             } else if let visual = card.visual {
-                HealthCardVisualContent(cardType: card.id, visual: visual)
+                HealthCardVisualContent(
+                    cardType: card.id,
+                    visual: visual,
+                    onWeightEdit: {
+                        weightPickerValue = Double(visual.primaryValue ?? "") ?? 60.0
+                        showsWeightPicker = true
+                    }
+                )
             } else {
                 Text(card.summary).font(.system(size: 14)).foregroundStyle(card.isRisk ? AppColors.Health.risk : AppColors.Health.muted)
             }
@@ -324,33 +346,84 @@ private struct RefreshIndicatorHeightPreferenceKey: PreferenceKey {
 private struct HealthCardVisualContent: View {
     let cardType: String
     let visual: HealthCardVisualData
+    let onWeightEdit: () -> Void
 
     private var contentMinimumHeight: CGFloat {
-        switch visual.kind.name {
-        case "TodayActivity": 58; case "WeeklyPlan": 110; case "TrainingLoad": 60
-        case "TrainingAssessment": 130; case "RecoveryGauge", "AbilityGauge": 78
-        case "TrendBars", "RangeIndicator", "SleepStages": 60; case "HealthCheckGrid": 114
-        case "BodyMap": 121; default: 0
+        switch cardType {
+        case "TodayActivity": 58
+        case "WeeklyPlan": 110
+        case "TrainingLoad": 60
+        case "TrainingAssessment": 130
+        case "Recovery": 78
+        case "RunningAbility", "CyclingAbility": 71
+        case "HeartRate", "Stress", "RestingHeartRate", "HrvAssessment", "Sleep": 60
+        case "HealthCheck": 114
+        case "BodyManagement": 121
+        default: 0
         }
     }
 
     var body: some View {
         Group {
-            switch visual.kind.name {
+            switch cardType {
             case "TodayActivity": ActivityView(visual: visual)
             case "WeeklyPlan": WeeklyPlanView(visual: visual)
             case "TrainingLoad": TrainingLoadView(visual: visual)
             case "TrainingAssessment": TrainingAssessmentView(visual: visual)
-            case "RecoveryGauge", "AbilityGauge": GaugeView(cardType: cardType, visual: visual)
-            case "TrendBars": TrendView(cardType: cardType, visual: visual)
-            case "RangeIndicator": RangeView(cardType: cardType, visual: visual)
-            case "SleepStages": SleepView(visual: visual)
-            case "HealthCheckGrid": HealthGridView(visual: visual)
-            case "BodyMap": BodyView(visual: visual)
+            case "Recovery": RecoveryView(visual: visual)
+            case "RunningAbility", "CyclingAbility": AbilityView(cardType: cardType, visual: visual)
+            case "HeartRate", "Stress": TrendView(cardType: cardType, visual: visual)
+            case "RestingHeartRate": RestingHeartRateView(visual: visual)
+            case "HrvAssessment": HrvAssessmentView(visual: visual)
+            case "Sleep": SleepView(visual: visual)
+            case "HealthCheck": HealthGridView(visual: visual)
+            case "BodyManagement": BodyView(visual: visual, onWeightEdit: onWeightEdit)
             default: EmptyView()
             }
         }
         .frame(minHeight: contentMinimumHeight, alignment: .topLeading)
+    }
+}
+
+private struct HealthWeightPickerSheet: View {
+    let current: Double
+    let onConfirm: (Double) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var weightTenths = 600
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button(appLocalized("common_cancel")) { dismiss() }
+                Spacer()
+                Text(appLocalized("profile_weight_picker")).font(.system(size: 19, weight: .semibold))
+                Spacer()
+                Button(appLocalized("common_confirm")) {
+                    onConfirm(Double(weightTenths) / 10.0)
+                    dismiss()
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 20)
+            .frame(height: 58)
+            Picker("", selection: $weightTenths) {
+                ForEach(300...2000, id: \.self) {
+                    Text(String(format: "%.1f", Double($0) / 10.0))
+                }
+            }
+            .pickerStyle(.wheel)
+            .colorScheme(.dark)
+        }
+        .presentationDetents([.height(360)])
+        .presentationDragIndicator(.hidden)
+        .background(AppColors.Account.sheet.ignoresSafeArea())
+        .onAppear { weightTenths = Int((current * 10.0).rounded()).clamped(to: 300...2000) }
+    }
+}
+
+private extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }
 

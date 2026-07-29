@@ -3,6 +3,7 @@ package com.example.demo.common.health
 import com.example.demo.common.login.AuthRepository
 import com.example.demo.common.login.MockError
 import com.example.demo.common.login.MockResult
+import kotlin.math.round
 
 interface HealthDashboardStateDataSource {
     fun load(userId: String): HealthDashboardSnapshot?
@@ -63,9 +64,19 @@ class HealthDashboardStore(
                     when (val generated = dashboardDataSource.load(scenario)) {
                         is MockResult.Failure -> MockResult.Failure(generated.error)
                         is MockResult.Success -> {
+                            val preservedBody = resolved.data.dashboardData?.bodyManagement
+                            val generatedBody = generated.data.bodyManagement
+                            val mergedBody = if (preservedBody?.weightHistoryKg?.isNotEmpty() == true && generatedBody != null) {
+                                generatedBody.copy(
+                                    weightKg = preservedBody.weightHistoryKg.last(),
+                                    weightHistoryKg = preservedBody.weightHistoryKg
+                                )
+                            } else {
+                                generatedBody
+                            }
                             val updated = resolved.data.copy(
                                 sourceScenario = scenario,
-                                dashboardData = generated.data,
+                                dashboardData = generated.data.copy(bodyManagement = mergedBody),
                                 schemaVersion = CurrentHealthDashboardSchemaVersion
                             )
                             if (!stateDataSource.save(updated)) MockResult.Failure(MockError.PersistFailed)
@@ -96,6 +107,38 @@ class HealthDashboardStore(
                     is MockResult.Failure -> MockResult.Failure(resolved.error)
                     is MockResult.Success -> {
                         val updated = resolved.data.copy(enabledCardTypes = clean)
+                        if (!stateDataSource.save(updated)) MockResult.Failure(MockError.PersistFailed)
+                        else updated.toPersistedDashboard()
+                    }
+                }
+            }
+        }
+    }
+
+    fun saveBodyWeight(weightKg: Double): MockResult<PersistedDashboard> {
+        val access = authRepository.verifyBusinessAccess()
+        return when (access) {
+            is MockResult.Failure -> MockResult.Failure(access.error)
+            is MockResult.Success -> {
+                val normalized = round(weightKg * 10.0) / 10.0
+                if (!normalized.isFinite() || normalized !in 30.0..200.0) {
+                    return MockResult.Failure(MockError.CorruptedData)
+                }
+                when (val resolved = resolveSnapshot(access.data.userId)) {
+                    is MockResult.Failure -> MockResult.Failure(resolved.error)
+                    is MockResult.Success -> {
+                        val data = resolved.data.dashboardData
+                            ?: return MockResult.Failure(MockError.CorruptedData)
+                        val body = data.bodyManagement ?: BodyManagement(weightKg = normalized, bodyFat = null, bmi = null)
+                        val history = body.weightHistoryKg.ifEmpty {
+                            body.weightKg?.let(::listOf).orEmpty()
+                        } + normalized
+                        val updated = resolved.data.copy(
+                            dashboardData = data.copy(
+                                bodyManagement = body.copy(weightKg = normalized, weightHistoryKg = history)
+                            ),
+                            schemaVersion = CurrentHealthDashboardSchemaVersion
+                        )
                         if (!stateDataSource.save(updated)) MockResult.Failure(MockError.PersistFailed)
                         else updated.toPersistedDashboard()
                     }

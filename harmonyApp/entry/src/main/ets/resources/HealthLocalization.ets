@@ -87,7 +87,10 @@ export function healthResource(key: string): Resource {
     case 'health_unit_hours_short': return $r('app.string.health_unit_hours_short');
     case 'health_unit_minutes_short': return $r('app.string.health_unit_minutes_short');
     case 'health_unit_milliseconds': return $r('app.string.health_unit_milliseconds');
+    case 'health_visual_hrv_very_low': return $r('app.string.health_visual_hrv_very_low');
     case 'health_visual_hrv_low': return $r('app.string.health_visual_hrv_low');
+    case 'health_visual_hrv_normal': return $r('app.string.health_visual_hrv_normal');
+    case 'health_visual_hrv_high': return $r('app.string.health_visual_hrv_high');
     case 'health_visual_hrv_balanced': return $r('app.string.health_visual_hrv_balanced');
     case 'health_visual_hrv_average': return $r('app.string.health_visual_hrv_average');
     case 'health_visual_measured_at': return $r('app.string.health_visual_measured_at');
@@ -100,6 +103,7 @@ export function healthResource(key: string): Resource {
     case 'health_visual_blood_oxygen': return $r('app.string.health_visual_blood_oxygen');
     case 'health_unit_kilograms': return $r('app.string.health_unit_kilograms');
     case 'health_visual_weight': return $r('app.string.health_visual_weight');
+    case 'health_visual_weekly_primary_muscles': return $r('app.string.health_visual_weekly_primary_muscles');
     case 'health_visual_measured_date': return $r('app.string.health_visual_measured_date');
     case 'health_visual_muscle_chest': return $r('app.string.health_visual_muscle_chest');
     case 'health_visual_muscle_quadriceps': return $r('app.string.health_visual_muscle_quadriceps');

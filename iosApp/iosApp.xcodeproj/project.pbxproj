@@ -11,11 +11,13 @@
 		BF52788E301362B700D53B2B /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9252788E301362B700D53B2B /* AccountView.swift */; };
 		BF527890301362B700D53B2B /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527890301362B700D53B2B /* ActivityView.swift */; };
 		BF527891301362B700D53B2B /* BodyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527891301362B700D53B2B /* BodyView.swift */; };
-		BF527892301362B700D53B2B /* GaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527892301362B700D53B2B /* GaugeView.swift */; };
+		BF527892301362B700D53B2B /* RecoveryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527892301362B700D53B2B /* RecoveryView.swift */; };
 		BF527893301362B700D53B2B /* HealthCardHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527893301362B700D53B2B /* HealthCardHelpers.swift */; };
 		BF527894301362B700D53B2B /* HealthGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527894301362B700D53B2B /* HealthGridView.swift */; };
 		BF527895301362B700D53B2B /* MiniBarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527895301362B700D53B2B /* MiniBarsView.swift */; };
-		BF527896301362B700D53B2B /* RangeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527896301362B700D53B2B /* RangeView.swift */; };
+		BF527896301362B700D53B2B /* RestingHeartRateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527896301362B700D53B2B /* RestingHeartRateView.swift */; };
+		BF640001301362B700D53B2B /* AbilityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92640001301362B700D53B2B /* AbilityView.swift */; };
+		BF640002301362B700D53B2B /* HrvAssessmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92640002301362B700D53B2B /* HrvAssessmentView.swift */; };
 		BF527897301362B700D53B2B /* SleepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527897301362B700D53B2B /* SleepView.swift */; };
 		BF527898301362B700D53B2B /* TrainingAssessmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527898301362B700D53B2B /* TrainingAssessmentView.swift */; };
 		BF527899301362B700D53B2B /* TrainingLoadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527899301362B700D53B2B /* TrainingLoadView.swift */; };
@@ -70,11 +72,13 @@
 		9252788E301362B700D53B2B /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		92527890301362B700D53B2B /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
 		92527891301362B700D53B2B /* BodyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BodyView.swift; sourceTree = "<group>"; };
-		92527892301362B700D53B2B /* GaugeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GaugeView.swift; sourceTree = "<group>"; };
+		92527892301362B700D53B2B /* RecoveryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryView.swift; sourceTree = "<group>"; };
 		92527893301362B700D53B2B /* HealthCardHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCardHelpers.swift; sourceTree = "<group>"; };
 		92527894301362B700D53B2B /* HealthGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthGridView.swift; sourceTree = "<group>"; };
 		92527895301362B700D53B2B /* MiniBarsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniBarsView.swift; sourceTree = "<group>"; };
-		92527896301362B700D53B2B /* RangeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RangeView.swift; sourceTree = "<group>"; };
+		92527896301362B700D53B2B /* RestingHeartRateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestingHeartRateView.swift; sourceTree = "<group>"; };
+		92640001301362B700D53B2B /* AbilityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AbilityView.swift; sourceTree = "<group>"; };
+		92640002301362B700D53B2B /* HrvAssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HrvAssessmentView.swift; sourceTree = "<group>"; };
 		92527897301362B700D53B2B /* SleepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepView.swift; sourceTree = "<group>"; };
 		92527898301362B700D53B2B /* TrainingAssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingAssessmentView.swift; sourceTree = "<group>"; };
 		92527899301362B700D53B2B /* TrainingLoadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingLoadView.swift; sourceTree = "<group>"; };
@@ -149,11 +153,13 @@
 			children = (
 				92527890301362B700D53B2B /* ActivityView.swift */,
 				92527891301362B700D53B2B /* BodyView.swift */,
-				92527892301362B700D53B2B /* GaugeView.swift */,
+				92640001301362B700D53B2B /* AbilityView.swift */,
+				92527892301362B700D53B2B /* RecoveryView.swift */,
 				92527893301362B700D53B2B /* HealthCardHelpers.swift */,
 				92527894301362B700D53B2B /* HealthGridView.swift */,
 				92527895301362B700D53B2B /* MiniBarsView.swift */,
-				92527896301362B700D53B2B /* RangeView.swift */,
+				92640002301362B700D53B2B /* HrvAssessmentView.swift */,
+				92527896301362B700D53B2B /* RestingHeartRateView.swift */,
 				92527897301362B700D53B2B /* SleepView.swift */,
 				92527898301362B700D53B2B /* TrainingAssessmentView.swift */,
 				92527899301362B700D53B2B /* TrainingLoadView.swift */,
@@ -412,11 +418,13 @@
 				BF52788E301362B700D53B2B /* AccountView.swift in Sources */,
 				BF527890301362B700D53B2B /* ActivityView.swift in Sources */,
 				BF527891301362B700D53B2B /* BodyView.swift in Sources */,
-				BF527892301362B700D53B2B /* GaugeView.swift in Sources */,
+				BF640001301362B700D53B2B /* AbilityView.swift in Sources */,
+				BF527892301362B700D53B2B /* RecoveryView.swift in Sources */,
 				BF527893301362B700D53B2B /* HealthCardHelpers.swift in Sources */,
 				BF527894301362B700D53B2B /* HealthGridView.swift in Sources */,
 				BF527895301362B700D53B2B /* MiniBarsView.swift in Sources */,
-				BF527896301362B700D53B2B /* RangeView.swift in Sources */,
+				BF640002301362B700D53B2B /* HrvAssessmentView.swift in Sources */,
+				BF527896301362B700D53B2B /* RestingHeartRateView.swift in Sources */,
 				BF527897301362B700D53B2B /* SleepView.swift in Sources */,
 				BF527898301362B700D53B2B /* TrainingAssessmentView.swift in Sources */,
 				BF527899301362B700D53B2B /* TrainingLoadView.swift in Sources */,

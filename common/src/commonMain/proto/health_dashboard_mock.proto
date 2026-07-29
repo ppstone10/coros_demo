@@ -73,7 +73,14 @@ message HealthCheckMock {
   optional int32 heart_rate = 4; optional int32 hrv_ms = 5; optional int32 stress = 6;
   optional int32 respiratory_rate = 7; optional int32 blood_oxygen = 8;
 }
-message BodyManagementMock { optional double weight_kg = 1; optional double body_fat = 2; optional double bmi = 3; optional string measured_date = 4; repeated string trained_muscle_groups = 5; }
+message BodyManagementMock {
+  optional double weight_kg = 1;
+  optional double body_fat = 2;
+  optional double bmi = 3;
+  optional string measured_date = 4;
+  repeated string trained_muscle_groups = 5;
+  repeated double weight_history_kg = 6;
+}
 
 message HealthDashboardMock {
   DailySummaryMock daily = 1; SleepSummaryMock sleep = 2; TrainingLoadMock training_load = 3; RecoveryMock recovery = 4;

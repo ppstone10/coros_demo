@@ -249,11 +249,19 @@ object MockHealthDashboardStoreJson {
     private fun BodyManagement.toJson() = buildJsonObject {
         putNullable("weightKg", weightKg); putNullable("bodyFat", bodyFat); putNullable("bmi", bmi); putNullable("measuredDate", measuredDate)
         put("trainedMuscleGroups", strings(trainedMuscleGroups))
+        put("weightHistoryKg", doubles(weightHistoryKg))
     }
-    private fun JsonObject.toBodyManagement() = BodyManagement(
-        double("weightKg", "weight_kg"), double("bodyFat", "body_fat"), double("bmi"),
-        string("measuredDate", "measured_date"), stringList("trainedMuscleGroups", "trained_muscle_groups")
-    )
+    private fun JsonObject.toBodyManagement(): BodyManagement {
+        val weight = double("weightKg", "weight_kg")
+        val history = doubleListOrNull("weightHistoryKg", "weight_history_kg")
+            ?: weight?.let(::listOf).orEmpty()
+        return BodyManagement(
+            weight, double("bodyFat", "body_fat"), double("bmi"),
+            string("measuredDate", "measured_date"),
+            stringList("trainedMuscleGroups", "trained_muscle_groups"),
+            history
+        )
+    }
 
     private fun JsonObject.string(vararg names: String): String? = first(names)?.asPrimitive()?.contentOrNull
     private fun JsonObject.int(vararg names: String): Int? = first(names)?.asPrimitive()?.intOrNull
@@ -263,6 +271,9 @@ object MockHealthDashboardStoreJson {
     private fun JsonObject.obj(vararg names: String): JsonObject? = first(names) as? JsonObject
     private fun JsonObject.array(vararg names: String): JsonArray = first(names) as? JsonArray ?: JsonArray(emptyList())
     private fun JsonObject.intList(vararg names: String) = array(*names).mapNotNull { it.asPrimitive().intOrNull }
+    private fun JsonObject.doubleList(vararg names: String) = array(*names).mapNotNull { it.asPrimitive().doubleOrNull }
+    private fun JsonObject.doubleListOrNull(vararg names: String) =
+        (first(names) as? JsonArray)?.mapNotNull { it.asPrimitive().doubleOrNull }
     private fun JsonObject.stringList(vararg names: String) = array(*names).mapNotNull { it.asPrimitive().contentOrNull }
     private fun JsonObject.first(names: Array<out String>): JsonValue? = names.firstNotNullOfOrNull { this[it] }?.takeUnless { it is JsonNull }
     private fun JsonValue.asObject() = this as? JsonObject ?: error("Expected JSON object")
@@ -270,6 +281,7 @@ object MockHealthDashboardStoreJson {
 
     private fun strings(values: List<String>) = buildJsonArray { values.forEach { add(JsonPrimitive(it)) } }
     private fun ints(values: List<Int>) = buildJsonArray { values.forEach { add(JsonPrimitive(it)) } }
+    private fun doubles(values: List<Double>) = buildJsonArray { values.forEach { add(JsonPrimitive(it)) } }
     private fun JsonObjectBuilder.putNullableObject(name: String, value: JsonObject?) {
         put(name, value ?: JsonNull)
     }

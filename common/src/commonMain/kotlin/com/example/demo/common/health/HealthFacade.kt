@@ -41,6 +41,12 @@ class HealthFacade(
         return if (effect is HealthEffect.ShowMessage) effect.message else null
     }
 
+    fun saveBodyWeight(weightKg: Double): String? {
+        store.dispatch(HealthAction.BodyWeightChanged(weightKg))
+        val effect = store.consumeEffect()
+        return if (effect is HealthEffect.ShowMessage) effect.message else null
+    }
+
     fun consumeEffect(): HealthEffect? = store.consumeEffect()
 
     fun healthError(): HealthError? = store.state.error

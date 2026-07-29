@@ -20,6 +20,7 @@ class HealthStore(
             is HealthAction.ScenarioSelected -> selectScenario(action.scenario)
             HealthAction.Refresh -> refresh()
             is HealthAction.CardConfigurationChanged -> saveCardConfiguration(action.types)
+            is HealthAction.BodyWeightChanged -> saveBodyWeight(action.weightKg)
             HealthAction.EffectConsumed -> pendingEffect = null
             HealthAction.AuthSessionExpired -> handleSessionExpired()
         }
@@ -75,6 +76,19 @@ class HealthStore(
             is MockResult.Success -> {
                 apply(result.data)
                 pendingEffect = HealthEffect.ConfigSaved(clean)
+            }
+        }
+    }
+
+    private fun saveBodyWeight(weightKg: Double) {
+        when (val result = dashboardStore.saveBodyWeight(weightKg)) {
+            is MockResult.Failure -> {
+                state = state.copy(error = HealthError.fromMockError(result.error))
+                pendingEffect = HealthEffect.ShowMessage(result.error.message)
+            }
+            is MockResult.Success -> {
+                apply(result.data)
+                pendingEffect = HealthEffect.BodyWeightSaved(weightKg)
             }
         }
     }

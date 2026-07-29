@@ -25,6 +25,7 @@ import { ScenarioPickerComp } from '../health/components/ScenarioPickerComp';
 import { BottomNavBarComp } from './BottomNavBarComp';
 import { MetricComp } from '../health/components/MetricComp';
 import { DashboardCardComp } from '../health/components/DashboardCardComp';
+import { HealthWeightPickerSheetComp } from '../health/components/HealthWeightPickerSheetComp';
 import {
   HealthPullRefreshPhase,
   PULL_REFRESH_HOLD_OFFSET,
@@ -69,6 +70,8 @@ struct SignedInPage {
   @StorageLink('app_language_version') languageVersion: number = 0;
   @StorageLink('health_cards_version') healthCardsVersion: number = 0;
   @State showLanguageDialog: boolean = false;
+  @State showHealthWeightPicker: boolean = false;
+  @State healthWeightPickerValue: number = 60.0;
   private appliedHealthCardsVersion: number = 0;
 
   private calorieArcProgress(): number {
@@ -174,6 +177,19 @@ struct SignedInPage {
       if (this.showLanguageDialog) {
         this.LanguageDialog();
       }
+      if (this.showHealthWeightPicker) {
+        HealthWeightPickerSheetComp({
+          current: this.healthWeightPickerValue,
+          onDismiss: () => { this.showHealthWeightPicker = false; },
+          onConfirm: (weightKg: number) => {
+            this.healthVM.saveBodyWeight(weightKg, this);
+            if (this.healthVM.consumeEffectMessage() === undefined) {
+              saveStoreSnapshot();
+            }
+            this.showHealthWeightPicker = false;
+          }
+        })
+      }
     }
     .width('100%')
     .height('100%')
@@ -211,6 +227,10 @@ struct SignedInPage {
                 ForEach(this.healthVM.healthCards, (card: HealthCardModel) => {
                   DashboardCardComp({
                     card: card,
+                    onBodyWeightTap: () => {
+                      this.healthWeightPickerValue = Number(card.visual.primaryValue || '60.0');
+                      this.showHealthWeightPicker = true;
+                    },
                     onTap: () => {
                       navigateWithParams(NavOperation.Push, AuthRoutes.toHealthDetail(card.id));
                     }

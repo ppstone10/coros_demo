@@ -46,6 +46,11 @@ final class HealthDashboardViewModel: ObservableObject {
         load()
     }
 
+    func saveBodyWeight(_ weightKg: Double) {
+        guard adapter.saveHealthBodyWeight(weightKg) == nil else { return }
+        apply(adapter.healthState())
+    }
+
     func refresh() async {
         guard !isLoading else { return }
         syncCycle += 1

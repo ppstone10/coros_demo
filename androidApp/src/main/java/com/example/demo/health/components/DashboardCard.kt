@@ -42,7 +42,6 @@ import com.example.demo.common.health.HealthCardStatus
 import com.example.demo.common.health.HealthCardType
 import com.example.demo.common.health.HealthCardUiModel
 import com.example.demo.common.health.HealthCardVisualData
-import com.example.demo.common.health.HealthCardVisualKind
 import com.example.demo.common.health.HealthChartPoint
 import com.example.demo.common.health.HealthCheck
 import com.example.demo.common.health.HealthDashboardData
@@ -78,7 +77,11 @@ internal val CorosFontFamily = FontFamily(
 )
 
 @Composable
-fun DashboardCard(card: HealthCardUiModel, onClick: () -> Unit) {
+fun DashboardCard(
+    card: HealthCardUiModel,
+    onBodyWeightClick: () -> Unit = {},
+    onClick: () -> Unit
+) {
     val shape = RoundedCornerShape(8.dp)
     Column(
         modifier = Modifier
@@ -95,7 +98,11 @@ fun DashboardCard(card: HealthCardUiModel, onClick: () -> Unit) {
             EmptyContent(card)
         } else {
             Box(Modifier.fillMaxWidth().clipToBounds()) {
-                HealthCardVisualContent(type = card.type, visual = card.visual)
+                HealthCardVisualContent(
+                    type = card.type,
+                    visual = card.visual,
+                    onBodyWeightClick = onBodyWeightClick
+                )
             }
         }
     }
@@ -146,19 +153,22 @@ private fun EmptyContent(card: HealthCardUiModel) {
 @Composable
 private fun HealthCardVisualContent(
     type: HealthCardType,
-    visual: HealthCardVisualData
+    visual: HealthCardVisualData,
+    onBodyWeightClick: () -> Unit
 ) {
-    when (visual.kind) {
-        HealthCardVisualKind.TodayActivity -> ActivityVisual(visual)
-        HealthCardVisualKind.WeeklyPlan -> WeeklyVisual(visual)
-        HealthCardVisualKind.TrainingLoad -> LoadVisual(visual)
-        HealthCardVisualKind.TrainingAssessment -> AssessmentVisual(visual)
-        HealthCardVisualKind.RecoveryGauge, HealthCardVisualKind.AbilityGauge -> GaugeVisual(type, visual)
-        HealthCardVisualKind.TrendBars -> TrendVisual(type, visual)
-        HealthCardVisualKind.RangeIndicator -> RangeVisual(type, visual)
-        HealthCardVisualKind.SleepStages -> SleepVisual(visual)
-        HealthCardVisualKind.HealthCheckGrid -> HealthGridVisual(visual)
-        HealthCardVisualKind.BodyMap -> BodyVisual(visual)
+    when (type) {
+        HealthCardType.TodayActivity -> ActivityVisual(visual)
+        HealthCardType.WeeklyPlan -> WeeklyVisual(visual)
+        HealthCardType.TrainingLoad -> LoadVisual(visual)
+        HealthCardType.TrainingAssessment -> AssessmentVisual(visual)
+        HealthCardType.Recovery -> RecoveryVisual(visual)
+        HealthCardType.RunningAbility, HealthCardType.CyclingAbility -> AbilityVisual(type, visual)
+        HealthCardType.HeartRate, HealthCardType.Stress -> TrendVisual(type, visual)
+        HealthCardType.Sleep -> SleepVisual(visual)
+        HealthCardType.HrvAssessment -> HrvAssessmentVisual(visual)
+        HealthCardType.RestingHeartRate -> RestingHeartRateVisual(visual)
+        HealthCardType.HealthCheck -> HealthGridVisual(visual)
+        HealthCardType.BodyManagement -> BodyVisual(visual, onBodyWeightClick)
     }
 }
 

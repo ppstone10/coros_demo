@@ -7,6 +7,7 @@ sealed interface HealthAction {
     data class ScenarioSelected(val scenario: HealthMockScenario) : HealthAction
     data object Refresh : HealthAction
     data class CardConfigurationChanged(val types: List<HealthCardType>) : HealthAction
+    data class BodyWeightChanged(val weightKg: Double) : HealthAction
     data object EffectConsumed : HealthAction
     data object AuthSessionExpired : HealthAction
 }
@@ -23,6 +24,7 @@ sealed interface HealthEffect {
     data class ShowMessage(val message: String) : HealthEffect
     data object ScenarioChanged : HealthEffect
     data class ConfigSaved(val types: List<HealthCardType>) : HealthEffect
+    data class BodyWeightSaved(val weightKg: Double) : HealthEffect
 }
 
 enum class HealthError {

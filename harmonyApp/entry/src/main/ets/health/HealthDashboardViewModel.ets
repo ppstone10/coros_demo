@@ -77,6 +77,22 @@ export class HealthDashboardViewModel {
     }
   }
 
+  saveBodyWeight(weightKg: number, context?: object): void {
+    this.clearEffectMessage();
+    try {
+      const json: string = getService().saveHealthBodyWeight(weightKg);
+      const result: Record<string, Object> = JSON.parse(json) as Record<string, Object>;
+      if (result['error'] !== undefined) {
+        this.effectMessage = 'Save failed';
+        return;
+      }
+      this.applySnapshotFromJson(json, context);
+      this.dashboardVersion++;
+    } catch (e) {
+      this.effectMessage = 'Save failed';
+    }
+  }
+
   consumeEffectMessage(): string | undefined {
     const m = this.effectMessage;
     this.effectMessage = undefined;

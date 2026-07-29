@@ -4,6 +4,7 @@ import { HealthMetricData, HealthVisualData, localizedHealthText } from '../../H
 @Component
 export struct BodyManagementVisualComp {
   @Prop visual: HealthVisualData;
+  onWeightTap: () => void = () => {};
 
   private text(key: string | undefined, args: string[] | undefined = []): string {
     if (!key) return '';
@@ -17,7 +18,11 @@ export struct BodyManagementVisualComp {
         Row() {
           Text(this.visual.primaryValue || '--').fontSize(32).fontFamily('COROSAPPBold').fontWeight(FontWeight.Bold).fontColor(AppColors.WHITE)
           Text(this.text(this.visual.primaryUnitKey)).fontSize(20).fontFamily('COROSAPPBold').fontWeight(FontWeight.Bold).fontColor(AppColors.HEALTH_METRIC_UNIT).margin({ left: 3 })
+          Image(AppImages.profileEdit()).width(16).height(16).objectFit(ImageFit.Contain).margin({ left: 6 })
         }
+        .priorityGesture(
+          TapGesture().onAction(() => { this.onWeightTap(); })
+        )
         Text(this.text(this.visual.detailKey, this.visual.detailArgs)).fontSize(12).fontColor(AppColors.MUTED)
       }.width(141).alignItems(HorizontalAlign.Start).margin({ top: 8 })
       Blank()
@@ -26,12 +31,8 @@ export struct BodyManagementVisualComp {
           Image(AppImages.bodyFront()).width(52).height(108).objectFit(ImageFit.Contain)
           Image(AppImages.bodyBack()).width(52).height(108).objectFit(ImageFit.Contain)
         }
-        Row({ space: 3 }) {
-          ForEach(this.visual.metrics.slice(0, 2), (metric: HealthMetricData, index: number) => {
-            if (index > 0) { Text('·').fontSize(11).fontColor(AppColors.MUTED) }
-            Text(this.text(metric.labelKey)).fontSize(11).fontColor(AppColors.MUTED).maxLines(1)
-          })
-        }
+        Text($r('app.string.health_visual_weekly_primary_muscles'))
+          .fontSize(11).fontColor(AppColors.MUTED).maxLines(1)
       }.width(142).alignItems(HorizontalAlign.Center).clip(true)
     }.width('100%').alignItems(VerticalAlign.Center)
   }

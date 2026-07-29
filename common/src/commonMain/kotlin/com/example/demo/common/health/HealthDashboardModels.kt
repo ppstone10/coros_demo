@@ -115,7 +115,8 @@ data class HealthCheck(
 )
 data class BodyManagement(
     val weightKg: Double?, val bodyFat: Double?, val bmi: Double?,
-    val measuredDate: String? = null, val trainedMuscleGroups: List<String> = emptyList()
+    val measuredDate: String? = null, val trainedMuscleGroups: List<String> = emptyList(),
+    val weightHistoryKg: List<Double> = emptyList()
 )
 
 data class HealthDashboardData(
@@ -183,7 +184,7 @@ data class HealthDashboardSnapshot(
     val schemaVersion: Int = CurrentHealthDashboardSchemaVersion
 )
 
-const val CurrentHealthDashboardSchemaVersion = 5
+const val CurrentHealthDashboardSchemaVersion = 6
 
 data class HealthScenarioDescriptor(
     val code: String,

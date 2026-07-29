@@ -43,11 +43,11 @@ class DashboardVisualMathTest {
     }
 
     @Test
-    fun rangeMarkerTriangleStaysBelowIndicatorLine() {
-        val markerBounds = rangeMarkerVerticalBounds(indicatorBottomY = 13f, gap = 3f, height = 7f)
+    fun rangeMarkerTrianglePointsUpAndCrossesIndicatorLine() {
+        val markerBounds = rangeMarkerVerticalBounds(indicatorTopY = 10f, height = 8f)
 
-        assertEquals(16f, markerBounds.start, 0.0001f)
-        assertEquals(23f, markerBounds.endInclusive, 0.0001f)
+        assertEquals(2f, markerBounds.start, 0.0001f)
+        assertEquals(14f, markerBounds.endInclusive, 0.0001f)
     }
 
     @Test
