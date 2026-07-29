@@ -22,9 +22,7 @@ import { RecordsPlaceholderComp } from './RecordsPlaceholderComp';
 import { ExplorePlaceholderComp } from './ExplorePlaceholderComp';
 import { HeroTopRowComp } from '../health/components/HeroTopRowComp';
 import { ScenarioPickerComp } from '../health/components/ScenarioPickerComp';
-import { HealthDetailComp } from '../health/detail/HealthDetailComp';
 import { BottomNavBarComp } from './BottomNavBarComp';
-import { CardEditorComp } from '../health/editor/CardEditorComp';
 import { MetricComp } from '../health/components/MetricComp';
 import { DashboardCardComp } from '../health/components/DashboardCardComp';
 import {
@@ -39,8 +37,6 @@ import {
 } from '../health/components/PullToRefreshState';
 
 const PAGE_MAIN: string = 'main';
-const PAGE_DETAIL: string = 'detail';
-const PAGE_EDITOR: string = 'editor';
 const PAGE_SCENARIO_PICKER: string = 'scenario_picker';
 
 @Entry
@@ -50,7 +46,6 @@ struct SignedInPage {
   @State selectedTab: number = 0;
   @State healthVM: HealthDashboardViewModel = new HealthDashboardViewModel();
   @State currentPage: string = PAGE_MAIN;
-  @State detailCardId: string = '';
   @State refreshing: boolean = false;
   @State dragOffset: number = 0;
   @State refreshPhase: HealthPullRefreshPhase = HealthPullRefreshPhase.Idle;
@@ -72,7 +67,9 @@ struct SignedInPage {
   @State profileComplete: boolean = false;
   @StorageLink('app_language') appLanguage: string = APP_LANGUAGE_CHINESE;
   @StorageLink('app_language_version') languageVersion: number = 0;
+  @StorageLink('health_cards_version') healthCardsVersion: number = 0;
   @State showLanguageDialog: boolean = false;
+  private appliedHealthCardsVersion: number = 0;
 
   private calorieArcProgress(): number {
     return Math.max(0, Math.min(800, Number(this.healthVM.healthCalories) || 0)) / 800;
@@ -96,19 +93,24 @@ struct SignedInPage {
 
   aboutToAppear(): void {
     this.healthVM.load(this);
+    this.appliedHealthCardsVersion = this.healthCardsVersion;
     this.syncState();
   }
 
   onPageShow(): void {
+    if (this.appliedHealthCardsVersion !== this.healthCardsVersion) {
+      this.healthVM.load(this);
+      this.appliedHealthCardsVersion = this.healthCardsVersion;
+    }
     this.syncState();
   }
 
   onBackPress(): boolean {
-    if (this.currentPage !== PAGE_MAIN) {
+    if (this.currentPage === PAGE_SCENARIO_PICKER) {
       this.currentPage = PAGE_MAIN;
-      this.detailCardId = '';
+      return true;
     }
-    return true;
+    return false;
   }
 
   build() {
@@ -125,18 +127,6 @@ struct SignedInPage {
             onDismiss: () => {
               this.currentPage = PAGE_MAIN;
             }
-          })
-        } else if (this.currentPage === PAGE_EDITOR) {
-          CardEditorComp({
-            healthCards: this.healthVM.healthCards,
-            onSave: (csv: string) => { this.handleEditorSave(csv); },
-            onCancel: () => { this.currentPage = PAGE_MAIN; }
-          })
-        } else if (this.currentPage === PAGE_DETAIL && this.detailCardId.length > 0) {
-          HealthDetailComp({
-            cardId: this.detailCardId,
-            healthCards: this.healthVM.healthCards,
-            backAction: () => { this.currentPage = PAGE_MAIN; this.detailCardId = ''; }
           })
         } else {
           if (this.selectedTab === 0) {
@@ -221,7 +211,9 @@ struct SignedInPage {
                 ForEach(this.healthVM.healthCards, (card: HealthCardModel) => {
                   DashboardCardComp({
                     card: card,
-                    onTap: () => { this.detailCardId = card.id; this.currentPage = PAGE_DETAIL; }
+                    onTap: () => {
+                      navigateWithParams(NavOperation.Push, AuthRoutes.toHealthDetail(card.id));
+                    }
                   })
                 }, (card: HealthCardModel) => `${card.id}_v${this.healthVM.dashboardVersion}`)
 
@@ -233,7 +225,7 @@ struct SignedInPage {
                   .backgroundColor(AppColors.HEALTH_CARD)
                   .borderRadius(22)
                   .margin({ top: AppSpacing.LARGE, bottom: 42 })
-                  .onClick(() => { this.currentPage = PAGE_EDITOR; })
+                  .onClick(() => { navigate(NavOperation.Push, AuthRoutes.HEALTH_EDITOR); })
               }
             }
             .width('100%')
@@ -467,20 +459,6 @@ struct SignedInPage {
       this.healthVM.load(this);
       this.showLanguageDialog = false;
     })
-  }
-
-  // MARK: - Editor save
-  private handleEditorSave(typeNamesCsv: string): void {
-    const types: string[] = typeNamesCsv.split(',').map(t => t.trim()).filter(t => t.length > 0);
-    this.healthVM.saveCardConfiguration(types, this);
-    const msg: string | undefined = this.healthVM.consumeEffectMessage();
-    if (msg !== undefined) {
-      // error is handled by CardEditorComp; reload to restore original card state
-      this.healthVM.load(this);
-      return;
-    }
-    saveStoreSnapshot();
-    this.currentPage = PAGE_MAIN;
   }
 
   // MARK: - Data

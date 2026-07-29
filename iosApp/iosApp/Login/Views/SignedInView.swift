@@ -2,17 +2,23 @@ import SwiftUI
 
 struct SignedInView: View {
     @ObservedObject var viewModel: LoginViewModel
+    @ObservedObject var healthViewModel: HealthDashboardViewModel
     let router: AuthRouter
 
     var body: some View {
-        MainTabsView(viewModel: viewModel, router: router)
+        MainTabsView(
+            viewModel: viewModel,
+            healthViewModel: healthViewModel,
+            router: router
+        )
     }
 }
  
  #Preview {
-     SignedInView(
-         viewModel: LoginViewModel(),
-         router: AuthRouter(
+	     SignedInView(
+	         viewModel: LoginViewModel(),
+             healthViewModel: HealthDashboardViewModel(),
+	         router: AuthRouter(
              push: { _ in },
              pop: {},
              replaceTop: { _ in },

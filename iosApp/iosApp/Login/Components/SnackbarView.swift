@@ -39,6 +39,6 @@ struct SnackbarView: View {
 }
 
 #Preview {
-    SnackbarView(message: "这是一个示例提示消息", isPresented: .constant(true))
+    SnackbarView(message: appLocalized("auth_login_success"), isPresented: .constant(true))
         .preferredColorScheme(.dark)
 }

@@ -86,11 +86,13 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.net.toUri
 import com.example.demo.R
 import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppImage
 import com.example.demo.ui.resources.AppImages
+import com.example.demo.ui.theme.DemoTheme
 import com.example.demo.login.LoginViewModel
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
@@ -710,3 +712,102 @@ fun LegalParagraphText(paragraph: LegalParagraph) {
 
 // Use com.example.demo.common.login.VerifyTarget instead of local enum
 enum class TermsPromptAction { Login, PhoneCode, EmailCode }
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun CorosLogoPreview() {
+    DemoTheme { Column(Modifier.padding(20.dp)) { CorosLogo() } }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun CorosFilledButtonPreview() {
+    DemoTheme {
+        Column(Modifier.padding(20.dp)) {
+            CorosFilledButton(text = "Register", color = CorosRed, onClick = {})
+            Spacer(Modifier.height(12.dp))
+            CorosFilledButton(text = "Login", color = CorosRed.copy(alpha = 0.45f), onClick = {}, enabled = false)
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun UnderlineInputPreview() {
+    DemoTheme {
+        var text by remember { mutableStateOf("") }
+        Column(Modifier.padding(20.dp)) {
+            UnderlineInput(value = text, placeholder = "Email", onValueChange = { text = it }, keyboardType = KeyboardType.Email)
+            Spacer(Modifier.height(20.dp))
+            UnderlineInput(value = "password123", placeholder = "Password", onValueChange = {}, keyboardType = KeyboardType.Password, isPassword = true)
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun PhoneInputPreview() {
+    DemoTheme {
+        var phone by remember { mutableStateOf("") }
+        Column(Modifier.padding(20.dp)) {
+            PhoneInput(value = phone, onValueChange = { phone = it })
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun CodeBoxesPreview() {
+    DemoTheme {
+        var code by remember { mutableStateOf("") }
+        Column(Modifier.padding(20.dp)) {
+            CodeBoxes(code = code, hasError = false, onCodeChanged = { code = it })
+            Spacer(Modifier.height(30.dp))
+            CodeBoxes(code = "12", hasError = true, onCodeChanged = {})
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun AgreementRowPreview() {
+    DemoTheme {
+        var accepted by remember { mutableStateOf(false) }
+        Column(Modifier.padding(20.dp)) {
+            AgreementRow(accepted = accepted, onToggle = { accepted = !accepted }, onPrivacyClick = {}, onServiceTermsClick = {})
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun ErrorTextPreview() {
+    DemoTheme {
+        Column(Modifier.padding(20.dp)) {
+            ErrorText(message = "This is an error message")
+            ErrorText(message = null)
+        }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun BlockingLoadingOverlayPreview() {
+    DemoTheme {
+        Box(Modifier.size(200.dp)) { BlockingLoadingOverlay() }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun ThirdPartyAreaPreview() {
+    DemoTheme {
+        Column(Modifier.padding(20.dp)) { ThirdPartyArea(onUnavailableClick = {}) }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000)
+@Composable
+private fun TermsConsentSheetPreview() {
+    DemoTheme { TermsConsentSheet(onDismiss = {}, onPrivacyClick = {}, onServiceTermsClick = {}, onAgree = {}) }
+}

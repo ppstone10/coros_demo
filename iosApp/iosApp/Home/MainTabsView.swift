@@ -22,10 +22,10 @@ private enum MainTab: CaseIterable {
 
 struct MainTabsView: View {
     @ObservedObject var viewModel: LoginViewModel
+    @ObservedObject var healthViewModel: HealthDashboardViewModel
     @EnvironmentObject private var languageStore: AppLanguageStore
     let router: AuthRouter
     @State private var selected: MainTab = .fitness
-    @State private var contentFullscreen = false
 
     var body: some View {
         let _ = languageStore.current
@@ -34,40 +34,45 @@ struct MainTabsView: View {
                 switch selected {
                 case .fitness:
                     HealthDashboardView(
-                        isFullscreen: $contentFullscreen,
+                        viewModel: healthViewModel,
+                        onOpenDetail: { router.push(.healthDetail(cardID: $0.id)) },
+                        onOpenEditor: { router.push(.healthEditor) },
                         onWatchTap: { selected = .me }
                     )
-                case .me: AccountView(viewModel: viewModel, router: router, isFullscreen: $contentFullscreen)
+                case .me:
+                    AccountView(
+                        viewModel: viewModel,
+                        onEditProfile: { router.push(.profileEdit) }
+                    )
                 case .records: RecordsPlaceholderView()
                 case .explore: ExplorePlaceholderView()
                 }
             }
-            if !contentFullscreen {
-                HStack(spacing: 0) {
-                    ForEach(MainTab.allCases, id: \.self) { tab in
-                        Button {
-                            selected = tab
-                        } label: {
-                            VStack(spacing: 2) {
-                                Image(selected == tab ? tab.images.1 : tab.images.0).resizable().scaledToFit().frame(width: 27, height: 27)
-                                Text(tab.label).font(.system(size: 11, weight: selected == tab ? .medium : .regular))
-                                    .foregroundStyle(selected == tab ? .white : AppColors.Navigation.unselected)
-                            }.frame(maxWidth: .infinity)
-                        }.buttonStyle(.plain)
-                    }
+            HStack(spacing: 0) {
+                ForEach(MainTab.allCases, id: \.self) { tab in
+                    Button {
+                        selected = tab
+                    } label: {
+                        VStack(spacing: 2) {
+                            Image(selected == tab ? tab.images.1 : tab.images.0).resizable().scaledToFit().frame(width: 27, height: 27)
+                            Text(tab.label).font(.system(size: 11, weight: selected == tab ? .medium : .regular))
+                                .foregroundStyle(selected == tab ? .white : AppColors.Navigation.unselected)
+                        }.frame(maxWidth: .infinity)
+                    }.buttonStyle(.plain)
                 }
-                .padding(.top, 7).padding(.bottom, 5)
-                .background(AppColors.Navigation.bar.ignoresSafeArea(edges: .bottom))
             }
+            .padding(.top, 7).padding(.bottom, 5)
+            .background(AppColors.Navigation.bar.ignoresSafeArea(edges: .bottom))
         }
         .background(AppColors.Core.black)
     }
 }
  
  #Preview {
-     MainTabsView(
-         viewModel: LoginViewModel(),
-         router: AuthRouter(
+	     MainTabsView(
+	         viewModel: LoginViewModel(),
+             healthViewModel: HealthDashboardViewModel(),
+	         router: AuthRouter(
              push: { _ in },
              pop: {},
              replaceTop: { _ in },

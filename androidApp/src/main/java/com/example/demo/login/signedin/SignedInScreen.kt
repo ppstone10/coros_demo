@@ -44,7 +44,6 @@ import com.example.demo.login.LoginViewModel
 import com.example.demo.login.components.CorosButtonRed
 import com.example.demo.login.components.CorosWhite
 import com.example.demo.login.components.ErrorText
-import com.example.demo.login.profile.PersonalProfileEditScreen
 import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.language.LanguageIconButton
 import com.example.demo.ui.language.countryDisplayName
@@ -59,7 +58,7 @@ fun SignedInScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit,
     onAccountDeleted: () -> Unit,
-    onFullscreenChange: (Boolean) -> Unit = {}
+    onProfileClick: () -> Unit = {}
 ) {
     val state = viewModel.state
     val session = state.currentSession
@@ -68,22 +67,6 @@ fun SignedInScreen(
         ?: stringResource(R.string.account_default_user)
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     var localError by rememberSaveable { mutableStateOf<String?>(null) }
-    var editingProfile by rememberSaveable { mutableStateOf(false) }
-
-    if (editingProfile) {
-        PersonalProfileEditScreen(
-            viewModel = viewModel,
-            onBack = {
-                editingProfile = false
-                onFullscreenChange(false)
-            },
-            onSaved = {
-                editingProfile = false
-                onFullscreenChange(false)
-            }
-        )
-        return
-    }
 
     Box(Modifier.fillMaxSize().background(AppColors.Core.Black)) {
         Column(
@@ -113,10 +96,7 @@ fun SignedInScreen(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
                     .background(ProfileCardColor)
-                    .clickable {
-                        editingProfile = true
-                        onFullscreenChange(true)
-                    }
+                    .clickable(onClick = onProfileClick)
                     .padding(horizontal = 18.dp, vertical = 18.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -149,10 +129,7 @@ fun SignedInScreen(
                         AppColors.Account.Incomplete
                     },
                     fontSize = 11.sp,
-                    modifier = Modifier.clickable {
-                        editingProfile = true
-                        onFullscreenChange(true)
-                    }
+                    modifier = Modifier.clickable(onClick = onProfileClick)
                 )
             }
 

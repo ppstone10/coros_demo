@@ -44,6 +44,10 @@ import com.example.demo.login.profile.ProfileCompletionScreen
 import com.example.demo.login.register.EmailRegisterScreen
 import com.example.demo.login.register.PhoneRegisterScreen
 import com.example.demo.home.MainTabsScreen
+import com.example.demo.health.CardEditor
+import com.example.demo.health.DetailPlaceholder
+import com.example.demo.health.HealthDashboardViewModel
+import com.example.demo.login.profile.PersonalProfileEditScreen
 import com.example.demo.login.verify.VerifyCodeScreen
 import kotlinx.coroutines.launch
 
@@ -75,6 +79,9 @@ private fun NavController.navigateWithOperation(
 fun AuthNavGraph() {
     val viewModel = rememberLoginViewModel()
     val navController = rememberNavController()
+    val healthViewModel = remember(viewModel) {
+        HealthDashboardViewModel(viewModel.healthStore)
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val view = LocalView.current
@@ -317,7 +324,62 @@ fun AuthNavGraph() {
             }
 
             composable<SignedInRoute> {
-                MainTabsScreen(viewModel)
+                MainTabsScreen(
+                    viewModel = viewModel,
+                    healthViewModel = healthViewModel,
+                    onOpenHealthDetail = { cardType ->
+                        navController.navigateWithOperation(
+                            HealthDetailRoute(cardType.name),
+                            NavOperation.Push
+                        )
+                    },
+                    onOpenHealthEditor = {
+                        navController.navigateWithOperation(HealthEditorRoute, NavOperation.Push)
+                    },
+                    onOpenProfileEditor = {
+                        navController.navigateWithOperation(ProfileEditRoute, NavOperation.Push)
+                    }
+                )
+            }
+
+            composable<HealthDetailRoute> { backStackEntry ->
+                val route: HealthDetailRoute = backStackEntry.toRoute()
+                val card = healthViewModel.state.uiState?.cards
+                    ?.firstOrNull { it.type.name == route.cardType }
+                if (card == null) {
+                    LaunchedEffect(route.cardType) {
+                        navController.popBackStack()
+                    }
+                } else {
+                    DetailPlaceholder(card) {
+                        navController.navigateWithOperation(Unit, NavOperation.Pop)
+                    }
+                }
+            }
+
+            composable<HealthEditorRoute> {
+                CardEditor(
+                    initial = healthViewModel.state.enabledCardTypes,
+                    onClose = {
+                        navController.navigateWithOperation(Unit, NavOperation.Pop)
+                    },
+                    onSave = { types ->
+                        healthViewModel.saveCardConfiguration(types)
+                        navController.navigateWithOperation(Unit, NavOperation.Pop)
+                    }
+                )
+            }
+
+            composable<ProfileEditRoute> {
+                PersonalProfileEditScreen(
+                    viewModel = viewModel,
+                    onBack = {
+                        navController.navigateWithOperation(Unit, NavOperation.Pop)
+                    },
+                    onSaved = {
+                        navController.navigateWithOperation(Unit, NavOperation.Pop)
+                    }
+                )
             }
         }
     }

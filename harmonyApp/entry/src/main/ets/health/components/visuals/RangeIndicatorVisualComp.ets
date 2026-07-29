@@ -48,8 +48,11 @@ export struct RangeIndicatorVisualComp {
       }.width(141).alignItems(HorizontalAlign.Start).margin({ top: 8 })
       Blank()
       Column({ space: 4 }) {
-        Text(this.rangeHeaderText())
-          .fontSize(12).fontColor(AppColors.MUTED).maxLines(1)
+        Row({ space: 4 }) {
+          Circle().width(5).height(5).fill(AppColors.VISUAL_GREEN)
+          Text(this.rangeHeaderText())
+            .fontSize(12).fontColor(AppColors.MUTED).maxLines(1)
+        }
         Stack({ alignContent: Alignment.TopStart }) {
           if (this.cardType === 'HrvAssessment') {
             Row({ space: 0 }) {
@@ -66,11 +69,8 @@ export struct RangeIndicatorVisualComp {
         }
         .width(130).height(20)
         if (this.cardType === 'HrvAssessment') {
-          Row({ space: 4 }) {
-            Circle().width(5).height(5).fill(AppColors.VISUAL_GREEN)
-            Text(this.text(this.visual.captionKey, this.visual.captionArgs))
-              .fontSize(10).fontColor(AppColors.MUTED).maxLines(1)
-          }
+          Text(this.text(this.visual.captionKey, this.visual.captionArgs))
+            .fontSize(10).fontColor(AppColors.MUTED).maxLines(1)
         }
       }
       .width(130)

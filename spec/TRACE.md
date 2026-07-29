@@ -318,6 +318,19 @@
 | `HLTH-UI-ARCH-007` | selectedWeeklyDay 下放到 WeeklyVisual/WeeklyPlan | Android `./gradlew :androidApp:assembleDebug`；代码审查 | Android `WeeklyVisual.kt` 内部 `selectedDay`；iOS `WeeklyPlanView.swift` 内部 `@State selectedDay`；HarmonyOS `WeeklyPlanVisualComp.ets` 内部 `@State selectedDay` | ✅ |
 | `HLTH-UI-ARCH-008` | 三端同一子模式状态驱动对齐 | `./gradlew :androidApp:assembleDebug`；代码审查 | 三端均使用枚举/密封类 + `when`/`switch` 管理子页面，不再使用 `if {} return` 或 `if/else` 条件截断 | ✅ |
 | `HLTH-UI-ARCH-009` | iOS `HealthDashboardView.swift` 按视觉种类拆分 | `xcodebuild`（待运行） | iOS `HealthDashboardView.swift`（256 行）+ `Visuals/` 11 个独立文件 | ✅（待验证） |
+
+---
+
+## health-navigation.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `HLTH-NAV-001` | 四个底部页面属于同一根层级，Tab 不入栈，根返回不回认证流程 | `check-health-navigation.sh` 先红后绿；三端构建；Android emulator-5554 根层系统返回后 Launcher 可见 | Android `MainTabsScreen`、iOS `MainTabsView`、HarmonyOS `SignedInPage` 保持 Tab 为根层 UI 状态 | ✅（iOS/HarmonyOS 根层运行时待设备复验） |
+| `HLTH-NAV-002` | 健康详情与卡片编辑使用三端原生二级路由 Push/Pop | `check-health-navigation.sh` 实现前 40 项失败、实现后 40 项通过；三端构建；Android 详情系统返回验收 | Android `AuthNavGraph`；iOS `AuthCoordinator`；HarmonyOS `AuthRoutes`、`HealthDetailPage`、`HealthCardEditorPage` | ✅（iOS/HarmonyOS 运行时待设备复验） |
+| `HLTH-NAV-003` | 个人资料编辑作为二级路由返回“我”页面 | `check-health-navigation.sh`；Android/iOS/HarmonyOS 构建 | Android/iOS 新增资料编辑路由；HarmonyOS 复用 `ProfileCompletionPage(editMode=true)` | ✅（三端资料编辑运行时待复验） |
+| `HLTH-NAV-004` | 详情返回恢复进入前的健康列表位置 | 导航结构门禁；三端构建；Android emulator-5554 详情往返前后 Recovery 标题 bounds 均为 `[150,1417][996,1480]` | Android hoist `LazyListState`；iOS 保留同一根 View/VM；HarmonyOS 普通 Pop 不重载根 Scroll | ✅（iOS/HarmonyOS 滚动位置待设备复验） |
+| `HLTH-NAV-005` | 业务逻辑继续沉淀 common，平台只负责导航与 UI 状态 | `./gradlew :common:check`；代码审查；三端构建 | 路由和滚动状态仅位于平台层，common 健康模型、规则、Store 与持久化契约未引入平台导航依赖 | ✅ |
+| `HLTH-NAV-006` | Recovery 使用设计源回转箭头时钟语义图标 | `check-health-navigation.sh`、`check-resource-maintainability.sh`、`check-resources.sh`；三端构建 | 三端 `health_recovery_time` 语义资源、`AppImages` 映射及 `resource-inventory.json` | ✅（iOS/HarmonyOS 视觉待设备复验） |
 | `HLTH-UI-ARCH-010` | HarmonyOS `DashboardCardComp.ets` 按视觉种类拆分 | `hvigorw assembleApp`（待运行） | HarmonyOS `DashboardCardComp.ets`（109 行）+ `visuals/` 10 个独立文件 | ✅（待验证） |
 | `HLTH-UI-ARCH-011` | Android 健康首页固定 Hero、仅主体下移，拖动提示与主体固定间距联动 | `PullToRefreshStateTest.draggingIndicatorKeepsFixedGapAndMovesWithBody` 红灯后转绿；`:androidApp:assembleDebug`、`:androidApp:lintDebug`；emulator-5554 同一手势阈值前后截图 | `indicatorTopAttachedToBody` 使用主体顶部、提示高度和当前 80dp 固定间距；Dragging/Armed 直接使用随动位置并绕过停靠插值；三态/层级/提前淡入保持 | ✅ |
 | `HLTH-UI-ARCH-012` | Android 达阈值后主体固定吸附，刷新与复位仍保持提示固定间距，4460ms Lottie 同步 | `PullToRefreshStateTest.refreshAndResetKeepTheSameBodyAttachment` 红灯后转绿；`:androidApp:assembleDebug`、`:androidApp:lintDebug`；emulator-5554 阈值保持态与松手同步态截图 | `indicatorTopForPhase` 将五个阶段统一映射为 `bodyTop - indicatorHeight - 80dp`，主体吸附到当前 34dp，删除刷新停靠插值与复位额外上移 | ✅ |

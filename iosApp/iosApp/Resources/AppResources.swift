@@ -219,7 +219,7 @@ enum AppImages {
         static let todayActivity = "icon_small_training_effect"
         static let trainingLoad = "icon_small_training_load"
         static let trainingAssessment = "icon_small_training_effect"
-        static let recovery = "icon_recovery_sports"
+        static let recovery = "health_recovery_time"
         static let runningAbility = "icon_small_running_ability"
         static let cyclingAbility = "icon_small_cycling"
         static let heartRate = "icon_small_heart_rate"

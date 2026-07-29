@@ -5,23 +5,14 @@ import Shared
 struct AccountView: View {
     @ObservedObject var viewModel: LoginViewModel
     @EnvironmentObject private var languageStore: AppLanguageStore
-    let router: AuthRouter
-    @Binding var isFullscreen: Bool
-    @State private var editingProfile = false
+    let onEditProfile: () -> Void
     @State private var showDeleteDialog = false
     @State private var localError: String?
 
     var body: some View {
         let _ = languageStore.current
 
-        if editingProfile {
-            PersonalProfileEditView(viewModel: viewModel) {
-                editingProfile = false
-                isFullscreen = false
-            }
-        } else {
-            accountContent
-        }
+        accountContent
     }
 
     private var accountContent: some View {
@@ -41,8 +32,7 @@ struct AccountView: View {
                 .padding(.top, 8).padding(.bottom, 8)
 
                 Button {
-                    editingProfile = true
-                    isFullscreen = true
+                    onEditProfile()
                 } label: {
                     HStack(spacing: 14) {
                         AccountAvatar(path: draft.avatarUri, username: username)
@@ -100,16 +90,9 @@ struct AccountView: View {
 }
  
  #Preview {
-     AccountView(
-         viewModel: LoginViewModel(),
-         router: AuthRouter(
-             push: { _ in },
-             pop: {},
-             replaceTop: { _ in },
-             resetTo: { _ in },
-             resetKeepingEntranceAndPush: { _ in }
-         ),
-         isFullscreen: .constant(false)
+	     AccountView(
+	         viewModel: LoginViewModel(),
+             onEditProfile: {}
      )
      .environmentObject(AppLanguageStore.shared)
      .preferredColorScheme(.dark)
@@ -183,7 +166,7 @@ private enum EditProfilePicker: String, Identifiable {
     var id: String { rawValue }
 }
 
-private struct PersonalProfileEditView: View {
+struct PersonalProfileEditView: View {
     @ObservedObject var viewModel: LoginViewModel
     let onClose: () -> Void
     @State private var original: ProfileDraft

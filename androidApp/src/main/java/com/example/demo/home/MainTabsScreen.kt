@@ -12,11 +12,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.R
+import com.example.demo.common.health.HealthCardType
 import com.example.demo.health.HealthDashboardScreen
 import com.example.demo.health.HealthDashboardViewModel
 import com.example.demo.login.LoginViewModel
@@ -34,6 +35,8 @@ import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppImage
 import com.example.demo.ui.resources.AppImages
 import com.example.demo.ui.resources.SelectableImageAssets
+import com.example.demo.ui.theme.DemoTheme
+import androidx.compose.ui.tooling.preview.Preview
 
 private enum class HomeTab(
     @param:StringRes val labelRes: Int,
@@ -46,65 +49,83 @@ private enum class HomeTab(
 }
 
 @Composable
-fun MainTabsScreen(viewModel: LoginViewModel) {
+fun MainTabsScreen(
+    viewModel: LoginViewModel,
+    healthViewModel: HealthDashboardViewModel,
+    onOpenHealthDetail: (HealthCardType) -> Unit,
+    onOpenHealthEditor: () -> Unit,
+    onOpenProfileEditor: () -> Unit
+) {
     var tab by rememberSaveable { mutableStateOf(HomeTab.Fitness) }
-    var contentFullscreen by rememberSaveable { mutableStateOf(false) }
-    val healthViewModel = remember(viewModel) {
-        HealthDashboardViewModel(viewModel.healthStore)
-    }
+    val healthListState = rememberLazyListState()
     Column(Modifier.fillMaxSize().background(AppColors.Core.Black)) {
         Box(Modifier.weight(1f)) {
             when (tab) {
                 HomeTab.Fitness -> HealthDashboardScreen(
                     healthViewModel = healthViewModel,
+                    listState = healthListState,
                     onWatchClick = {
-                        contentFullscreen = false
                         tab = HomeTab.Me
                     },
-                    onFullscreenChange = { contentFullscreen = it }
+                    onOpenDetail = onOpenHealthDetail,
+                    onOpenEditor = onOpenHealthEditor
                 )
                 HomeTab.Me -> SignedInScreen(
                     viewModel,
                     onBack = {},
                     onLogout = {},
                     onAccountDeleted = {},
-                    onFullscreenChange = { contentFullscreen = it }
+                    onProfileClick = onOpenProfileEditor
                 )
                 HomeTab.Records -> RecordsPlaceholderScreen()
                 HomeTab.Explore -> ExplorePlaceholderScreen()
             }
         }
-        if (!contentFullscreen) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(AppColors.Navigation.Bar)
-                    .navigationBarsPadding()
-                    .padding(top = 7.dp, bottom = 5.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                HomeTab.entries.forEach { item ->
-                    val selected = tab == item
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { tab = item },
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        AppImage(
-                            asset = if (selected) item.icons.selected else item.icons.normal,
-                            contentDescription = stringResource(item.labelRes),
-                            modifier = Modifier.size(27.dp)
-                        )
-                        Text(
-                            text = stringResource(item.labelRes),
-                            color = if (selected) AppColors.Core.White else AppColors.Navigation.Unselected,
-                            fontSize = 11.sp,
-                            fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
-                        )
-                    }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(AppColors.Navigation.Bar)
+                .navigationBarsPadding()
+                .padding(top = 7.dp, bottom = 5.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            HomeTab.entries.forEach { item ->
+                val selected = tab == item
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { tab = item },
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    AppImage(
+                        asset = if (selected) item.icons.selected else item.icons.normal,
+                        contentDescription = stringResource(item.labelRes),
+                        modifier = Modifier.size(27.dp)
+                    )
+                    Text(
+                        text = stringResource(item.labelRes),
+                        color = if (selected) AppColors.Core.White else AppColors.Navigation.Unselected,
+                        fontSize = 11.sp,
+                        fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
+                    )
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000, locale = "zh")
+@Composable
+private fun MainTabsScreenPreview() {
+    val viewModel = LoginViewModel()
+    val healthViewModel = HealthDashboardViewModel(viewModel.healthStore)
+    DemoTheme {
+        MainTabsScreen(
+            viewModel = viewModel,
+            healthViewModel = healthViewModel,
+            onOpenHealthDetail = {},
+            onOpenHealthEditor = {},
+            onOpenProfileEditor = {}
+        )
     }
 }

@@ -21,7 +21,7 @@ struct HealthDetailView: View {
 
 #Preview {
     HealthDetailView(
-        card: HealthCard(id: "TodayActivity", title: "今日活动", summary: "", icon: "health_today_activity", isRisk: false),
+        card: HealthCard(id: "TodayActivity", title: appLocalized("health_card_today_activity_title"), summary: "", icon: "health_today_activity", isRisk: false),
         onBack: {}
     )
     .preferredColorScheme(.dark)

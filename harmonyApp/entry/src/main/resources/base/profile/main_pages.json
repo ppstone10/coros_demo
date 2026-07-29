@@ -10,6 +10,8 @@
     "pages/ResetPasswordPage",
     "pages/ProfileCompletionPage",
     "pages/SignedInPage",
+    "pages/HealthDetailPage",
+    "pages/HealthCardEditorPage",
     "pages/PrivacyPolicyPage",
     "pages/ServiceTermsPage",
     "pages/DebugStatePage"

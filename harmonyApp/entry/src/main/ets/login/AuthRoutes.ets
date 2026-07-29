@@ -14,6 +14,8 @@ export class AuthRoutes {
   static readonly SIGNED_IN: string = 'pages/SignedInPage';
   static readonly PRIVACY_POLICY: string = 'pages/PrivacyPolicyPage';
   static readonly SERVICE_TERMS: string = 'pages/ServiceTermsPage';
+  static readonly HEALTH_DETAIL: string = 'pages/HealthDetailPage';
+  static readonly HEALTH_EDITOR: string = 'pages/HealthCardEditorPage';
   static readonly DEBUG: string = 'pages/DebugStatePage';
 
   static toVerifyCode(account: string, targetKind: VerifyTargetKind): router.RouterOptions {
@@ -30,6 +32,10 @@ export class AuthRoutes {
 
   static toProfileEdit(): router.RouterOptions {
     return { url: AuthRoutes.PROFILE_COMPLETION, params: { editMode: true } };
+  }
+
+  static toHealthDetail(cardId: string): router.RouterOptions {
+    return { url: AuthRoutes.HEALTH_DETAIL, params: { cardId } };
   }
 }
 
@@ -52,4 +58,8 @@ export interface LegalDocumentParams {
 
 export interface ProfilePageParams {
   editMode?: boolean;
+}
+
+export interface HealthDetailParams {
+  cardId: string;
 }

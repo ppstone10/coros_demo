@@ -120,17 +120,24 @@ private fun HrvRangeOverview(v: HealthCardVisualData) {
         Modifier.width(130.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            stringResource(
-                R.string.health_visual_normal_range_short,
-                range?.normalMin?.toInt()?.toString() ?: "--",
-                range?.normalMax?.toInt()?.toString() ?: "--",
-                unit,
-            ),
-            color = AppColors.Health.Muted,
-            fontSize = 10.sp,
-            maxLines = 1,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(5.dp)
+                    .background(AppColors.Health.RangeNormal, RoundedCornerShape(3.dp))
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                stringResource(
+                    R.string.health_visual_normal_range_short,
+                    range?.normalMin?.toInt()?.toString() ?: "--",
+                    range?.normalMax?.toInt()?.toString() ?: "--",
+                    unit,
+                ),
+                color = AppColors.Health.Muted,
+                fontSize = 10.sp,
+                maxLines = 1,
+            )
+        }
         Canvas(Modifier.fillMaxWidth().height(30.dp)) {
             val r = range ?: return@Canvas
             val colors = listOf(
@@ -165,20 +172,13 @@ private fun HrvRangeOverview(v: HealthCardVisualData) {
             }
             drawPath(marker, AppColors.Core.White)
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(5.dp)
-                    .background(AppColors.Health.RangeNormal, RoundedCornerShape(3.dp))
+        v.caption?.let {
+            Text(
+                localizedHealthText(it),
+                color = AppColors.Health.Muted,
+                fontSize = 10.sp,
+                maxLines = 1
             )
-            Spacer(Modifier.width(4.dp))
-            v.caption?.let {
-                Text(
-                    localizedHealthText(it),
-                    color = AppColors.Health.Muted,
-                    fontSize = 10.sp,
-                    maxLines = 1
-                )
-            }
         }
     }
 }

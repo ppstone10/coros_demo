@@ -177,10 +177,10 @@ struct HealthCardEditor: View {
 #Preview {
     HealthCardEditor(
         initial: [
-            HealthCard(id: "TodayActivity", title: "今日活动", summary: "", icon: "health_today_activity", isRisk: false),
-            HealthCard(id: "WeeklyPlan", title: "本周计划", summary: "", icon: "health_weekly_plan", isRisk: false),
-            HealthCard(id: "TrainingLoad", title: "训练负荷", summary: "", icon: "health_training_load", isRisk: false),
-            HealthCard(id: "HeartRate", title: "心率", summary: "", icon: "health_heart_rate", isRisk: false),
+            HealthCard(id: "TodayActivity", title: appLocalized("health_card_today_activity_title"), summary: "", icon: "health_today_activity", isRisk: false),
+            HealthCard(id: "WeeklyPlan", title: appLocalized("health_card_weekly_plan_title"), summary: "", icon: "health_weekly_plan", isRisk: false),
+            HealthCard(id: "TrainingLoad", title: appLocalized("health_card_training_load_title"), summary: "", icon: "health_training_load", isRisk: false),
+            HealthCard(id: "HeartRate", title: appLocalized("health_card_heart_rate_title"), summary: "", icon: "health_heart_rate", isRisk: false),
         ],
         onClose: {},
         onSave: { _ in }

@@ -14,6 +14,9 @@ enum AuthRoute: Hashable {
     case serviceTerms
     case profileCompletion
     case signedIn
+    case healthDetail(cardID: String)
+    case healthEditor
+    case profileEdit
 }
 
 struct AuthRouter {
@@ -46,6 +49,7 @@ struct AuthRouter {
 
 struct AuthCoordinator: View {
     @StateObject private var viewModel = LoginViewModel()
+    @StateObject private var healthViewModel = HealthDashboardViewModel()
     @State private var path = NavigationPath()
     @Environment(\.scenePhase) private var scenePhase
 
@@ -104,8 +108,37 @@ struct AuthCoordinator: View {
                             ProfileCompletionView(viewModel: viewModel, router: router)
                                 .navigationBarBackButtonHidden(true)
                         case .signedIn:
-                            SignedInView(viewModel: viewModel, router: router)
+                            SignedInView(
+                                viewModel: viewModel,
+                                healthViewModel: healthViewModel,
+                                router: router
+                            )
                                 .navigationBarBackButtonHidden(true)
+                        case let .healthDetail(cardID):
+                            if let card = healthViewModel.cards.first(where: { $0.id == cardID }) {
+                                HealthDetailView(card: card) { router.pop() }
+                                    .navigationBarBackButtonHidden(true)
+                            } else {
+                                AppColors.Core.black
+                                    .ignoresSafeArea()
+                                    .onAppear { router.pop() }
+                                    .navigationBarBackButtonHidden(true)
+                            }
+                        case .healthEditor:
+                            HealthCardEditor(
+                                initial: healthViewModel.cards,
+                                onClose: { router.pop() },
+                                onSave: { cards in
+                                    healthViewModel.saveCardConfiguration(cards.map(\.id))
+                                    router.pop()
+                                }
+                            )
+                            .navigationBarBackButtonHidden(true)
+                        case .profileEdit:
+                            PersonalProfileEditView(viewModel: viewModel) {
+                                router.pop()
+                            }
+                            .navigationBarBackButtonHidden(true)
                         }
                     }
             }
@@ -138,7 +171,11 @@ struct AuthCoordinator: View {
     private var rootView: some View {
         switch startRoute {
         case .signedIn:
-            SignedInView(viewModel: viewModel, router: router)
+            SignedInView(
+                viewModel: viewModel,
+                healthViewModel: healthViewModel,
+                router: router
+            )
         case .profileCompletion:
             ProfileCompletionView(viewModel: viewModel, router: router)
         default:

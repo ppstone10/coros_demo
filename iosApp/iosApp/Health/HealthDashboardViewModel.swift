@@ -21,7 +21,6 @@ final class HealthDashboardViewModel: ObservableObject {
     init(adapter: SharedLoginAdapterProtocol = SharedLoginAdapter()) {
         self.adapter = adapter
         self.scenarios = adapter.healthScenarioDescriptors()
-        load()
     }
 
     func load() {

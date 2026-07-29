@@ -38,3 +38,12 @@ object ProfileCompletionRoute
 
 @Serializable
 object SignedInRoute
+
+@Serializable
+data class HealthDetailRoute(val cardType: String)
+
+@Serializable
+object HealthEditorRoute
+
+@Serializable
+object ProfileEditRoute

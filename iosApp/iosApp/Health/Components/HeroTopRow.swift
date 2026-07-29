@@ -96,7 +96,7 @@ private struct WatchSyncLottieView: UIViewRepresentable {
 
 #Preview {
     HeroTopRow(
-        dateLabel: "2026-07-23 周四",
+        dateLabel: appLocalized("health_demo_date"),
         isSyncing: false,
         syncCycle: 1,
         onTapWatch: {},

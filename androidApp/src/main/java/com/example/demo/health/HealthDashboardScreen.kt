@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -44,7 +44,7 @@ import com.example.demo.R
 import com.example.demo.common.health.BodyManagement
 import com.example.demo.common.health.CyclingAbility
 import com.example.demo.common.health.DailySummary
-import com.example.demo.common.health.HealthCardUiModel
+import com.example.demo.common.health.HealthCardType
 import com.example.demo.common.health.HealthCheck
 import com.example.demo.common.health.HealthDashboardData
 import com.example.demo.common.health.HealthDashboardDataSource
@@ -76,8 +76,6 @@ import kotlin.time.Duration.Companion.milliseconds
 
 sealed interface DashboardPage {
     data object Main : DashboardPage
-    data class Detail(val card: HealthCardUiModel) : DashboardPage
-    data object Editor : DashboardPage
     data object ScenarioPicker : DashboardPage
 }
 
@@ -89,8 +87,10 @@ data class DashboardScreenState(
 @Composable
 fun HealthDashboardScreen(
     healthViewModel: HealthDashboardViewModel,
+    listState: LazyListState,
     onWatchClick: () -> Unit = {},
-    onFullscreenChange: (Boolean) -> Unit = {}
+    onOpenDetail: (HealthCardType) -> Unit = {},
+    onOpenEditor: () -> Unit = {}
 ) {
     val state = healthViewModel.state
     val effect = healthViewModel.effect
@@ -99,7 +99,11 @@ fun HealthDashboardScreen(
 
     var screenState by remember { mutableStateOf(DashboardScreenState()) }
 
-    LaunchedEffect(Unit) { healthViewModel.load() }
+    LaunchedEffect(Unit) {
+        if (healthViewModel.state.uiState == null) {
+            healthViewModel.load()
+        }
+    }
 
     LaunchedEffect(effect) {
         effect?.let { healthViewModel.onEffectConsumed() }
@@ -127,26 +131,6 @@ fun HealthDashboardScreen(
                     screenState = screenState.copy(page = DashboardPage.Main)
                 },
                 onDismiss = { screenState = screenState.copy(page = DashboardPage.Main) }
-            )
-        }
-        is DashboardPage.Detail -> {
-            DetailPlaceholder(page.card) {
-                screenState = screenState.copy(page = DashboardPage.Main)
-                onFullscreenChange(false)
-            }
-        }
-        DashboardPage.Editor -> {
-            CardEditor(
-                initial = state.enabledCardTypes,
-                onClose = {
-                    screenState = screenState.copy(page = DashboardPage.Main)
-                    onFullscreenChange(false)
-                },
-                onSave = { types ->
-                    healthViewModel.saveCardConfiguration(types)
-                    screenState = screenState.copy(page = DashboardPage.Main)
-                    onFullscreenChange(false)
-                }
             )
         }
         DashboardPage.Main -> {
@@ -195,7 +179,7 @@ fun HealthDashboardScreen(
                 ) {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        state = rememberLazyListState()
+                        state = listState
                     ) {
                         when {
                             isAuthError -> {
@@ -225,8 +209,7 @@ fun HealthDashboardScreen(
                                     key = { _, card -> card.type.name }
                                 ) { _, card ->
                                     DashboardCard(card) {
-                                        screenState = screenState.copy(page = DashboardPage.Detail(card))
-                                        onFullscreenChange(true)
+                                        onOpenDetail(card.type)
                                     }
                                 }
                                 item {
@@ -240,8 +223,7 @@ fun HealthDashboardScreen(
                                             .clip(RoundedCornerShape(22.dp))
                                             .background(AppColors.Health.Card)
                                             .clickable {
-                                                screenState = screenState.copy(page = DashboardPage.Editor)
-                                                onFullscreenChange(true)
+                                                onOpenEditor()
                                             }
                                             .padding(horizontal = AppSpacing.ActionHorizontal, vertical = AppSpacing.Medium)
                                     )

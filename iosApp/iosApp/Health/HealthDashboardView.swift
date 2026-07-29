@@ -4,8 +4,6 @@ import Lottie
 
 enum DashboardPage: Equatable {
     case main
-    case detail(HealthCard)
-    case editor
     case scenarioPicker
 }
 
@@ -16,10 +14,11 @@ struct DashboardScreenState {
 }
 
 struct HealthDashboardView: View {
-    @Binding var isFullscreen: Bool
+    @ObservedObject var viewModel: HealthDashboardViewModel
+    let onOpenDetail: (HealthCard) -> Void
+    let onOpenEditor: () -> Void
     let onWatchTap: () -> Void
     @EnvironmentObject private var languageStore: AppLanguageStore
-    @StateObject private var viewModel = HealthDashboardViewModel()
     @State private var screenState = DashboardScreenState()
     @State private var heroHeight: CGFloat = 0
     @State private var refreshIndicatorHeight: CGFloat = 0
@@ -27,10 +26,6 @@ struct HealthDashboardView: View {
     var body: some View {
         Group {
             switch screenState.page {
-            case .editor:
-                HealthCardEditor(initial: viewModel.cards, onClose: closeEditor, onSave: saveCards)
-            case .detail(let card):
-                HealthDetailView(card: card) { screenState.page = .main; isFullscreen = false }
             case .main, .scenarioPicker:
                 mainDashboard
                     .sheet(isPresented: .init(get: { screenState.page == .scenarioPicker }, set: { if !$0 { screenState.page = .main } })) {
@@ -38,9 +33,12 @@ struct HealthDashboardView: View {
                     }
             }
         }
-        .onChange(of: languageStore.current) { _ in screenState.page = .main; isFullscreen = false; viewModel.load() }
+        .onChange(of: languageStore.current) { _ in screenState.page = .main; viewModel.load() }
         .background(AppColors.Core.black)
         .onAppear {
+            if viewModel.cards.isEmpty {
+                viewModel.load()
+            }
             viewModel.onEffect = { effect in
                 // HealthEffect subclasses from KMP are flat types, not nested
             }
@@ -64,7 +62,7 @@ struct HealthDashboardView: View {
 
                         ForEach(viewModel.cards) { card in
                             Button {
-                                screenState.page = .detail(card); isFullscreen = true
+                                onOpenDetail(card)
                             } label: {
                                 cardRow(card)
                             }.buttonStyle(.plain)
@@ -73,7 +71,7 @@ struct HealthDashboardView: View {
                         }
 
                         Button {
-                            screenState.page = .editor; isFullscreen = true
+                            onOpenEditor()
                         } label: {
                             Text(appLocalized("health_edit_cards"))
                                 .font(.system(size: AppTypography.label))
@@ -305,11 +303,6 @@ struct HealthDashboardView: View {
         .clipped()
     }
 
-    private func closeEditor() { screenState.page = .main; isFullscreen = false }
-    private func saveCards(_ value: [HealthCard]) {
-        viewModel.saveCardConfiguration(value.map { $0.id })
-        viewModel.load(); closeEditor()
-    }
 }
 
 private struct HeroHeightPreferenceKey: PreferenceKey {
@@ -362,6 +355,11 @@ private struct HealthCardVisualContent: View {
 }
 
 #Preview {
-    HealthDashboardView(isFullscreen: .constant(false), onWatchTap: {})
+    HealthDashboardView(
+        viewModel: HealthDashboardViewModel(),
+        onOpenDetail: { _ in },
+        onOpenEditor: {},
+        onWatchTap: {}
+    )
         .environmentObject(AppLanguageStore.shared)
 }

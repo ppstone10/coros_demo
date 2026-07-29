@@ -107,6 +107,8 @@
 | **三端资料编辑页滚动边界** | 返回/标题/保存属于固定页面栏，必须位于资料滚动容器之外；头像和字段单独滚动。HarmonyOS 的短内容还需显式 `Alignment.TopStart`，避免内容不足一屏时整体垂直居中 |
 | **HarmonyOS Path 与图片着色单位边界** | ArkUI `Path.commands` 的数值坐标按物理像素解释，而 `.width/.height/.margin` 等布局尺寸按 vp；把设计稿 vp 坐标直接写进 Path 会在高密度设备上缩小并向左上错位，生成命令前应以 `vp2px` 换算且不能重复换算布局值。PNG 的 `fillColor` 单独使用不会覆盖原图颜色，单色语义图标需先启用 `ImageRenderMode.Template` |
 | **HarmonyOS common JSON 依赖边界** | `ohos_arm64` 无法解析官方 kotlinx-serialization JSON Native 变体；会进入 Harmony bridge 的 common JSON codec 必须保持自包含或使用明确提供 OHOS 变体的依赖，不能仅因 Android/iOS 可编译就引入普通 Kotlin/Native 库 |
+| **登录后根层与二级导航边界** | “体能、记录、探索、我”是同一根层 UI 状态，Tab 切换不进入历史栈；健康详情、卡片编辑、资料编辑必须由各端原生导航栈 Push/Pop，`common` 只提供稳定 ID、业务状态和规则，不感知平台路由。 |
+| **详情返回的状态所有权** | 保留滚动位置的关键是保留同一根页面及其平台滚动状态：Android hoist `LazyListState`，iOS 复用根 View/VM，HarmonyOS 普通 Pop 不重载根 Scroll；共享 ViewModel 提升到导航图时不得在认证完成前抢先加载用户健康数据。 |
 
 ## Spec 文件索引
 

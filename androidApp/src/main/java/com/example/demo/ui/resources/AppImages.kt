@@ -53,7 +53,7 @@ object AppImages {
         val TodayActivity = AppImageAsset(R.drawable.icon_small_training_effect)
         val TrainingLoad = AppImageAsset(R.drawable.icon_small_training_load)
         val TrainingAssessment = AppImageAsset(R.drawable.icon_small_training_effect)
-        val Recovery = AppImageAsset(R.drawable.icon_recovery_sports)
+        val Recovery = AppImageAsset(R.drawable.health_recovery_time)
         val RunningAbility = AppImageAsset(R.drawable.icon_small_running_ability)
         val CyclingAbility = AppImageAsset(R.drawable.icon_small_cycling)
         val HeartRate = AppImageAsset(R.drawable.icon_small_heart_rate)

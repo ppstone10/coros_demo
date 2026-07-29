@@ -119,7 +119,7 @@ export class AppImages {
       case 'WeeklyPlan': return $r('app.media.icon_small_plan');
       case 'TrainingLoad': return $r('app.media.icon_small_training_load');
       case 'TrainingAssessment': return $r('app.media.icon_small_training_effect');
-      case 'Recovery': return $r('app.media.icon_recovery_sports');
+      case 'Recovery': return $r('app.media.health_recovery_time');
       case 'RunningAbility': return $r('app.media.icon_small_running_ability');
       case 'CyclingAbility': return $r('app.media.icon_small_cycling');
       case 'HeartRate': return $r('app.media.icon_small_heart_rate');
@@ -137,7 +137,7 @@ export class AppImages {
     if (index === 0) return $r('app.media.icon_small_plan');
     if (index === 1) return $r('app.media.icon_small_training_load');
     if (index === 2) return $r('app.media.icon_small_training_effect');
-    if (index === 3) return $r('app.media.icon_recovery_sports');
+    if (index === 3) return $r('app.media.health_recovery_time');
     if (index === 4) return $r('app.media.icon_small_running_ability');
     if (index === 5) return $r('app.media.icon_small_cycling');
     if (index === 6) return $r('app.media.icon_small_heart_rate');

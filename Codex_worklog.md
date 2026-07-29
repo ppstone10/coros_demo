@@ -250,3 +250,33 @@
 - **已完成**：根工作日志已按时间从旧到新排列，并恢复最新记录位于文件末尾的追加语义。
 - **未完成 / 阻塞项**：暂无。
 - **下轮起步建议**：后续每轮直接在 `Codex_worklog.md` 末尾追加新记录，不要插入到归档提示之后。
+
+# 2026-07-29 10:35 — 健康模块原生导航与返回位置改造
+
+## 采纳内容
+- [HLTH-NAV-001/002] 以注册登录模块的导航语义为模板，三端将“体能、记录、探索、我”保持为根层 Tab 状态，将健康详情和卡片编辑迁移为原生 Push/Pop 二级路由；二级页面不再通过健康首页内部条件渲染模拟导航。
+- [HLTH-NAV-003] Android/iOS 个人资料编辑迁移到导航栈；HarmonyOS 继续复用既有 `ProfileCompletionPage(editMode=true)` 二级路由。
+- [HLTH-NAV-004] Android 提升 `LazyListState`，iOS 保留同一根 View/共享健康 ViewModel，HarmonyOS 普通详情 Pop 不重载根页面，避免返回后回到首卡。
+- [HLTH-NAV-005] 健康业务模型、规则、Store 和持久化继续留在 common；三端只新增路由、UI 状态和稳定卡片 ID 桥接。
+- [HLTH-NAV-006] 新增三端 `health_recovery_time` 回转箭头时钟语义资源，替换 Recovery 卡片旧图标并登记共享资源清单。
+
+## 人工审查点
+- [HLTH-NAV-001/002/004] Android emulator-5554 已完成根层返回、详情系统返回和滚动位置验收；iOS 与 HarmonyOS 仍建议在可交互设备补验根层返回、顶部/系统返回和滚动位置。
+- [HLTH-NAV-003] 三端资料编辑的返回、取消和保存成功路径仍建议做一次运行时联调。
+- [HLTH-NAV-006] iOS/HarmonyOS 建议在设备上对照设计源复核图标尺寸和着色；三端资源语义与映射已通过静态门禁和构建。
+
+## 验证结果
+- [HLTH-NAV-001..006] `./tools/check-health-navigation.sh` 实现前 40 项失败，确认能够捕获缺失行为；实现后 40 项全部通过。
+- [HLTH-NAV-005] `./gradlew :common:check :androidApp:assembleDebug` 通过；共享测试及 Android Debug APK 构建成功。
+- [HLTH-NAV-001..006] `xcodebuild -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build` 通过。
+- [HLTH-NAV-001..006] 配置 DevEco 环境后执行 `hvigorw assembleApp --no-daemon` 通过；首次因新增 `@Entry` 页根节点不是单一容器失败，修正后构建成功。
+- [HLTH-NAV-006] `./tools/check-resource-maintainability.sh` 通过：38 个共享图片资源、2 个 Raw、198 个共享文字键，四端中文硬编码与三端直接颜色债务均为 0；`./tools/check-resources.sh` 通过。
+- [HLTH-NAV-001/002/004] Android emulator-5554：Recovery 详情进入前后标题 bounds 均为 `[150,1417][996,1480]`；详情系统返回回到健康首页，根层系统返回后 Launcher 可见。
+- `./tools/check-sdd.sh` 与 `git diff --check` 通过。
+- `./tools/check-docs.sh` 未通过：仅因本轮开始前已存在的用户修改 `docs/reference/注册登陆模块介绍.md` 与可信恢复源不一致；本轮未修改或覆盖该文件。
+
+## 人工修正点
+- [HLTH-NAV-002] Android 首次构建发现详情路由缺少 `HealthCardType` 导入，补齐后构建通过。
+- [HLTH-NAV-002] HarmonyOS 首次构建发现新增 `@Entry` 页面必须以单一容器为根，改为 `Stack` 根节点后打包通过。
+- [HLTH-NAV-004] iOS 导航图级健康 ViewModel 移除构造期抢先加载，改由已登录健康页首次出现时按空状态加载，避免在用户会话建立前读取健康数据。
+- [HLTH-NAV-006] iOS 资源债务门禁发现既有 Preview 中文字面量，改为已有本地化键后门禁归零。
