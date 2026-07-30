@@ -91,7 +91,8 @@ fun HealthDashboardScreen(
     listState: LazyListState,
     onWatchClick: () -> Unit = {},
     onOpenDetail: (HealthCardType) -> Unit = {},
-    onOpenEditor: () -> Unit = {}
+    onOpenEditor: () -> Unit = {},
+    onOpenNormalDataEditor: () -> Unit = {}
 ) {
     val state = healthViewModel.state
     val effect = healthViewModel.effect
@@ -131,6 +132,9 @@ fun HealthDashboardScreen(
                 onSelect = { scenario ->
                     healthViewModel.selectScenario(scenario)
                     screenState = screenState.copy(page = DashboardPage.Main)
+                    if (scenario == HealthMockScenario.Normal) {
+                        onOpenNormalDataEditor()
+                    }
                 },
                 onDismiss = { screenState = screenState.copy(page = DashboardPage.Main) }
             )

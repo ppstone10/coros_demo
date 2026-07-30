@@ -54,6 +54,7 @@ fun MainTabsScreen(
     healthViewModel: HealthDashboardViewModel,
     onOpenHealthDetail: (HealthCardType) -> Unit,
     onOpenHealthEditor: () -> Unit,
+    onOpenNormalDataEditor: () -> Unit,
     onOpenProfileEditor: () -> Unit
 ) {
     var tab by rememberSaveable { mutableStateOf(HomeTab.Fitness) }
@@ -68,7 +69,8 @@ fun MainTabsScreen(
                         tab = HomeTab.Me
                     },
                     onOpenDetail = onOpenHealthDetail,
-                    onOpenEditor = onOpenHealthEditor
+                    onOpenEditor = onOpenHealthEditor,
+                    onOpenNormalDataEditor = onOpenNormalDataEditor
                 )
                 HomeTab.Me -> SignedInScreen(
                     viewModel,
@@ -125,6 +127,7 @@ private fun MainTabsScreenPreview() {
             healthViewModel = healthViewModel,
             onOpenHealthDetail = {},
             onOpenHealthEditor = {},
+            onOpenNormalDataEditor = {},
             onOpenProfileEditor = {}
         )
     }

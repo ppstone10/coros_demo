@@ -209,11 +209,29 @@ enum AppImages {
         static let active = "sport_time_icon"
         static let add = "data_screen_edit_add"
         static let remove = "delete"
+        static let choiceChevron = "right_more"
+        static let choiceCheck = "ic_profile_check"
         static let activityMap = "health_activity_map"
         static let todayHeader = "health_today_header"
         static let todayRunner = "health_today_runner"
-        static let bodyFront = "health_body_front"
-        static let bodyBack = "health_body_back"
+        static let bodyMaleFrontBase = "health_body_male_front_base"
+        static let bodyMaleBackBase = "health_body_male_back_base"
+        static let bodyMuscleRegions: [String: String] = [
+            "shoulders_front": "health_body_shoulders_front",
+            "shoulders_back": "health_body_shoulders_back",
+            "chest_front": "health_body_chest_front",
+            "trapezius_back": "health_body_back_trapezius",
+            "latissimus_back": "health_body_back_latissimus",
+            "erector_spinae_back": "health_body_back_erector_spinae",
+            "biceps_front": "health_body_biceps_front",
+            "triceps_back": "health_body_triceps_back",
+            "abdominals_front": "health_body_abdominals_front",
+            "glutes_back": "health_body_glutes_back",
+            "quadriceps_front": "health_body_quadriceps_front",
+            "hamstrings_back": "health_body_hamstrings_back",
+            "calves_front": "health_body_calves_front",
+            "calves_back": "health_body_calves_back"
+        ]
         static let recoveryStatus = "health_recovery_status"
         static let weeklyPlan = "icon_small_plan"
         static let todayActivity = "icon_small_training_effect"

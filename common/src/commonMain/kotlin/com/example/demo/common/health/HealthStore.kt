@@ -13,6 +13,7 @@ class HealthStore(
         private set
 
     private var pendingEffect: HealthEffect? = null
+    private var effectSequence: Long = 0
 
     fun dispatch(action: HealthAction) {
         when (action) {
@@ -21,6 +22,9 @@ class HealthStore(
             HealthAction.Refresh -> refresh()
             is HealthAction.CardConfigurationChanged -> saveCardConfiguration(action.types)
             is HealthAction.BodyWeightChanged -> saveBodyWeight(action.weightKg)
+            is HealthAction.NormalDraftSaved -> saveNormalDraft(action.data, action.section)
+            is HealthAction.NormalDraftSectionRestored -> restoreNormalDraftSection(action.section)
+            HealthAction.NormalDraftDefaultsRestored -> restoreNormalDefaults()
             HealthAction.EffectConsumed -> pendingEffect = null
             HealthAction.AuthSessionExpired -> handleSessionExpired()
         }
@@ -30,6 +34,12 @@ class HealthStore(
         val e = pendingEffect
         pendingEffect = null
         return e
+    }
+
+    fun normalDraftForEditing(): EditableHealthData {
+        val draft = state.normalDraft ?: dashboardStore.initialNormalDraft()
+        if (state.normalDraft == null) state = state.copy(normalDraft = draft)
+        return draft
     }
 
     private fun load() {
@@ -93,6 +103,29 @@ class HealthStore(
         }
     }
 
+    private fun saveNormalDraft(data: EditableHealthData, section: HealthEditableSection) {
+        if (!HealthEditableRules.validate(data)) {
+            state = state.copy(error = HealthError.CorruptedData)
+            pendingEffect = HealthEffect.ShowMessage(HealthMessageKeys.ErrorHealthDataUnavailable)
+            return
+        }
+        dashboardStore.saveNormalDraft(data)
+        state = state.copy(normalDraft = data, error = null)
+        pendingEffect = HealthEffect.NormalDraftSaved(section, ++effectSequence)
+    }
+
+    private fun restoreNormalDraftSection(section: HealthEditableSection) {
+        val restored = dashboardStore.restoreNormalDraftSection(section)
+        state = state.copy(normalDraft = restored, error = null)
+        pendingEffect = HealthEffect.NormalDraftSaved(section, ++effectSequence)
+    }
+
+    private fun restoreNormalDefaults() {
+        val restored = dashboardStore.restoreNormalDefaults()
+        state = state.copy(normalDraft = restored, error = null)
+        pendingEffect = HealthEffect.NormalDefaultsRestored(++effectSequence)
+    }
+
     private fun handleSessionExpired() {
         state = HealthState(error = HealthError.AuthRequired)
         pendingEffect = HealthEffect.ShowMessage(HealthMessageKeys.ErrorHealthDataUnavailable)
@@ -103,6 +136,7 @@ class HealthStore(
             uiState = dashboard.uiState,
             currentScenario = dashboard.scenario,
             enabledCardTypes = dashboard.enabledCardTypes,
+            normalDraft = dashboardStore.normalDraft(),
             isRefreshing = false,
             error = null
         )

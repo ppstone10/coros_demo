@@ -348,3 +348,237 @@
 
 ## 人工修正点
 - [HLTH-VIS-030] 旧规范将指针描述为“主体在线上方、尖端贴线”，与用户验收的 HarmonyOS 实际图形方向相反；本轮按截图修订为“尖端朝上、底边跨线”，并同步修正 LEARNINGS，避免后续再次翻转。
+
+# 2026-07-30 11:07 — 正常健康 Mock 最小源数据与三端编辑流程
+
+## 采纳内容
+- [HLTH-EDIT-001/004] 新增 `EditableHealthData` 最小权威源模型、common 默认 fixture、统一校验和派生规则；正常场景新版快照只保存源字段，加载时重新生成展示数据，旧完整正常快照可迁移。今日活动只保存里程/配速，心率和压力只保存 288/48 点完整序列。
+- [HLTH-EDIT-002/003] 新增 `HealthStore` 实例级临时正常草稿：模块保存、单模块默认和整套默认只改内存，首页维持最后有效数据，必须选择 Normal 后下拉刷新才提交按用户持久化快照；进程重建前未刷新的草稿允许丢失。
+- [HLTH-EDIT-004/005/008] 表单 schema、输入解析、范围校验、周计划/负荷/恢复/能力等派生值、睡眠连续区间以及心率/压力快捷序列生成均位于 common；三端只渲染共享表单、提交原始输入并展示共享 UI model。
+- [HLTH-EDIT-006/007] Android Compose、iOS SwiftUI、HarmonyOS ArkUI 同步增加正常数据总览和 15 个模块的原生二级编辑路由；模块保存提示约 1500ms 且采用 latest-wins，首页不增加待刷新状态提示。
+- 三端新增编辑页中英文资源并纳入 `tools/resource-inventory.json`；新增 `check-health-editable-normal-data.sh` 约束 common 规则、三端路由、共享表单调用和 1500ms 提示结构。
+
+## 人工审查点
+- [HLTH-EDIT-006/007] 建议在三端设备连续快速保存两个不同模块，复核后发提示立即替换前一提示并在约 1.5 秒消失；同时复核编辑页返回、输入法类型、下拉选择和长表单滚动体验。
+- [HLTH-EDIT-002] 建议按“保存模块但不刷新 → 强杀重启”和“保存模块 → 回首页下拉刷新 → 重启”两条路径人工确认前者草稿丢失、后者有效源数据保留。
+- [HLTH-EDIT-003] 建议复核单卡“恢复默认”只重建当前页表单且仍需点击保存，整套“使用默认数据”只改临时源且仍需首页刷新。
+- 固定场景覆盖正常有效快照后再次返回 Normal 的行为按 Spec 待人工确认：当前使用内置正常默认，不额外持久化一套历史 Normal 模板。
+- 工作树开始前已有 `new.md` 和两个 iOS `ScrollViewPanObserver` 文件的用户修改；本轮未恢复或覆盖这些内容。
+
+## 验证结果
+- [HLTH-EDIT-001..008] 新测试首次运行因 `EditableHealthData`、默认 fixture、Store 草稿 action 与规则 API 尚不存在而编译红灯；实现后专项 `EditableHealthDataTest` 及 `./gradlew :common:check :androidApp:assembleDebug` 通过，common Android/iOS 测试和 Android Debug APK 构建成功。
+- [HLTH-EDIT-006/007] iOS `xcodebuild -quiet -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug -derivedDataPath /private/tmp/demo-ios-edit-derived-final CODE_SIGNING_ALLOWED=NO build` 通过；仅保留既有/弃用 API、AccentColor 和无输出脚本阶段警告。
+- [HLTH-EDIT-001..008] `./tools/build-shared-harmony.sh` 完成 common 检查、KNOI bridge/provider 验证和 HarmonyOS `assembleApp`，构建通过；仅保留既有 KSP 版本、弃用 API 与未配置签名警告。
+- `./tools/check-health-editable-normal-data.sh`、`./tools/check-resource-maintainability.sh`、`./tools/check-resources.sh` 与 `git diff --check` 通过；资源门禁确认 271 个共享文字键，四端中文硬编码及三端直接颜色债务均为 0。
+- `./tools/check-sdd.sh` 通过，Spec、TRACE、Worklog 与 Learnings 闭环完整。
+- `./tools/check-docs.sh` 未通过：唯一失败仍为本轮开始前已有的 `docs/reference/注册登陆模块介绍.md` 与可信恢复源不一致，本轮未修改该文档。
+
+## 人工修正点
+- [HLTH-EDIT-001] 全量 common 回归最初发现正常刷新会丢失既有体重历史；刷新提交时继续保留已形成的用户体重历史，默认 fixture 的单点体重则不误判为用户历史。
+- [HLTH-EDIT-006] iOS 工程首次登记新编辑页时复用了已有 PBX group ID，改为唯一 ID 后工程结构与模拟器构建通过。
+- [HLTH-EDIT-006] HarmonyOS 首次编译发现新增页面引用了不存在的 `HEALTH_ACTION/HEALTH_PAGE` 令牌和未同步资源键，改用现有 `ACTION/BLACK` 语义色并补齐三端资源后构建通过。
+- Android 资源债务门禁发现提示背景直接写颜色值，提取为 `AppColors.Health.NoticeBackground` 后门禁恢复为 0。
+
+# 2026-07-30 11:35 — Android/HarmonyOS 健康编辑文案解析修复
+
+## 采纳内容
+- [HLTH-EDIT-009] 将本轮 common 新增的全部 `health_edit_*` 与派生 `health_visual_*` 语义键同步接入 Android `healthStringResource` 和 HarmonyOS `healthResource` 显式解析白名单，修复训练量评估、骑行 FTP 类型和编辑表单标签回退为“数据不可用”的问题。
+- [HLTH-EDIT-009] 补齐 common 周计划实际输出但三端资源均缺失的 `health_visual_workout_rest`，中英文分别为“休息日”与“Rest day”，并登记到共享资源清单。
+- [HLTH-EDIT-009] HarmonyOS 模块编辑页不再把 `Resource` 对象插值进普通字符串；字段本地化标签与稳定字段 ID 拆成独立文本节点，非选择输入框即使已有值也持续显示常驻标签。
+- 扩展 `check-health-editable-normal-data.sh`，逐项核对共享清单中的全部编辑/派生健康键是否同时存在 Android 与 HarmonyOS 显式映射。
+
+## 人工审查点
+- 建议在 Android/HarmonyOS 正常场景刷新后复核训练量评估的主文案与说明、骑行 FTP 的“耐力型/强力型”等类型、周计划休息日以及 15 个模块编辑页的标题、字段标签和下拉选项。
+- HarmonyOS 字段 ID 目前作为较小的辅助文字保留，用于区分周计划和七日负荷中的重复标签；若产品不希望暴露英文 ID，可后续增加 common 的日期/序号显示参数。
+- 当前无连接的 Android/HarmonyOS 设备，运行时视觉结果仍需设备截图确认；本轮已完成静态门禁和双端编译。
+
+## 验证结果
+- [HLTH-EDIT-009] 扩展后的 `./tools/check-health-editable-normal-data.sh` 首次报告 148 项 Android/HarmonyOS 显式映射缺失，确认能捕获用户反馈；补齐映射及休息日资源后全部通过。
+- `./gradlew :androidApp:assembleDebug` 通过；Android 资源合并、R 生成、Kotlin 编译与 APK 打包成功。
+- 配置 DevEco 环境后执行 `hvigorw assembleApp --no-daemon` 通过；HarmonyOS 资源编译、ArkTS 编译与 HAP/App 打包成功，仅保留项目既有弃用和签名警告。
+- iOS Simulator 构建通过，确认三端同步新增的 String Catalog 资源有效；`./tools/check-resource-maintainability.sh` 通过，共 272 个共享文字键且硬编码债务为 0。
+- `./tools/check-sdd.sh`、`./tools/check-resources.sh`、JSON/脚本语法检查与 `git diff --check` 通过。
+- `./tools/check-docs.sh` 仍只因本轮前已有的 `docs/reference/注册登陆模块介绍.md` 与可信恢复源不一致而失败，本轮未修改该文档。
+
+## 人工修正点
+- 初次只核对用户点名的训练评估、骑行类型和编辑键后，进一步扫描 common 新模型实际输出发现 `health_visual_workout_rest` 连资源目录都不存在；补齐三端资源及白名单，避免正常周计划休息项继续回退。
+- HarmonyOS 原实现使用 `` `${healthResource(field.labelKey)} · ${field.id}` ``，资源对象无法可靠转为展示字符串；改为独立 `Text(Resource)` 常驻标签和单独 ID 后 ArkTS 构建通过。
+
+# 2026-07-30 13:07 — 三端动态睡眠/锻炼部位编辑与可见性修复
+
+## 采纳内容
+- [HLTH-EDIT-010] Android 编辑页标题栏改为左右各 100dp 的对称操作区，长标题不再挤掉“保存”；输入值、光标和焦点边框显式使用高对比颜色。三端字段统一为已有值下仍可见的常驻本地化标签，并由 common 的 `labelArguments` 输出第 N 天/阶段/部位，不再展示技术字段 ID。
+- [HLTH-EDIT-011/012] common 新增 repeat group 表单 schema、`HealthEditableForms.mutate` 和 `BodyMuscleGroup` 10 项实际部位集合；睡眠阶段与锻炼部位的新增、删除、重编号、最小/最大数量、合法选项、去重及保存校验均在 KMP 中完成，iOS/HarmonyOS 通过 facade/KNOI JSON 边界调用。
+- [HLTH-EDIT-013] 三端体型卡右侧继续复用资源库人体前后视图，但以 Template 模式中和原图固定胸部/股四头肌颜色，再按 common 输出的部位指标叠加动态红色标记和本地化名称；无部位时显示共享空提示。
+- [HLTH-EDIT-014] HarmonyOS HRV 指针改用横条容器内绝对定位，横条区提高到 24vp；正常范围图例获得独立高度并允许两行，避免右栏下方文字被压缩或裁剪。
+
+## 人工审查点
+- 当前 ADB 无连接设备；建议在 Android/HarmonyOS 设备上依次打开长标题编辑页、睡眠、体型管理和 HRV 卡，复核保存按钮、输入文字、增删动作、人体标记坐标及 HRV 正常范围的最终视觉。
+- 人体图资源库只存在固定高亮成品图，没有十个部位的独立图片层；本轮采用中和底图 + 动态坐标标记。若后续获得逐肌群矢量/透明图层，可只替换三端视觉叶组件，不改变 common 部位契约。
+
+## 验证结果
+- [HLTH-EDIT-011/012] 新测试在实现前因 `mutate`、`HealthEditRepeatOperation`、`BodyMuscleGroup` 和重复字段元数据不存在而编译红灯；实现后 `dynamicSleepStagesAreMutatedAndAppliedByCommon`、`dynamicMuscleGroupsUseSharedSelectableOptions`、`bodyVisualUsesSelectedMuscleIds` 以及全量 `./gradlew :common:check` 通过。
+- [HLTH-EDIT-010~014] `./tools/check-health-editable-normal-data.sh` 实现前报告 9 项结构缺口，实施后通过；`./tools/check-resources.sh`、`./tools/check-resource-maintainability.sh` 通过，共 294 个共享文字键且四端中文硬编码/三端直接颜色债务均为 0。
+- `./gradlew :androidApp:assembleDebug`、iOS Simulator `xcodebuild ... CODE_SIGNING_ALLOWED=NO build`、`./tools/build-shared-harmony.sh` 及后续 HarmonyOS `hvigorw assembleApp --no-daemon` 均通过；仅保留项目既有 KSP、弃用 API、AccentColor/脚本阶段和未配置签名警告。
+- `./tools/check-sdd.sh` 与 `git diff --check` 通过；当前无连接 Android 设备，未执行运行时截图验收。
+- `./tools/check-docs.sh` 仍只因本轮开始前已存在的 `docs/reference/注册登陆模块介绍.md` 与可信恢复源不一致而失败；本轮未修改该历史参考文档。
+
+## 人工修正点
+- Android 首次编译发现不能在 `joinToString` 的非 Composable lambda 中解析资源，改为 Composable 循环逐项本地化后通过。
+- iOS 首次编译发现新增 facade 方法未加入 `SharedLoginAdapterProtocol`，补齐协议声明后通过。
+- 资源检索确认只有固定着色人体成品图后，没有伪造不存在的肌群图片资产；改用跨端一致的中和底图和动态标记方案，避免默认胸部/股四头肌高亮与用户选择冲突。
+
+# 2026-07-30 14:11 — 三端健康枚举选择面板与重复项布局统一
+
+## 采纳内容
+- [HLTH-EDIT-010] Android 模块编辑页“保存”改为直接读取 `common_save` 通用资源，避免误送入健康专用白名单后回退成“健康数据暂时不可用”。
+- [HLTH-EDIT-015] Android 移除点击轮换，iOS 移除原生 `Picker`，HarmonyOS 移除原生 `Select`；三端所有 `Choice` 字段统一为“字段提示 + 当前值 + 下拉指示”的单行入口。
+- [HLTH-EDIT-015] 三端同步实现居中深色圆角选择面板，统一 62% 遮罩、17 号标题、约 52 高纵向选项、红色当前项勾选和底部取消操作；睡眠阶段、锻炼部位及其他共享枚举字段复用同一入口。
+- [HLTH-EDIT-015] 动态重复项的添加操作统一使用 `AddAction` 绿色，覆盖睡眠阶段、锻炼部位和后续 common repeat group。
+
+## 人工审查点
+- [HLTH-EDIT-015] Android emulator-5554 已完成运行时截图；iOS Simulator 服务在当前沙箱中无法连接，HarmonyOS `hdc` 无连接目标，仍建议在两端设备复核遮罩深浅、面板安全区、长选项滚动和点击遮罩取消。
+- [HLTH-EDIT-015] 选择面板是三端原生代码按同一几何/颜色契约绘制，业务选项、当前值与重复项数量仍全部来自 KMP common 表单，没有把业务规则下沉到平台。
+
+## 验证结果
+- [HLTH-EDIT-015] 扩展后的 `./tools/check-health-editable-normal-data.sh` 实现前报告 9 项红灯：三端统一面板/颜色缺失且仍存在 Android 轮换、iOS Picker、HarmonyOS Select；实现后全部通过。
+- `./gradlew :common:check`、`./gradlew :androidApp:assembleDebug` 通过；Android emulator-5554 安装 APK 后确认顶栏显示“保存”，睡眠阶段标签与值同排，点击弹出选择面板，选择“快速眼动”后面板关闭且值即时更新。
+- iOS `xcodebuild -quiet -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug -derivedDataPath /private/tmp/demo-ios-choice-editor CODE_SIGNING_ALLOWED=NO build` 通过，仅保留项目既有弃用 API、AccentColor 和脚本阶段警告。
+- HarmonyOS 配置 DevEco 环境后执行 `hvigorw assembleApp --no-daemon` 通过，仅保留项目既有弃用 API、未验证 NAPI 和未配置签名警告。
+- `./tools/check-sdd.sh`、`./tools/check-resources.sh`、`./tools/check-resource-maintainability.sh` 与 `git diff --check` 通过；资源门禁继续保持 294 个共享文字键及三端直接颜色债务为 0。
+- `./tools/check-docs.sh` 仍只因本轮开始前已存在的 `docs/reference/注册登陆模块介绍.md` 与可信恢复源不一致而失败，本轮未修改该参考文档。
+
+## 人工修正点
+- [HLTH-EDIT-010] 截图确认保存不可见并非标题栏宽度不足，而是 `common_save` 经 `healthStringResource` 未命中后的错误回退；改为通用原生资源入口后恢复为“保存”。
+- [HLTH-EDIT-015] Android 初版使用 `Dialog` 时会叠加系统默认 dim 与自定义遮罩，和另外两端不完全一致；改为编辑页内覆盖层后，三端都只使用自身定义的 62% 遮罩。
+
+# 2026-07-30 15:12 — 三端选择器尖角与勾选图标资源统一
+
+## 采纳内容
+- [HLTH-EDIT-016] 检索 `health_dashboard_resources` 与三端已登记资源后，统一复用现有 `right_more` 和 `ic_profile_check`；没有再复制新的近义图片资产。
+- [HLTH-EDIT-016] 三端 `AppImages` 增加 ChoiceChevron/ChoiceCheck 语义入口；Compose、SwiftUI、ArkUI 均改用资源图片，`right_more` 旋转 90°形成向下尖角，并以 Template/tint 应用健康操作红色。
+- [HLTH-EDIT-016] 移除 Android/HarmonyOS 的 `⌄`、`✓` 字符和 iOS 的 `chevron.down`、`checkmark` SF Symbol，睡眠阶段、锻炼部位及其他 Choice 字段共享同一资源实现。
+
+## 人工审查点
+- Android emulator-5554 已验证睡眠选择弹窗中的资源勾选和字段行内向下尖角；iOS/HarmonyOS 本轮只有编译验证，仍建议在各自设备确认 14/18 尺寸在实际屏幕密度下的视觉重量。
+- 尖角与勾选均为装饰性状态图标，不承担独立点击或读屏语义；字段入口与选项文字继续提供实际交互和信息。
+
+## 验证结果
+- [HLTH-EDIT-016] 扩展后的 `./tools/check-health-editable-normal-data.sh` 在实现前报告 18 项红灯，覆盖三端资源语义缺失及字符/系统图标残留；实现后全部通过。
+- `./gradlew :common:check :androidApp:assembleDebug`、iOS Simulator `xcodebuild ... CODE_SIGNING_ALLOWED=NO build`、HarmonyOS `hvigorw assembleApp --no-daemon` 均通过；仅保留项目既有弃用 API、AccentColor/脚本阶段、未验证 NAPI 和未配置签名警告。
+- Android emulator-5554 安装新 APK 后截图 `/private/tmp/resource-icons-choice.png`，确认资源勾选为红色轮廓、行内 `right_more` 旋转后朝下且弹窗交互正常。
+- `./tools/check-resources.sh`、`./tools/check-resource-maintainability.sh`、`./tools/check-sdd.sh` 与 `git diff --check` 通过；资源门禁维持 38 个共享图片、294 个共享文字键及三端直接颜色债务为 0。
+- `./tools/check-docs.sh` 仍只因本轮前已有的 `docs/reference/注册登陆模块介绍.md` 与可信恢复源不一致而失败，本轮未修改该参考文档。
+
+## 人工修正点
+- 资源库中的 `close_arrow.webp` 是未登记的向上实心尖角；三端现有资源包已共同登记 `right_more`，因此选择复用并旋转，避免新增三份二进制资源和扩大资源清单。
+- `ic_profile_check` 原图为白色透明勾；三端均通过模板着色转为当前健康操作红色，避免分别维护不同颜色版本。
+
+# 2026-07-30 15:58 — 体型管理同画布肌肉蒙版动态高光
+
+## 采纳内容
+- [HLTH-EDIT-017] 从本机 `ipa_extract/ios_app_out` 补齐男性正/背人体底图和 14 个实际肌肉区域透明蒙版，以 16 个稳定语义资源名进入 `health_dashboard_resources/body_muscle_masks`，并原样同步到 Android drawable-nodpi、iOS Assets.xcassets 与 HarmonyOS media。
+- [HLTH-EDIT-017] common 新增“锻炼部位 → 实际前/后视图区域 ID”业务映射；肩部展开为正/背两层，背部展开为斜方肌、背阔肌和竖脊肌，小腿展开为正/背两层。三端只按共享 `highlightedBodyRegions` 把对应蒙版与底图同画布叠加，不再绘制坐标圆点或重复列出部位名称。
+- [HLTH-EDIT-017] 体型管理人体图下方统一只显示共享文案“本周锻炼部位”/“Muscle groups trained this week”；资源清单、来源映射、三端语义入口和 HarmonyOS bridge JSON 同步更新。
+
+## 人工审查点
+- Android emulator-5554 已确认默认胸部与股四头肌准确着色、背面保持未选中且底部文案正确；建议在 iOS 与 HarmonyOS 设备继续复核小尺寸下的蒙版边缘、Template 着色与深色背景对比。
+- “背部”当前按原始资源语义组合高光斜方肌、背阔肌和竖脊肌，这是 common 的明确业务映射；若产品未来需要把三者拆成独立可选项，应先扩展 `BodyMuscleGroup` 和 Spec，而不是由平台自行拆分。
+- 当前卡片使用男性正/背人体资源；若后续支持性别化人体，应保持相同区域 ID 与同画布约束，只替换平台资源族。
+
+## 验证结果
+- [HLTH-EDIT-017] common 测试 `bodyVisualDerivesAlignedHighlightRegions` 在实现前因 `highlightedBodyRegions`/`footer` 不存在编译红灯，实现后通过；专项结构门禁实现前报告 95 项缺口，完成资源及三端实现后全部通过。
+- `./gradlew :common:check :androidApp:assembleDebug` 通过；iOS Simulator `xcodebuild ... CODE_SIGNING_ALLOWED=NO build` 通过；`./tools/build-shared-harmony.sh` 完成 KMP bridge 编译并使后续 HarmonyOS `assembleApp` 通过。仅保留项目既有 KSP、弃用 API、AccentColor/脚本阶段和未配置签名警告。
+- Android emulator-5554 安装 APK 后截图 `/private/tmp/body-mask-final.png`，确认胸部和股四头肌蒙版与人体对齐，旧圆点及具体部位文字列表已移除。
+- `./tools/check-health-editable-normal-data.sh`、`./tools/check-resources.sh`、`./tools/check-resource-maintainability.sh`、`./tools/check-sdd.sh`、脚本语法检查与 `git diff --check` 通过；资源门禁为 54 个共享图片、2 个 Raw、295 个共享文字键，三端直接颜色和四端中文硬编码债务均为 0。
+- `./tools/check-docs.sh` 仍只因本轮开始前已有的 `docs/reference/注册登陆模块介绍.md` 与可信恢复源不一致而失败；本轮未修改该参考文档，既有 `docs/worklog/` 历史保持不变。
+
+## 人工修正点
+- 早期体型图只能通过中和固定着色底图后叠加坐标圆点表达选择；本轮确认原应用包中存在完整同画布透明蒙版后，改为实际肌肉轮廓叠加，并把“部位到区域”的决策上移到 common。
+- 原始文件使用无语义编号（如 `male_rear_11_Normal@3x.png`）；结合应用资源映射确认肌肉含义后，项目内改用可审查的稳定语义名，并在 `RESOURCE_MAPPING.md` 保留逐文件来源关系。
+
+# 2026-07-30 16:18 — 修复锻炼部位草稿刷新后高光不变化
+
+## 采纳内容
+- [HLTH-EDIT-018] 修复 Normal 刷新的体型数据合并：存在多条用户体重历史时，只从旧有效快照保留 `weightKg` 与 `weightHistoryKg`，不再用整个旧 `BodyManagementInput` 覆盖草稿。
+- [HLTH-EDIT-018] 草稿中的 `trainedMuscleGroups` 现在会在刷新成功时进入最小源快照，再由 common 派生新的 `highlightedBodyRegions`；刷新前首页仍保持旧高光，继续符合暂存语义。
+- [HLTH-EDIT-018] 新增草稿—刷新—持久化—重建回归测试与专项结构门禁，并同步更新共享测试计数至业务 104 条、common 合计 115 条。
+
+## 人工审查点
+- Android 已完整验证“胸部 + 股四头肌”改成“背部 + 股四头肌”：保存后未刷新时仍显示胸部，刷新后胸部消失且背面斜方肌、背阔肌、竖脊肌同时高光。
+- 体重 65.9 kg 及既有体重历史在同一次刷新中保持不变；这是用户长期数据优先于场景草稿的既有契约。若未来允许 Normal 编辑器模拟体重而覆盖真实体重，需要另立字段所有权规则。
+- iOS/HarmonyOS 使用相同 common 刷新逻辑且构建通过，但本轮无设备交互截图，建议后续在两端各执行一次相同编辑—刷新手势复验。
+
+## 验证结果
+- [HLTH-EDIT-018] `bodyMuscleDraftReplacesOldMusclesOnRefreshWhileWeightHistoryIsPreserved` 在修复前于刷新后的区域断言失败，修复后目标测试及 `./gradlew :common:check :androidApp:assembleDebug` 通过。
+- Android emulator-5554 安装修复 APK，实际在正常数据编辑器把第一项从“胸部”改为“背部”并保存；`/private/tmp/body-before-refresh-fixed.png` 保持胸部/股四头肌，执行下拉刷新后 `/private/tmp/body-after-refresh-fixed.png` 显示背部/股四头肌，体重仍为 65.9 kg。
+- iOS Simulator `xcodebuild ... CODE_SIGNING_ALLOWED=NO build` 通过；`./tools/build-shared-harmony.sh` 完成 common、KNOI bridge 与 HarmonyOS `assembleApp`，仅保留项目既有 KSP、弃用 API、AccentColor/脚本阶段和未配置签名警告。
+- `./tools/check-health-editable-normal-data.sh`、资源维护门禁、`./tools/check-sdd.sh`、脚本语法和 `git diff --check` 通过；`./tools/check-docs.sh` 仍只因本轮前已有的 `docs/reference/注册登陆模块介绍.md` 与可信恢复源不一致而失败，本轮未修改该参考文档。
+
+## 人工修正点
+- 最初的人体蒙版渲染和 common 区域映射本身是正确的；实际断点位于刷新提交阶段。旧代码为保留体重历史而整体替换 `bodyManagement`，连同旧锻炼部位一起覆盖了新草稿。
+- 改为字段级合并后，没有在三端 UI 复制补丁；Android、iOS 和 HarmonyOS 都继续通过同一 KMP 刷新路径获得一致的部位高光结果。
+
+# 2026-07-30 16:58 — 鸿蒙 HRV 指针与正常范围文案修复
+
+## 采纳内容
+- [HLTH-VIS-045] 对照三端 HRV 与静息心率专用组件后，确认 Android/iOS 两张卡已使用相同 `y=2..14` 三角与 `y=10..14` 横条重叠几何，仅 HarmonyOS HRV 仍是三角 `y=4..11`、横条 `y=11..15` 的边缘相接关系。
+- [HLTH-VIS-045] HarmonyOS HRV 改为与静息心率相同的 18vp 绘图区：8×7vp 三角使用 `top: 7`，横条使用 `top: 10`，底边与横条在 `y=10..14` 范围内重叠。
+- [HLTH-VIS-045] 为 `health_visual_normal_range_short` 补齐 HarmonyOS `healthResource` 显式映射，并登记到共享文字资源清单；既有中英文资源值保持不变。
+
+## 人工审查点
+- 当前 `hdc list targets` 没有在线 HarmonyOS 设备，因此无法在本轮输出真机截图；建议设备运行时并排复核 HRV 和静息心率的三角底边均跨入横条，以及 HRV 下方显示“正常范围 47–57 毫秒”一类格式化文案。
+- 本轮没有修改 common 可视化数据、阈值或状态计算。Android/iOS 已具备目标几何，只增加跨端结构门禁以防后续回归。
+
+## 验证结果
+- [HLTH-VIS-045] 新增 `./tools/check-health-range-indicator-parity.sh`，实现前精确报告 HarmonyOS HRV 三处几何和一处本地化映射共 4 项红灯，修复后全部通过。
+- `./tools/check-resources.sh` 与 `./tools/check-resource-maintainability.sh` 通过；资源维护门禁统计 54 个共享图片、2 个共享 Raw、296 个共享文字键，三端直接颜色和四端中文硬编码债务均为 0。
+- `./gradlew :androidApp:assembleDebug`、iOS `xcodebuild -quiet -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug -derivedDataPath /private/tmp/demo-ios-hrv-range CODE_SIGNING_ALLOWED=NO build`、HarmonyOS `hvigorw assembleApp --no-daemon` 均通过；仅保留项目既有弃用 API、AccentColor/脚本阶段、未验证 NAPI 与未配置签名警告。
+- `./gradlew :common:check`、`./tools/check-sdd.sh`、专项脚本语法检查与 `git diff --check` 通过；`./tools/check-docs.sh` 仍只因本轮开始前已存在的 `docs/reference/注册登陆模块介绍.md` 与可信恢复源不一致而失败，本轮没有修改该参考文档。
+
+## 人工修正点
+- “健康数据暂时不可用”并非共享数据缺失，而是 HarmonyOS 显式本地化白名单漏掉了已经存在于 `string.json` 的 `health_visual_normal_range_short`，默认分支因此错误返回通用不可用资源。
+- HRV 原实现使用绝对 `position(y: 4)`，静息心率使用 `margin(top: 7)`；两者虽然使用同一三角 Path，却没有相同的父绘图区坐标。改为相同 margin 与横条 top 后才真正实现视觉对齐。
+
+# 2026-07-30 17:55 — HRV 真实分段比例与鸿蒙编辑保存修复
+
+## 采纳内容
+- [HLTH-VIS-046] common 为 HRV 输出统一的 40–65 总范围及连续四段：40–42 很低、42–47 偏低、47–57 正常、57–65 偏高；正常数据下四段宽度比例为 8%/20%/40%/32%。
+- [HLTH-VIS-046] Android、iOS、HarmonyOS 均改为消费 `HealthRange.segments` 绘制色带，并以同一 `minimum/maximum/current` 计算指针；平台不再硬编码等宽或固定百分比。
+- [HLTH-EDIT-019] HarmonyOS 模块编辑页右上角保存入口改为原生 `Button`，增加保存中禁用保护；KNOI bridge/provider 保持 Boolean 返回，ArkTS 直接判断成功或失败，不再比较字符串 `'true'`。
+
+## 人工审查点
+- 正常场景值 48ms 现在位于总范围 40–65 的 32% 位置，落在 47–57 正常段内；如果异常场景提供不同的正常上下限，common 会重新生成连续分段，三端仍按实际跨度绘制。
+- 当前没有在线 HarmonyOS 设备，本轮只完成 bridge、ArkTS 编译和结构契约验证；保存按钮实际点击、成功提示及返回动作仍建议在设备上补一次运行验收。
+- HRV 四段颜色沿用三端现有“很低/偏低/正常/偏高”语义色，本轮没有改变可见状态文案。
+
+## 验证结果
+- [HLTH-VIS-046] `hrvRangeSegmentsAndPointerUseActualValues` 在实现前因 `HealthRangeLevel`、分段模型与比例函数缺失而编译红灯；实现后目标测试和 `./gradlew :common:check` 通过，common 测试计数更新为业务 105 条、全部 116 条。
+- `./tools/check-health-hrv-segments-and-harmony-save.sh` 实现前报告 18 项契约缺口，修复后全部通过；其中 HarmonyOS 保存链路 5 项断言覆盖 Boolean bridge/provider、原生 Button、直接布尔判断及旧字符串比较移除。
+- `./gradlew :androidApp:assembleDebug`、iOS Simulator `xcodebuild ... CODE_SIGNING_ALLOWED=NO build`、KNOI bridge 生成和 HarmonyOS `hvigorw assembleApp --no-daemon` 均通过；只保留项目既有弃用 API、AccentColor/脚本阶段、未验证 NAPI 与未配置签名警告。
+- `./tools/check-health-editable-normal-data.sh`、范围指针门禁、资源一致性/维护性门禁、`./tools/check-sdd.sh` 与 `git diff --check` 通过；`./tools/check-docs.sh` 仍只因本轮前已有的 `docs/reference/注册登陆模块介绍.md` 与可信恢复源不一致而失败。
+
+## 人工修正点
+- 第一轮 HarmonyOS 编译发现 `ButtonAttribute` 不支持 `textAlign`；移除不必要的文字对齐属性后重新构建通过，按钮仍保持 80×44vp 点击区域。
+- 专项编辑门禁首次复跑发现 Android 显式健康资源白名单遗漏 `health_visual_normal_range_short`；补齐映射后门禁与 Android 重新构建通过，避免同一 common 键换到通用渲染入口时回退。
+- 旧 HRV 实现的根因不是单独的指针公式：common 总范围仍是 30–80，而三端色带又各自使用等宽或不同固定比例。修复时把总范围、分段边界和指针坐标统一到 common 的同一数值坐标系，避免只调像素位置造成再次脱节。
+
+# 2026-07-30 18:06 — 修复鸿蒙编辑卡片保存参数格式
+
+## 采纳内容
+- [HLTH-MAINT-007] 修复真正的 `HealthCardEditorPage` 保存链路：ViewModel 不再对卡片 ID 数组执行 `JSON.stringify`，改为 `types.join(',')` 后调用既有 `saveCardConfig(typeNamesCsv)`。
+- [HLTH-MAINT-007] `HealthDashboardViewModel.saveCardConfiguration` 改为返回 Boolean；页面只有在 KNOI 保存成功后才持久化快照、递增卡片版本并返回首页。
+- [HLTH-MAINT-007] 编辑卡片标题栏的“保存”从 `Text.onClick` 改为 64×30vp 原生 `Button`，保留既有颜色和布局。
+
+## 人工审查点
+- 根因是页面与 bridge 的编码契约不一致：原值 `TodayActivity,WeeklyPlan,...` 被转成 `["TodayActivity","WeeklyPlan",...]`，bridge 仍按逗号拆分，留下方括号和引号，common 因而解析出 0 个有效卡片并触发最少卡片错误。
+- 上一轮修复的是 `NormalDataSectionPage`（单个正常数据模块编辑页），不是用户所指的 `HealthCardEditorPage`（首页卡片配置页）；本轮已针对实际页面修正。
+- 当前 `hdc` 没有在线设备，无法完成真实点击、返回及首页顺序变化截图；设备验收仍需补充。
+
+## 验证结果
+- [HLTH-MAINT-007] `./tools/check-health-card-editor-regressions.sh` 实现前准确报告原生按钮、页面成功判断、正确 CSV 调用以及旧 JSON 调用移除共 4 项红灯，修复后全部通过。
+- HarmonyOS `hvigorw assembleApp --no-daemon` 构建通过；仅保留项目既有弃用 API、未验证 NAPI 和未配置签名警告。
+- `./tools/check-sdd.sh`、脚本语法与 `git diff --check` 通过；`./tools/check-docs.sh` 仍只因本轮前已有的 `docs/reference/注册登陆模块介绍.md` 与可信恢复源不一致而失败。本轮没有修改 common 业务规则或其他平台 UI。
+
+## 人工修正点
+- 最初沿着“正常数据模块保存”排查会得出 KNOI Boolean 和表单值编码均正常，但无法解释真正卡片配置页的现象；重新区分两个同名语境的编辑页面后，才定位到 `HealthCardEditorPage → HealthDashboardViewModel → saveCardConfig` 的 CSV/JSON 错配。

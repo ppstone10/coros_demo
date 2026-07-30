@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ScenarioPickerView: View {
     @ObservedObject var viewModel: HealthDashboardViewModel
+    let onOpenNormalDataEditor: () -> Void
     @Environment(\.dismiss) var dismiss
     var body: some View {
         NavigationView {
@@ -11,7 +12,8 @@ struct ScenarioPickerView: View {
                         name: scenario.code,
                         displayKey: scenario.displayKey,
                         viewModel: viewModel,
-                        dismiss: dismiss
+                        dismiss: dismiss,
+                        onOpenNormalDataEditor: onOpenNormalDataEditor
                     )
                 }
             }
@@ -26,8 +28,15 @@ private struct ScenarioRow: View {
     let name: String; let displayKey: String
     @ObservedObject var viewModel: HealthDashboardViewModel
     let dismiss: DismissAction
+    let onOpenNormalDataEditor: () -> Void
     var body: some View {
-        Button(action: { viewModel.selectScenario(name); dismiss() }) {
+        Button(action: {
+            viewModel.selectScenario(name)
+            dismiss()
+            if name == "Normal" {
+                onOpenNormalDataEditor()
+            }
+        }) {
             HStack {
                 Text(appLocalized(displayKey)).foregroundColor(.white); Spacer()
                 if viewModel.selectedScenario == name { Image(systemName: "checkmark").foregroundColor(AppColors.Health.steps) }
@@ -37,6 +46,9 @@ private struct ScenarioRow: View {
 }
 
 #Preview {
-    ScenarioPickerView(viewModel: HealthDashboardViewModel())
+    ScenarioPickerView(
+        viewModel: HealthDashboardViewModel(),
+        onOpenNormalDataEditor: {}
+    )
         .preferredColorScheme(.dark)
 }

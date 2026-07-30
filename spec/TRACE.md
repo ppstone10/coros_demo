@@ -33,7 +33,7 @@
 | `DOC-005` | 资源源文件保护 | `./tools/check-docs.sh`：两组源资源目录存在 | 两个 `*_resources/` 目录及映射文档 | ✅ |
 | `DOC-006` | 契约与工具去占位 | `./tools/check-docs.sh`：实际契约保留、空占位消失 | `contract/README.md`、`tools/README.md` | ✅ |
 | `DOC-007` | 平台说明就近维护 | 当前引用扫描 + `git diff --name-only` | `iosApp/README.md`、`harmonyApp/README.md`、`harmony-kmp-bridge/README.md` | ✅ |
-| `DOC-008` | 测试事实同步 | `tools/check-docs.sh` 动态核对 `@Test`：31/8/4/39/10，合计 92 | `TEST_REPORT.md`、本文件 | ✅ |
+| `DOC-008` | 测试事实同步 | `tools/check-docs.sh` 动态核对业务映射测试 35/8/4/47/11，合计 105；另含 11 条 Health MVI 测试，common 合计 116 | `TEST_REPORT.md`、本文件 | ✅ |
 | `DOC-009` | 可执行文档门禁 | 首次 31 项红灯；最终 `bash -n`、`check-docs`、`check-sdd`、`git diff --check` 通过 | `tools/check-docs.sh` | ✅ |
 | `DOC-010` | 误删文档完整恢复 | `tools/check-docs.sh`：10份目标文件 SHA-256 与 Git 恢复源逐一一致 | `docs/reference/`、`docs/archive/harmonyos-kmp/` | ✅ |
 | `DOC-011` | 恢复后的目录归类 | `find docs` + 分类导航检查 | `docs/README.md`、三个分类 README | ✅ |
@@ -219,10 +219,11 @@
 | `LoginRulesTest.kt` | 8 | auth-mock-spec §7, §8, §9；RES-LOC-001 |
 | `LoginUseCaseTest.kt` | 35 | auth-mock-spec §14；AUTH-SESSION-001~002 |
 | `BusinessMockDataSourceTest.kt` | 4 | auth-mock-spec §10, §11, §14 |
-| `HealthDashboardUseCaseTest.kt` | 46 | health-dashboard-cards 测试要求；HLTH-EMPTY-001；HLTH-CONTRACT-001~002；HLTH-SCENARIO-001；RES-MAINT-008；HLTH-VIS-001~003、027~032、042、044；HLTH-PERSIST-001~007 |
-| **合计** | **93** | 业务需求映射测试 |
+| `HealthDashboardUseCaseTest.kt` | 47 | health-dashboard-cards 测试要求；HLTH-EMPTY-001；HLTH-CONTRACT-001~002；HLTH-SCENARIO-001；RES-MAINT-008；HLTH-VIS-001~003、027~032、042、044、046；HLTH-PERSIST-001~007 |
+| `EditableHealthDataTest.kt` | 11 | HLTH-EDIT-001~005、008、011~013、017~018 |
+| **合计** | **105** | 业务需求映射测试 |
 | `HealthStoreTest.kt` | 11 | HLTH-MVI-001~004、HLTH-MVI-010；HLTH-VIS-042 |
-| **common 全部合计** | **104** | 含 Health MVI 架构测试 |
+| **common 全部合计** | **116** | 含 Health MVI 架构测试 |
 | `SessionLifecycleCoordinatorTest.kt` | 2 | AUTH-SESSION-003（Android JVM） |
 
 ---
@@ -277,6 +278,8 @@
 | `HLTH-VIS-042` | 体重编辑历史按确认顺序完整持久化且刷新保留 | `bodyWeightHistoryRoundTripPreservesEditOrderAndDuplicates`、`legacyBodyWeightMigratesToSingleHistoryEntry`、`bodyWeightEditsAppendInOrderAndScenarioRefreshPreservesHistory`、`BodyWeightChanged` action 测试；`:common:check` 通过 | `BodyManagement.weightHistoryKg`、`HealthDashboardStore.saveBodyWeight`、健康快照 proto/JSON schema v6 | ✅ |
 | `HLTH-VIS-043` | 三端体型管理卡提供体重滑轮编辑入口与周锻炼部位说明 | 三端构建通过；编辑图标、30.0–200.0/0.1 滑轮、确认保存入口及精确文案已落地，设备点击待人工回归 | Android `WeightSheet`；iOS `HealthWeightPickerSheet`；HarmonyOS `HealthWeightPickerSheetComp`；三端 Body 视觉组件 | ✅（人工运行待验收） |
 | `HLTH-VIS-044` | HRV 四档短状态高亮并统一三端范围指针朝向 | `hrvStatusUsesFourShortRangeLabels` 红灯后通过；Android 指针几何测试、模拟器截图及三端构建通过 | common `hrvStatusKey`；三端 HRV 32 号白色粗体/4 间距；Android/iOS 上尖三角 | ✅ |
+| `HLTH-VIS-045` | HRV 指针与静息心率采用相同重叠几何，HarmonyOS 正常范围文案不回退 | `tools/check-health-range-indicator-parity.sh` 实施前 4 项红灯、实施后全绿；Android/iOS/HarmonyOS 构建通过；当前无在线 HarmonyOS 设备 | `HrvAssessmentVisualComp.RangeMarker` 与横条改用静息心率同一纵向边界；`HealthLocalization.healthResource` 显式映射正常范围键 | ⚠️（自动验证通过，鸿蒙设备截图待验收） |
+| `HLTH-VIS-046` | HRV 四段横条与指针按 common 真实范围绘制 | `hrvRangeSegmentsAndPointerUseActualValues` 实现前因分段模型缺失编译红灯、实现后通过；专项门禁与 common/Android/iOS/HarmonyOS 构建通过 | `HealthDashboardVisuals.hrvRange` 输出连续分段与统一范围；三端 HRV 组件按 `HealthRange.segments` 比例绘制，指针按相同 minimum/maximum 归一化 | ✅ |
 
 ---
 
@@ -305,6 +308,7 @@
 | `HLTH-MAINT-004` | iOS 移除 `HealthCard` 和 `defaultHealthCards` | 人工验收：iOS 构建通过 + 健康仪表盘展示一致 | `HealthDashboardView.swift`（精简 `HealthCard`） / `HealthDashboardViewModel.swift`（直接映射） | ✅ |
 | `HLTH-MAINT-005` | HarmonyOS `SignedInPage.ets` 按职责拆分 | 人工验收：HarmonyOS 构建通过 + 页面交互无差异 | `health/HealthDashboardTypes.ets` / `SignedInPage.ets`（精简） | ✅ |
 | `HLTH-MAINT-006` | 登录后导航规则由 `LoginEffect` 携带 | `LoginUseCaseTest.loginSuccessCarriesSignedInRouteWhenProfileComplete` / `loginSuccessCarriesProfileCompletionRouteWhenProfileIncomplete` | `LoginModels.kt` `PostLoginRoute` + `LoginEffect.AuthSucceeded.nextRoute`；三端导航文件已更新 | ✅ |
+| `HLTH-MAINT-007` | HarmonyOS 编辑卡片保存沿用 bridge CSV 参数契约 | `tools/check-health-card-editor-regressions.sh` 实现前 4 项红灯、修复后通过；HarmonyOS `assembleApp` 通过；设备点击待验收 | `CardEditorComp` 原生保存 Button；`HealthDashboardViewModel.saveCardConfiguration` 以 `types.join(',')` 调用 CSV bridge 并返回成功状态；`HealthCardEditorPage` 仅成功后持久化并返回 | ⚠️（自动验证通过，鸿蒙设备点击待验收） |
 
 ---
 
@@ -341,6 +345,32 @@
 | `HLTH-UI-ARCH-012` | Android 达阈值后主体固定吸附，刷新与复位仍保持提示固定间距，4460ms Lottie 同步 | `PullToRefreshStateTest.refreshAndResetKeepTheSameBodyAttachment` 红灯后转绿；`:androidApp:assembleDebug`、`:androidApp:lintDebug`；emulator-5554 阈值保持态与松手同步态截图 | `indicatorTopForPhase` 将五个阶段统一映射为 `bodyTop - indicatorHeight - 80dp`，主体吸附到当前 34dp，删除刷新停靠插值与复位额外上移 | ✅ |
 | `HLTH-UI-ARCH-013` | iOS/HarmonyOS 对齐 Android 最终分层下拉刷新与 `80/34/80/0.4/300/4460` 视觉参数 | 五态/参数静态检查由无匹配红灯转绿；`xcodebuild ... -scheme IOSDemo ... build`；HarmonyOS `hvigorw assembleApp --no-daemon`；Android 基准测试/构建/Lint 回归 | iOS `HealthDashboardView` + `ScrollViewPanObserver`；HarmonyOS `PullToRefreshState.ets` + `SignedInPage.HealthDashboard`；三端中英刷新文案与资源清单同步 | ✅（编译与静态验证；双端交互截图待设备人工复核） |
 | `HLTH-UI-ARCH-014` | HarmonyOS 刷新阈值与主体停留高度独立可调 | `.refreshOffset(PULL_REFRESH_HOLD_OFFSET)`、`.pullToRefresh(false)`、手动释放资格静态检查由无匹配红灯转绿；HarmonyOS `hvigorw assembleApp --no-daemon` | `SignedInPage.handleRefreshOffset/finishRefreshGesture/beginHarmonyRefresh`；有效 `refreshOffset` 使用停留高度，80 阈值由页面独立判定 | ✅ |
+
+---
+
+## health-editable-normal-data.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `HLTH-EDIT-001` | 默认、持久化与恢复统一使用最小健康源数据 | `EditableHealthDataTest.editableSourcePersistsOnlyCanonicalInputsAndRebuildsDerivedData`；全量 common 测试 | `health_dashboard_mock.proto`、`EditableHealthData`、`MockHealthDashboardStoreJson`、`HealthDashboardStore.resolveSnapshot` | ✅ |
+| `HLTH-EDIT-002` | 正常数据草稿仅驻留进程内，刷新成功才提交持久化 | `normalDraftDoesNotChangeSnapshotUntilRefreshAndIsNotRestored` | `HealthDashboardStore.transientNormalDraft` / `refresh`；`HealthStore.normalDraftForEditing` | ✅ |
+| `HLTH-EDIT-003` | 支持单模块恢复默认和整套使用默认数据 | `singleModuleAndWholeDraftRestoreUseCommonDefaults`；专项结构门禁 | `HealthEditableRules.restoreSection/restoreAll`；三端编辑总览与模块页 | ✅ |
+| `HLTH-EDIT-004` | 所有派生业务规则只位于 common | `commonFormSchemaAppliesRawPlatformInputsAndGeneratesCanonicalSequences`、`derivedWeeklyPlanUsesOnlyWorkoutTypeAndDistance`；`./gradlew :common:check` | `HealthEditableRules`、`HealthEditableForms`；平台只提交原始字段并渲染共享表单 | ✅ |
+| `HLTH-EDIT-005` | common 快捷生成完整心率与压力序列 | `heartAndStressGeneratorsProduceDeterministicFullSequences` | `HealthEditableRules.generateHeartRateSamples/generateStressSamples`；快照只保存 288/48 完整序列 | ✅ |
+| `HLTH-EDIT-006` | 三端提供独立正常数据总览和模块编辑原生路由 | `./tools/check-health-editable-normal-data.sh`；Android/iOS/HarmonyOS 构建 | Android `NormalDataEditor`/Navigation Compose；iOS `NormalDataEditor.swift`/Coordinator；HarmonyOS 两个 `@Entry` 页面/Router | ✅（设备返回与输入体验待人工复验） |
+| `HLTH-EDIT-007` | 三端保存提示 latest-wins 并在 1500ms 后消失 | 专项结构门禁；三端构建 | Android eventId + `LaunchedEffect(1500)`；iOS cancel task + 1.5s；HarmonyOS native toast 1500ms | ✅（连续快速保存待设备人工复验） |
+| `HLTH-EDIT-008` | 睡眠阶段连续且结束时间由 common 计算 | `sleepStagesMustBeContinuousAndEndTimeIsDerived` | `HealthEditableRules.validateSleep/derive`；`HealthEditableForms.apply` 重建连续区间 | ✅ |
+| `HLTH-EDIT-009` | common 新增编辑/派生健康键必须进入 Android 与 HarmonyOS 显式本地化解析白名单 | `check-health-editable-normal-data.sh` 首次 148 项缺键红灯，修复后通过；Android/iOS/HarmonyOS 构建 | Android `HealthLocalization.healthStringResource`；HarmonyOS `HealthLocalization.healthResource`；三端 `health_visual_workout_rest` 资源；HarmonyOS 模块页常驻字段标签 | ✅ |
+| `HLTH-EDIT-010` | 三端编辑页保存操作、常驻字段提示和输入内容在深色界面清晰一致 | `check-health-editable-normal-data.sh`；三端构建；Android emulator-5554 截图 | common `labelArguments`；Android `common_save` 直接使用通用资源、固定操作区与高对比输入色；iOS/HarmonyOS 常驻字段标签 | ⚠️（Android 保存按钮实机通过；iOS/HarmonyOS 本轮无运行设备） |
+| `HLTH-EDIT-011` | 睡眠阶段由 common 表单规则动态新增、删除、重编号并连续保存 | `EditableHealthDataTest.dynamicSleepStagesAreMutatedAndAppliedByCommon`；全量 `:common:check` | `HealthEditableForms.mutate`、`HealthEditRepeatGroup`、三端 RepeatGroup editor 与 facade/bridge | ✅ |
+| `HLTH-EDIT-012` | 体型锻炼部位使用 common 选项集并支持数量可变的增删选择 | `EditableHealthDataTest.dynamicMuscleGroupsUseSharedSelectableOptions`；全量 `:common:check` | `BodyMuscleGroup`、`HealthEditableRules.validate`、`HealthEditableForms.mutate/apply`、三端 Choice 重复项 | ✅ |
+| `HLTH-EDIT-013` | 三端体型卡片右侧人体图区域反映 common 输出的当前锻炼部位 | `EditableHealthDataTest.bodyVisualUsesSelectedMuscleIds`；专项结构门禁；三端构建 | common `bodyVisual.metrics`；Android `MuscleMarker`、iOS `muscleMarker`、HarmonyOS `MuscleMarker`；人体底图 Template 中和 | ⚠️（业务输出与构建通过，无连接设备） |
+| `HLTH-EDIT-014` | HarmonyOS HRV 三角标记、横条和下方正常范围图例完整显示 | `check-health-editable-normal-data.sh`；`build-shared-harmony.sh`/`assembleApp` | `HrvAssessmentVisualComp.RangeMarker` 绝对定位；24vp 横条容器与双行范围图例 | ⚠️（ArkTS 构建通过，无连接设备） |
+| `HLTH-EDIT-015` | 三端 Choice 字段同行展示并弹出统一深色选择面板，重复项添加操作统一绿色 | `check-health-editable-normal-data.sh` 首次 9 项红灯、修复后通过；三端构建；Android emulator-5554 选择/关闭/更新截图验收 | Android `ChoiceSelectionDialog`；iOS `choiceSelectionOverlay`；HarmonyOS `ChoiceSelectionOverlay`；三端 Choice 同行入口与 AddAction | ⚠️（Android 运行时通过；iOS/HarmonyOS 构建通过但本轮无设备截图） |
+| `HLTH-EDIT-016` | Choice 下拉和当前项勾选统一复用 `right_more`/`ic_profile_check` 共享资源 | `check-health-editable-normal-data.sh` 首次 18 项红灯、修复后通过；资源门禁；三端构建；Android emulator-5554 截图 | 三端 `AppImages` ChoiceChevron/ChoiceCheck 语义映射；Android `AppImage`、iOS/ArkUI `Image` Template 着色；`right_more` 旋转 90° | ⚠️（Android 运行时通过；iOS/HarmonyOS 构建通过但本轮无设备截图） |
+| `HLTH-EDIT-017` | 体型管理按 common 区域契约叠加同画布蒙版并只显示“本周锻炼部位” | `EditableHealthDataTest.bodyVisualDerivesAlignedHighlightRegions` 实现前因字段缺失编译红灯、实现后通过；专项门禁实现前 95 项红灯、实现后通过；16 份资源三端逐文件一致性检查；common/Android/iOS/HarmonyOS 构建；Android emulator-5554 截图 | common `bodyRegionsByMuscleGroup`/`highlightedBodyRegions`/`footer`；`health_dashboard_resources/body_muscle_masks`；三端 `AppImages` 语义映射与 Body visual 同画布 Template 蒙版叠加 | ⚠️（Android 运行时确认胸部/股四头肌精确高光；iOS/HarmonyOS 构建通过但本轮无设备截图） |
+| `HLTH-EDIT-018` | Normal 刷新只保留用户体重及历史，草稿锻炼部位进入有效快照并改变高光 | `EditableHealthDataTest.bodyMuscleDraftReplacesOldMusclesOnRefreshWhileWeightHistoryIsPreserved` 实现前在刷新区域断言红灯、修复后通过；全量 `:common:check`；Android emulator-5554 实际选择“背部”并完成刷新前/后截图；三端构建 | `HealthDashboardStore.refresh` 只把旧 `weightKg/weightHistoryKg` 合并到草稿 `bodyManagement`，保留草稿 `trainedMuscleGroups`；专项结构门禁禁止旧整对象覆盖写法 | ⚠️（Android 完整编辑—刷新链路通过；iOS/HarmonyOS 共享逻辑与构建通过但本轮无设备截图） |
+| `HLTH-EDIT-019` | HarmonyOS 模块编辑页保存按钮可点击并直接消费布尔保存结果 | 专项门禁实现前因字符串返回、Text 操作入口等 5 项红灯，修复后通过；KNOI bridge 生成与 HarmonyOS `assembleApp` 通过；设备点击待验收 | `HarmonyLoginService.saveNormalHealthEditForm`/生成 provider 返回 Boolean；`NormalDataSectionPage` 使用原生 Button、保存中禁用与直接布尔判断 | ⚠️（自动验证通过，鸿蒙设备点击待验收） |
 
 ---
 

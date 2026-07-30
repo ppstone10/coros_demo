@@ -110,42 +110,66 @@ internal fun sleepVisual(value: SleepSummary): HealthCardVisualData {
 
 internal fun hrvVisual(value: HrvAssessment): HealthCardVisualData {
     val current = (value.averageMs ?: value.hrvScore ?: 0).toDouble()
-    val minimum = 30.0
-    val maximum = 80.0
+    val range = hrvRange(
+        current = current,
+        normalMin = value.normalMin?.toDouble(),
+        normalMax = value.normalMax?.toDouble()
+    )
     return HealthCardVisualData(
         kind = HealthCardVisualKind.RangeIndicator,
         primaryValue = current.toInt().toString(), primaryUnit = text("health_unit_milliseconds"),
-        caption = text(
-            hrvStatusKey(
-                current = current,
-                minimum = minimum,
-                normalMin = value.normalMin?.toDouble(),
-                normalMax = value.normalMax?.toDouble(),
-                maximum = maximum
-            )
-        ),
+        caption = text(hrvStatusKey(current, range)),
         detail = text("health_visual_hrv_average", current.toInt()),
-        range = HealthRange(minimum, maximum, current, value.normalMin?.toDouble(), value.normalMax?.toDouble())
+        range = range
     )
 }
 
-internal fun hrvStatusKey(
+internal fun hrvRange(
     current: Double,
-    minimum: Double,
     normalMin: Double?,
-    normalMax: Double?,
-    maximum: Double = 80.0
-): String {
-    val fallbackMidpoint = minimum + (maximum - minimum) / 2.0
-    val resolvedNormalMin = normalMin ?: fallbackMidpoint
-    val resolvedNormalMax = normalMax ?: fallbackMidpoint
-    val veryLowThreshold = minimum + (resolvedNormalMin - minimum) / 2.0
+    normalMax: Double?
+): HealthRange {
+    val resolvedNormalMin = (normalMin ?: 47.0).coerceIn(42.0, 65.0)
+    val resolvedNormalMax = (normalMax ?: 57.0).coerceIn(resolvedNormalMin, 65.0)
+    return HealthRange(
+        minimum = 40.0,
+        maximum = 65.0,
+        current = current,
+        normalMin = resolvedNormalMin,
+        normalMax = resolvedNormalMax,
+        segments = listOf(
+            HealthRangeSegment(40.0, 42.0, HealthRangeLevel.VeryLow),
+            HealthRangeSegment(42.0, resolvedNormalMin, HealthRangeLevel.Low),
+            HealthRangeSegment(resolvedNormalMin, resolvedNormalMax, HealthRangeLevel.Normal),
+            HealthRangeSegment(resolvedNormalMax, 65.0, HealthRangeLevel.High)
+        )
+    )
+}
+
+internal fun hrvStatusKey(current: Double, range: HealthRange): String {
+    val veryLowMax = range.segments.firstOrNull { it.level == HealthRangeLevel.VeryLow }?.maximum
+        ?: range.minimum
+    val normalMin = range.normalMin ?: veryLowMax
+    val normalMax = range.normalMax ?: normalMin
     return when {
-        current < veryLowThreshold -> "health_visual_hrv_very_low"
-        current < resolvedNormalMin -> "health_visual_hrv_low"
-        current <= resolvedNormalMax -> "health_visual_hrv_normal"
+        current < veryLowMax -> "health_visual_hrv_very_low"
+        current < normalMin -> "health_visual_hrv_low"
+        current <= normalMax -> "health_visual_hrv_normal"
         else -> "health_visual_hrv_high"
     }
+}
+
+internal fun HealthRange.segmentFractions(): List<Double> {
+    val total = (maximum - minimum).coerceAtLeast(1.0)
+    return segments.map { segment ->
+        (segment.maximum.coerceIn(minimum, maximum) - segment.minimum.coerceIn(minimum, maximum))
+            .coerceAtLeast(0.0) / total
+    }
+}
+
+internal fun HealthRange.currentFraction(): Double {
+    val total = (maximum - minimum).coerceAtLeast(1.0)
+    return ((current - minimum) / total).coerceIn(0.0, 1.0)
 }
 
 internal fun restingHeartVisual(value: RestingHeartRate): HealthCardVisualData {
@@ -171,14 +195,38 @@ internal fun healthCheckVisual(value: HealthCheck) = HealthCardVisualData(
     )
 )
 
-internal fun bodyVisual(value: BodyManagement) = HealthCardVisualData(
-    kind = HealthCardVisualKind.BodyMap,
-    primaryValue = value.weightKg?.f1(), primaryUnit = text("health_unit_kilograms"),
-    caption = text("health_visual_weight"),
-    detail = text("health_visual_measured_date", value.measuredDate ?: "---"),
-    metrics = value.trainedMuscleGroups.map { HealthMetric(text("health_visual_muscle_$it"), "") },
-    assetKey = "body_muscle_front_back"
+private val bodyRegionsByMuscleGroup = mapOf(
+    BodyMuscleGroup.Chest.id to listOf("chest_front"),
+    BodyMuscleGroup.Shoulders.id to listOf("shoulders_front", "shoulders_back"),
+    BodyMuscleGroup.Back.id to listOf(
+        "trapezius_back",
+        "latissimus_back",
+        "erector_spinae_back"
+    ),
+    BodyMuscleGroup.Biceps.id to listOf("biceps_front"),
+    BodyMuscleGroup.Triceps.id to listOf("triceps_back"),
+    BodyMuscleGroup.Abdominals.id to listOf("abdominals_front"),
+    BodyMuscleGroup.Glutes.id to listOf("glutes_back"),
+    BodyMuscleGroup.Quadriceps.id to listOf("quadriceps_front"),
+    BodyMuscleGroup.Hamstrings.id to listOf("hamstrings_back"),
+    BodyMuscleGroup.Calves.id to listOf("calves_front", "calves_back")
 )
+
+internal fun bodyHighlightRegions(muscleGroups: List<String>): List<String> =
+    muscleGroups.flatMap { bodyRegionsByMuscleGroup[it].orEmpty() }.distinct()
+
+internal fun bodyVisual(value: BodyManagement): HealthCardVisualData {
+    val bodyHighlightRegions = bodyHighlightRegions(value.trainedMuscleGroups)
+    return HealthCardVisualData(
+        kind = HealthCardVisualKind.BodyMap,
+        primaryValue = value.weightKg?.f1(), primaryUnit = text("health_unit_kilograms"),
+        caption = text("health_visual_weight"),
+        detail = text("health_visual_measured_date", value.measuredDate ?: "---"),
+        footer = text("health_visual_weekly_primary_muscles"),
+        highlightedBodyRegions = bodyHighlightRegions,
+        assetKey = "body_muscle_aligned_masks"
+    )
+}
 
 internal fun emptyVisual(type: HealthCardType) = HealthCardVisualData(
     kind = when (type) {

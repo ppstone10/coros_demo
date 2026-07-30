@@ -5,7 +5,7 @@
 - Spec ID 前缀：`HLTH-MAINT`
 - 状态：草案
 - 关联需求：解决健康主页模块业务规则漂移、模型重复、导航逻辑三端冗余
-- 最后更新：2026-07-21
+- 最后更新：2026-07-30
 
 ## 目标
 
@@ -85,6 +85,15 @@
 - Then：三端 UI 根据 `effect.nextRoute` 决定导航目标，不再自行判断 `isProfileComplete`
 - 异常/边界：`PostLoginRoute` 只有 `SignedIn` 和 `ProfileCompletion` 两个值；`AuthSucceeded` 保留既有 `session` 字段
 
+### `HLTH-MAINT-007`：HarmonyOS 编辑卡片保存参数保持 CSV 契约
+
+- Given：HarmonyOS 编辑卡片页已有不少于 3 个有效 `HealthCardType` ID
+- When：用户点击“保存”，页面把编辑结果交给 `HealthDashboardViewModel`，再调用 KNOI `saveCardConfig(typeNamesCsv)`
+- Then：ViewModel 必须使用 `types.join(',')` 生成 CSV；不得对数组执行 `JSON.stringify` 后再交给按逗号拆分的 bridge
+- And：标题栏保存入口使用原生 `Button` 提供稳定点击热区，而不是仅给 `Text` 附加点击事件
+- And：保存成功后更新健康卡片版本、持久化快照并返回健康首页；保存失败时停留编辑页，不得把失败结果当成成功返回
+- 异常/边界：空列表或少于 3 项仍由 common 的最少卡片规则拒绝；参数转换不得在平台端修改卡片 ID
+
 ## 测试要求
 
 | Spec ID | 自动化测试/人工验收 | 预期结果 |
@@ -96,6 +105,7 @@
 | `HLTH-MAINT-004` | 人工验收：iOS 构建通过 + 健康仪表盘展示数据与修改前一致 | `xcodebuild` 构建成功，卡片列表、内容、图标与之前无差异 |
 | `HLTH-MAINT-005` | 人工验收：HarmonyOS 构建通过 + 页面交互无差异 | `hvigorw assembleHap --no-daemon` 构建成功，仪表盘、编辑器和账户页交互正常 |
 | `HLTH-MAINT-002` | 人工验收：三端尝试减少卡片到少于 3 张 | Android 显示 common 返回的错误文案；iOS 显示 facade 返回的错误消息；HarmonyOS 显示 JSON 中的错误字段 |
+| `HLTH-MAINT-007` | `tools/check-health-card-editor-regressions.sh` + HarmonyOS 构建/设备点击 | ViewModel 发送纯 CSV 且不再发送 JSON 数组；保存后返回并由首页读取新顺序 |
 
 ## 验收标准
 
@@ -108,7 +118,8 @@
 - [ ] HarmonyOS `hvigorw assembleHap` 构建通过
 - [ ] 三端卡片编辑器中减少卡片至 <3 张时均显示错误提示
 - [ ] 登录后导航行为与修改前一致
-- [ ] TRACE、`Codex_worklog.md` 和必要的 `LEARNINGS.md` 已更新
+- [x] HarmonyOS 编辑卡片保存使用原生按钮并保持 CSV bridge 契约
+- [x] TRACE、`Codex_worklog.md` 和必要的 `LEARNINGS.md` 已更新
 
 ## 待人工确认
 

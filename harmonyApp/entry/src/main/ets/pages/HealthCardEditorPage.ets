@@ -33,8 +33,7 @@ struct HealthCardEditorPage {
     const types: string[] = typeNamesCsv.split(',')
       .map((typeName: string) => typeName.trim())
       .filter((typeName: string) => typeName.length > 0);
-    this.healthVM.saveCardConfiguration(types, this);
-    if (this.healthVM.consumeEffectMessage() !== undefined) {
+    if (!this.healthVM.saveCardConfiguration(types, this)) {
       return;
     }
     saveStoreSnapshot();

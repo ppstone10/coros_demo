@@ -17,6 +17,7 @@ struct HealthDashboardView: View {
     @ObservedObject var viewModel: HealthDashboardViewModel
     let onOpenDetail: (HealthCard) -> Void
     let onOpenEditor: () -> Void
+    let onOpenNormalDataEditor: () -> Void
     let onWatchTap: () -> Void
     @EnvironmentObject private var languageStore: AppLanguageStore
     @State private var screenState = DashboardScreenState()
@@ -31,7 +32,13 @@ struct HealthDashboardView: View {
             case .main, .scenarioPicker:
                 mainDashboard
                     .sheet(isPresented: .init(get: { screenState.page == .scenarioPicker }, set: { if !$0 { screenState.page = .main } })) {
-                        ScenarioPickerView(viewModel: viewModel)
+                        ScenarioPickerView(
+                            viewModel: viewModel,
+                            onOpenNormalDataEditor: {
+                                screenState.page = .main
+                                onOpenNormalDataEditor()
+                            }
+                        )
                     }
             }
         }
@@ -432,6 +439,7 @@ private extension Comparable {
         viewModel: HealthDashboardViewModel(),
         onOpenDetail: { _ in },
         onOpenEditor: {},
+        onOpenNormalDataEditor: {},
         onWatchTap: {}
     )
         .environmentObject(AppLanguageStore.shared)

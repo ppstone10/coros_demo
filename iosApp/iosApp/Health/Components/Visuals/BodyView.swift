@@ -4,6 +4,7 @@ import Shared
 struct BodyView: View {
     let visual: HealthCardVisualData
     let onWeightEdit: () -> Void
+
     var body: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 4) {
@@ -20,12 +21,47 @@ struct BodyView: View {
             Spacer()
             VStack(spacing: 0) {
                 HStack(spacing: 4) {
-                    Image(AppImages.Health.bodyFront).resizable().scaledToFit().frame(width: 52, height: 108)
-                    Image(AppImages.Health.bodyBack).resizable().scaledToFit().frame(width: 52, height: 108)
+                    bodyFigure(
+                        base: AppImages.Health.bodyMaleFrontBase,
+                        regions: visual.highlightedBodyRegions.filter { $0.hasSuffix("_front") }
+                    )
+                    bodyFigure(
+                        base: AppImages.Health.bodyMaleBackBase,
+                        regions: visual.highlightedBodyRegions.filter { $0.hasSuffix("_back") }
+                    )
                 }
-                Text(appLocalized("health_visual_weekly_primary_muscles"))
-                    .font(.system(size: 11)).foregroundStyle(AppColors.Health.muted).lineLimit(1)
+                .frame(width: 108, height: 108)
+                if let footer = visual.footer {
+                    Text(localizedHealthText(footer))
+                        .font(.system(size: 9))
+                        .foregroundStyle(AppColors.Health.muted)
+                        .lineLimit(1)
+                }
             }.frame(width: 142).clipped()
+        }
+    }
+
+    @ViewBuilder
+    private func bodyFigure(base: String, regions: [String]) -> some View {
+        ZStack {
+            Image(base)
+                .resizable()
+                .scaledToFit()
+            ForEach(regions, id: \.self) { region in
+                bodyRegionLayer(region)
+            }
+        }
+        .frame(width: 52, height: 108)
+    }
+
+    @ViewBuilder
+    private func bodyRegionLayer(_ region: String) -> some View {
+        if let assetName = AppImages.Health.bodyMuscleRegions[region] {
+            Image(assetName)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(AppColors.Health.action)
         }
     }
 }

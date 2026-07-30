@@ -82,6 +82,37 @@ open class HarmonyLoginService {
         }
     }
 
+    fun healthEditableSectionsJson(): String =
+        healthFacade.editableSectionNames().joinToString(prefix = "[", postfix = "]") {
+            "\"${it.esc()}\""
+        }
+
+    fun normalHealthEditFormJson(sectionName: String): String =
+        healthFacade.normalEditFormJson(sectionName).orEmpty()
+
+    fun defaultNormalHealthEditFormJson(sectionName: String): String =
+        healthFacade.defaultNormalEditFormJson(sectionName).orEmpty()
+
+    fun mutateNormalHealthEditFormJson(
+        sectionName: String,
+        valuesSpec: String,
+        groupId: String,
+        operationName: String,
+        rowIndex: Int
+    ): String = healthFacade.mutateNormalEditFormJson(
+        sectionName,
+        valuesSpec,
+        groupId,
+        operationName,
+        rowIndex
+    ).orEmpty()
+
+    fun saveNormalHealthEditForm(sectionName: String, valuesSpec: String): Boolean =
+        healthFacade.saveNormalEditForm(sectionName, valuesSpec)
+
+    fun restoreAllNormalHealthDefaults(): String =
+        healthFacade.restoreAllNormalDefaults().toString()
+
     fun consumeEffectSnapshot(): String {
         return HarmonyLoginJson.effectSnapshot(facade.consumeEffect())
     }
@@ -425,6 +456,11 @@ private fun healthSnapshotFromState(state: HealthState): String {
             spec.arguments.forEachIndexed { i, arg -> if (i > 0) sb.append(","); sb.append("\"").append(arg.esc()).append("\"") }
             sb.append("]")
         }
+        card.visual.footer?.let { spec ->
+            sb.append(",\"footerKey\":\"").append(spec.key.esc()).append("\",\"footerArgs\":[")
+            spec.arguments.forEachIndexed { i, arg -> if (i > 0) sb.append(","); sb.append("\"").append(arg.esc()).append("\"") }
+            sb.append("]")
+        }
         card.visual.progress?.let { sb.append(",\"progress\":").append(it) }
         card.visual.highlightedIndex?.let { sb.append(",\"highlightedIndex\":").append(it) }
         sb.append(",\"weeklyDayPlans\":[")
@@ -455,12 +491,26 @@ private fun healthSnapshotFromState(state: HealthState): String {
             sb.append("}")
         }
         sb.append("]")
+        sb.append(",\"highlightedBodyRegions\":[")
+        card.visual.highlightedBodyRegions.forEachIndexed { i, region ->
+            if (i > 0) sb.append(",")
+            sb.append("\"").append(region.esc()).append("\"")
+        }
+        sb.append("]")
         card.visual.range?.let { range ->
             sb.append(",\"range\":{\"minimum\":").append(range.minimum).append(",\"maximum\":").append(range.maximum)
                 .append(",\"current\":").append(range.current)
             range.normalMin?.let { sb.append(",\"normalMin\":").append(it) }
             range.normalMax?.let { sb.append(",\"normalMax\":").append(it) }
             range.average?.let { sb.append(",\"average\":").append(it) }
+            sb.append(",\"segments\":[")
+            range.segments.forEachIndexed { index, segment ->
+                if (index > 0) sb.append(",")
+                sb.append("{\"minimum\":").append(segment.minimum)
+                    .append(",\"maximum\":").append(segment.maximum)
+                    .append(",\"level\":\"").append(segment.level.name).append("\"}")
+            }
+            sb.append("]")
             sb.append("}")
         }
         sb.append(",\"sleepStages\":[")

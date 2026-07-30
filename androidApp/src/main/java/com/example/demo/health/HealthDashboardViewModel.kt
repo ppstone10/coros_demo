@@ -5,6 +5,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.demo.common.health.HealthAction
 import com.example.demo.common.health.HealthCardType
+import com.example.demo.common.health.EditableHealthData
+import com.example.demo.common.health.HealthEditableSection
+import com.example.demo.common.health.HealthEditForm
+import com.example.demo.common.health.HealthEditRepeatOperation
+import com.example.demo.common.health.HealthEditableForms
+import com.example.demo.common.health.DefaultEditableHealthData
 import com.example.demo.common.health.HealthEffect
 import com.example.demo.common.health.HealthMockScenario
 import com.example.demo.common.health.HealthState
@@ -37,6 +43,52 @@ class HealthDashboardViewModel(
 
     fun saveBodyWeight(weightKg: Double) {
         dispatch(HealthAction.BodyWeightChanged(weightKg))
+    }
+
+    fun beginNormalDataEditing(): EditableHealthData {
+        val data = store.normalDraftForEditing()
+        state = store.state
+        return data
+    }
+
+    fun saveNormalDraft(data: EditableHealthData, section: HealthEditableSection) {
+        dispatch(HealthAction.NormalDraftSaved(data, section))
+    }
+
+    fun restoreNormalSection(section: HealthEditableSection) {
+        dispatch(HealthAction.NormalDraftSectionRestored(section))
+    }
+
+    fun restoreAllNormalDefaults() {
+        dispatch(HealthAction.NormalDraftDefaultsRestored)
+    }
+
+    fun normalEditForm(section: HealthEditableSection): HealthEditForm =
+        HealthEditableForms.form(beginNormalDataEditing(), section)
+
+    fun defaultNormalEditForm(section: HealthEditableSection): HealthEditForm =
+        HealthEditableForms.form(DefaultEditableHealthData.value, section)
+
+    fun mutateNormalEditForm(
+        section: HealthEditableSection,
+        values: Map<String, String>,
+        groupId: String,
+        operation: HealthEditRepeatOperation,
+        rowIndex: Int? = null
+    ): HealthEditForm? = HealthEditableForms.mutate(
+        beginNormalDataEditing(),
+        section,
+        values,
+        groupId,
+        operation,
+        rowIndex
+    )
+
+    fun saveNormalEditForm(section: HealthEditableSection, values: Map<String, String>): Boolean {
+        val updated = HealthEditableForms.apply(beginNormalDataEditing(), section, values)
+            ?: return false
+        saveNormalDraft(updated, section)
+        return state.error == null
     }
 
     fun onEffectConsumed() {

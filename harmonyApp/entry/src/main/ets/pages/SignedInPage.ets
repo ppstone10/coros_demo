@@ -126,6 +126,9 @@ struct SignedInPage {
             onSelect: (name: string) => {
               this.healthVM.selectScenario(name);
               this.currentPage = PAGE_MAIN;
+              if (name === 'Normal') {
+                navigate(NavOperation.Push, AuthRoutes.NORMAL_DATA_EDITOR);
+              }
             },
             onDismiss: () => {
               this.currentPage = PAGE_MAIN;

@@ -42,11 +42,29 @@ object AppImages {
         val ActiveDuration = AppImageAsset(R.drawable.sport_time_icon)
         val EditorAdd = AppImageAsset(R.drawable.data_screen_edit_add)
         val EditorRemove = AppImageAsset(R.drawable.delete)
+        val ChoiceChevron = AppImageAsset(R.drawable.right_more)
+        val ChoiceCheck = AppImageAsset(R.drawable.ic_profile_check)
         val ActivityMap = AppImageAsset(R.drawable.health_activity_map)
         val TodayHeader = AppImageAsset(R.drawable.health_today_header)
         val TodayRunner = AppImageAsset(R.drawable.health_today_runner)
-        val BodyFront = AppImageAsset(R.drawable.health_body_front)
-        val BodyBack = AppImageAsset(R.drawable.health_body_back)
+        val BodyMaleFrontBase = AppImageAsset(R.drawable.health_body_male_front_base)
+        val BodyMaleBackBase = AppImageAsset(R.drawable.health_body_male_back_base)
+        val BodyMuscleRegions = mapOf(
+            "shoulders_front" to AppImageAsset(R.drawable.health_body_shoulders_front),
+            "shoulders_back" to AppImageAsset(R.drawable.health_body_shoulders_back),
+            "chest_front" to AppImageAsset(R.drawable.health_body_chest_front),
+            "trapezius_back" to AppImageAsset(R.drawable.health_body_back_trapezius),
+            "latissimus_back" to AppImageAsset(R.drawable.health_body_back_latissimus),
+            "erector_spinae_back" to AppImageAsset(R.drawable.health_body_back_erector_spinae),
+            "biceps_front" to AppImageAsset(R.drawable.health_body_biceps_front),
+            "triceps_back" to AppImageAsset(R.drawable.health_body_triceps_back),
+            "abdominals_front" to AppImageAsset(R.drawable.health_body_abdominals_front),
+            "glutes_back" to AppImageAsset(R.drawable.health_body_glutes_back),
+            "quadriceps_front" to AppImageAsset(R.drawable.health_body_quadriceps_front),
+            "hamstrings_back" to AppImageAsset(R.drawable.health_body_hamstrings_back),
+            "calves_front" to AppImageAsset(R.drawable.health_body_calves_front),
+            "calves_back" to AppImageAsset(R.drawable.health_body_calves_back)
+        )
         val RecoveryStatus = AppImageAsset(R.drawable.health_recovery_status)
 
         val WeeklyPlan = AppImageAsset(R.drawable.icon_small_plan)

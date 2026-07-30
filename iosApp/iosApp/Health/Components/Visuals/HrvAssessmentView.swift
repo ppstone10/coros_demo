@@ -59,13 +59,22 @@ private struct HrvAssessmentOverviewView: View {
         VStack(spacing: 4) {
             GeometryReader { geometry in
                 let markerX = max(4, min(geometry.size.width - 4, geometry.size.width * fraction))
+                let segments = visual.range?.segments ?? []
+                let rangeMinimum = visual.range?.minimum ?? 0
+                let rangeWidth = max(1, (visual.range?.maximum ?? 1) - rangeMinimum)
                 ZStack(alignment: .topLeading) {
                     HStack(spacing: 0) {
-                        Rectangle().fill(AppColors.Health.warning).frame(width: geometry.size.width * 0.18)
-                        Rectangle().fill(AppColors.Health.visualYellow).frame(width: geometry.size.width * 0.20)
-                        Rectangle().fill(AppColors.Health.visualGreen).frame(width: geometry.size.width * 0.38)
-                        Rectangle().fill(AppColors.Health.visualOrange)
+                        ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
+                            Rectangle()
+                                .fill(segmentColor(segment.level.name))
+                                .frame(
+                                    width: geometry.size.width * CGFloat(
+                                        max(0, segment.maximum - segment.minimum) / rangeWidth
+                                    )
+                                )
+                        }
                     }
+                    .frame(width: geometry.size.width, alignment: .leading)
                     .frame(height: 4)
                     .clipShape(Capsule())
                     .offset(y: 10)
@@ -86,6 +95,15 @@ private struct HrvAssessmentOverviewView: View {
                         .font(.system(size: 10)).foregroundStyle(AppColors.Health.muted).lineLimit(1)
                 }
             }
+        }
+    }
+
+    private func segmentColor(_ level: String) -> Color {
+        switch level {
+        case "VeryLow": AppColors.Health.warning
+        case "Low": AppColors.Health.visualYellow
+        case "Normal": AppColors.Health.visualGreen
+        default: AppColors.Health.visualOrange
         }
     }
 }

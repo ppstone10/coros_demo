@@ -47,6 +47,9 @@ import com.example.demo.home.MainTabsScreen
 import com.example.demo.health.CardEditor
 import com.example.demo.health.DetailPlaceholder
 import com.example.demo.health.HealthDashboardViewModel
+import com.example.demo.health.NormalDataEditorOverview
+import com.example.demo.health.NormalDataSectionEditor
+import com.example.demo.common.health.HealthEditableSection
 import com.example.demo.login.profile.PersonalProfileEditScreen
 import com.example.demo.login.verify.VerifyCodeScreen
 import kotlinx.coroutines.launch
@@ -336,6 +339,9 @@ fun AuthNavGraph() {
                     onOpenHealthEditor = {
                         navController.navigateWithOperation(HealthEditorRoute, NavOperation.Push)
                     },
+                    onOpenNormalDataEditor = {
+                        navController.navigateWithOperation(NormalDataEditorRoute, NavOperation.Push)
+                    },
                     onOpenProfileEditor = {
                         navController.navigateWithOperation(ProfileEditRoute, NavOperation.Push)
                     }
@@ -368,6 +374,42 @@ fun AuthNavGraph() {
                         navController.navigateWithOperation(Unit, NavOperation.Pop)
                     }
                 )
+            }
+
+            composable<NormalDataEditorRoute> {
+                NormalDataEditorOverview(
+                    viewModel = healthViewModel,
+                    onBack = {
+                        navController.navigateWithOperation(Unit, NavOperation.Pop)
+                    },
+                    onOpenSection = { section ->
+                        navController.navigateWithOperation(
+                            NormalDataSectionRoute(section.name),
+                            NavOperation.Push
+                        )
+                    }
+                )
+            }
+
+            composable<NormalDataSectionRoute> { backStackEntry ->
+                val route: NormalDataSectionRoute = backStackEntry.toRoute()
+                val section = HealthEditableSection.entries.firstOrNull {
+                    it.name == route.section
+                }
+                if (section == null) {
+                    LaunchedEffect(route.section) { navController.popBackStack() }
+                } else {
+                    NormalDataSectionEditor(
+                        section = section,
+                        viewModel = healthViewModel,
+                        onBack = {
+                            navController.navigateWithOperation(Unit, NavOperation.Pop)
+                        },
+                        onSaved = {
+                            navController.navigateWithOperation(Unit, NavOperation.Pop)
+                        }
+                    )
+                }
             }
 
             composable<ProfileEditRoute> {

@@ -46,4 +46,10 @@ data class HealthDetailRoute(val cardType: String)
 object HealthEditorRoute
 
 @Serializable
+object NormalDataEditorRoute
+
+@Serializable
+data class NormalDataSectionRoute(val section: String)
+
+@Serializable
 object ProfileEditRoute

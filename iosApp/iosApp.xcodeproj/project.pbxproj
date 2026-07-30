@@ -30,6 +30,7 @@
 
 		BF5278A3301362B700D53B2B /* HealthDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A3301362B700D53B2B /* HealthDetailView.swift */; };
 		BF5278A5301362B700D53B2B /* HealthCardEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A5301362B700D53B2B /* HealthCardEditor.swift */; };
+		BF5278E5301362B700D53B2B /* NormalDataEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278E5301362B700D53B2B /* NormalDataEditor.swift */; };
 		BF5278A6301362B700D53B2B /* ScrollViewAccessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A6301362B700D53B2B /* ScrollViewAccessor.swift */; };
 		BF5278A8301362B700D53B2B /* HealthCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A8301362B700D53B2B /* HealthCard.swift */; };
 		BF5278A9301362B700D53B2B /* HealthDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A9301362B700D53B2B /* HealthDashboardView.swift */; };
@@ -90,6 +91,7 @@
 		925278A0301362B700D53B2B /* ScrollViewPanObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollViewPanObserver.swift; sourceTree = "<group>"; };
 		925278A3301362B700D53B2B /* HealthDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDetailView.swift; sourceTree = "<group>"; };
 		925278A5301362B700D53B2B /* HealthCardEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCardEditor.swift; sourceTree = "<group>"; };
+		925278E5301362B700D53B2B /* NormalDataEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NormalDataEditor.swift; sourceTree = "<group>"; };
 		925278A6301362B700D53B2B /* ScrollViewAccessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollViewAccessor.swift; sourceTree = "<group>"; };
 		925278A8301362B700D53B2B /* HealthCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCard.swift; sourceTree = "<group>"; };
 		925278A9301362B700D53B2B /* HealthDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDashboardView.swift; sourceTree = "<group>"; };
@@ -193,6 +195,7 @@
 			isa = PBXGroup;
 			children = (
 				925278A5301362B700D53B2B /* HealthCardEditor.swift */,
+				925278E5301362B700D53B2B /* NormalDataEditor.swift */,
 				925278A6301362B700D53B2B /* ScrollViewAccessor.swift */,
 			);
 			path = Editor;
@@ -436,6 +439,7 @@
 				BF5278A0301362B700D53B2B /* ScrollViewPanObserver.swift in Sources */,
 				BF5278A3301362B700D53B2B /* HealthDetailView.swift in Sources */,
 				BF5278A5301362B700D53B2B /* HealthCardEditor.swift in Sources */,
+				BF5278E5301362B700D53B2B /* NormalDataEditor.swift in Sources */,
 				BF5278A6301362B700D53B2B /* ScrollViewAccessor.swift in Sources */,
 				BF5278A8301362B700D53B2B /* HealthCard.swift in Sources */,
 				BF5278A9301362B700D53B2B /* HealthDashboardView.swift in Sources */,

@@ -1,5 +1,5 @@
 import { AppColors, AppImages } from '../../../resources/AppResources';
-import { HealthMetricData, HealthVisualData, localizedHealthText } from '../../HealthDashboardTypes';
+import { HealthVisualData, localizedHealthText } from '../../HealthDashboardTypes';
 
 @Component
 export struct BodyManagementVisualComp {
@@ -9,6 +9,24 @@ export struct BodyManagementVisualComp {
   private text(key: string | undefined, args: string[] | undefined = []): string {
     if (!key) return '';
     return localizedHealthText(this, key, args || []);
+  }
+
+  private bodyRegions(suffix: string): string[] {
+    return (this.visual.highlightedBodyRegions || []).filter((region: string) => region.endsWith(suffix));
+  }
+
+  @Builder
+  private BodyRegionLayer(region: string) {
+    Image(AppImages.bodyMuscleRegion(region))
+      .width(52)
+      .height(108)
+      .objectFit(ImageFit.Contain)
+      .colorFilter(new ColorFilter([
+        0, 0, 0, 0, 240 / 255,
+        0, 0, 0, 0, 0,
+        0, 0, 0, 0, 60 / 255,
+        0, 0, 0, 1, 0
+      ]))
   }
 
   build() {
@@ -28,11 +46,24 @@ export struct BodyManagementVisualComp {
       Blank()
       Column({ space: 0 }) {
         Row({ space: 4 }) {
-          Image(AppImages.bodyFront()).width(52).height(108).objectFit(ImageFit.Contain)
-          Image(AppImages.bodyBack()).width(52).height(108).objectFit(ImageFit.Contain)
+          Stack({ alignContent: Alignment.TopStart }) {
+            Image(AppImages.bodyMaleFrontBase()).width(52).height(108).objectFit(ImageFit.Contain)
+            ForEach(this.bodyRegions('_front'), (region: string) => {
+              this.BodyRegionLayer(region)
+            }, (region: string) => region)
+          }
+          .width(52).height(108)
+          Stack({ alignContent: Alignment.TopStart }) {
+            Image(AppImages.bodyMaleBackBase()).width(52).height(108).objectFit(ImageFit.Contain)
+            ForEach(this.bodyRegions('_back'), (region: string) => {
+              this.BodyRegionLayer(region)
+            }, (region: string) => region)
+          }
+          .width(52).height(108)
         }
-        Text($r('app.string.health_visual_weekly_primary_muscles'))
-          .fontSize(11).fontColor(AppColors.MUTED).maxLines(1)
+        .width(108).height(108)
+        Text(this.text(this.visual.footerKey, this.visual.footerArgs))
+          .fontSize(9).fontColor(AppColors.MUTED).maxLines(1)
       }.width(142).alignItems(HorizontalAlign.Center).clip(true)
     }.width('100%').alignItems(VerticalAlign.Center)
   }

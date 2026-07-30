@@ -34,7 +34,8 @@ export struct CardEditorComp {
           .onClick(() => { this.cancelEditing(); })
         Text($r('app.string.health_edit_cards')).fontSize(AppTypography.SECTION_TITLE).fontColor(AppColors.WHITE).fontWeight(FontWeight.Medium)
           .layoutWeight(1).textAlign(TextAlign.Center)
-        Text($r('app.string.common_save')).fontSize(AppTypography.ACTION).fontColor(AppColors.WHITE).width(64).height(30).textAlign(TextAlign.Center)
+        Button($r('app.string.common_save'), { type: ButtonType.Normal })
+          .fontSize(AppTypography.ACTION).fontColor(AppColors.WHITE).width(64).height(30).padding(0)
           .backgroundColor(AppColors.ACTION).borderRadius(6)
           .onClick(() => { this.commitEditing(); })
       }

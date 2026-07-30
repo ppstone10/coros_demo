@@ -63,6 +63,18 @@ protocol SharedLoginAdapterProtocol {
     func saveHealthBodyWeight(_ weightKg: Double) -> String?
     func consumeHealthEffect() -> HealthEffect?
     func healthScenarioDescriptors() -> [HealthScenarioDescriptor]
+    func healthEditableSectionNames() -> [String]
+    func normalHealthEditFormJson(_ section: String) -> String?
+    func defaultNormalHealthEditFormJson(_ section: String) -> String?
+    func mutateNormalHealthEditFormJson(
+        _ section: String,
+        valuesSpec: String,
+        groupID: String,
+        operation: String,
+        rowIndex: Int
+    ) -> String?
+    func saveNormalHealthEditForm(_ section: String, valuesSpec: String) -> Bool
+    func restoreAllNormalHealthDefaults() -> Bool
 }
 
 final class SharedLoginAdapter: SharedLoginAdapterProtocol {
@@ -329,6 +341,42 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
 
     func healthScenarioDescriptors() -> [HealthScenarioDescriptor] {
         healthFacade.scenarioDescriptors()
+    }
+
+    func healthEditableSectionNames() -> [String] {
+        healthFacade.editableSectionNames()
+    }
+
+    func normalHealthEditFormJson(_ section: String) -> String? {
+        healthFacade.normalEditFormJson(sectionName: section)
+    }
+
+    func defaultNormalHealthEditFormJson(_ section: String) -> String? {
+        healthFacade.defaultNormalEditFormJson(sectionName: section)
+    }
+
+    func mutateNormalHealthEditFormJson(
+        _ section: String,
+        valuesSpec: String,
+        groupID: String,
+        operation: String,
+        rowIndex: Int
+    ) -> String? {
+        healthFacade.mutateNormalEditFormJson(
+            sectionName: section,
+            valuesSpec: valuesSpec,
+            groupId: groupID,
+            operationName: operation,
+            rowIndex: Int32(rowIndex)
+        )
+    }
+
+    func saveNormalHealthEditForm(_ section: String, valuesSpec: String) -> Bool {
+        healthFacade.saveNormalEditForm(sectionName: section, valuesSpec: valuesSpec)
+    }
+
+    func restoreAllNormalHealthDefaults() -> Bool {
+        healthFacade.restoreAllNormalDefaults()
     }
 
     private func syncClock() {

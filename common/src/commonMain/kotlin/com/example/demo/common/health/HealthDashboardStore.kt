@@ -34,6 +34,7 @@ class HealthDashboardStore(
     private val dashboardDataSource = LocalHealthDashboardDataSource(authRepository)
     private val useCase = HealthDashboardUseCase(dashboardDataSource)
     private val pendingScenarios = mutableMapOf<String, HealthMockScenario>()
+    private var transientNormalDraft: EditableHealthData? = null
 
     fun load(): MockResult<PersistedDashboard> = when (val access = authRepository.verifyBusinessAccess()) {
         is MockResult.Failure -> MockResult.Failure(access.error)
@@ -61,15 +62,55 @@ class HealthDashboardStore(
                 is MockResult.Failure -> MockResult.Failure(resolved.error)
                 is MockResult.Success -> {
                     val scenario = pendingScenarios[userId] ?: resolved.data.sourceScenario
+                    if (scenario == HealthMockScenario.Normal) {
+                        val baseSource = transientNormalDraft ?: DefaultEditableHealthData.value
+                        val previousBody = resolved.data.editableData?.bodyManagement
+                            ?: resolved.data.dashboardData?.bodyManagement?.let { body ->
+                                val weight = body.weightKg ?: return@let null
+                                BodyManagementInput(
+                                    weightKg = weight,
+                                    trainedMuscleGroups = body.trainedMuscleGroups,
+                                    weightHistoryKg = body.weightHistoryKg.ifEmpty { listOf(weight) }
+                                )
+                            }
+                        val source = if ((previousBody?.weightHistoryKg?.size ?: 0) > 1) {
+                            val retainedBody = requireNotNull(previousBody)
+                            baseSource.copy(
+                                bodyManagement = baseSource.bodyManagement.copy(
+                                    weightKg = retainedBody.weightHistoryKg.last(),
+                                    weightHistoryKg = retainedBody.weightHistoryKg
+                                )
+                            )
+                        } else {
+                            baseSource
+                        }
+                        val updated = resolved.data.copy(
+                            sourceScenario = scenario,
+                            dashboardData = null,
+                            editableData = source,
+                            schemaVersion = CurrentHealthDashboardSchemaVersion
+                        )
+                        if (!stateDataSource.save(updated)) MockResult.Failure(MockError.PersistFailed)
+                        else {
+                            pendingScenarios.remove(userId)
+                            updated.toPersistedDashboard()
+                        }
+                    } else {
                     when (val generated = dashboardDataSource.load(scenario)) {
                         is MockResult.Failure -> MockResult.Failure(generated.error)
                         is MockResult.Success -> {
-                            val preservedBody = resolved.data.dashboardData?.bodyManagement
+                            val preservedBody = resolved.data.editableData?.let {
+                                HealthEditableRules.derive(it).bodyManagement
+                            } ?: resolved.data.dashboardData?.bodyManagement
                             val generatedBody = generated.data.bodyManagement
-                            val mergedBody = if (preservedBody?.weightHistoryKg?.isNotEmpty() == true && generatedBody != null) {
+                            val mergedBody = if (
+                                (preservedBody?.weightHistoryKg?.size ?: 0) > 1 &&
+                                generatedBody != null
+                            ) {
+                                val retainedBody = requireNotNull(preservedBody)
                                 generatedBody.copy(
-                                    weightKg = preservedBody.weightHistoryKg.last(),
-                                    weightHistoryKg = preservedBody.weightHistoryKg
+                                    weightKg = retainedBody.weightHistoryKg.last(),
+                                    weightHistoryKg = retainedBody.weightHistoryKg
                                 )
                             } else {
                                 generatedBody
@@ -77,6 +118,7 @@ class HealthDashboardStore(
                             val updated = resolved.data.copy(
                                 sourceScenario = scenario,
                                 dashboardData = generated.data.copy(bodyManagement = mergedBody),
+                                editableData = null,
                                 schemaVersion = CurrentHealthDashboardSchemaVersion
                             )
                             if (!stateDataSource.save(updated)) MockResult.Failure(MockError.PersistFailed)
@@ -86,6 +128,7 @@ class HealthDashboardStore(
                             }
                         }
                     }
+                    }
                 }
             }
         }
@@ -93,7 +136,40 @@ class HealthDashboardStore(
 
     fun clear(userId: String): Boolean {
         pendingScenarios.remove(userId)
+        transientNormalDraft = null
         return stateDataSource.clear(userId)
+    }
+
+    fun normalDraft(): EditableHealthData? = transientNormalDraft
+
+    fun saveNormalDraft(data: EditableHealthData): Boolean {
+        if (!HealthEditableRules.validate(data)) return false
+        transientNormalDraft = data
+        return true
+    }
+
+    fun restoreNormalDraftSection(section: HealthEditableSection): EditableHealthData {
+        val current = transientNormalDraft ?: initialNormalDraft()
+        return HealthEditableRules.restoreSection(current, section).also {
+            transientNormalDraft = it
+        }
+    }
+
+    fun restoreNormalDefaults(): EditableHealthData =
+        DefaultEditableHealthData.value.also { transientNormalDraft = it }
+
+    fun initialNormalDraft(): EditableHealthData {
+        transientNormalDraft?.let { return it }
+        val access = authRepository.verifyBusinessAccess()
+        val userId = (access as? MockResult.Success)?.data?.userId
+        val stored = userId?.let(stateDataSource::load)
+        return if (stored?.sourceScenario == HealthMockScenario.Normal) {
+            stored.editableData
+                ?: stored.dashboardData?.let(HealthEditableRules::fromDashboard)
+                ?: DefaultEditableHealthData.value
+        } else {
+            DefaultEditableHealthData.value
+        }
     }
 
     fun saveCardConfiguration(types: List<HealthCardType>): MockResult<PersistedDashboard> {
@@ -127,18 +203,37 @@ class HealthDashboardStore(
                 when (val resolved = resolveSnapshot(access.data.userId)) {
                     is MockResult.Failure -> MockResult.Failure(resolved.error)
                     is MockResult.Success -> {
-                        val data = resolved.data.dashboardData
-                            ?: return MockResult.Failure(MockError.CorruptedData)
-                        val body = data.bodyManagement ?: BodyManagement(weightKg = normalized, bodyFat = null, bmi = null)
-                        val history = body.weightHistoryKg.ifEmpty {
-                            body.weightKg?.let(::listOf).orEmpty()
-                        } + normalized
-                        val updated = resolved.data.copy(
-                            dashboardData = data.copy(
-                                bodyManagement = body.copy(weightKg = normalized, weightHistoryKg = history)
-                            ),
-                            schemaVersion = CurrentHealthDashboardSchemaVersion
-                        )
+                        val editable = resolved.data.editableData
+                        val updated = if (editable != null) {
+                            val body = editable.bodyManagement
+                            val history = body.weightHistoryKg.ifEmpty { listOf(body.weightKg) } + normalized
+                            resolved.data.copy(
+                                editableData = editable.copy(
+                                    bodyManagement = body.copy(
+                                        weightKg = normalized,
+                                        weightHistoryKg = history
+                                    )
+                                ),
+                                schemaVersion = CurrentHealthDashboardSchemaVersion
+                            )
+                        } else {
+                            val data = resolved.data.dashboardData
+                                ?: return MockResult.Failure(MockError.CorruptedData)
+                            val body = data.bodyManagement
+                                ?: BodyManagement(weightKg = normalized, bodyFat = null, bmi = null)
+                            val history = body.weightHistoryKg.ifEmpty {
+                                body.weightKg?.let(::listOf).orEmpty()
+                            } + normalized
+                            resolved.data.copy(
+                                dashboardData = data.copy(
+                                    bodyManagement = body.copy(
+                                        weightKg = normalized,
+                                        weightHistoryKg = history
+                                    )
+                                ),
+                                schemaVersion = CurrentHealthDashboardSchemaVersion
+                            )
+                        }
                         if (!stateDataSource.save(updated)) MockResult.Failure(MockError.PersistFailed)
                         else updated.toPersistedDashboard()
                     }
@@ -149,14 +244,39 @@ class HealthDashboardStore(
 
     private fun resolveSnapshot(userId: String): MockResult<HealthDashboardSnapshot> {
         val stored = stateDataSource.load(userId)
-        if (stored?.dashboardData != null) return MockResult.Success(stored)
+        if (stored?.editableData != null || stored?.dashboardData != null) {
+            if (stored.sourceScenario == HealthMockScenario.Normal && stored.editableData == null) {
+                val migratedSource = stored.dashboardData?.let(HealthEditableRules::fromDashboard)
+                if (migratedSource != null) {
+                    val migrated = stored.copy(
+                        dashboardData = null,
+                        editableData = migratedSource,
+                        schemaVersion = CurrentHealthDashboardSchemaVersion
+                    )
+                    return if (stateDataSource.save(migrated)) MockResult.Success(migrated)
+                    else MockResult.Failure(MockError.PersistFailed)
+                }
+            }
+            return MockResult.Success(stored)
+        }
         val sourceScenario = stored?.sourceScenario ?: HealthMockScenario.Normal
+        if (sourceScenario == HealthMockScenario.Normal) {
+            val created = (stored ?: HealthDashboardSnapshot(userId)).copy(
+                sourceScenario = HealthMockScenario.Normal,
+                dashboardData = null,
+                editableData = DefaultEditableHealthData.value,
+                schemaVersion = CurrentHealthDashboardSchemaVersion
+            )
+            return if (!stateDataSource.save(created)) MockResult.Failure(MockError.PersistFailed)
+            else MockResult.Success(created)
+        }
         return when (val generated = dashboardDataSource.load(sourceScenario)) {
             is MockResult.Failure -> MockResult.Failure(generated.error)
             is MockResult.Success -> {
                 val migrated = (stored ?: HealthDashboardSnapshot(userId)).copy(
                     sourceScenario = sourceScenario,
                     dashboardData = generated.data,
+                    editableData = null,
                     schemaVersion = CurrentHealthDashboardSchemaVersion
                 )
                 if (!stateDataSource.save(migrated)) MockResult.Failure(MockError.PersistFailed)
@@ -166,7 +286,9 @@ class HealthDashboardStore(
     }
 
     private fun HealthDashboardSnapshot.toPersistedDashboard(): MockResult<PersistedDashboard> {
-        val data = dashboardData ?: return MockResult.Failure(MockError.CorruptedData)
+        val data = editableData?.let {
+            runCatching { HealthEditableRules.derive(it) }.getOrNull()
+        } ?: dashboardData ?: return MockResult.Failure(MockError.CorruptedData)
         val uiState = useCase.toUiState(data)
         return MockResult.Success(
             PersistedDashboard(

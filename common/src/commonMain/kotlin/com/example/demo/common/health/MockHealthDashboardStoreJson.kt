@@ -16,11 +16,17 @@ object MockHealthDashboardStoreJson {
         return snapshots.map { it.asObject().toSnapshot() }
     }
 
+    fun encodeEditable(data: EditableHealthData): String = data.toJson().toString()
+
+    fun decodeEditable(json: String): EditableHealthData =
+        parseJson(json).asObject().toEditableHealthData()
+
     private fun HealthDashboardSnapshot.toJson() = buildJsonObject {
         put("userId", userId)
         put("scenario", sourceScenario.toProtoCode().name)
         put("enabledCardTypes", strings(enabledCardTypes.map { it.name }))
-        dashboardData?.let { put("dashboardData", it.toJson()) }
+        editableData?.let { put("editableData", it.toJson()) }
+        if (editableData == null) dashboardData?.let { put("dashboardData", it.toJson()) }
         put("schemaVersion", schemaVersion)
     }
 
@@ -34,13 +40,188 @@ object MockHealthDashboardStoreJson {
             .mapNotNull { name -> HealthCardType.entries.firstOrNull { it.name == name } }
             .ifEmpty { DefaultHealthCardOrder }
         val data = obj("dashboardData", "dashboard_data")?.toDashboardData()
+        val editableData = obj("editableData", "editable_data")?.toEditableHealthData()
         return HealthDashboardSnapshot(
             userId = userId,
             sourceScenario = sourceScenario,
             enabledCardTypes = enabled,
             dashboardData = data,
-            schemaVersion = int("schemaVersion", "schema_version") ?: if (data == null) 1 else CurrentHealthDashboardSchemaVersion
+            editableData = editableData,
+            schemaVersion = int("schemaVersion", "schema_version")
+                ?: if (data == null && editableData == null) 1 else CurrentHealthDashboardSchemaVersion
         )
+    }
+
+    private fun EditableHealthData.toJson() = buildJsonObject {
+        put("dailySummary", buildJsonObject {
+            put("steps", dailySummary.steps)
+            put("calories", dailySummary.calories)
+            put("activeMinutes", dailySummary.activeMinutes)
+        })
+        put("todayActivity", buildJsonObject {
+            put("distanceKm", todayActivity.distanceKm)
+            put("paceSecondsPerKm", todayActivity.paceSecondsPerKm)
+        })
+        put("weeklyPlan", buildJsonObject {
+            put("days", buildJsonArray {
+                weeklyPlan.days.forEach { day ->
+                    add(buildJsonObject {
+                        put("type", day.type.name)
+                        put("distanceKm", day.distanceKm)
+                    })
+                }
+            })
+        })
+        put("trainingLoad", buildJsonObject {
+            put("dailyLoads", ints(trainingLoad.dailyLoads))
+        })
+        put("assessment", buildJsonObject {
+            put("shortTermLoad", assessment.shortTermLoad)
+            put("longTermLoad", assessment.longTermLoad)
+        })
+        put("recovery", buildJsonObject { put("score", recovery.score) })
+        put("runningAbility", buildJsonObject { put("score", runningAbility.score) })
+        put("cyclingAbility", buildJsonObject { put("score", cyclingAbility.score) })
+        put("heartRate", buildJsonObject {
+            put("fiveMinuteSamples", ints(heartRate.fiveMinuteSamples))
+        })
+        put("stress", buildJsonObject {
+            put("halfHourSamples", ints(stress.halfHourSamples))
+        })
+        put("sleep", buildJsonObject {
+            put("startMinuteOfDay", sleep.startMinuteOfDay)
+            put("stages", buildJsonArray {
+                sleep.stages.forEach { stage ->
+                    add(buildJsonObject {
+                        put("stage", stage.stage.name)
+                        put("startMinute", stage.startMinute)
+                        put("durationMinutes", stage.durationMinutes)
+                    })
+                }
+            })
+        })
+        put("hrvAssessment", buildJsonObject { put("averageMs", hrvAssessment.averageMs) })
+        put("restingHeartRate", buildJsonObject {
+            put("value", restingHeartRate.value)
+            put("measuredTime", restingHeartRate.measuredTime)
+            put("thirtyDayAverage", restingHeartRate.thirtyDayAverage)
+        })
+        put("healthCheck", buildJsonObject {
+            put("heartRate", healthCheck.heartRate)
+            put("hrvMs", healthCheck.hrvMs)
+            put("stress", healthCheck.stress)
+            put("respiratoryRate", healthCheck.respiratoryRate)
+            put("bloodOxygen", healthCheck.bloodOxygen)
+            put("measuredTime", healthCheck.measuredTime)
+        })
+        put("bodyManagement", buildJsonObject {
+            put("weightKg", bodyManagement.weightKg)
+            put("trainedMuscleGroups", strings(bodyManagement.trainedMuscleGroups))
+            put("weightHistoryKg", doubles(bodyManagement.weightHistoryKg))
+        })
+    }
+
+    private fun JsonObject.toEditableHealthData(): EditableHealthData {
+        val daily = obj("dailySummary", "daily_summary") ?: error("Missing editable dailySummary")
+        val activity = obj("todayActivity", "today_activity") ?: error("Missing editable todayActivity")
+        val weekly = obj("weeklyPlan", "weekly_plan") ?: error("Missing editable weeklyPlan")
+        val load = obj("trainingLoad", "training_load") ?: error("Missing editable trainingLoad")
+        val assessment = obj("assessment") ?: error("Missing editable assessment")
+        val recovery = obj("recovery") ?: error("Missing editable recovery")
+        val running = obj("runningAbility", "running_ability") ?: error("Missing editable runningAbility")
+        val cycling = obj("cyclingAbility", "cycling_ability") ?: error("Missing editable cyclingAbility")
+        val heart = obj("heartRate", "heart_rate") ?: error("Missing editable heartRate")
+        val stressObject = obj("stress") ?: error("Missing editable stress")
+        val sleepObject = obj("sleep") ?: error("Missing editable sleep")
+        val hrv = obj("hrvAssessment", "hrv_assessment") ?: error("Missing editable hrvAssessment")
+        val resting = obj("restingHeartRate", "resting_heart_rate")
+            ?: error("Missing editable restingHeartRate")
+        val check = obj("healthCheck", "health_check") ?: error("Missing editable healthCheck")
+        val body = obj("bodyManagement", "body_management") ?: error("Missing editable bodyManagement")
+        return EditableHealthData(
+            dailySummary = DailySummaryInput(
+                daily.int("steps") ?: error("Missing steps"),
+                daily.int("calories") ?: error("Missing calories"),
+                daily.int("activeMinutes", "active_minutes") ?: error("Missing activeMinutes")
+            ),
+            todayActivity = TodayActivityInput(
+                activity.double("distanceKm", "distance_km") ?: error("Missing distanceKm"),
+                activity.int("paceSecondsPerKm", "pace_seconds_per_km")
+                    ?: error("Missing paceSecondsPerKm")
+            ),
+            weeklyPlan = WeeklyPlanInput(
+                weekly.array("days").map { item ->
+                    val day = item.asObject()
+                    WeeklyWorkoutInput(
+                        day.string("type")?.let { name ->
+                            WorkoutType.entries.firstOrNull { it.name == name }
+                        } ?: error("Invalid workout type"),
+                        day.double("distanceKm", "distance_km") ?: error("Missing workout distance")
+                    )
+                }
+            ),
+            trainingLoad = TrainingLoadInput(load.intList("dailyLoads", "daily_loads")),
+            assessment = TrainingAssessmentInput(
+                assessment.int("shortTermLoad", "short_term_load") ?: error("Missing shortTermLoad"),
+                assessment.int("longTermLoad", "long_term_load") ?: error("Missing longTermLoad")
+            ),
+            recovery = RecoveryInput(recovery.int("score") ?: error("Missing recovery score")),
+            runningAbility = RunningAbilityInput(
+                running.int("score") ?: error("Missing running score")
+            ),
+            cyclingAbility = CyclingAbilityInput(
+                cycling.int("score") ?: error("Missing cycling score")
+            ),
+            heartRate = HeartRateInput(
+                heart.intList("fiveMinuteSamples", "five_minute_samples")
+            ),
+            stress = StressInput(
+                stressObject.intList("halfHourSamples", "half_hour_samples")
+            ),
+            sleep = SleepInput(
+                startMinuteOfDay = sleepObject.int("startMinuteOfDay", "start_minute_of_day")
+                    ?: error("Missing sleep start"),
+                stages = sleepObject.array("stages").map { item ->
+                    val stage = item.asObject()
+                    SleepStageInput(
+                        stage.string("stage")?.let { name ->
+                            SleepStage.entries.firstOrNull { it.name == name }
+                        } ?: error("Invalid sleep stage"),
+                        stage.int("startMinute", "start_minute") ?: error("Missing stage start"),
+                        stage.int("durationMinutes", "duration_minutes")
+                            ?: error("Missing stage duration")
+                    )
+                }
+            ),
+            hrvAssessment = HrvAssessmentInput(
+                hrv.int("averageMs", "average_ms") ?: error("Missing averageMs")
+            ),
+            restingHeartRate = RestingHeartRateInput(
+                resting.int("value") ?: error("Missing resting value"),
+                resting.string("measuredTime", "measured_time") ?: error("Missing measuredTime"),
+                resting.int("thirtyDayAverage", "thirty_day_average")
+                    ?: error("Missing thirtyDayAverage")
+            ),
+            healthCheck = HealthCheckInput(
+                check.int("heartRate", "heart_rate") ?: error("Missing check heartRate"),
+                check.int("hrvMs", "hrv_ms") ?: error("Missing check hrvMs"),
+                check.int("stress") ?: error("Missing check stress"),
+                check.int("respiratoryRate", "respiratory_rate")
+                    ?: error("Missing respiratoryRate"),
+                check.int("bloodOxygen", "blood_oxygen") ?: error("Missing bloodOxygen"),
+                check.string("measuredTime", "measured_time") ?: error("Missing check measuredTime")
+            ),
+            bodyManagement = BodyManagementInput(
+                weightKg = body.double("weightKg", "weight_kg") ?: error("Missing weightKg"),
+                trainedMuscleGroups = body.stringList(
+                    "trainedMuscleGroups",
+                    "trained_muscle_groups"
+                ),
+                weightHistoryKg = body.doubleList("weightHistoryKg", "weight_history_kg")
+            )
+        ).also {
+            require(HealthEditableRules.validate(it)) { "Invalid editable health data" }
+        }
     }
 
     private fun HealthDashboardData.toJson() = buildJsonObject {

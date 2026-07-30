@@ -82,6 +82,45 @@ message BodyManagementMock {
   repeated double weight_history_kg = 6;
 }
 
+// Normal 可编辑场景与新版快照共用的最小源字段。
+message DailySummaryInputMock { int32 steps = 1; int32 calories = 2; int32 active_minutes = 3; }
+message TodayActivityInputMock { double distance_km = 1; int32 pace_seconds_per_km = 2; }
+message WeeklyWorkoutInputMock { string type = 1; double distance_km = 2; }
+message WeeklyPlanInputMock { repeated WeeklyWorkoutInputMock days = 1; }
+message TrainingLoadInputMock { repeated int32 daily_loads = 1; }
+message TrainingAssessmentInputMock { int32 short_term_load = 1; int32 long_term_load = 2; }
+message ScoreInputMock { int32 score = 1; }
+message HeartRateInputMock { repeated int32 five_minute_samples = 1; }
+message StressInputMock { repeated int32 half_hour_samples = 1; }
+message SleepStageInputMock { string stage = 1; int32 start_minute = 2; int32 duration_minutes = 3; }
+message SleepInputMock { int32 start_minute_of_day = 1; repeated SleepStageInputMock stages = 2; }
+message HrvAssessmentInputMock { int32 average_ms = 1; }
+message RestingHeartRateInputMock { int32 value = 1; string measured_time = 2; int32 thirty_day_average = 3; }
+message HealthCheckInputMock {
+  int32 heart_rate = 1; int32 hrv_ms = 2; int32 stress = 3;
+  int32 respiratory_rate = 4; int32 blood_oxygen = 5; string measured_time = 6;
+}
+message BodyManagementInputMock {
+  double weight_kg = 1; repeated string trained_muscle_groups = 2; repeated double weight_history_kg = 3;
+}
+message EditableHealthDataMock {
+  DailySummaryInputMock daily_summary = 1;
+  TodayActivityInputMock today_activity = 2;
+  WeeklyPlanInputMock weekly_plan = 3;
+  TrainingLoadInputMock training_load = 4;
+  TrainingAssessmentInputMock assessment = 5;
+  ScoreInputMock recovery = 6;
+  ScoreInputMock running_ability = 7;
+  ScoreInputMock cycling_ability = 8;
+  HeartRateInputMock heart_rate = 9;
+  StressInputMock stress = 10;
+  SleepInputMock sleep = 11;
+  HrvAssessmentInputMock hrv_assessment = 12;
+  RestingHeartRateInputMock resting_heart_rate = 13;
+  HealthCheckInputMock health_check = 14;
+  BodyManagementInputMock body_management = 15;
+}
+
 message HealthDashboardMock {
   DailySummaryMock daily = 1; SleepSummaryMock sleep = 2; TrainingLoadMock training_load = 3; RecoveryMock recovery = 4;
   WeeklyPlanMock weekly_plan = 5; TrainingAssessmentMock training_assessment = 6;
@@ -100,6 +139,8 @@ message HealthDashboardSnapshotMock {
   // 仅作为 Demo 数据模板来源元数据；恢复时以 dashboard_data 为权威。
   HealthMockScenarioCode scenario = 6;
   optional HealthMockError error = 7;
+  // schema v7：Normal 场景以最小源字段为权威；与 dashboard_data 互斥。
+  EditableHealthDataMock editable_data = 8;
 }
 
 message HealthDashboardStoreMock { repeated HealthDashboardSnapshotMock snapshots = 1; }

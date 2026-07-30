@@ -106,11 +106,32 @@ export class AppImages {
   static activeDuration(): Resource { return $r('app.media.sport_time_icon'); }
   static editorAdd(): Resource { return $r('app.media.data_screen_edit_add'); }
   static editorRemove(): Resource { return $r('app.media.delete'); }
+  static choiceChevron(): Resource { return $r('app.media.right_more'); }
+  static choiceCheck(): Resource { return $r('app.media.ic_profile_check'); }
   static activityMap(): Resource { return $r('app.media.health_activity_map'); }
   static todayHeader(): Resource { return $r('app.media.health_today_header'); }
   static todayRunner(): Resource { return $r('app.media.health_today_runner'); }
-  static bodyFront(): Resource { return $r('app.media.health_body_front'); }
-  static bodyBack(): Resource { return $r('app.media.health_body_back'); }
+  static bodyMaleFrontBase(): Resource { return $r('app.media.health_body_male_front_base'); }
+  static bodyMaleBackBase(): Resource { return $r('app.media.health_body_male_back_base'); }
+  static bodyMuscleRegion(region: string): Resource {
+    switch (region) {
+      case 'shoulders_front': return $r('app.media.health_body_shoulders_front');
+      case 'shoulders_back': return $r('app.media.health_body_shoulders_back');
+      case 'chest_front': return $r('app.media.health_body_chest_front');
+      case 'trapezius_back': return $r('app.media.health_body_back_trapezius');
+      case 'latissimus_back': return $r('app.media.health_body_back_latissimus');
+      case 'erector_spinae_back': return $r('app.media.health_body_back_erector_spinae');
+      case 'biceps_front': return $r('app.media.health_body_biceps_front');
+      case 'triceps_back': return $r('app.media.health_body_triceps_back');
+      case 'abdominals_front': return $r('app.media.health_body_abdominals_front');
+      case 'glutes_back': return $r('app.media.health_body_glutes_back');
+      case 'quadriceps_front': return $r('app.media.health_body_quadriceps_front');
+      case 'hamstrings_back': return $r('app.media.health_body_hamstrings_back');
+      case 'calves_front': return $r('app.media.health_body_calves_front');
+      case 'calves_back': return $r('app.media.health_body_calves_back');
+      default: return $r('app.media.health_body_calves_back');
+    }
+  }
   static recoveryStatus(): Resource { return $r('app.media.health_recovery_status'); }
   static profileEdit(): Resource { return $r('app.media.icon_edit'); }
 

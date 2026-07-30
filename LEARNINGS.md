@@ -82,11 +82,13 @@
 | **资源一致性门禁** | 新增或修改认证语义键时同步三端默认中文与英文资源、三端解析入口，并运行 `./tools/check-resources.sh`；健康摘要等结构化文案需另立 Spec，不扩展共享中文硬编码 |
 | **全资源清单与债务棘轮** | `tools/resource-inventory.json` 是共享图片、Raw、共享文字键和硬编码债务上限的机器事实；`./tools/check-resource-maintainability.sh` 只允许文案/颜色债务下降，平台专属 AppIcon/启动资源不为目录对称跨端复制 |
 | **跨端文案对齐口径** | 三端共享文字键要求语义和键名一致，但允许默认中文沿用平台既有措辞（例如账户页“我的”/“我”）；迁移资源不顺带改变产品文案，统一措辞应另行评审 |
+| **显式本地化白名单同步** | Android `healthStringResource` 与 HarmonyOS `healthResource` 是资源目录之外的第二层显式白名单；只新增 `strings.xml/string.json` 仍会回退为“数据不可用”。common 新增 `health_edit_*` 或 `health_visual_*` 后必须同时登记三端资源、Android/HarmonyOS 解析入口和 `resource-inventory.json`，由专项门禁逐键核对 |
+| **HarmonyOS Resource 不可字符串插值** | `$r`/`healthResource()` 返回 `Resource` 对象，不能放入模板字符串与字段 ID 拼接，否则会显示对象文本或空白。需要组合标签时将 `Text(Resource)` 与普通字符串拆成独立节点；输入框已有值时 placeholder 不可承担常驻标签，标签必须独立显示 |
 | **健康可视化契约** | 趋势、区间、指标、睡眠阶段等绘制数据由 common 以 `HealthCardVisualData` 输出，三端按 `kind` 原生绘制；UI 不随机补点，也不把整卡烘焙成图片 |
 | **2031 图形分型、圆弧与心率区间** | `visual.kind` 只表达数据族，不保证同族图形相同：恢复/能力、心率/压力、静息心率/HRV 必须继续结合稳定 `HealthCardType` 选择专用绘制器。顶部卡路里弧三端统一按 0–800、135° 起始、270° 总扫角夹紧绘制，并使用等宽等高包围盒保持正圆。心率每根柱代表一个半小时的最低–最高区间，平均值是统计字段；不得从统一基线绘制或插值伪造更多时间片 |
 | **健康卡片顶层样式复用边界** | 14 张健康卡片采用 12 类顶层样式：仅跑步/骑行能力共用 Ability、心率/压力共用 Trend；体力恢复、静息心率、HRV 及其余卡片均按稳定 `HealthCardType`/卡片 ID 进入独立顶层组件。可以复用文字、路径数学等叶级 helper，但不可再用通用 Gauge/Range 顶层组件按类型切换不同卡片布局。 |
 | **模拟心率时间粒度与周计划交互边界** | 模拟心率原型保留连续 5 分钟样本，由 common 每 6 点聚合为半小时 min/max/四舍五入平均值，UI 只消费聚合区间且不得按索引制造振幅；当前运行时只启用正常 1、正常 2、异常，正常 3 不进入 fixture 或场景目录。周计划七日详情属于共享数据契约；三端日期子节点消费点击并只切换卡内选中日，卡片其余区域继续进入详情，旧快照缺少七日详情时补成“当前日原计划 + 其余休息日” |
-| **三端健康页复合点击与头部元数据** | 右上角手表必须以平台原生的同一互斥手势入口区分短按/长按：短按切换主标签到“我”，长按只打开调试场景，禁止叠加两个会同时命中的独立手势。卡片级元数据优先进入 `CardHeader` 右侧并保持 nullable；健康快测时间缺失时不生成 `---`。HRV/静息心率范围指针与指标带在同一绘制层，三角尖端统一朝上、底边跨过横条；不能把“主体在线上方、尖端贴线”误当成跨端方向契约 |
+| **三端健康页复合点击与头部元数据** | 右上角手表必须以平台原生的同一互斥手势入口区分短按/长按：短按切换主标签到“我”，长按只打开调试场景，禁止叠加两个会同时命中的独立手势。卡片级元数据优先进入 `CardHeader` 右侧并保持 nullable；健康快测时间缺失时不生成 `---`。HRV/静息心率范围指针与指标带在同一绘制层，三角尖端统一朝上、底边跨过横条；不能把“主体在线上方、尖端贴线”误当成跨端方向契约。HarmonyOS 两张范围卡必须复用相同纵向边界，避免一张使用绝对 `position`、另一张使用 `margin` 后出现仅接触而未重叠 |
 | **体重编辑历史边界** | 体重每次确认都按发生顺序追加到共享持久化历史，允许重复值且不得排序、去重或覆盖；旧快照缺少历史字段时以当时体重补为首条，场景刷新只在存在用户历史时保留当前体重与完整历史 |
 | **Figma 动效证据边界** | 当目标节点的 motion inventory 为空时，只实现静态终态并保留应用既有交互反馈，不凭视觉稿臆造时间线；新增动效需单独定义时长、缓动与 Reduce Motion 降级 |
 | **健康卡片右栏安全区** | 仪表、趋势、区间、睡眠阶段和人体图统一使用显式 130/166 宽高安全区，叶节点与父卡片双重裁剪；HarmonyOS 右栏不得同时使用 `layoutWeight` 和 `width('100%')`，否则概览图会越过圆角卡片 |
@@ -100,7 +102,14 @@
 | **调试资源排除** | HarmonyOS `DebugStatePage.ets` 不进入正式 Demo，可在资源债务门禁中按唯一精确路径排除文案和颜色；其他生产页面不得复用该例外 |
 | **跨格式图像一致性** | Android WebP 与 iOS/HarmonyOS PNG 的文件 SHA 不同不代表可见图形不同；排查时应比较尺寸和解码后的可见像素，并以语义资源目录约束 UI 映射。透明像素中未预乘的 RGB 差异不影响渲染，不应为追求原始文件哈希而无意义重编码 |
 | **卡片图标以类型映射** | 卡片编辑、恢复与详情页应按稳定类型 ID 获取图标，不依赖可冲突的整数索引或 default 回退；特殊首页标题图只在该渲染场景覆盖通用图标 |
-| **健康快照持久化边界** | 每位用户持久化完整 `HealthDashboardData` 与卡片配置，UI model 继续由 common 规则派生；Demo 场景选择只更新运行期待刷新状态，只有健康首页刷新成功才生成、覆盖并持久化模块数据，刷新失败保留旧快照。恢复时不得用场景覆盖已保存模块值。HarmonyOS 用单一 `health_json` 保存全部用户快照集合，不再维护 `_health` 与全局 `health_card_order` 双重权威状态 |
+| **健康快照持久化边界** | `Normal` 场景按用户只持久化 `EditableHealthData` 最小权威源字段与卡片配置，加载时由 common 重新派生 `HealthDashboardData`；固定异常/空态场景仍可持久化完整展示快照。场景选择只更新运行期待刷新状态，只有健康首页刷新成功才覆盖有效快照，失败保留旧快照。HarmonyOS 用单一 `health_json` 保存全部用户快照集合，不再维护 `_health` 与全局 `health_card_order` 双重权威状态 |
+| **可编辑正常数据边界** | 正常数据编辑结果先保存为当前 `HealthStore` 的进程内草稿，首页不显示待处理提示，也不写 JSON/Proto；只有用户回到首页执行下拉刷新才提交为按用户持久化的有效源数据。默认 fixture、整套恢复、单模块恢复和持久化必须共用 `EditableHealthData` 契约；派生阈值、表单校验、睡眠连续区间、心率 288 点与压力 48 点快捷生成均只位于 common，平台只渲染 common 表单并提交原始输入 |
+| **动态健康表单集合边界** | 睡眠阶段、锻炼部位等数量可变字段由 common 的 repeat group schema、`mutate` 和 `apply` 负责新增、删除、重新编号、最小/最大数量及合法选项；跨语言只传表单 JSON 和原始值。三端不得仅在本地数组增删，否则保存时会与 common 权威字段数量分叉 |
+| **编辑器常驻提示契约** | 字段提示由 common 输出 `labelKey + labelArguments`，重复项使用“第 N 天/阶段/部位”等本地化参数，三端已有值时仍显示独立标签且不暴露技术字段 ID；标题栏返回与操作区使用对称固定宽度，避免长标题挤掉保存操作 |
+| **跨端枚举选择器一致性** | Compose/SwiftUI/ArkUI 的原生 Picker/Select 默认外观与弹出位置差异较大；产品要求三端同效时，平台统一渲染“字段标签 + 当前值 + 下拉指示”的单行入口，并使用同尺寸、颜色、遮罩、纵向选项、当前项勾选和取消操作的自绘覆盖层。选项与当前值仍来自 common 表单，平台不得用点击轮换代替显式选择 |
+| **跨端状态图标资源复用** | 下拉尖角、当前项勾选等状态图标不得混用字体字符、平台系统符号和图片；优先复用三端资源清单中已有的同语义资产，通过平台 Template/tint 统一操作色。方向变化可由同一方向资源旋转得到，例如 `right_more` 旋转 90°作为向下尖角，避免复制近义资产 |
+| **动态人体图资产边界** | 设计资源中的人体图是胸部/股四头肌固定着色成品，不能直接代表动态选择。三端先以 Template 模式中和底图颜色，再按 common `health_visual_muscle_*` 指标在同一前后视图坐标系绘制动态标记并显示名称；否则切换其他部位后仍会残留默认红色误导 |
+| **编辑保存反馈时序** | 数据编辑成功提示固定约 1500ms 且 latest-wins：Android 用递增事件 ID 驱动新 `LaunchedEffect`，iOS 取消旧 Task 后重计时，HarmonyOS 使用 1500ms 原生 toast；不能排队或让旧计时器清除后发提示 |
 | **健康刷新失败前台状态** | “失败时保留最后有效快照”只约束持久化，不能让页面继续冒充刷新成功；跨语言 nullable/空 JSON 会丢失原因，门面需一次性暴露稳定错误名，三端用独立损坏态隐藏旧卡片，下一次成功刷新再清除 |
 | **iOS 下拉刷新边界** | 当产品要求自定义下拉视觉/阈值时，不用 Preference 推测顶部，也不叠加独立 SwiftUI `DragGesture`；只给现有 `UIScrollView.panGestureRecognizer` 增加 target，在 `.began` 以真实 `contentOffset/adjustedContentInset` 锁定整次手势资格，changed/ended 沿用同一识别器 |
 | **iOS Lottie 刷新同步** | SwiftUI `LottieView.playbackMode`、随机/周期 ID 重建都不能替代实际播放验证；需要严格同步时用 `UIViewRepresentable` 持有 `LottieAnimationView`，刷新开始显式 `stop → progress 0 → play`，结束显式 `stop → progress 0` |
@@ -109,8 +118,13 @@
 | **三端资料编辑页滚动边界** | 返回/标题/保存属于固定页面栏，必须位于资料滚动容器之外；头像和字段单独滚动。HarmonyOS 的短内容还需显式 `Alignment.TopStart`，避免内容不足一屏时整体垂直居中 |
 | **HarmonyOS Path 与图片着色单位边界** | ArkUI `Path.commands` 的数值坐标按物理像素解释，而 `.width/.height/.margin` 等布局尺寸按 vp；把设计稿 vp 坐标直接写进 Path 会在高密度设备上缩小并向左上错位，生成命令前应以 `vp2px` 换算且不能重复换算布局值。PNG 的 `fillColor` 单独使用不会覆盖原图颜色，单色语义图标需先启用 `ImageRenderMode.Template` |
 | **HarmonyOS common JSON 依赖边界** | `ohos_arm64` 无法解析官方 kotlinx-serialization JSON Native 变体；会进入 Harmony bridge 的 common JSON codec 必须保持自包含或使用明确提供 OHOS 变体的依赖，不能仅因 Android/iOS 可编译就引入普通 Kotlin/Native 库 |
+| **范围图的单一数值坐标系** | HRV 等分段横条必须由 common 同时输出总范围、连续分段边界与当前值；平台按 `(segment.max-segment.min)/(range.max-range.min)` 计算宽度，并用同一范围归一化指针。不能分别硬编码像素比例和指针上下限，否则数值、色带与指针会脱节。 |
+| **HarmonyOS KNOI 保存结果类型** | common 保存接口返回 Boolean 时，Harmony bridge 与生成的 provider 必须继续暴露 `boolean`，ArkTS 直接判断结果；不要转成字符串再比较 `'true'`。顶栏保存操作使用原生 `Button` 与保存中禁用状态，避免 `Text.onClick` 热区和重复提交问题。 |
+| **HarmonyOS KNOI 集合参数格式** | 跨 ArkTS/KNOI 的集合参数必须在调用两端保持同一编码契约。若 bridge 参数命名为 `typeNamesCsv` 并按逗号拆分，ArkTS 只能传 `types.join(',')`；传 `JSON.stringify(types)` 会留下方括号和引号，使所有枚举 ID 解析失败并被 common 当成空列表。结构门禁应同时禁止错误编码并验证正确编码。 |
 | **登录后根层与二级导航边界** | “体能、记录、探索、我”是同一根层 UI 状态，Tab 切换不进入历史栈；健康详情、卡片编辑、资料编辑必须由各端原生导航栈 Push/Pop，`common` 只提供稳定 ID、业务状态和规则，不感知平台路由。 |
 | **详情返回的状态所有权** | 保留滚动位置的关键是保留同一根页面及其平台滚动状态：Android hoist `LazyListState`，iOS 复用根 View/VM，HarmonyOS 普通 Pop 不重载根 Scroll；共享 ViewModel 提升到导航图时不得在认证完成前抢先加载用户健康数据。 |
+| **人体肌肉蒙版契约** | 体型管理使用与正/背人体底图同尺寸、同坐标系的透明蒙版；common 维护稳定“锻炼部位 → 区域 ID”映射（背部可展开为斜方肌、背阔肌、竖脊肌），三端只维护区域 ID 到资源的映射并以 Template/tint 同画布叠加。不得从本地化文字反推部位，也不得用坐标圆点替代实际肌肉区域。 |
+| **刷新时持久数据与草稿的字段级合并** | 同一模块同时含“用户长期数据”和“可丢弃场景草稿”时，刷新只能按字段保留长期数据，不能用旧模块对象整体覆盖草稿。体型管理保留旧 `weightKg/weightHistoryKg`，但 `trainedMuscleGroups` 必须来自当前 Normal 草稿；回归测试需覆盖“已有多条历史 → 保存草稿 → 刷新前不变 → 刷新后变化 → 重建仍一致”。 |
 
 ## Spec 文件索引
 
@@ -126,3 +140,4 @@
 - `spec/app-language-switching.md` — 应用内中英文切换、平台持久化与国家代码化规范
 - `spec/android-profile-activity-result.md` — Android 本地化 Context 与资料头像 Activity Result 宿主兼容性规范
 - `spec/profile-edit-layout.md` — 三端个人资料编辑页固定标题栏与滚动内容边界规范
+- `spec/health-editable-normal-data.md` — 正常健康 Mock 的最小源数据、进程内草稿、刷新提交与三端编辑导航规范

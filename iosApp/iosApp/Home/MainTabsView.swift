@@ -37,6 +37,7 @@ struct MainTabsView: View {
                         viewModel: healthViewModel,
                         onOpenDetail: { router.push(.healthDetail(cardID: $0.id)) },
                         onOpenEditor: { router.push(.healthEditor) },
+                        onOpenNormalDataEditor: { router.push(.normalDataEditor) },
                         onWatchTap: { selected = .me }
                     )
                 case .me:

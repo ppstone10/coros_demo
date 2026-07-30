@@ -16,6 +16,8 @@ enum AuthRoute: Hashable {
     case signedIn
     case healthDetail(cardID: String)
     case healthEditor
+    case normalDataEditor
+    case normalDataSection(section: String)
     case profileEdit
 }
 
@@ -132,6 +134,19 @@ struct AuthCoordinator: View {
                                     healthViewModel.saveCardConfiguration(cards.map(\.id))
                                     router.pop()
                                 }
+                            )
+                            .navigationBarBackButtonHidden(true)
+                        case .normalDataEditor:
+                            NormalDataEditorOverview(
+                                viewModel: healthViewModel,
+                                router: router
+                            )
+                            .navigationBarBackButtonHidden(true)
+                        case let .normalDataSection(section):
+                            NormalDataSectionEditor(
+                                section: section,
+                                viewModel: healthViewModel,
+                                router: router
                             )
                             .navigationBarBackButtonHidden(true)
                         case .profileEdit:

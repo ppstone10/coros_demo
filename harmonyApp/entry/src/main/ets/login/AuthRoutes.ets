@@ -16,6 +16,8 @@ export class AuthRoutes {
   static readonly SERVICE_TERMS: string = 'pages/ServiceTermsPage';
   static readonly HEALTH_DETAIL: string = 'pages/HealthDetailPage';
   static readonly HEALTH_EDITOR: string = 'pages/HealthCardEditorPage';
+  static readonly NORMAL_DATA_EDITOR: string = 'pages/NormalDataEditorPage';
+  static readonly NORMAL_DATA_SECTION: string = 'pages/NormalDataSectionPage';
   static readonly DEBUG: string = 'pages/DebugStatePage';
 
   static toVerifyCode(account: string, targetKind: VerifyTargetKind): router.RouterOptions {
@@ -36,6 +38,10 @@ export class AuthRoutes {
 
   static toHealthDetail(cardId: string): router.RouterOptions {
     return { url: AuthRoutes.HEALTH_DETAIL, params: { cardId } };
+  }
+
+  static toNormalDataSection(section: string): router.RouterOptions {
+    return { url: AuthRoutes.NORMAL_DATA_SECTION, params: { section } };
   }
 }
 
@@ -62,4 +68,8 @@ export interface ProfilePageParams {
 
 export interface HealthDetailParams {
   cardId: string;
+}
+
+export interface NormalDataSectionParams {
+  section: string;
 }

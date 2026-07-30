@@ -10,6 +10,7 @@ enum class HealthCardType {
 enum class HealthCardStatus { Normal, Attention, Risk, Empty }
 
 enum class HealthVisualLevel { Neutral, Low, Good, Elevated, High }
+enum class HealthRangeLevel { VeryLow, Low, Normal, High }
 enum class HealthCardVisualKind {
     TodayActivity, WeeklyPlan, TrainingLoad, TrainingAssessment, RecoveryGauge,
     AbilityGauge, TrendBars, RangeIndicator, SleepStages, HealthCheckGrid, BodyMap
@@ -37,9 +38,15 @@ data class HealthChartPoint(
     val maximum: Double? = null,
     val average: Double? = null
 )
+data class HealthRangeSegment(
+    val minimum: Double,
+    val maximum: Double,
+    val level: HealthRangeLevel
+)
 data class HealthRange(
     val minimum: Double, val maximum: Double, val current: Double,
-    val normalMin: Double? = null, val normalMax: Double? = null, val average: Double? = null
+    val normalMin: Double? = null, val normalMax: Double? = null, val average: Double? = null,
+    val segments: List<HealthRangeSegment> = emptyList()
 )
 data class HealthMetric(val label: LocalizedTextSpec, val value: String, val unit: LocalizedTextSpec? = null)
 data class SleepStageSegment(val stage: SleepStage, val startMinute: Int, val durationMinutes: Int)
@@ -156,6 +163,7 @@ data class HealthCardVisualData(
     val secondaryUnit: LocalizedTextSpec? = null,
     val caption: LocalizedTextSpec? = null,
     val detail: LocalizedTextSpec? = null,
+    val footer: LocalizedTextSpec? = null,
     val progress: Double? = null,
     val chartPoints: List<HealthChartPoint> = emptyList(),
     val range: HealthRange? = null,
@@ -165,7 +173,8 @@ data class HealthCardVisualData(
     val endTime: String? = null,
     val highlightedIndex: Int? = null,
     val assetKey: String? = null,
-    val weeklyDayPlans: List<WeeklyDayPlan> = emptyList()
+    val weeklyDayPlans: List<WeeklyDayPlan> = emptyList(),
+    val highlightedBodyRegions: List<String> = emptyList()
 )
 
 data class DashboardUiState(
@@ -181,10 +190,11 @@ data class HealthDashboardSnapshot(
     val sourceScenario: HealthMockScenario = HealthMockScenario.Normal,
     val enabledCardTypes: List<HealthCardType> = DefaultHealthCardOrder,
     val dashboardData: HealthDashboardData? = null,
+    val editableData: EditableHealthData? = null,
     val schemaVersion: Int = CurrentHealthDashboardSchemaVersion
 )
 
-const val CurrentHealthDashboardSchemaVersion = 6
+const val CurrentHealthDashboardSchemaVersion = 7
 
 data class HealthScenarioDescriptor(
     val code: String,

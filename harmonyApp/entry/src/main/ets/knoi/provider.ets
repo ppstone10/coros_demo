@@ -23,6 +23,18 @@ export interface HarmonyLoginService {
 
    healthScenarioDescriptorsJson(): string;
 
+   healthEditableSectionsJson(): string;
+
+   normalHealthEditFormJson(sectionName: string): string;
+
+   defaultNormalHealthEditFormJson(sectionName: string): string;
+
+   mutateNormalHealthEditFormJson(sectionName: string, valuesSpec: string, groupId: string, operationName: string, rowIndex: number): string;
+
+   saveNormalHealthEditForm(sectionName: string, valuesSpec: string): boolean;
+
+   restoreAllNormalHealthDefaults(): string;
+
    consumeEffectSnapshot(): string;
 
    setLoginMode(): void;

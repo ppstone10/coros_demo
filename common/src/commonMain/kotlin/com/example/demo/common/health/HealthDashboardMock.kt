@@ -162,6 +162,7 @@ fun HealthDashboardSnapshotMock.toDomain(): HealthDashboardSnapshot? {
         sourceScenario = scenario.toDomain(),
         enabledCardTypes = types.ifEmpty { DefaultHealthCardOrder },
         dashboardData = dashboard_data?.toDomain(),
+        editableData = null,
         schemaVersion = schema_version
     )
 }

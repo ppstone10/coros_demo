@@ -25,7 +25,16 @@ export interface WeeklyDayPlanData {
   workoutDurationMinutes?: number;
   workoutTrainingLoad?: number;
 }
-export interface HealthRangeData { minimum: number; maximum: number; current: number; normalMin?: number; normalMax?: number; average?: number; }
+export interface HealthRangeSegmentData { minimum: number; maximum: number; level: string; }
+export interface HealthRangeData {
+  minimum: number;
+  maximum: number;
+  current: number;
+  normalMin?: number;
+  normalMax?: number;
+  average?: number;
+  segments?: HealthRangeSegmentData[];
+}
 export interface SleepStageData { stage: string; startMinute: number; durationMinutes: number; }
 export interface HealthVisualData {
   kind: string;
@@ -33,9 +42,11 @@ export interface HealthVisualData {
   secondaryValue?: string; secondaryUnitKey?: string;
   captionKey?: string; captionArgs?: string[];
   detailKey?: string; detailArgs?: string[];
+  footerKey?: string; footerArgs?: string[];
   progress?: number; highlightedIndex?: number;
   weeklyDayPlans?: WeeklyDayPlanData[];
   chartPoints: HealthChartPointData[]; metrics: HealthMetricData[];
+  highlightedBodyRegions?: string[];
   range?: HealthRangeData; sleepStages: SleepStageData[];
   startTime?: string; endTime?: string; assetKey?: string;
 }

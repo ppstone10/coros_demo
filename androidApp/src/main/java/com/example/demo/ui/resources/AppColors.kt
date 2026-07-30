@@ -49,6 +49,7 @@ object AppColors {
         val Warning = Color(0xFFFF4B55)
         val EditorTitle = Color(0xFFECECEC)
         val EditorDivider = Color(0xFF303030)
+        val NoticeBackground = Color(0xE63A3A3C)
         val Placeholder = Color(0xFFBBBBBB)
         val VisualGreen = Color(0xFF00DF7B)
         val VisualYellow = Color(0xFFFFC928)

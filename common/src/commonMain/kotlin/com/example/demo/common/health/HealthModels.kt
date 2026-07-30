@@ -8,6 +8,12 @@ sealed interface HealthAction {
     data object Refresh : HealthAction
     data class CardConfigurationChanged(val types: List<HealthCardType>) : HealthAction
     data class BodyWeightChanged(val weightKg: Double) : HealthAction
+    data class NormalDraftSaved(
+        val data: EditableHealthData,
+        val section: HealthEditableSection
+    ) : HealthAction
+    data class NormalDraftSectionRestored(val section: HealthEditableSection) : HealthAction
+    data object NormalDraftDefaultsRestored : HealthAction
     data object EffectConsumed : HealthAction
     data object AuthSessionExpired : HealthAction
 }
@@ -17,6 +23,7 @@ data class HealthState(
     val isRefreshing: Boolean = false,
     val currentScenario: HealthMockScenario = HealthMockScenario.Normal,
     val enabledCardTypes: List<HealthCardType> = DefaultHealthCardOrder,
+    val normalDraft: EditableHealthData? = null,
     val error: HealthError? = null
 )
 
@@ -25,6 +32,8 @@ sealed interface HealthEffect {
     data object ScenarioChanged : HealthEffect
     data class ConfigSaved(val types: List<HealthCardType>) : HealthEffect
     data class BodyWeightSaved(val weightKg: Double) : HealthEffect
+    data class NormalDraftSaved(val section: HealthEditableSection, val eventId: Long) : HealthEffect
+    data class NormalDefaultsRestored(val eventId: Long) : HealthEffect
 }
 
 enum class HealthError {

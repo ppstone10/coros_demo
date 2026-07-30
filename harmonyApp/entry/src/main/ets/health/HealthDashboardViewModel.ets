@@ -63,17 +63,20 @@ export class HealthDashboardViewModel {
     } catch (e) { }
   }
 
-  saveCardConfiguration(types: string[], context?: object): void {
+  saveCardConfiguration(types: string[], context?: object): boolean {
+    this.clearEffectMessage();
     try {
-      const result: string = getService().saveCardConfig(JSON.stringify(types));
+      const result: string = getService().saveCardConfig(types.join(','));
       const parsed: object = JSON.parse(result);
       if (parsed && (parsed as Record<string, Object>)['error']) {
         this.effectMessage = 'Save failed';
-        return;
+        return false;
       }
       this.load(context);
+      return true;
     } catch (e) {
       this.effectMessage = 'Save failed';
+      return false;
     }
   }
 

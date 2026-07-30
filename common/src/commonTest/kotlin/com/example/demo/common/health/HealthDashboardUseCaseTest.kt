@@ -310,10 +310,39 @@ class HealthDashboardUseCaseTest {
     }
 
     @Test fun hrvStatusUsesFourShortRangeLabels() {
-        assertEquals("health_visual_hrv_very_low", hrvStatusKey(32.0, 30.0, 52.0, 60.0))
-        assertEquals("health_visual_hrv_low", hrvStatusKey(48.0, 30.0, 52.0, 60.0))
-        assertEquals("health_visual_hrv_normal", hrvStatusKey(56.0, 30.0, 52.0, 60.0))
-        assertEquals("health_visual_hrv_high", hrvStatusKey(65.0, 30.0, 52.0, 60.0))
+        val range = hrvRange(current = 48.0, normalMin = 47.0, normalMax = 57.0)
+        assertEquals("health_visual_hrv_very_low", hrvStatusKey(41.0, range))
+        assertEquals("health_visual_hrv_low", hrvStatusKey(44.0, range))
+        assertEquals("health_visual_hrv_normal", hrvStatusKey(52.0, range))
+        assertEquals("health_visual_hrv_high", hrvStatusKey(60.0, range))
+    }
+
+    @Test fun hrvRangeSegmentsAndPointerUseActualValues() {
+        val range = requireNotNull(
+            hrvVisual(
+                HrvAssessment(
+                    hrvScore = 48,
+                    status = "normal",
+                    averageMs = 48,
+                    normalMin = 47,
+                    normalMax = 57
+                )
+            ).range
+        )
+
+        assertEquals(40.0, range.minimum)
+        assertEquals(65.0, range.maximum)
+        assertEquals(
+            listOf(
+                Triple(40.0, 42.0, HealthRangeLevel.VeryLow),
+                Triple(42.0, 47.0, HealthRangeLevel.Low),
+                Triple(47.0, 57.0, HealthRangeLevel.Normal),
+                Triple(57.0, 65.0, HealthRangeLevel.High)
+            ),
+            range.segments.map { Triple(it.minimum, it.maximum, it.level) }
+        )
+        assertEquals(listOf(0.08, 0.20, 0.40, 0.32), range.segmentFractions())
+        assertEquals(0.32, range.currentFraction())
     }
 
     @Test fun bodyWeightEditsAppendInOrderAndScenarioRefreshPreservesHistory() {

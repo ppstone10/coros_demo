@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import com.example.demo.R
 import com.example.demo.common.health.HealthCardVisualData
+import com.example.demo.common.health.HealthRangeLevel
 import com.example.demo.ui.resources.AppColors
 import kotlin.math.max
 
@@ -70,24 +71,26 @@ private fun HrvRangeOverview(v: HealthCardVisualData) {
     ) {
         Canvas(Modifier.fillMaxWidth().height(18.dp)) {
             val currentRange = range ?: return@Canvas
-            val colors = listOf(
-                AppColors.Health.RangeLow,
-                AppColors.Health.RangeCaution,
-                AppColors.Health.RangeNormal,
-                AppColors.Health.RangeHigh,
-            )
-            val gap = 2.dp.toPx()
-            val segmentWidth = (size.width - gap * 3) / 4f
+            val denominator = max(1.0, currentRange.maximum - currentRange.minimum)
             val indicatorTop = 10.dp.toPx()
             val indicatorHeight = 4.dp.toPx()
-            colors.forEachIndexed { index, color ->
+            currentRange.segments.forEach { segment ->
+                val start = ((segment.minimum - currentRange.minimum) / denominator)
+                    .toFloat().coerceIn(0f, 1f)
+                val end = ((segment.maximum - currentRange.minimum) / denominator)
+                    .toFloat().coerceIn(start, 1f)
+                val color = when (segment.level) {
+                    HealthRangeLevel.VeryLow -> AppColors.Health.RangeLow
+                    HealthRangeLevel.Low -> AppColors.Health.RangeCaution
+                    HealthRangeLevel.Normal -> AppColors.Health.RangeNormal
+                    HealthRangeLevel.High -> AppColors.Health.RangeHigh
+                }
                 drawRect(
                     color,
-                    Offset(index * (segmentWidth + gap), indicatorTop),
-                    Size(segmentWidth, indicatorHeight),
+                    Offset(size.width * start, indicatorTop),
+                    Size(size.width * (end - start), indicatorHeight),
                 )
             }
-            val denominator = max(1.0, currentRange.maximum - currentRange.minimum)
             val x = ((currentRange.current - currentRange.minimum) / denominator)
                 .toFloat()
                 .coerceIn(0f, 1f) * size.width

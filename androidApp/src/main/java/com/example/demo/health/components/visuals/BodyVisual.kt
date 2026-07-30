@@ -1,9 +1,12 @@
 package com.example.demo.health
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -11,17 +14,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.common.health.HealthCardVisualData
 import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppImage
+import com.example.demo.ui.resources.AppImageAsset
 import com.example.demo.ui.resources.AppImages
 import androidx.compose.ui.res.stringResource
 import com.example.demo.R
 
 @Composable
 fun BodyVisual(v: HealthCardVisualData, onWeightClick: () -> Unit) {
+    val frontRegions = v.highlightedBodyRegions.filter { it.endsWith("_front") }
+    val backRegions = v.highlightedBodyRegions.filter { it.endsWith("_back") }
     OverviewRow(
         left = {
             Column {
@@ -60,19 +67,43 @@ fun BodyVisual(v: HealthCardVisualData, onWeightClick: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
-                    Modifier.height(108.dp),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.width(108.dp).height(108.dp)
                 ) {
-                    AppImage(AppImages.Health.BodyFront, null, Modifier.width(52.dp).height(108.dp))
-                    AppImage(AppImages.Health.BodyBack, null, Modifier.width(52.dp).height(108.dp))
+                    BodyFigure(AppImages.Health.BodyMaleFrontBase, frontRegions)
+                    BodyFigure(AppImages.Health.BodyMaleBackBase, backRegions)
                 }
-                Text(
-                    stringResource(R.string.health_visual_weekly_primary_muscles),
-                    color = AppColors.Health.Muted,
-                    fontSize = 11.sp,
-                    maxLines = 1
-                )
+                v.footer?.let {
+                    Text(
+                        localizedHealthText(it),
+                        color = AppColors.Health.Muted,
+                        fontSize = 9.sp,
+                        maxLines = 1
+                    )
+                }
             }
         },
+    )
+}
+
+@Composable
+private fun BodyFigure(base: AppImageAsset, regions: List<String>) {
+    Box(Modifier.width(52.dp).height(108.dp)) {
+        AppImage(base, null, Modifier.fillMaxSize())
+        regions.forEach { region ->
+            AppImages.Health.BodyMuscleRegions[region]?.let { asset ->
+                BodyRegionLayer(asset)
+            }
+        }
+    }
+}
+
+@Composable
+private fun BodyRegionLayer(asset: AppImageAsset) {
+    AppImage(
+        asset = asset,
+        contentDescription = null,
+        modifier = Modifier.fillMaxSize(),
+        colorFilter = ColorFilter.tint(AppColors.Health.Action)
     )
 }

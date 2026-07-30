@@ -13,6 +13,8 @@ final class HealthDashboardViewModel: ObservableObject {
     @Published private(set) var isDataCorrupted = false
     @Published private(set) var selectedScenario = "Normal"
     @Published private(set) var scenarios: [HealthScenarioDescriptor] = []
+    @Published private(set) var editNotice: (id: Int, messageKey: String)?
+    private var editNoticeSequence = 0
 
     var onEffect: ((HealthEffect) -> Void)?
 
@@ -49,6 +51,55 @@ final class HealthDashboardViewModel: ObservableObject {
     func saveBodyWeight(_ weightKg: Double) {
         guard adapter.saveHealthBodyWeight(weightKg) == nil else { return }
         apply(adapter.healthState())
+    }
+
+    var editableSections: [String] {
+        adapter.healthEditableSectionNames()
+    }
+
+    func normalEditFormJson(_ section: String) -> String? {
+        adapter.normalHealthEditFormJson(section)
+    }
+
+    func defaultNormalEditFormJson(_ section: String) -> String? {
+        adapter.defaultNormalHealthEditFormJson(section)
+    }
+
+    func mutateNormalEditFormJson(
+        _ section: String,
+        valuesSpec: String,
+        groupID: String,
+        operation: String,
+        rowIndex: Int = -1
+    ) -> String? {
+        adapter.mutateNormalHealthEditFormJson(
+            section,
+            valuesSpec: valuesSpec,
+            groupID: groupID,
+            operation: operation,
+            rowIndex: rowIndex
+        )
+    }
+
+    func saveNormalEditForm(_ section: String, valuesSpec: String) -> Bool {
+        let saved = adapter.saveNormalHealthEditForm(section, valuesSpec: valuesSpec)
+        if saved {
+            editNoticeSequence += 1
+            editNotice = (editNoticeSequence, "health_edit_saved_refresh")
+        }
+        return saved
+    }
+
+    func restoreAllNormalDefaults() {
+        guard adapter.restoreAllNormalHealthDefaults() else { return }
+        editNoticeSequence += 1
+        editNotice = (editNoticeSequence, "health_edit_defaults_refresh")
+    }
+
+    func clearEditNotice(id: Int) {
+        if editNotice?.id == id {
+            editNotice = nil
+        }
     }
 
     func refresh() async {

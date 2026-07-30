@@ -12,6 +12,8 @@
     "pages/SignedInPage",
     "pages/HealthDetailPage",
     "pages/HealthCardEditorPage",
+    "pages/NormalDataEditorPage",
+    "pages/NormalDataSectionPage",
     "pages/PrivacyPolicyPage",
     "pages/ServiceTermsPage",
     "pages/DebugStatePage"
