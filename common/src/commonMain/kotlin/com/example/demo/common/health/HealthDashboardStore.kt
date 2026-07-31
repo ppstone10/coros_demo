@@ -36,6 +36,10 @@ class HealthDashboardStore(
     private val pendingScenarios = mutableMapOf<String, HealthMockScenario>()
     private var transientNormalDraft: EditableHealthData? = null
 
+    fun emptyUiState(): DashboardUiState = useCase.toUiState(
+        HealthDashboardData(null, null, null, null)
+    )
+
     fun load(): MockResult<PersistedDashboard> = when (val access = authRepository.verifyBusinessAccess()) {
         is MockResult.Failure -> MockResult.Failure(access.error)
         is MockResult.Success -> {
@@ -135,9 +139,13 @@ class HealthDashboardStore(
     }
 
     fun clear(userId: String): Boolean {
-        pendingScenarios.remove(userId)
-        transientNormalDraft = null
+        clearTransientState()
         return stateDataSource.clear(userId)
+    }
+
+    fun clearTransientState() {
+        pendingScenarios.clear()
+        transientNormalDraft = null
     }
 
     fun normalDraft(): EditableHealthData? = transientNormalDraft

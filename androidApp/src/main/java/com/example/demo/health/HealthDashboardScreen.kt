@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -101,9 +102,12 @@ fun HealthDashboardScreen(
 
     var screenState by remember { mutableStateOf(DashboardScreenState()) }
     var editingBodyWeight by remember { mutableStateOf<Double?>(null) }
+    val pullState = rememberPullToRefreshState()
 
     LaunchedEffect(Unit) {
-        if (healthViewModel.state.uiState == null) {
+        if (healthViewModel.state.isRefreshing) {
+            pullState.beginProgrammaticRefresh()
+        } else if (healthViewModel.state.uiState == null) {
             healthViewModel.load()
         }
     }
@@ -111,8 +115,6 @@ fun HealthDashboardScreen(
     LaunchedEffect(effect) {
         effect?.let { healthViewModel.onEffectConsumed() }
     }
-
-    val pullState = rememberPullToRefreshState()
 
     LaunchedEffect(pullState.isRefreshing) {
         if (pullState.isRefreshing) {
@@ -223,20 +225,29 @@ fun HealthDashboardScreen(
                                     )
                                 }
                                 item {
-                                    Text(
-                                        text = stringResource(R.string.health_edit_cards),
-                                        color = AppColors.Health.EditText,
-                                        fontSize = AppTypography.Label,
+                                    Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(AppSpacing.Large)
-                                            .clip(RoundedCornerShape(22.dp))
-                                            .background(AppColors.Health.Card)
-                                            .clickable {
-                                                onOpenEditor()
-                                            }
-                                            .padding(horizontal = AppSpacing.ActionHorizontal, vertical = AppSpacing.Medium)
-                                    )
+                                            .padding(AppSpacing.Large),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.health_edit_cards),
+                                            color = AppColors.Health.EditText,
+                                            fontSize = AppTypography.Label,
+                                            modifier = Modifier
+                                                .wrapContentWidth()
+                                                .clip(RoundedCornerShape(22.dp))
+                                                .background(AppColors.Health.Card)
+                                                .clickable {
+                                                    onOpenEditor()
+                                                }
+                                                .padding(
+                                                    horizontal = AppSpacing.ActionHorizontal,
+                                                    vertical = AppSpacing.Medium
+                                                )
+                                        )
+                                    }
                                 }
                                 item { Spacer(Modifier.height(24.dp)) }
                             }

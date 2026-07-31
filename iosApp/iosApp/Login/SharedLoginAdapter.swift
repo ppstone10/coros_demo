@@ -57,6 +57,7 @@ protocol SharedLoginAdapterProtocol {
     func consumeEffect() -> LoginEffect?
     func healthState() -> HealthState?
     func loadHealth()
+    func staleHealthForNewAccount()
     func selectHealthScenario(_ name: String) -> Bool
     func refreshHealth()
     func saveHealthCardConfiguration(_ typeNames: [String]) -> String?
@@ -317,6 +318,10 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
 
     func loadHealth() {
         healthFacade.load()
+    }
+
+    func staleHealthForNewAccount() {
+        healthFacade.staleForNewAccount()
     }
 
     func selectHealthScenario(_ name: String) -> Bool {

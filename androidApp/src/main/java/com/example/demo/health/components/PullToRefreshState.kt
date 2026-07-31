@@ -183,6 +183,13 @@ class PullToRefreshState internal constructor(
         }
     }
 
+    suspend fun beginProgrammaticRefresh() {
+        if (phase == PullRefreshPhase.Idle) {
+            animateOffsetTo(refreshHoldOffsetPx)
+            phase = PullRefreshPhase.Refreshing
+        }
+    }
+
     private suspend fun reset() {
         phase = PullRefreshPhase.Resetting
         animateOffsetTo(0f)

@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -687,14 +686,11 @@ fun LegalDocumentPage(title: String, paragraphs: List<LegalParagraph>, onBack: (
             Text(text = stringResource(R.string.common_back), color = CorosWhite, fontSize = 44.sp, modifier = Modifier.align(Alignment.CenterStart).clickable(onClick = onBack))
             Text(text = title, color = CorosWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         }
-        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
-            Column(modifier = Modifier.fillMaxSize().verticalScroll(scrollState).padding(top = 58.dp, bottom = 32.dp, end = 12.dp)) {
-                paragraphs.forEachIndexed { index, paragraph ->
-                    LegalParagraphText(paragraph = paragraph)
-                    if (index != paragraphs.lastIndex) Spacer(modifier = Modifier.height(if (paragraph.isHeading) 8.dp else 12.dp))
-                }
+        Column(modifier = Modifier.fillMaxSize().weight(1f).verticalScroll(scrollState).padding(top = 16.dp, bottom = 32.dp)) {
+            paragraphs.forEachIndexed { index, paragraph ->
+                LegalParagraphText(paragraph = paragraph)
+                if (index != paragraphs.lastIndex) Spacer(modifier = Modifier.height(if (paragraph.isHeading) 8.dp else 12.dp))
             }
-            VerticalScrollbar(scrollState = scrollState, modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(top = 24.dp, bottom = 24.dp))
         }
     }
 }

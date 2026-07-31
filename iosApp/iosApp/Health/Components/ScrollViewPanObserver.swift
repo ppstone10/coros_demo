@@ -67,6 +67,7 @@ struct ScrollViewPanObserver: UIViewRepresentable {
         var onPullEnded: ((CGFloat, Bool) -> Void)?
         private var gestureBeganAtTop = false
         private var originalBounces: Bool?
+        private var originalAlwaysBounceVertical: Bool?
 
         override func didMoveToWindow() {
             super.didMoveToWindow()
@@ -82,7 +83,9 @@ struct ScrollViewPanObserver: UIViewRepresentable {
                 if let scrollView = view as? UIScrollView {
                     observedScrollView = scrollView
                     originalBounces = scrollView.bounces
-                    scrollView.bounces = false
+                    originalAlwaysBounceVertical = scrollView.alwaysBounceVertical
+                    scrollView.alwaysBounceVertical = true
+                    scrollView.bounces = true
                     scrollView.panGestureRecognizer.addTarget(self, action: #selector(handlePan(_:)))
                     return
                 }
@@ -92,16 +95,18 @@ struct ScrollViewPanObserver: UIViewRepresentable {
 
         @objc private func handlePan(_ recognizer: UIPanGestureRecognizer) {
             guard let scrollView = observedScrollView else { return }
+            let rawTranslation = recognizer.translation(in: scrollView).y
+            let nativeOffset = scrollView.contentOffset.y + scrollView.adjustedContentInset.top
+            let netPull = max(0, rawTranslation - max(0, -nativeOffset))
             switch recognizer.state {
             case .began:
                 gestureBeganAtTop = !isRefreshing &&
                     scrollView.contentOffset.y <= -scrollView.adjustedContentInset.top + 1
             case .changed:
                 guard gestureBeganAtTop else { return }
-                onPullChanged?(max(0, recognizer.translation(in: scrollView).y))
+                onPullChanged?(netPull)
             case .ended:
-                let distance = max(0, recognizer.translation(in: scrollView).y)
-                onPullEnded?(distance, gestureBeganAtTop)
+                onPullEnded?(netPull, gestureBeganAtTop)
                 gestureBeganAtTop = false
             case .cancelled, .failed:
                 onPullEnded?(0, false)
@@ -115,6 +120,9 @@ struct ScrollViewPanObserver: UIViewRepresentable {
             observedScrollView?.panGestureRecognizer.removeTarget(self, action: #selector(handlePan(_:)))
             if let originalBounces {
                 observedScrollView?.bounces = originalBounces
+            }
+            if let originalAlwaysBounceVertical {
+                observedScrollView?.alwaysBounceVertical = originalAlwaysBounceVertical
             }
         }
     }

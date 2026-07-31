@@ -260,6 +260,10 @@ class HealthFacade(
 
     fun consumeEffect(): HealthEffect? = store.consumeEffect()
 
+    fun staleForNewAccount() {
+        store.staleForNewAccount()
+    }
+
     fun healthError(): HealthError? = store.state.error
 
     private fun edit(

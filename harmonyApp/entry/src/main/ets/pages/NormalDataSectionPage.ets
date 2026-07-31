@@ -105,7 +105,7 @@ struct NormalDataSectionPage {
             ListItem() {
               this.EditField(field)
             }
-          }, (field: NormalEditField) => field.id)
+          }, (field: NormalEditField) => `${field.id}_${field.value}`)
           ForEach(this.repeatGroups, (group: NormalEditRepeatGroup) => {
             ListItem() {
               this.RepeatGroupEditor(group)
@@ -199,7 +199,7 @@ struct NormalDataSectionPage {
           .width('100%')
           ForEach(this.groupFields(group.id, rowIndex), (field: NormalEditField) => {
             this.EditField(field)
-          }, (field: NormalEditField) => field.id)
+          }, (field: NormalEditField) => `${field.id}_${field.value}`)
         }
         .width('100%')
         .padding(12)

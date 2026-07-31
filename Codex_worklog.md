@@ -582,3 +582,28 @@
 
 ## 人工修正点
 - 最初沿着“正常数据模块保存”排查会得出 KNOI Boolean 和表单值编码均正常，但无法解释真正卡片配置页的现象；重新区分两个同名语境的编辑页面后，才定位到 `HealthCardEditorPage → HealthDashboardViewModel → saveCardConfig` 的 CSV/JSON 错配。
+
+# 2026-07-31 18:00 — 修复卡片编辑拖拽延迟与账号切换数据串号
+
+## 采纳内容
+- [HLTH-VIS-047] 将 `CardEditor.kt` 的拖拽手势从 `detectDragGesturesAfterLongPress` 替换为 `awaitLongPressOrCancellation` + 手动 `while(true)` 拖拽循环，消除长按检测与拖拽模式间的指针事件泄露窗口，长按后立即消费所有移动事件避免 LazyColumn 滚动竞争。
+- [HLTH-PERSIST-009] 在 `HealthStore` 新增 `staleForNewAccount()` 方法，将 `HealthState` 置为 `uiState=null, isRefreshing=true`；通过 `HealthDashboardViewModel` 暴露该方法。
+- [HLTH-PERSIST-009] 修改 `HealthDashboardScreen` 的 `LaunchedEffect(Unit)`：检测到 `isRefreshing && uiState==null` 时延迟 640ms 展示刷新动画后再调用 `load()`，产生"空卡片→刷新→恢复数据"视觉过渡。
+- [HLTH-PERSIST-009] 在 `AuthNavGraph` 的 `LoginEffect.AuthSucceeded` 和 `LoginEffect.LoggedOut` 处理中调用 `healthViewModel.staleForNewAccount()`，确保账号切换时 HealthState 不再缓存旧账号数据。
+
+## 人工审查点
+- 拖拽修复的 `awaitLongPressOrCancellation` 在不同 Compose 版本 API 有差异；当前 BOM 2026.02.01 / foundation 1.11.3 确认可用。
+- 构建通过验证新接口编译正确，设备上长按拖拽的实际延迟和刷新动画的视觉效果需在模拟器/真机人工复验。
+- 数据串号修复依赖 `remember(viewModel)` 缓存保持同一 HealthDashboardViewModel 实例，且 `LaunchedEffect(Unit)` 在导航 ResetTo 后因 `MainTabsScreen` 重新组合而再次触发。
+
+## 验证结果
+- `./gradlew :androidApp:assembleDebug` 构建成功。
+- `./gradlew :common:check` 全部 116 条测试通过。
+- `./tools/check-sdd.sh` 通过。
+- `./tools/check-docs.sh` 仅在重启恢复源文件处有 1 项预存失败，与本轮无关。
+- `spec/TRACE.md` 新增 `HLTH-VIS-047` 和 `HLTH-PERSIST-009` 两条追溯映射。
+- `LEARNINGS.md` 新增"Compose 长按拖拽手势的滚动泄露"和"HealthState 跨账号复用导致数据串号"两条踩坑记录。
+
+## 人工修正点
+- 首次替换 `detectDragGesturesAfterLongPress` 时使用了 `change.positionChange().y`，在当前 Compose 版本中 `positionChange` 为 Boolean 属性而非返回 Offset 的函数；改为 `change.position.y - change.previousPosition.y` 后编译通过。
+- LEARNINGS.md 编辑过程中因 Unicode 引号匹配问题，经过恢复后通过 bash sed 插入新条目。

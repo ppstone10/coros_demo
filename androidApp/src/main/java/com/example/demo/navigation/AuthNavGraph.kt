@@ -121,6 +121,7 @@ fun AuthNavGraph() {
     LaunchedEffect(viewModel.effect, resources) {
         when (val effect = viewModel.effect) {
             is LoginEffect.AuthSucceeded -> {
+                healthViewModel.staleForNewAccount()
                 val destination = when (effect.nextRoute) {
                     PostLoginRoute.SignedIn -> SignedInRoute
                     PostLoginRoute.ProfileCompletion -> ProfileCompletionRoute
@@ -142,6 +143,7 @@ fun AuthNavGraph() {
                 viewModel.onEffectConsumed()
             }
             LoginEffect.LoggedOut -> {
+                healthViewModel.staleForNewAccount()
                 navController.navigateWithOperation(EntranceRoute, NavOperation.ResetTo)
                 snackbarHostState.showSnackbar(resources.getString(R.string.account_logout_success))
                 viewModel.onEffectConsumed()

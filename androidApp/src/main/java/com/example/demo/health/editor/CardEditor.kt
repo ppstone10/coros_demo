@@ -3,7 +3,9 @@ package com.example.demo.health
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,8 +33,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -66,54 +72,68 @@ fun CardEditor(
     var warning by remember { mutableStateOf<String?>(null) }
     val minimumCardsWarning = stringResource(R.string.health_minimum_cards)
     val inactive = DefaultHealthCardOrder.filterNot(active::contains)
-    Column(Modifier.fillMaxSize().background(PageBlack).statusBarsPadding()) {
-        Row(Modifier.fillMaxWidth().height(62.dp).padding(horizontal = AppSpacing.Large), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.common_back), color = AppColors.Core.White, fontSize = 34.sp, modifier = Modifier.clickable(onClick = onClose))
-            Text(stringResource(R.string.health_edit_cards), color = AppColors.Core.White, fontSize = 18.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-            Box(Modifier.width(64.dp).height(30.dp).clip(RoundedCornerShape(6.dp)).background(AppColors.Health.Action).clickable { onSave(active.toList()) }, contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.common_save), color = AppColors.Core.White, fontSize = AppTypography.Action)
+    val isDragActive = draggedType != null
+    val scrollBlocker = remember(isDragActive) {
+        val blocked = isDragActive
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                return if (blocked) available else Offset.Zero
             }
         }
+    }
+    Column(Modifier.fillMaxSize().background(PageBlack).statusBarsPadding()) {
+        Row(modifier = Modifier.fillMaxWidth().height(62.dp).padding(horizontal = AppSpacing.Large), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.width(64.dp), contentAlignment = Alignment.CenterStart) {
+                Text(text = stringResource(R.string.common_back), color = AppColors.Core.White, fontSize = 34.sp, modifier = Modifier.clickable(onClick = onClose)) }
+            Text(text = stringResource(R.string.health_edit_cards), color = AppColors.Core.White, fontSize = 18.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+            Box(modifier = Modifier.width(64.dp).height(30.dp).clip(RoundedCornerShape(6.dp)).background(AppColors.Health.Action).clickable { onSave(active.toList()) }, contentAlignment = Alignment.Center) {
+                Text(text = stringResource(R.string.common_save), color = AppColors.Core.White, fontSize = AppTypography.Action) } }
         Text(stringResource(R.string.health_manage_cards), color = Muted, fontSize = AppTypography.Label, modifier = Modifier.padding(horizontal = AppSpacing.Section, vertical = AppSpacing.LabelVertical))
         warning?.let { Text(it, color = AppColors.Health.Warning, fontSize = AppTypography.Supporting, modifier = Modifier.padding(horizontal = AppSpacing.Section, vertical = 4.dp)) }
         LazyColumn(
             state = listState,
-            modifier = Modifier.weight(1f).padding(horizontal = AppSpacing.Screen).pointerInput(Unit) {
-                detectDragGesturesAfterLongPress(
-                    onDragStart = { position ->
-                        val item = listState.layoutInfo.visibleItemsInfo.firstOrNull {
-                            it.index in active.indices && position.y.toInt() in it.offset..(it.offset + it.size)
-                        }
-                        draggedType = item?.let { active.getOrNull(it.index) }; nonAnimatedType = draggedType; dragOffset = 0f
-                    },
-                    onDragCancel = { draggedType = null; dragOffset = 0f },
-                    onDragEnd = { draggedType = null; dragOffset = 0f },
-                    onDrag = { change, amount ->
-                        val type = draggedType ?: return@detectDragGesturesAfterLongPress
+            modifier = Modifier.weight(1f).padding(horizontal = AppSpacing.Screen).nestedScroll(scrollBlocker).pointerInput(active) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val longPress = awaitLongPressOrCancellation(down.id)
+                    if (longPress == null) return@awaitEachGesture
+                    val item = listState.layoutInfo.visibleItemsInfo.firstOrNull {
+                        it.index in active.indices && longPress.position.y.toInt() in it.offset..(it.offset + it.size)
+                    }
+                    val targetType = item?.let { active.getOrNull(it.index) }
+                    if (targetType == null) return@awaitEachGesture
+                    draggedType = targetType; nonAnimatedType = targetType; dragOffset = 0f
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id }
+                        if (change == null || !change.pressed) break
                         change.consume()
-                        val currentIndex = active.indexOf(type)
+                        val dy = change.position.y - change.previousPosition.y
+                        if (dy == 0f) continue
+                        val currentIndex = active.indexOf(targetType)
                         val layoutInfo = listState.layoutInfo
-                        val current = layoutInfo.visibleItemsInfo.firstOrNull { it.index == currentIndex } ?: return@detectDragGesturesAfterLongPress
+                        val current = layoutInfo.visibleItemsInfo.firstOrNull { it.index == currentIndex } ?: continue
                         val minOff = layoutInfo.viewportStartOffset - current.offset.toFloat()
                         val maxOff = layoutInfo.viewportEndOffset - current.offset.toFloat() - current.size
-                        dragOffset = (dragOffset + amount.y).coerceIn(minOff, maxOff)
-                        val dir = amount.y.compareTo(0f)
+                        dragOffset = (dragOffset + dy).coerceIn(minOff, maxOff)
+                        val dir = dy.compareTo(0f)
                         val targetIdx = currentIndex + dir
                         val target = layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIdx && it.index in active.indices }
                         val center = current.offset + current.size / 2f + dragOffset
                         val swap = when { target == null -> false; dir < 0 -> center <= target.offset + target.size / 2f; dir > 0 -> center >= target.offset + target.size / 2f; else -> false }
                         if (swap && target != null) {
                             val vt = current.offset + dragOffset; val fvi = listState.firstVisibleItemIndex; val fvo = listState.firstVisibleItemScrollOffset
-                            active.removeAt(currentIndex); active.add(target.index, type)
+                            active.removeAt(currentIndex); active.add(target.index, targetType)
                             if (currentIndex == fvi || target.index == fvi) listState.requestScrollToItem(fvi, fvo)
                             dragOffset = vt - target.offset
                             dragOffset = dragOffset.coerceIn(layoutInfo.viewportStartOffset - target.offset.toFloat(), layoutInfo.viewportEndOffset - target.offset.toFloat() - target.size)
                         }
                         val vp = layoutInfo.viewportEndOffset
-                        when { amount.y < 0 && change.position.y < 36.dp.toPx() && listState.canScrollBackward -> dragOffset -= listState.dispatchRawDelta(8.dp.toPx())
-                            amount.y > 0 && change.position.y > vp - 36.dp.toPx() && listState.canScrollForward -> dragOffset -= listState.dispatchRawDelta(-8.dp.toPx()) }
+                        when { dy < 0 && change.position.y < 36.dp.toPx() && listState.canScrollBackward -> dragOffset -= listState.dispatchRawDelta(8.dp.toPx())
+                            dy > 0 && change.position.y > vp - 36.dp.toPx() && listState.canScrollForward -> dragOffset -= listState.dispatchRawDelta(-8.dp.toPx()) }
                     }
-                )
+                    draggedType = null; dragOffset = 0f
+                }
             }
         ) {
             itemsIndexed(active, key = { _, t -> t.name }) { idx, type ->

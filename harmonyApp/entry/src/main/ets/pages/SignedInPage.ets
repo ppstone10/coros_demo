@@ -15,8 +15,8 @@ import {
   APP_LANGUAGE_ENGLISH,
   selectAppLanguage
 } from '../resources/AppLanguage';
-import { HealthCardModel } from '../health/HealthDashboardTypes';
-import { HealthDashboardViewModel } from '../health/HealthDashboardViewModel';
+import { HealthCardModel, createDefaultHealthCards } from '../health/HealthDashboardTypes';
+import { HealthDashboardViewModel, consumePendingStaleRefresh } from '../health/HealthDashboardViewModel';
 import { AccountOverviewComp } from '../account/AccountOverviewComp';
 import { RecordsPlaceholderComp } from './RecordsPlaceholderComp';
 import { ExplorePlaceholderComp } from './ExplorePlaceholderComp';
@@ -95,7 +95,18 @@ struct SignedInPage {
   }
 
   aboutToAppear(): void {
-    this.healthVM.load(this);
+    if (consumePendingStaleRefresh()) {
+      this.healthVM.refreshing = true;
+      this.healthVM.healthCards = createDefaultHealthCards();
+      this.healthVM.healthSteps = 0;
+      this.healthVM.healthCalories = 0;
+      this.healthVM.healthActiveMinutes = 0;
+      this.healthVM.healthDateLabel = '';
+      this.healthVM.loadScenarioCatalogOnly();
+      this.beginHarmonyRefresh();
+    } else {
+      this.healthVM.load(this);
+    }
     this.appliedHealthCardsVersion = this.healthCardsVersion;
     this.syncState();
   }

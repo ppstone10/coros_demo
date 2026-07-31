@@ -18,6 +18,8 @@ final class HealthDashboardViewModel: ObservableObject {
 
     var onEffect: ((HealthEffect) -> Void)?
 
+    var needsProgrammaticRefresh = false
+
     private let adapter: SharedLoginAdapterProtocol
 
     init(adapter: SharedLoginAdapterProtocol = SharedLoginAdapter()) {
@@ -31,6 +33,12 @@ final class HealthDashboardViewModel: ObservableObject {
         if let effect = adapter.consumeHealthEffect() {
             onEffect?(effect)
         }
+    }
+
+    func staleForNewAccount() {
+        adapter.staleHealthForNewAccount()
+        apply(adapter.healthState())
+        needsProgrammaticRefresh = true
     }
 
     func selectScenario(_ name: String) {

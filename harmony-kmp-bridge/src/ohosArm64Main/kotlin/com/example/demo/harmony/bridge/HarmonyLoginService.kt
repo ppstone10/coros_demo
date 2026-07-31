@@ -113,6 +113,10 @@ open class HarmonyLoginService {
     fun restoreAllNormalHealthDefaults(): String =
         healthFacade.restoreAllNormalDefaults().toString()
 
+    fun staleHealthForNewAccount() {
+        healthFacade.staleForNewAccount()
+    }
+
     fun consumeEffectSnapshot(): String {
         return HarmonyLoginJson.effectSnapshot(facade.consumeEffect())
     }

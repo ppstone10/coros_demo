@@ -35,6 +35,8 @@ export interface HarmonyLoginService {
 
    restoreAllNormalHealthDefaults(): string;
 
+   staleHealthForNewAccount(): void;
+
    consumeEffectSnapshot(): string;
 
    setLoginMode(): void;

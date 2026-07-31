@@ -1,6 +1,18 @@
 import { CardEntry, HealthCardModel, HealthScenarioEntry, HealthSnapshot, cardIconIndex, createDefaultHealthCards, localizedHealthText } from './HealthDashboardTypes';
 import { getService } from '../login/HarmonyServiceProvider';
 
+let gPendingStaleRefresh: boolean = false;
+
+export function markPendingStaleRefresh(): void {
+    gPendingStaleRefresh = true;
+}
+
+export function consumePendingStaleRefresh(): boolean {
+    const v = gPendingStaleRefresh;
+    gPendingStaleRefresh = false;
+    return v;
+}
+
 @Observed
 export class HealthDashboardViewModel {
   healthCards: HealthCardModel[] = createDefaultHealthCards();
@@ -21,6 +33,14 @@ export class HealthDashboardViewModel {
       this.loadScenarioCatalog();
       this.applySnapshot(context);
       this.dashboardVersion++;
+    } catch (e) {
+      // keep defaults
+    }
+  }
+
+  loadScenarioCatalogOnly(): void {
+    try {
+      this.loadScenarioCatalog();
     } catch (e) {
       // keep defaults
     }

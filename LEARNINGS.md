@@ -125,6 +125,8 @@
 | **详情返回的状态所有权** | 保留滚动位置的关键是保留同一根页面及其平台滚动状态：Android hoist `LazyListState`，iOS 复用根 View/VM，HarmonyOS 普通 Pop 不重载根 Scroll；共享 ViewModel 提升到导航图时不得在认证完成前抢先加载用户健康数据。 |
 | **人体肌肉蒙版契约** | 体型管理使用与正/背人体底图同尺寸、同坐标系的透明蒙版；common 维护稳定“锻炼部位 → 区域 ID”映射（背部可展开为斜方肌、背阔肌、竖脊肌），三端只维护区域 ID 到资源的映射并以 Template/tint 同画布叠加。不得从本地化文字反推部位，也不得用坐标圆点替代实际肌肉区域。 |
 | **刷新时持久数据与草稿的字段级合并** | 同一模块同时含“用户长期数据”和“可丢弃场景草稿”时，刷新只能按字段保留长期数据，不能用旧模块对象整体覆盖草稿。体型管理保留旧 `weightKg/weightHistoryKg`，但 `trainedMuscleGroups` 必须来自当前 Normal 草稿；回归测试需覆盖“已有多条历史 → 保存草稿 → 刷新前不变 → 刷新后变化 → 重建仍一致”。 |
+| **Compose 长按拖拽手势的滚动泄露** | `detectDragGesturesAfterLongPress` 在长按检测完成后、拖拽循环建立前存在指针事件泄露窗口，导致 LazyColumn 滚动与拖拽竞争。应使用 `awaitLongPressOrCancellation` 手动分两阶段：长按等待（由框架消费事件）→ 确认后立即进入 `while(true)` 拖拽循环逐帧消费 `PointerInputChange`。`pointerInput` 的 key 需绑定到拖拽目标列表引用以响应列表变更。 |
+| **HealthState 跨账号复用导致数据串号** | `HealthDashboardViewModel` 在 AuthNavGraph 层用 `remember(viewModel)` 唯一缓存，登出再换号登录后 HealthState 仍持有旧账号数据。修复方案：在 `LoginEffect.AuthSucceeded` 和 `LoggedOut` 时调用 `HealthStore.staleForNewAccount()` 置空 `uiState` 并设 `isRefreshing=true`，使 HealthDashboardScreen 的 `LaunchedEffect` 识别空态并延迟 640ms 后重新 `load()`，产生"空卡片→刷新→恢复数据"的视觉过渡。 |
 
 ## Spec 文件索引
 

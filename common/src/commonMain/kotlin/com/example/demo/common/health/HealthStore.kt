@@ -143,4 +143,10 @@ class HealthStore(
     }
 
     fun clear(userId: String): Boolean = dashboardStore.clear(userId)
+
+    fun staleForNewAccount() {
+        dashboardStore.clearTransientState()
+        state = HealthState(uiState = dashboardStore.emptyUiState(), isRefreshing = true)
+        pendingEffect = null
+    }
 }

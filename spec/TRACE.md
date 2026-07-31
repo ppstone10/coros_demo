@@ -280,6 +280,7 @@
 | `HLTH-VIS-044` | HRV 四档短状态高亮并统一三端范围指针朝向 | `hrvStatusUsesFourShortRangeLabels` 红灯后通过；Android 指针几何测试、模拟器截图及三端构建通过 | common `hrvStatusKey`；三端 HRV 32 号白色粗体/4 间距；Android/iOS 上尖三角 | ✅ |
 | `HLTH-VIS-045` | HRV 指针与静息心率采用相同重叠几何，HarmonyOS 正常范围文案不回退 | `tools/check-health-range-indicator-parity.sh` 实施前 4 项红灯、实施后全绿；Android/iOS/HarmonyOS 构建通过；当前无在线 HarmonyOS 设备 | `HrvAssessmentVisualComp.RangeMarker` 与横条改用静息心率同一纵向边界；`HealthLocalization.healthResource` 显式映射正常范围键 | ⚠️（自动验证通过，鸿蒙设备截图待验收） |
 | `HLTH-VIS-046` | HRV 四段横条与指针按 common 真实范围绘制 | `hrvRangeSegmentsAndPointerUseActualValues` 实现前因分段模型缺失编译红灯、实现后通过；专项门禁与 common/Android/iOS/HarmonyOS 构建通过 | `HealthDashboardVisuals.hrvRange` 输出连续分段与统一范围；三端 HRV 组件按 `HealthRange.segments` 比例绘制，指针按相同 minimum/maximum 归一化 | ✅ |
+| `HLTH-VIS-047` | 卡片编辑器长按拖拽无滚动泄露延迟 | `./gradlew :androidApp:assembleDebug` 通过；人工验收：长按卡片立即变灰后拖拽响应无滚动窗口期 | `androidApp/.../health/editor/CardEditor.kt` 替换 `detectDragGesturesAfterLongPress` 为 `awaitLongPressOrCancellation` + 手动拖拽循环 | ✅（构建通过，运行时待验收） |
 
 ---
 
@@ -295,6 +296,7 @@
 | `HLTH-PERSIST-006` | 多用户数据隔离 | `fullDashboardSnapshotsAreIsolatedByUserId`、`twentyFullDashboardSnapshotsRoundTripWithinPreferencesBudget`、`deletingAccountClearsOnlyItsHealthSnapshot` | common snapshot map；Android/iOS 既有按 userId Key adapter | ✅ |
 | `HLTH-PERSIST-007` | HarmonyOS 使用单一健康快照集合 | 集合 codec 测试；KNOI `ohosArm64Binaries`、`hvigorw assembleApp --no-daemon`、结构扫描 | `HarmonyLoginService.export/restoreHealthSnapshot`、`StorePersister.ets`、`SignedInPage.ets` | ✅ |
 | `HLTH-PERSIST-008` | 三端读取失败展示独立前台损坏态并保留最后有效快照 | `failedRefreshPreservesLastDashboardSnapshot`；专项门禁；`:common:check` 与三端构建 | `LoginFacade.healthDashboardError`；Android `result`；iOS `isDataCorrupted`；Harmony bridge error JSON / `healthDataCorrupted` | ✅ |
+| `HLTH-PERSIST-009` | 账号切换时健康首页重置为空卡片并触发刷新动画，刷新后恢复新账号持久化数据 | `./gradlew :common:check :androidApp:assembleDebug` 通过；人工验收：登出→换号登录后健康首页初始为空，刷新动画播放，数据正确切换 | `HealthStore.staleForNewAccount`；`HealthDashboardViewModel.staleForNewAccount`；`HealthDashboardScreen.LaunchedEffect` 延迟加载；`AuthNavGraph.AuthSucceeded/LoggedOut` 调用重置 | ✅（构建通过，运行时待验收） |
 
 ---
 

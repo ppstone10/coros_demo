@@ -1,10 +1,12 @@
 import { LoginEffect, LoginEffectType, AuthMode } from './LoginState';
 import { AuthRoutes } from './AuthRoutes';
 import { navigate, NavOperation, showToast } from './AuthNavigator';
+import { markPendingStaleRefresh } from '../health/HealthDashboardViewModel';
 
 export function handleAuthEffect(effect: LoginEffect): void {
   switch (effect.type) {
     case LoginEffectType.AuthSucceeded: {
+      markPendingStaleRefresh();
       const target = effect.nextRoute === 'SignedIn'
         ? AuthRoutes.SIGNED_IN : AuthRoutes.PROFILE_COMPLETION;
       navigate(NavOperation.ResetTo, target);
@@ -20,6 +22,7 @@ export function handleAuthEffect(effect: LoginEffect): void {
       showToast('profile_saved');
       break;
     case LoginEffectType.LoggedOut:
+      markPendingStaleRefresh();
       navigate(NavOperation.ResetTo, AuthRoutes.ENTRANCE);
       showToast('account_logout_success');
       break;

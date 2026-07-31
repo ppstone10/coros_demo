@@ -45,7 +45,13 @@ struct HealthDashboardView: View {
         .onChange(of: languageStore.current) { _ in screenState.page = .main; viewModel.load() }
         .background(AppColors.Core.black)
         .onAppear {
-            if viewModel.cards.isEmpty {
+            if viewModel.needsProgrammaticRefresh {
+                viewModel.needsProgrammaticRefresh = false
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 200_000_000)
+                    beginRefresh()
+                }
+            } else if viewModel.cards.isEmpty {
                 viewModel.load()
             }
             viewModel.onEffect = { effect in

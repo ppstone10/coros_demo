@@ -95,6 +95,11 @@ class HealthDashboardViewModel(
         effect = null
     }
 
+    fun staleForNewAccount() {
+        store.staleForNewAccount()
+        state = store.state
+    }
+
     private fun dispatch(action: HealthAction) {
         store.dispatch(action)
         state = store.state

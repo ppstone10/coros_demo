@@ -168,7 +168,7 @@ struct AuthCoordinator: View {
         ))
         .onChange(of: viewModel.effectTrigger) { _ in
             guard let effect = viewModel.consumeEffect() else { return }
-            handleNavigation(effect, viewModel: viewModel, router: router)
+            handleNavigation(effect, viewModel: viewModel, healthViewModel: healthViewModel, router: router)
         }
         .onChange(of: scenePhase) { phase in
             if phase == .background {
@@ -200,9 +200,10 @@ struct AuthCoordinator: View {
 }
 
 @MainActor
-private func handleNavigation(_ effect: LoginEffect, viewModel: LoginViewModel, router: AuthRouter) {
+private func handleNavigation(_ effect: LoginEffect, viewModel: LoginViewModel, healthViewModel: HealthDashboardViewModel, router: AuthRouter) {
     switch effect {
     case let effect as LoginEffectAuthSucceeded:
+        healthViewModel.staleForNewAccount()
         let destination: AuthRoute = effect.isNextRouteSignedIn ? .signedIn : .profileCompletion
         router.resetTo(destination)
         viewModel.toastMessage = appLocalized(effect.mode == .register_ ? "auth_register_success" : "auth_login_success")
@@ -213,6 +214,7 @@ private func handleNavigation(_ effect: LoginEffect, viewModel: LoginViewModel, 
         router.resetTo(.signedIn)
         viewModel.toastMessage = appLocalized("profile_saved")
     case _ as LoginEffectLoggedOut:
+        healthViewModel.staleForNewAccount()
         router.resetTo(.entrance)
         viewModel.toastMessage = appLocalized("account_logout_success")
     case _ as LoginEffectAccountDeleted:
