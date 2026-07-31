@@ -37,7 +37,7 @@ class HealthStore(
     }
 
     fun normalDraftForEditing(): EditableHealthData {
-        val draft = state.normalDraft ?: dashboardStore.initialNormalDraft()
+        val draft = state.normalDraft ?: dashboardStore.resolveBaseDraft()
         if (state.normalDraft == null) state = state.copy(normalDraft = draft)
         return draft
     }
@@ -136,7 +136,7 @@ class HealthStore(
             uiState = dashboard.uiState,
             currentScenario = dashboard.scenario,
             enabledCardTypes = dashboard.enabledCardTypes,
-            normalDraft = dashboardStore.normalDraft(),
+            normalDraft = null,
             isRefreshing = false,
             error = null
         )

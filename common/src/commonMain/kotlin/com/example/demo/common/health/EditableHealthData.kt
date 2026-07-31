@@ -125,6 +125,32 @@ object DefaultEditableHealthData {
             )
         )
     }
+
+    fun allEmpty(): EditableHealthData = EditableHealthData(
+        dailySummary = DailySummaryInput(0, 0, 0),
+        todayActivity = TodayActivityInput(0.0, 0),
+        weeklyPlan = WeeklyPlanInput(listOf(
+            WeeklyWorkoutInput(WorkoutType.Rest, 0.0),
+            WeeklyWorkoutInput(WorkoutType.Rest, 0.0),
+            WeeklyWorkoutInput(WorkoutType.Rest, 0.0),
+            WeeklyWorkoutInput(WorkoutType.Rest, 0.0),
+            WeeklyWorkoutInput(WorkoutType.Rest, 0.0),
+            WeeklyWorkoutInput(WorkoutType.Rest, 0.0),
+            WeeklyWorkoutInput(WorkoutType.Rest, 0.0)
+        )),
+        trainingLoad = TrainingLoadInput(listOf(0, 0, 0, 0, 0, 0, 0)),
+        assessment = TrainingAssessmentInput(0, 0),
+        recovery = RecoveryInput(0),
+        runningAbility = RunningAbilityInput(0),
+        cyclingAbility = CyclingAbilityInput(0),
+        heartRate = HeartRateInput(List(288) { 0 }),
+        stress = StressInput(List(48) { 0 }),
+        sleep = SleepInput(0, listOf(SleepStageInput(SleepStage.Awake, 0, 480))),
+        hrvAssessment = HrvAssessmentInput(0),
+        restingHeartRate = RestingHeartRateInput(0, "", 0),
+        healthCheck = HealthCheckInput(0, 0, 0, 0, 0, ""),
+        bodyManagement = BodyManagementInput(0.0, emptyList(), listOf(0.0))
+    )
 }
 
 object HealthEditableRules {

@@ -11,6 +11,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -75,7 +76,10 @@ class EditableHealthDataTest {
         store.dispatch(HealthAction.Refresh)
 
         assertEquals(12_345, store.state.uiState?.dailySummary?.steps)
-        assertEquals(edited, persistence.load(userId)?.editableData)
+        val persistedDashboard = persistence.load(userId)?.dashboardData
+        assertNotNull(persistedDashboard)
+        assertEquals(12_345, persistedDashboard.dailySummary?.steps)
+        assertEquals(888, persistedDashboard.dailySummary?.calories)
 
         val recreated = HealthStore(repository, persistence)
         recreated.dispatch(HealthAction.Load)
@@ -135,7 +139,7 @@ class EditableHealthDataTest {
         val userId = assertIs<MockResult.Success<com.example.demo.common.login.AuthSession>>(
             repository.verifyBusinessAccess()
         ).data.userId
-        val persistedBody = requireNotNull(persistence.load(userId)?.editableData?.bodyManagement)
+        val persistedBody = requireNotNull(persistence.load(userId)?.dashboardData?.bodyManagement)
 
         assertEquals(expectedBackRegions, refreshedBodyVisual.highlightedBodyRegions)
         assertEquals(listOf(BodyMuscleGroup.Back.id), persistedBody.trainedMuscleGroups)
