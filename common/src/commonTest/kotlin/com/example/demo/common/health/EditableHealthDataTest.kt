@@ -389,9 +389,147 @@ class EditableHealthDataTest {
             HealthEditableForms.apply(
                 source,
                 HealthEditableSection.BodyManagement,
-                mapOf("weightKg" to "68.2", "muscle0" to "unknown")
+                mapOf("muscle0" to "unknown")
             )
         )
+    }
+
+    @Test
+    fun bodyManagementFormEditsOnlyMusclesAndPreservesWeightHistory() {
+        val source = DefaultEditableHealthData.value.copy(
+            bodyManagement = DefaultEditableHealthData.value.bodyManagement.copy(
+                weightKg = 71.4,
+                weightHistoryKg = listOf(69.8, 70.2, 71.4)
+            )
+        )
+        val form = HealthEditableForms.form(source, HealthEditableSection.BodyManagement)
+
+        assertTrue(form.fields.none { it.id == "weightKg" })
+        val updated = requireNotNull(
+            HealthEditableForms.apply(
+                source,
+                HealthEditableSection.BodyManagement,
+                mapOf("muscle0" to BodyMuscleGroup.Back.id)
+            )
+        )
+
+        assertEquals(71.4, updated.bodyManagement.weightKg)
+        assertEquals(listOf(69.8, 70.2, 71.4), updated.bodyManagement.weightHistoryKg)
+        assertEquals(listOf(BodyMuscleGroup.Back.id), updated.bodyManagement.trainedMuscleGroups)
+    }
+
+    @Test
+    fun abnormalScenarioProjectsCurrentMemoryAndPersistedValuesIntoEditor() {
+        val repository = signedInRepository()
+        val persistence = InMemoryHealthDashboardStateDataSource()
+        val store = HealthStore(repository, persistence)
+        store.dispatch(HealthAction.Load)
+        store.dispatch(HealthAction.ScenarioSelected(HealthMockScenario.Abnormal))
+        store.dispatch(HealthAction.ScenarioSelected(HealthMockScenario.Normal))
+
+        val inMemory = store.normalDraftForEditing()
+
+        assertEquals(HealthEditSourceKind.Available, store.state.editSourceKind)
+        assertEquals(12_000, inMemory.dailySummary.steps)
+        assertEquals(22, inMemory.recovery.score)
+        assertEquals(108, inMemory.restingHeartRate.value)
+        assertEquals(75.0, inMemory.bodyManagement.weightKg)
+        assertTrue(HealthEditableRules.validate(inMemory))
+
+        store.dispatch(HealthAction.ScenarioSelected(HealthMockScenario.Abnormal))
+        store.dispatch(HealthAction.Refresh)
+        val recreated = HealthStore(repository, persistence)
+        recreated.dispatch(HealthAction.Load)
+        recreated.dispatch(HealthAction.ScenarioSelected(HealthMockScenario.Normal))
+        val persisted = recreated.normalDraftForEditing()
+
+        assertEquals(HealthEditSourceKind.Available, recreated.state.editSourceKind)
+        assertEquals(inMemory.dailySummary, persisted.dailySummary)
+        assertEquals(inMemory.recovery, persisted.recovery)
+        assertEquals(inMemory.restingHeartRate, persisted.restingHeartRate)
+    }
+
+    @Test
+    fun emptyAndCorruptedScenariosShareZeroProjectionButKeepDifferentSourceMeaning() {
+        val store = HealthStore(signedInRepository(), InMemoryHealthDashboardStateDataSource())
+        store.dispatch(HealthAction.Load)
+        store.dispatch(HealthAction.ScenarioSelected(HealthMockScenario.AllEmpty))
+
+        assertEquals(DefaultEditableHealthData.allEmpty(), store.normalDraftForEditing())
+        assertEquals(HealthEditSourceKind.Empty, store.state.editSourceKind)
+
+        store.dispatch(HealthAction.ScenarioSelected(HealthMockScenario.ReadFailure))
+        store.dispatch(HealthAction.ScenarioSelected(HealthMockScenario.Normal))
+
+        assertEquals(DefaultEditableHealthData.allEmpty(), store.normalDraftForEditing())
+        assertEquals(HealthEditSourceKind.Corrupted, store.state.editSourceKind)
+        val formJson = HealthEditableForms.formJson(
+            HealthEditableForms.form(
+                store.state.normalDraft ?: error("missing draft"),
+                HealthEditableSection.TodayActivity,
+                store.state.editSourceKind
+            )
+        )
+        assertTrue(formJson.contains("\"sourceKind\":\"Corrupted\""))
+        assertTrue(formJson.contains("health_edit_source_corrupted"))
+    }
+
+    @Test
+    fun partialScenarioCanSaveOneValidModuleWithoutAuditingMissingModules() {
+        val repository = signedInRepository()
+        val persistence = InMemoryHealthDashboardStateDataSource()
+        val store = HealthStore(repository, persistence)
+        store.dispatch(HealthAction.Load)
+        store.dispatch(HealthAction.ScenarioSelected(HealthMockScenario.PartialMissing))
+        val source = store.normalDraftForEditing()
+        assertEquals(HealthEditSourceKind.Partial, store.state.editSourceKind)
+
+        val result = HealthEditableForms.applyDetailed(
+            source,
+            HealthEditableSection.DailySummary,
+            mapOf("steps" to "1234", "calories" to "310", "activeMinutes" to "32")
+        )
+        assertTrue(result.isSuccess)
+
+        store.dispatch(
+            HealthAction.NormalDraftSaved(
+                requireNotNull(result.data),
+                HealthEditableSection.DailySummary
+            )
+        )
+
+        assertNull(store.state.error)
+        store.dispatch(HealthAction.ScenarioSelected(HealthMockScenario.Normal))
+        store.dispatch(HealthAction.Refresh)
+        val userId = assertIs<MockResult.Success<com.example.demo.common.login.AuthSession>>(
+            repository.verifyBusinessAccess()
+        ).data.userId
+        assertEquals(1_234, persistence.load(userId)?.dashboardData?.dailySummary?.steps)
+        assertNull(persistence.load(userId)?.dashboardData?.sleepSummary)
+    }
+
+    @Test
+    fun detailedFormAuditNamesTheFieldAndReasonInsteadOfReturningOnlyFalse() {
+        val source = DefaultEditableHealthData.value
+        val notNumber = HealthEditableForms.applyDetailed(
+            source,
+            HealthEditableSection.TodayActivity,
+            mapOf("distanceKm" to "abc", "paceSecondsPerKm" to "300")
+        )
+        assertFalse(notNumber.isSuccess)
+        assertEquals("distanceKm", notNumber.issue?.fieldId)
+        assertEquals("health_edit_distance", notNumber.issue?.labelKey)
+        assertEquals(HealthEditValidationReason.InvalidNumber, notNumber.issue?.reason)
+
+        val outOfRange = HealthEditableForms.applyDetailed(
+            source,
+            HealthEditableSection.TodayActivity,
+            mapOf("distanceKm" to "12.4", "paceSecondsPerKm" to "99")
+        )
+        assertFalse(outOfRange.isSuccess)
+        assertEquals("paceSecondsPerKm", outOfRange.issue?.fieldId)
+        assertEquals(HealthEditValidationReason.OutOfRange, outOfRange.issue?.reason)
+        assertEquals(listOf("120", "1800"), outOfRange.issue?.reasonArguments)
     }
 
     @Test

@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -47,6 +48,8 @@ import com.example.demo.common.health.HealthEditFieldType
 import com.example.demo.common.health.HealthEditForm
 import com.example.demo.common.health.HealthEditRepeatGroup
 import com.example.demo.common.health.HealthEditRepeatOperation
+import com.example.demo.common.health.HealthEditValidationIssue
+import com.example.demo.common.health.HealthEditValidationReason
 import com.example.demo.common.health.HealthEditableSection
 import com.example.demo.common.health.HealthEffect
 import com.example.demo.common.health.LocalizedTextSpec
@@ -60,6 +63,34 @@ import kotlin.time.Duration.Companion.milliseconds
 private val EditorPage = AppColors.Health.Page
 private val EditorCard = AppColors.Health.Card
 private val EditorMuted = AppColors.Health.Muted
+
+@Composable
+private fun SourceNotice(messageKey: String) {
+    Text(
+        localizedHealthText(LocalizedTextSpec(messageKey)),
+        color = AppColors.Health.Warning,
+        fontSize = 13.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = AppSpacing.Screen, vertical = 8.dp)
+            .background(EditorCard, RoundedCornerShape(10.dp))
+            .padding(12.dp)
+    )
+}
+
+@Composable
+private fun validationIssueText(issue: HealthEditValidationIssue): String {
+    val label = localizedHealthText(LocalizedTextSpec(issue.labelKey, issue.labelArguments))
+    val reasonKey = when (issue.reason) {
+        HealthEditValidationReason.Required -> "health_edit_error_required"
+        HealthEditValidationReason.InvalidNumber -> "health_edit_error_number"
+        HealthEditValidationReason.OutOfRange -> "health_edit_error_range"
+        HealthEditValidationReason.InvalidChoice -> "health_edit_error_choice"
+        HealthEditValidationReason.InvalidCount -> "health_edit_error_count"
+        HealthEditValidationReason.Inconsistent -> "health_edit_error_inconsistent"
+    }
+    return localizedHealthText(LocalizedTextSpec(reasonKey, listOf(label) + issue.reasonArguments))
+}
 
 @Composable
 fun NormalDataEditorOverview(
@@ -109,6 +140,9 @@ fun NormalDataEditorOverview(
                 fontSize = 14.sp,
                 modifier = Modifier.padding(horizontal = AppSpacing.Screen, vertical = 12.dp)
             )
+            viewModel.state.editSourceKind.messageKey.takeIf(String::isNotBlank)?.let { key ->
+                SourceNotice(key)
+            }
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxSize().padding(horizontal = AppSpacing.Screen)
@@ -165,14 +199,14 @@ fun NormalDataSectionEditor(
             initial.fields.forEach { put(it.id, it.value) }
         }
     }
-    var error by remember { mutableStateOf<String?>(null) }
+    var validationIssue by remember { mutableStateOf<HealthEditValidationIssue?>(null) }
     var selectedChoiceFieldId by remember(section) { mutableStateOf<String?>(null) }
-    val invalidMessage = localizedHealthText(LocalizedTextSpec("health_edit_invalid"))
+    val focusManager = LocalFocusManager.current
     fun useForm(next: HealthEditForm) {
         form = next
         values.clear()
         next.fields.forEach { values[it.id] = it.value }
-        error = null
+        validationIssue = null
         selectedChoiceFieldId = null
     }
     fun mutate(group: HealthEditRepeatGroup, operation: HealthEditRepeatOperation, rowIndex: Int? = null) {
@@ -187,10 +221,11 @@ fun NormalDataSectionEditor(
                 onBack = onBack,
                 action = stringResource(R.string.common_save),
                 onAction = {
-                    if (viewModel.saveNormalEditForm(section, values.toMap())) {
+                    val result = viewModel.saveNormalEditForm(section, values.toMap())
+                    if (result.isSuccess) {
                         onSaved()
                     } else {
-                        error = invalidMessage
+                        validationIssue = result.issue
                     }
                 }
             )
@@ -198,6 +233,9 @@ fun NormalDataSectionEditor(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxSize().padding(horizontal = AppSpacing.Screen)
             ) {
+                form.sourceMessageKey.takeIf(String::isNotBlank)?.let { key ->
+                    item { SourceNotice(key) }
+                }
                 item {
                     Button(
                         onClick = {
@@ -213,15 +251,24 @@ fun NormalDataSectionEditor(
                         )
                     }
                 }
-                error?.let { message ->
-                    item { Text(message, color = AppColors.Health.Warning, fontSize = 13.sp) }
+                validationIssue?.let { issue ->
+                    item {
+                        Text(
+                            validationIssueText(issue),
+                            color = AppColors.Health.Warning,
+                            fontSize = 13.sp
+                        )
+                    }
                 }
                 items(form.fields.filter { it.groupId == null }, key = { it.id }) { field ->
                     EditField(
                         field = field,
                         value = values[field.id].orEmpty(),
                         onValueChange = { values[field.id] = it },
-                        onRequestChoice = { selectedChoiceFieldId = field.id }
+                        onRequestChoice = {
+                            focusManager.clearFocus(force = true)
+                            selectedChoiceFieldId = field.id
+                        }
                     )
                 }
                 form.repeatGroups.forEach { group ->
@@ -237,7 +284,10 @@ fun NormalDataSectionEditor(
                                 values = values,
                                 canRemove = rows.size > group.minimumItems,
                                 onValueChange = { fieldId, value -> values[fieldId] = value },
-                                onRequestChoice = { selectedChoiceFieldId = it },
+                                onRequestChoice = {
+                                    focusManager.clearFocus(force = true)
+                                    selectedChoiceFieldId = it
+                                },
                                 onRemove = {
                                     mutate(group, HealthEditRepeatOperation.Remove, rowIndex)
                                 }

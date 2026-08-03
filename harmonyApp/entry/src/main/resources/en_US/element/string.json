@@ -100,6 +100,8 @@
     { "name": "profile_height_picker", "value": "Height (cm)" },
     { "name": "profile_measurement", "value": "Units" },
     { "name": "profile_personal_info", "value": "Personal information" },
+    { "name": "profile_email", "value": "Email" },
+    { "name": "profile_email_placeholder", "value": "Enter an email address" },
     { "name": "profile_phone", "value": "Phone" },
     { "name": "profile_phone_placeholder", "value": "Enter a phone number" },
     { "name": "profile_saved", "value": "Profile saved" },
@@ -372,6 +374,15 @@
     { "name": "health_edit_sleep_stage_awake", "value": "Awake" },
     { "name": "health_edit_sleep_stage_rem", "value": "REM" },
     { "name": "health_edit_sleep_stage_light", "value": "Light" },
-    { "name": "health_edit_sleep_stage_deep", "value": "Deep" }
+    { "name": "health_edit_sleep_stage_deep", "value": "Deep" },
+    { "name": "health_edit_source_partial", "value": "Some cards have no data in this scenario; missing values are shown as 0 or no data." },
+    { "name": "health_edit_source_empty", "value": "This is the all-empty scenario: reading succeeded but every card has no data, shown here as 0 or no data." },
+    { "name": "health_edit_source_corrupted", "value": "This is the corrupted-data scenario: no data is trusted, so fields are shown as 0 or no data." },
+    { "name": "health_edit_error_required", "value": "%s is required" },
+    { "name": "health_edit_error_number", "value": "%s must be a valid number" },
+    { "name": "health_edit_error_range", "value": "%s must be between %s and %s" },
+    { "name": "health_edit_error_choice", "value": "%s contains an invalid option" },
+    { "name": "health_edit_error_count", "value": "%s must contain between %s and %s items" },
+    { "name": "health_edit_error_inconsistent", "value": "%s contains inconsistent related values" }
   ]
 }

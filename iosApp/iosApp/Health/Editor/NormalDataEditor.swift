@@ -30,6 +30,8 @@ private struct NormalEditRepeatGroup: Decodable, Identifiable {
 private struct NormalEditForm: Decodable {
     let section: String
     let titleKey: String
+    let sourceKind: String
+    let sourceMessageKey: String
     let fields: [NormalEditField]
     let repeatGroups: [NormalEditRepeatGroup]
 }
@@ -55,6 +57,9 @@ struct NormalDataEditorOverview: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, AppSpacing.screen)
                     .padding(.vertical, 12)
+                if let sourceMessageKey, !sourceMessageKey.isEmpty {
+                    sourceNotice(sourceMessageKey)
+                }
                 ScrollView {
                     LazyVStack(spacing: 10) {
                         ForEach(viewModel.editableSections, id: \.self) { section in
@@ -113,6 +118,16 @@ struct NormalDataEditorOverview: View {
         else { return section }
         return appLocalized(form.titleKey)
     }
+
+    private var sourceMessageKey: String? {
+        guard
+            let section = viewModel.editableSections.first,
+            let json = viewModel.normalEditFormJson(section),
+            let data = json.data(using: .utf8),
+            let form = try? JSONDecoder().decode(NormalEditForm.self, from: data)
+        else { return nil }
+        return form.sourceMessageKey
+    }
 }
 
 struct NormalDataSectionEditor: View {
@@ -137,6 +152,9 @@ struct NormalDataSectionEditor: View {
                 if let form {
                     ScrollView {
                         LazyVStack(spacing: 12) {
+                            if !form.sourceMessageKey.isEmpty {
+                                sourceNotice(form.sourceMessageKey)
+                            }
                             Button {
                                 loadDefaults()
                             } label: {
@@ -214,7 +232,7 @@ struct NormalDataSectionEditor: View {
                 Text(localizedFieldLabel(field))
                     .font(.system(size: 13))
                     .foregroundStyle(AppColors.Health.muted)
-                TextField("", text: valueBinding(field.id))
+                TextField("", text: valueBinding(field))
                     .keyboardType(field.type == "Integer" || field.type == "Decimal" ? .decimalPad : .default)
                     .textInputAutocapitalization(.never)
                     .foregroundStyle(.white)
@@ -354,8 +372,11 @@ struct NormalDataSectionEditor: View {
         return String(format: appLocalized(key), arguments: arguments.map { $0 as CVarArg })
     }
 
-    private func valueBinding(_ id: String) -> Binding<String> {
-        Binding(get: { values[id, default: ""] }, set: { values[id] = $0 })
+    private func valueBinding(_ field: NormalEditField) -> Binding<String> {
+        Binding(
+            get: { values[field.id] ?? field.value },
+            set: { values[field.id] = $0 }
+        )
     }
 
     private func load() {
@@ -412,15 +433,43 @@ struct NormalDataSectionEditor: View {
     }
 
     private func save() {
-        guard
-            let spec = encodedValues(),
-            viewModel.saveNormalEditForm(section, valuesSpec: spec)
-        else {
+        guard let spec = encodedValues() else {
             error = appLocalized("health_edit_invalid")
+            return
+        }
+        let result = viewModel.saveNormalEditForm(section, valuesSpec: spec)
+        guard result.success else {
+            error = result.issue.map(validationMessage) ?? appLocalized("health_edit_invalid")
             return
         }
         router.pop()
     }
+
+    private func validationMessage(_ issue: NormalEditValidationIssue) -> String {
+        let label = localized(issue.labelKey, arguments: issue.labelArguments)
+        let reasonKey: String
+        switch issue.reason {
+        case "Required": reasonKey = "health_edit_error_required"
+        case "InvalidNumber": reasonKey = "health_edit_error_number"
+        case "OutOfRange": reasonKey = "health_edit_error_range"
+        case "InvalidChoice": reasonKey = "health_edit_error_choice"
+        case "InvalidCount": reasonKey = "health_edit_error_count"
+        default: reasonKey = "health_edit_error_inconsistent"
+        }
+        return localized(reasonKey, arguments: [label] + issue.reasonArguments)
+    }
+}
+
+@ViewBuilder
+private func sourceNotice(_ messageKey: String) -> some View {
+    Text(appLocalized(messageKey))
+        .font(.system(size: 13))
+        .foregroundStyle(AppColors.Health.warning)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(AppColors.Health.card)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, AppSpacing.screen)
 }
 
 @ViewBuilder

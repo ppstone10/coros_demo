@@ -33,6 +33,8 @@ export interface HarmonyLoginService {
 
    saveNormalHealthEditForm(sectionName: string, valuesSpec: string): boolean;
 
+   saveNormalHealthEditFormResultJson(sectionName: string, valuesSpec: string): string;
+
    restoreAllNormalHealthDefaults(): string;
 
    staleHealthForNewAccount(): void;
@@ -99,9 +101,15 @@ export interface HarmonyLoginService {
 
    changePassword(account: string, oldPassword: string, newPassword: string): string;
 
-   submitProfile(avatarUri: string, username: string, birthDate: string, heightCm: number, weightKg: number, measurementSystem: string, phone: string, countryRegion: string, gender: string): void;
+   submitProfile(avatarUri: string, username: string, birthDate: string, heightCm: number, weightKg: number, measurementSystem: string, phone: string, email: string, countryRegion: string, gender: string): void;
 
    deleteCurrentAccount(): string;
+
+   profileDefaultUsername(account: string): string;
+
+   profileDefaultPhone(account: string): string;
+
+   profileDefaultEmail(account: string): string;
 
    loadHealthSnapshot(): string;
 

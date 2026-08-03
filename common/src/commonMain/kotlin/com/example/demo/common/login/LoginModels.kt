@@ -117,7 +117,8 @@ data class UserProfile(
     val measurementSystem: MeasurementSystem = MeasurementSystem.Metric,
     val phone: String = "",
     val countryRegion: String = "CN",
-    val gender: UserGender? = null
+    val gender: UserGender? = null,
+    val email: String = ""
 ) {
     val isRequiredComplete: Boolean
         get() = username.isNotBlank() &&

@@ -44,8 +44,34 @@ data class HealthEditForm(
     val section: HealthEditableSection,
     val titleKey: String,
     val fields: List<HealthEditField>,
-    val repeatGroups: List<HealthEditRepeatGroup> = emptyList()
+    val repeatGroups: List<HealthEditRepeatGroup> = emptyList(),
+    val sourceKind: HealthEditSourceKind = HealthEditSourceKind.Available,
+    val sourceMessageKey: String = sourceKind.messageKey
 )
+
+enum class HealthEditValidationReason {
+    Required,
+    InvalidNumber,
+    OutOfRange,
+    InvalidChoice,
+    InvalidCount,
+    Inconsistent
+}
+
+data class HealthEditValidationIssue(
+    val fieldId: String,
+    val labelKey: String,
+    val labelArguments: List<String> = emptyList(),
+    val reason: HealthEditValidationReason,
+    val reasonArguments: List<String> = emptyList()
+)
+
+data class HealthEditApplyResult(
+    val data: EditableHealthData? = null,
+    val issue: HealthEditValidationIssue? = null
+) {
+    val isSuccess: Boolean get() = data != null && issue == null
+}
 
 object HealthEditableForms {
     private val workoutOptions = WorkoutType.entries.map {
@@ -64,10 +90,43 @@ object HealthEditableForms {
         HealthEditOption(it.id, "health_visual_muscle_${it.id}")
     }
 
-    fun form(source: EditableHealthData, section: HealthEditableSection): HealthEditForm =
-        HealthEditForm(section, titleKey(section), fields(source, section), repeatGroups(section))
+    fun form(
+        source: EditableHealthData,
+        section: HealthEditableSection,
+        sourceKind: HealthEditSourceKind = HealthEditSourceKind.Available
+    ): HealthEditForm = HealthEditForm(
+        section,
+        titleKey(section),
+        fields(source, section),
+        repeatGroups(section),
+        sourceKind
+    )
 
     fun apply(
+        source: EditableHealthData,
+        section: HealthEditableSection,
+        values: Map<String, String>
+    ): EditableHealthData? = applyDetailed(source, section, values).data
+
+    fun applyDetailed(
+        source: EditableHealthData,
+        section: HealthEditableSection,
+        values: Map<String, String>
+    ): HealthEditApplyResult {
+        validateRawValues(source, section, values)?.let {
+            return HealthEditApplyResult(issue = it)
+        }
+        val updated = applyUnchecked(source, section, values)
+            ?: return HealthEditApplyResult(
+                issue = sectionIssue(section, HealthEditValidationReason.Inconsistent)
+            )
+        if (!HealthEditableRules.validateSection(updated, section)) {
+            return HealthEditApplyResult(issue = semanticIssue(updated, section))
+        }
+        return HealthEditApplyResult(data = updated)
+    }
+
+    private fun applyUnchecked(
         source: EditableHealthData,
         section: HealthEditableSection,
         values: Map<String, String>
@@ -164,7 +223,6 @@ object HealthEditableForms {
                 )
             )
             HealthEditableSection.BodyManagement -> {
-                val weight = values.double("weightKg")
                 val muscles = values.indexedRows("muscle", "").map { index ->
                     val value = values.required("muscle$index")
                     require(BodyMuscleGroup.entries.any { it.id == value })
@@ -172,14 +230,12 @@ object HealthEditableForms {
                 }.distinct()
                 source.copy(
                     bodyManagement = source.bodyManagement.copy(
-                        weightKg = weight,
-                        trainedMuscleGroups = muscles,
-                        weightHistoryKg = source.bodyManagement.weightHistoryKg + weight
+                        trainedMuscleGroups = muscles
                     )
                 )
             }
         }
-    }.getOrNull()?.takeIf(HealthEditableRules::validate)
+    }.getOrNull()
 
     fun mutate(
         source: EditableHealthData,
@@ -221,10 +277,7 @@ object HealthEditableForms {
                     }
                     HealthEditRepeatOperation.Remove -> rows.removeAt(requireNotNull(rowIndex))
                 }
-                bodyManagementForm(
-                    weight = values["weightKg"] ?: source.bodyManagement.weightKg.toString(),
-                    muscles = rows
-                )
+                bodyManagementForm(muscles = rows)
             }
             else -> error("Unsupported repeat group")
         }
@@ -250,6 +303,8 @@ object HealthEditableForms {
         buildString {
             append("{\"section\":\"").append(form.section.name)
             append("\",\"titleKey\":\"").append(form.titleKey)
+            append("\",\"sourceKind\":\"").append(form.sourceKind.name)
+            append("\",\"sourceMessageKey\":\"").append(form.sourceMessageKey)
             append("\",\"fields\":[")
             form.fields.forEachIndexed { index, field ->
                 if (index > 0) append(',')
@@ -289,6 +344,132 @@ object HealthEditableForms {
             }
             append("]}")
         }
+
+    fun applyResultJson(result: HealthEditApplyResult): String = buildString {
+        append("{\"success\":").append(result.isSuccess)
+        result.issue?.let { issue ->
+            append(",\"issue\":{\"fieldId\":\"").append(issue.fieldId.jsonEscape())
+            append("\",\"labelKey\":\"").append(issue.labelKey.jsonEscape())
+            append("\",\"labelArguments\":[")
+            issue.labelArguments.forEachIndexed { index, argument ->
+                if (index > 0) append(',')
+                append('"').append(argument.jsonEscape()).append('"')
+            }
+            append("],\"reason\":\"").append(issue.reason.name)
+            append("\",\"reasonArguments\":[")
+            issue.reasonArguments.forEachIndexed { index, argument ->
+                if (index > 0) append(',')
+                append('"').append(argument.jsonEscape()).append('"')
+            }
+            append("]}")
+        }
+        append('}')
+    }
+
+    private fun validateRawValues(
+        source: EditableHealthData,
+        section: HealthEditableSection,
+        values: Map<String, String>
+    ): HealthEditValidationIssue? {
+        val fields = when (section) {
+            HealthEditableSection.BodyManagement -> {
+                val indices = runCatching { values.indexedRows("muscle", "") }.getOrElse {
+                    return sectionIssue(section, HealthEditValidationReason.Inconsistent)
+                }
+                bodyManagementFields(indices.map { values["muscle$it"].orEmpty() })
+            }
+            HealthEditableSection.Sleep -> {
+                val indices = runCatching { values.indexedRows("stage", "Type") }.getOrElse {
+                    return sectionIssue(section, HealthEditValidationReason.Inconsistent)
+                }
+                sleepFields(
+                    values["startTime"].orEmpty(),
+                    indices.map { index ->
+                        values["stage${index}Type"].orEmpty() to
+                            values["stage${index}Duration"].orEmpty()
+                    }
+                )
+            }
+            else -> fields(source, section)
+        }
+        fields.forEach { field ->
+            val raw = values[field.id]
+            if (raw.isNullOrBlank()) {
+                return field.issue(HealthEditValidationReason.Required)
+            }
+            when (field.type) {
+                HealthEditFieldType.Integer, HealthEditFieldType.Decimal -> {
+                    val number = raw.toDoubleOrNull()
+                        ?: return field.issue(HealthEditValidationReason.InvalidNumber)
+                    if (field.type == HealthEditFieldType.Integer && raw.toIntOrNull() == null) {
+                        return field.issue(HealthEditValidationReason.InvalidNumber)
+                    }
+                    val minimum = field.minimum
+                    val maximum = field.maximum
+                    if ((minimum != null && number < minimum) || (maximum != null && number > maximum)) {
+                        return field.issue(
+                            HealthEditValidationReason.OutOfRange,
+                            listOf(formatBound(minimum), formatBound(maximum))
+                        )
+                    }
+                }
+                HealthEditFieldType.Choice -> if (field.options.none { it.value == raw }) {
+                    return field.issue(HealthEditValidationReason.InvalidChoice)
+                }
+                HealthEditFieldType.Time -> if (parseTime(raw) == null) {
+                    return field.issue(HealthEditValidationReason.Inconsistent)
+                }
+                HealthEditFieldType.Text -> Unit
+            }
+        }
+        return null
+    }
+
+    private fun semanticIssue(
+        source: EditableHealthData,
+        section: HealthEditableSection
+    ): HealthEditValidationIssue = when (section) {
+        HealthEditableSection.WeeklyPlan -> {
+            val index = source.weeklyPlan.days.indexOfFirst {
+                (it.type == WorkoutType.Rest && it.distanceKm != 0.0) ||
+                    (it.type != WorkoutType.Rest && it.distanceKm !in 0.1..500.0)
+            }.coerceAtLeast(0)
+            HealthEditValidationIssue(
+                "day${index}Distance",
+                "health_edit_day_distance_numbered",
+                listOf((index + 1).toString()),
+                HealthEditValidationReason.Inconsistent
+            )
+        }
+        HealthEditableSection.Sleep -> HealthEditValidationIssue(
+            "sleepStages",
+            "health_edit_sleep_stage",
+            reason = if (source.sleep.stages.isEmpty()) HealthEditValidationReason.InvalidCount
+            else HealthEditValidationReason.Inconsistent,
+            reasonArguments = if (source.sleep.stages.isEmpty()) listOf("1", MaxSleepStages.toString()) else emptyList()
+        )
+        else -> sectionIssue(section, HealthEditValidationReason.Inconsistent)
+    }
+
+    private fun sectionIssue(
+        section: HealthEditableSection,
+        reason: HealthEditValidationReason
+    ) = HealthEditValidationIssue(
+        fieldId = section.name,
+        labelKey = titleKey(section),
+        reason = reason
+    )
+
+    private fun HealthEditField.issue(
+        reason: HealthEditValidationReason,
+        reasonArguments: List<String> = emptyList()
+    ) = HealthEditValidationIssue(id, labelKey, labelArguments, reason, reasonArguments)
+
+    private fun formatBound(value: Double?): String = when {
+        value == null -> ""
+        value % 1.0 == 0.0 -> value.toInt().toString()
+        else -> value.toString()
+    }
 
     private fun fields(source: EditableHealthData, section: HealthEditableSection): List<HealthEditField> =
         when (section) {
@@ -381,7 +562,6 @@ object HealthEditableForms {
                 HealthEditField("measuredTime", "health_edit_measured_time", source.healthCheck.measuredTime, HealthEditFieldType.Time)
             )
             HealthEditableSection.BodyManagement -> bodyManagementFields(
-                source.bodyManagement.weightKg.toString(),
                 source.bodyManagement.trainedMuscleGroups
             )
         }
@@ -454,29 +634,18 @@ object HealthEditableForms {
         }
 
     private fun bodyManagementForm(
-        weight: String,
         muscles: List<String>
     ) = HealthEditForm(
         section = HealthEditableSection.BodyManagement,
         titleKey = titleKey(HealthEditableSection.BodyManagement),
-        fields = bodyManagementFields(weight, muscles),
+        fields = bodyManagementFields(muscles),
         repeatGroups = repeatGroups(HealthEditableSection.BodyManagement)
     )
 
     private fun bodyManagementFields(
-        weight: String,
         muscles: List<String>
     ): List<HealthEditField> =
-        listOf(
-            HealthEditField(
-                id = "weightKg",
-                labelKey = "health_edit_weight",
-                value = weight,
-                type = HealthEditFieldType.Decimal,
-                minimum = 30.0,
-                maximum = 200.0
-            )
-        ) + muscles.mapIndexed { index, muscle ->
+        muscles.mapIndexed { index, muscle ->
             choice(
                 id = "muscle$index",
                 label = "health_edit_muscle_group_numbered",

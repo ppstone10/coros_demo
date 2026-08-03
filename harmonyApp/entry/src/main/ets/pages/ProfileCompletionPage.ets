@@ -1149,6 +1149,7 @@ struct ProfileCompletionPage {
   @State profileMeasurementSystem: string = 'Metric';
   @State profileCountry: string = '';
   @State profilePhone: string = '';
+  @State profileEmail: string = '';
   @State unavailableDialogVisible: boolean = false;
   @State avatarSheetVisible: boolean = false;
   @State activePicker: string = '';
@@ -1241,7 +1242,10 @@ struct ProfileCompletionPage {
 
             ProfileAvatarComponent({
               avatarUri: this.profileAvatarUri,
-              tapRequested: () => { this.avatarSheetVisible = true; }
+              tapRequested: () => {
+                this.dismissInput();
+                this.avatarSheetVisible = true;
+              }
             });
 
             Blank().height(8)
@@ -1261,7 +1265,7 @@ struct ProfileCompletionPage {
                 required: true,
                 value: this.genderLabel(),
                 placeholder: $r('app.string.profile_fill_in'),
-                tapRequested: () => { this.activePicker = 'Gender'; }
+                tapRequested: () => { this.openPicker('Gender'); }
               });
             }
             ProfilePickerRowComponent({
@@ -1269,21 +1273,21 @@ struct ProfileCompletionPage {
               required: true,
               value: this.profileBirthDate,
               placeholder: $r('app.string.profile_fill_in'),
-              tapRequested: () => { this.activePicker = 'BirthDate'; }
+              tapRequested: () => { this.openPicker('BirthDate'); }
             });
             ProfilePickerRowComponent({
               label: $r('app.string.profile_height'),
               required: true,
               value: this.profileHeightCm.length > 0 ? `${this.profileHeightCm} cm` : '',
               placeholder: $r('app.string.profile_fill_in'),
-              tapRequested: () => { this.activePicker = 'Height'; }
+              tapRequested: () => { this.openPicker('Height'); }
             });
             ProfilePickerRowComponent({
               label: $r('app.string.profile_weight'),
               required: true,
               value: this.profileWeightKg.length > 0 ? `${this.formatWeightText(this.profileWeightKg)} kg` : '',
               placeholder: $r('app.string.profile_fill_in'),
-              tapRequested: () => { this.activePicker = 'Weight'; }
+              tapRequested: () => { this.openPicker('Weight'); }
             });
             if (!this.editMode) {
               ProfilePickerRowComponent({
@@ -1291,7 +1295,7 @@ struct ProfileCompletionPage {
                 required: false,
                 value: this.measurementLabel(),
                 placeholder: '',
-                tapRequested: () => { this.activePicker = 'Unit'; }
+                tapRequested: () => { this.openPicker('Unit'); }
               });
               ProfileTextRowComponent({
                 label: $r('app.string.profile_phone'),
@@ -1302,13 +1306,22 @@ struct ProfileCompletionPage {
                   return value.replace(/[^0-9+\-]/g, '').substring(0, 20);
                 }
               });
+              ProfileTextRowComponent({
+                label: $r('app.string.profile_email'),
+                required: false,
+                value: $profileEmail,
+                placeholder: $r('app.string.profile_email_placeholder'),
+                valueChanged: (value: string) => {
+                  return value.trim().substring(0, 100);
+                }
+              });
             }
             ProfilePickerRowComponent({
               label: $r('app.string.profile_country_region'),
               required: false,
               value: this.countryLabel(this.profileCountry),
               placeholder: $r('app.string.common_china'),
-              tapRequested: () => { this.activePicker = 'Country'; }
+              tapRequested: () => { this.openPicker('Country'); }
             });
             if (!this.editMode) {
               ProfileGenderRowComponent({
@@ -1330,6 +1343,7 @@ struct ProfileCompletionPage {
           })
         }
         .layoutWeight(1)
+        .onScrollStart(() => { this.dismissInput(); })
 
         if (!this.editMode) {
           Column() {
@@ -1408,7 +1422,7 @@ struct ProfileCompletionPage {
     this.viewModel.submitProfile(
       this.profileAvatarUri, this.profileUsername, this.profileBirthDate,
       heightCm, weightKg, this.profileMeasurementSystem,
-      this.profilePhone, this.profileCountry, this.profileGender
+      this.profilePhone, this.profileEmail, this.profileCountry, this.profileGender
     );
     let effect: LoginEffect | null = this.viewModel.consumeEffect();
     if (effect !== null) {
@@ -1476,17 +1490,30 @@ struct ProfileCompletionPage {
     this.isLoading = state.isLoading;
     this.errorMessage = state.errorMessage;
     if (state.currentSession !== null) {
-      this.profileUsername = state.currentSession.displayName;
+      this.profileUsername = state.currentSession.isProfileComplete && state.currentSession.displayName.length > 0 ?
+        state.currentSession.displayName : this.viewModel.profileDefaultUsername(state.currentSession.account);
       this.profileAvatarUri = state.currentSession.avatarUri;
       this.profileBirthDate = state.currentSession.birthDate;
       this.profileHeightCm = state.currentSession.heightCm > 0 ? `${state.currentSession.heightCm}` : '';
       this.profileWeightKg = state.currentSession.weightKg > 0 ? state.currentSession.weightKg.toFixed(1) : '';
       this.profileMeasurementSystem = state.currentSession.measurementSystem;
-      this.profilePhone = state.currentSession.phone;
+      this.profilePhone = state.currentSession.phone.length > 0 ? state.currentSession.phone :
+        this.viewModel.profileDefaultPhone(state.currentSession.account);
+      this.profileEmail = state.currentSession.email.length > 0 ? state.currentSession.email :
+        this.viewModel.profileDefaultEmail(state.currentSession.account);
       this.profileCountry = state.currentSession.countryRegion.length > 0 ? state.currentSession.countryRegion :
         (state.currentSession.region === 'US' ? 'US' : 'CN');
       this.profileGender = state.currentSession.gender;
     }
+  }
+
+  private dismissInput(): void {
+    this.getUIContext().getFocusController().clearFocus();
+  }
+
+  private openPicker(name: string): void {
+    this.dismissInput();
+    this.activePicker = name;
   }
 
   private captureOriginalProfile(): void {

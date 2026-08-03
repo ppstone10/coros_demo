@@ -103,6 +103,8 @@
     { "name": "profile_height_picker", "value": "身高 (cm)" },
     { "name": "profile_measurement", "value": "公英制" },
     { "name": "profile_personal_info", "value": "个人信息" },
+    { "name": "profile_email", "value": "邮箱" },
+    { "name": "profile_email_placeholder", "value": "输入邮箱" },
     { "name": "profile_phone", "value": "手机" },
     { "name": "profile_phone_placeholder", "value": "输入手机号" },
     { "name": "profile_saved", "value": "资料已保存" },
@@ -375,6 +377,15 @@
     { "name": "health_edit_sleep_stage_awake", "value": "清醒" },
     { "name": "health_edit_sleep_stage_rem", "value": "快速眼动" },
     { "name": "health_edit_sleep_stage_light", "value": "浅睡" },
-    { "name": "health_edit_sleep_stage_deep", "value": "深睡" }
+    { "name": "health_edit_sleep_stage_deep", "value": "深睡" },
+    { "name": "health_edit_source_partial", "value": "当前场景部分卡片无数据；缺失项以 0 或无数据显示。" },
+    { "name": "health_edit_source_empty", "value": "当前为全空数据场景；读取成功但所有卡片均无数据，编辑器以 0 或无数据显示。" },
+    { "name": "health_edit_source_corrupted", "value": "当前为数据损坏场景；没有可信数据，编辑器以 0 或无数据显示。" },
+    { "name": "health_edit_error_required", "value": "%s不能为空" },
+    { "name": "health_edit_error_number", "value": "%s必须是有效数字" },
+    { "name": "health_edit_error_range", "value": "%s必须在 %s 至 %s 之间" },
+    { "name": "health_edit_error_choice", "value": "%s包含无效选项" },
+    { "name": "health_edit_error_count", "value": "%s数量必须在 %s 至 %s 之间" },
+    { "name": "health_edit_error_inconsistent", "value": "%s的数据关系不一致，请检查相关字段" }
   ]
 }

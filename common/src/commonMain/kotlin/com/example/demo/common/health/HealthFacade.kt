@@ -64,7 +64,10 @@ class HealthFacade(
     fun normalEditFormJson(sectionName: String): String? {
         val section = HealthEditableSection.entries.firstOrNull { it.name == sectionName }
             ?: return null
-        return HealthEditableForms.formJson(store.normalDraftForEditing(), section)
+        val data = store.normalDraftForEditing()
+        return HealthEditableForms.formJson(
+            HealthEditableForms.form(data, section, store.state.editSourceKind)
+        )
     }
 
     fun defaultNormalEditFormJson(sectionName: String): String? {
@@ -95,18 +98,53 @@ class HealthFacade(
             operation = operation,
             rowIndex = rowIndex.takeIf { it >= 0 }
         ) ?: return null
-        return HealthEditableForms.formJson(form)
+        return HealthEditableForms.formJson(
+            form.copy(
+                sourceKind = store.state.editSourceKind,
+                sourceMessageKey = store.state.editSourceKind.messageKey
+            )
+        )
     }
 
     fun saveNormalEditForm(sectionName: String, valuesSpec: String): Boolean {
+        val result = saveNormalEditFormResult(sectionName, valuesSpec)
+        return result.isSuccess
+    }
+
+    fun saveNormalEditFormResultJson(sectionName: String, valuesSpec: String): String =
+        HealthEditableForms.applyResultJson(saveNormalEditFormResult(sectionName, valuesSpec))
+
+    private fun saveNormalEditFormResult(
+        sectionName: String,
+        valuesSpec: String
+    ): HealthEditApplyResult {
         val section = HealthEditableSection.entries.firstOrNull { it.name == sectionName }
-            ?: return false
+            ?: return HealthEditApplyResult(
+                issue = HealthEditValidationIssue(
+                    sectionName,
+                    "health_edit_normal_data",
+                    reason = HealthEditValidationReason.Inconsistent
+                )
+            )
         val current = store.normalDraftForEditing()
         val values = runCatching { HealthEditableForms.decodeValues(valuesSpec) }
-            .getOrNull() ?: return false
-        val updated = HealthEditableForms.apply(current, section, values) ?: return false
+            .getOrNull() ?: return HealthEditApplyResult(
+                issue = HealthEditValidationIssue(
+                    section.name,
+                    "health_edit_title_${section.name.replaceFirstChar { it.lowercase() }}",
+                    reason = HealthEditValidationReason.Inconsistent
+                )
+            )
+        val result = HealthEditableForms.applyDetailed(current, section, values)
+        val updated = result.data ?: return result
         store.dispatch(HealthAction.NormalDraftSaved(updated, section))
-        return store.state.error == null
+        return if (store.state.error == null) result else HealthEditApplyResult(
+            issue = HealthEditValidationIssue(
+                section.name,
+                "health_edit_title_${section.name.replaceFirstChar { it.lowercase() }}",
+                reason = HealthEditValidationReason.Inconsistent
+            )
+        )
     }
 
     fun saveDailySummary(steps: Int, calories: Int, activeMinutes: Int): Boolean =
@@ -263,6 +301,8 @@ class HealthFacade(
     fun staleForNewAccount() {
         store.staleForNewAccount()
     }
+
+    fun clearUserData(userId: String): Boolean = store.clear(userId)
 
     fun healthError(): HealthError? = store.state.error
 

@@ -203,7 +203,7 @@ struct AuthCoordinator: View {
 private func handleNavigation(_ effect: LoginEffect, viewModel: LoginViewModel, healthViewModel: HealthDashboardViewModel, router: AuthRouter) {
     switch effect {
     case let effect as LoginEffectAuthSucceeded:
-        healthViewModel.staleForNewAccount()
+        healthViewModel.staleForNewAccount(shouldRefreshOnDashboard: true)
         let destination: AuthRoute = effect.isNextRouteSignedIn ? .signedIn : .profileCompletion
         router.resetTo(destination)
         viewModel.toastMessage = appLocalized(effect.mode == .register_ ? "auth_register_success" : "auth_login_success")
@@ -214,7 +214,7 @@ private func handleNavigation(_ effect: LoginEffect, viewModel: LoginViewModel, 
         router.resetTo(.signedIn)
         viewModel.toastMessage = appLocalized("profile_saved")
     case _ as LoginEffectLoggedOut:
-        healthViewModel.staleForNewAccount()
+        healthViewModel.staleForNewAccount(shouldRefreshOnDashboard: false)
         router.resetTo(.entrance)
         viewModel.toastMessage = appLocalized("account_logout_success")
     case _ as LoginEffectAccountDeleted:

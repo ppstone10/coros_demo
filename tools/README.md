@@ -9,6 +9,8 @@
 - `check-docs.sh`：保护实现目录和历史 worklog，检查权威文档、过时路径、旧引用及测试计数同步。
 - `check-resources.sh`：检查 23 个共享认证消息语义键、三端全部 `auth_*` 默认/英文资源集合、应用语言持久化契约、Entrance/“我”页语言入口，以及 iOS 当前页面即时刷新和 iOS/HarmonyOS Entrance 顶部栏静态契约；认证页面静态键不要求映射进共享错误解析器。
 - `check-resource-maintainability.sh`：检查全资源清单、三端共享图片/Raw 一致性，并以只降不升基线约束硬编码文案和直接颜色债务。
+- `check-health-cross-scenario-editing.sh`：检查五场景同构数据投影、全空/损坏来源语义、单模块审核、结构化失败原因及三端提示链路。
+- `check-health-input-focus-and-account-refresh.sh`：检查 HarmonyOS 健康编辑输入框稳定 key，以及 iOS 换号刷新请求的可观察序号、去重消费和立即可见刷新态。
 
 这些脚本应该都可以从仓库根目录安全执行。
 

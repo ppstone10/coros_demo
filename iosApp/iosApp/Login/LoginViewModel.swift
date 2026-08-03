@@ -166,6 +166,7 @@ final class LoginViewModel: ObservableObject {
             weightKg: profile.weightKg ?? 0.0,
             measurementSystem: profile.measurementSystem.rawValue,
             phone: profile.phone,
+            email: profile.email,
             countryRegion: profile.countryRegion,
             gender: profile.gender?.rawValue ?? ""
         )
@@ -191,6 +192,39 @@ final class LoginViewModel: ObservableObject {
         let message = adapter.deleteCurrentAccount()
         refresh()
         return message
+    }
+
+    func initialProfileDraft() -> ProfileDraft {
+        let session = state.currentSession
+        let account = session?.account ?? ""
+        guard let saved = session?.profile else {
+            return ProfileDraft(
+                avatarUri: nil,
+                username: adapter.profileDefaultUsername(account),
+                birthDate: "",
+                heightCm: nil,
+                weightKg: nil,
+                measurementSystem: .metric,
+                phone: adapter.profileDefaultPhone(account),
+                email: adapter.profileDefaultEmail(account),
+                countryRegion: session?.region ?? "CN",
+                gender: nil
+            )
+        }
+        let measurementName = String(describing: saved.measurementSystem).lowercased()
+        let genderName = String(describing: saved.gender).lowercased()
+        return ProfileDraft(
+            avatarUri: saved.avatarUri,
+            username: saved.username.isEmpty ? adapter.profileDefaultUsername(account) : saved.username,
+            birthDate: saved.birthDate,
+            heightCm: saved.heightCm.map { Int($0.intValue) },
+            weightKg: saved.weightKg.map { $0.doubleValue },
+            measurementSystem: measurementName.contains("imperial") ? .imperial : .metric,
+            phone: saved.phone.isEmpty ? adapter.profileDefaultPhone(account) : saved.phone,
+            email: saved.email.isEmpty ? adapter.profileDefaultEmail(account) : saved.email,
+            countryRegion: saved.countryRegion.isEmpty ? (session?.region ?? "CN") : saved.countryRegion,
+            gender: genderName.contains("female") ? .female : (genderName.contains("male") ? .male : nil)
+        )
     }
 
     func resendVerifyCode() -> String? {
@@ -284,6 +318,7 @@ struct ProfileDraft: Equatable {
     var weightKg: Double?
     var measurementSystem: ProfileMeasurementSystem
     var phone: String
+    var email: String
     var countryRegion: String
     var gender: ProfileGender?
 }

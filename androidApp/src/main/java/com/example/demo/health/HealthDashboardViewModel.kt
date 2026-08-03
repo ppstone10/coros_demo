@@ -8,6 +8,7 @@ import com.example.demo.common.health.HealthCardType
 import com.example.demo.common.health.EditableHealthData
 import com.example.demo.common.health.HealthEditableSection
 import com.example.demo.common.health.HealthEditForm
+import com.example.demo.common.health.HealthEditApplyResult
 import com.example.demo.common.health.HealthEditRepeatOperation
 import com.example.demo.common.health.HealthEditableForms
 import com.example.demo.common.health.DefaultEditableHealthData
@@ -64,7 +65,7 @@ class HealthDashboardViewModel(
     }
 
     fun normalEditForm(section: HealthEditableSection): HealthEditForm =
-        HealthEditableForms.form(beginNormalDataEditing(), section)
+        HealthEditableForms.form(beginNormalDataEditing(), section, state.editSourceKind)
 
     fun defaultNormalEditForm(section: HealthEditableSection): HealthEditForm =
         HealthEditableForms.form(DefaultEditableHealthData.value, section)
@@ -82,13 +83,25 @@ class HealthDashboardViewModel(
         groupId,
         operation,
         rowIndex
+    )?.copy(
+        sourceKind = state.editSourceKind,
+        sourceMessageKey = state.editSourceKind.messageKey
     )
 
-    fun saveNormalEditForm(section: HealthEditableSection, values: Map<String, String>): Boolean {
-        val updated = HealthEditableForms.apply(beginNormalDataEditing(), section, values)
-            ?: return false
+    fun saveNormalEditForm(
+        section: HealthEditableSection,
+        values: Map<String, String>
+    ): HealthEditApplyResult {
+        val result = HealthEditableForms.applyDetailed(beginNormalDataEditing(), section, values)
+        val updated = result.data ?: return result
         saveNormalDraft(updated, section)
-        return state.error == null
+        return if (state.error == null) result else HealthEditApplyResult(
+            issue = com.example.demo.common.health.HealthEditValidationIssue(
+                fieldId = section.name,
+                labelKey = "health_edit_title_${section.name.replaceFirstChar { it.lowercase() }}",
+                reason = com.example.demo.common.health.HealthEditValidationReason.Inconsistent
+            )
+        )
     }
 
     fun onEffectConsumed() {

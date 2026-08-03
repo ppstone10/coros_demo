@@ -45,17 +45,24 @@ struct HealthDashboardView: View {
         .onChange(of: languageStore.current) { _ in screenState.page = .main; viewModel.load() }
         .background(AppColors.Core.black)
         .onAppear {
-            if viewModel.needsProgrammaticRefresh {
-                viewModel.needsProgrammaticRefresh = false
-                Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 200_000_000)
-                    beginRefresh()
-                }
-            } else if viewModel.cards.isEmpty {
+            viewModel.startPendingAccountRefresh()
+            if !viewModel.accountRefreshPending,
+               viewModel.accountRefreshPhase == .idle,
+               viewModel.cards.isEmpty {
                 viewModel.load()
             }
             viewModel.onEffect = { effect in
                 // HealthEffect subclasses from KMP are flat types, not nested
+            }
+        }
+        .onChange(of: viewModel.accountRefreshPending) { pending in
+            if pending {
+                viewModel.startPendingAccountRefresh()
+            }
+        }
+        .onChange(of: viewModel.isLoading) { isLoading in
+            if !isLoading {
+                viewModel.startPendingAccountRefresh()
             }
         }
         .sheet(isPresented: $showsWeightPicker) {
@@ -109,7 +116,11 @@ struct HealthDashboardView: View {
                         }.buttonStyle(.plain).padding(AppSpacing.large)
                     }
                 }
-                .offset(y: max(0, screenState.dragOffset))
+                .offset(y: max(0, effectiveDragOffset))
+                .animation(
+                    .easeOut(duration: HealthPullRefreshConfiguration.settleDuration),
+                    value: viewModel.accountRefreshPhase
+                )
                 .background(
                     ScrollViewPanObserver(
                         isRefreshing: isPullInteractionLocked,
@@ -122,7 +133,7 @@ struct HealthDashboardView: View {
             .scrollIndicators(.hidden)
             .zIndex(1)
 
-            if screenState.refreshPhase != .idle {
+            if effectiveRefreshPhase != .idle {
                 HStack(spacing: 8) {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: AppColors.Health.steps))
@@ -148,12 +159,16 @@ struct HealthDashboardView: View {
                 .offset(y: refreshIndicatorTop)
                 .opacity(refreshIndicatorOpacity)
                 .scaleEffect(0.94 + 0.06 * refreshIndicatorOpacity)
+                .animation(
+                    .easeOut(duration: HealthPullRefreshConfiguration.settleDuration),
+                    value: viewModel.accountRefreshPhase
+                )
                 .zIndex(4)
             }
 
             HeroTopRow(
                 dateLabel: viewModel.dateLabel,
-                isSyncing: screenState.refreshPhase == .refreshing || viewModel.isLoading,
+                isSyncing: effectiveRefreshPhase == .refreshing || viewModel.isLoading,
                 syncCycle: viewModel.syncCycle,
                 onTapWatch: onWatchTap,
                 onLongPressWatch: { screenState.page = .scenarioPicker }
@@ -182,9 +197,31 @@ struct HealthDashboardView: View {
     }
 
     private var isPullInteractionLocked: Bool {
-        screenState.refreshPhase == .refreshing ||
-            screenState.refreshPhase == .resetting ||
+        effectiveRefreshPhase == .refreshing ||
+            effectiveRefreshPhase == .resetting ||
             viewModel.isLoading
+    }
+
+    private var effectiveRefreshPhase: HealthPullRefreshPhase {
+        switch viewModel.accountRefreshPhase {
+        case .refreshing:
+            return .refreshing
+        case .resetting:
+            return .resetting
+        case .idle:
+            return screenState.refreshPhase
+        }
+    }
+
+    private var effectiveDragOffset: CGFloat {
+        switch viewModel.accountRefreshPhase {
+        case .refreshing:
+            return HealthPullRefreshConfiguration.refreshHoldOffset
+        case .resetting:
+            return 0
+        case .idle:
+            return screenState.dragOffset
+        }
     }
 
     private var pullProgress: CGFloat {
@@ -193,13 +230,13 @@ struct HealthDashboardView: View {
 
     private var refreshIndicatorTop: CGFloat {
         healthRefreshIndicatorTop(
-            bodyTop: heroHeight + screenState.dragOffset,
+            bodyTop: heroHeight + effectiveDragOffset,
             indicatorHeight: refreshIndicatorHeight
         )
     }
 
     private var refreshIndicatorOpacity: CGFloat {
-        switch screenState.refreshPhase {
+        switch effectiveRefreshPhase {
         case .idle:
             return 0
         case .dragging:
@@ -218,7 +255,7 @@ struct HealthDashboardView: View {
     }
 
     private var refreshIconRotation: Double {
-        switch screenState.refreshPhase {
+        switch effectiveRefreshPhase {
         case .dragging, .armed:
             return Double(pullProgress * 45)
         default:
@@ -227,7 +264,7 @@ struct HealthDashboardView: View {
     }
 
     private var refreshPrompt: String {
-        switch screenState.refreshPhase {
+        switch effectiveRefreshPhase {
         case .dragging:
             return appLocalized("health_pull_to_refresh")
         case .armed:

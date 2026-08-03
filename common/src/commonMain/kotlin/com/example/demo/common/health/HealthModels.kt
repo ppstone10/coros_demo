@@ -24,6 +24,7 @@ data class HealthState(
     val currentScenario: HealthMockScenario = HealthMockScenario.Normal,
     val enabledCardTypes: List<HealthCardType> = DefaultHealthCardOrder,
     val normalDraft: EditableHealthData? = null,
+    val editSourceKind: HealthEditSourceKind = HealthEditSourceKind.Available,
     val error: HealthError? = null
 )
 

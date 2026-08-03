@@ -270,6 +270,7 @@ class LoginUseCaseTest {
                 birthDate = "2002年11月17日",
                 heightCm = 175,
                 weightKg = 60.0,
+                email = "profile@example.com",
                 gender = UserGender.Male
             )
         )
@@ -285,6 +286,19 @@ class LoginUseCaseTest {
         val loginSession = assertIs<LoginResult.Success>(loginResult).session
         assertEquals(true, loginSession.isProfileComplete)
         assertEquals("Runner Test", loginSession.resolvedDisplayName)
+        assertEquals("profile@example.com", loginSession.profile?.email)
+    }
+
+    @Test
+    fun profileDefaultsUseAccountTypeAndCorosUserName() {
+        assertEquals(
+            ProfileAccountDefaults(username = "COROS user", phone = "13800138000", email = ""),
+            LoginRules.profileDefaults("13800138000")
+        )
+        assertEquals(
+            ProfileAccountDefaults(username = "COROS user", phone = "", email = "runner@example.com"),
+            LoginRules.profileDefaults("runner@example.com")
+        )
     }
 
     @Test

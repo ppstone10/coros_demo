@@ -15,11 +15,29 @@ data class LoginRuleCheck(
     val message: String? = null
 )
 
+data class ProfileAccountDefaults(
+    val username: String = LoginRules.DefaultProfileUsername,
+    val phone: String = "",
+    val email: String = ""
+)
+
 object LoginRules {
     const val PhoneAccountLength = 11
     const val VerifyCodeLength = 4
     const val PasswordMinLength = 6
     const val PasswordMaxLength = 20
+    const val DefaultProfileUsername = "COROS user"
+
+    fun profileDefaults(account: String, savedProfile: UserProfile? = null): ProfileAccountDefaults {
+        val normalized = account.trim()
+        return ProfileAccountDefaults(
+            username = savedProfile?.username?.takeIf(String::isNotBlank) ?: DefaultProfileUsername,
+            phone = savedProfile?.phone?.takeIf(String::isNotBlank)
+                ?: normalized.takeIf(::isPhoneAccountValid).orEmpty(),
+            email = savedProfile?.email?.takeIf(String::isNotBlank)
+                ?: normalized.takeIf(::isEmailAccountValid).orEmpty()
+        )
+    }
 
     fun normalizePhoneInput(value: String): String {
         return value.filter { it.isDigit() }.take(PhoneAccountLength)

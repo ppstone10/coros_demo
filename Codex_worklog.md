@@ -607,3 +607,95 @@
 ## 人工修正点
 - 首次替换 `detectDragGesturesAfterLongPress` 时使用了 `change.positionChange().y`，在当前 Compose 版本中 `positionChange` 为 Boolean 属性而非返回 Offset 的函数；改为 `change.position.y - change.previousPosition.y` 后编译通过。
 - LEARNINGS.md 编辑过程中因 Unicode 引号匹配问题，经过恢复后通过 bash sed 插入新条目。
+
+# 2026-08-03 11:00 — 修复注销数据清理、跨端输入焦点与首次资料默认值
+
+## 采纳内容
+- [AUTH-ACCOUNT-DELETE-001] 确认原注销逻辑只删除认证账号和 Session，现由三端组合根按当前 `userId` 联动清理健康快照；`HealthStore.clear` 同时复位内存 UI、正常数据草稿和待消费 Effect，其他用户快照保持不变。
+- [AUTH-PROFILE-FOCUS-001] Android 在打开滚轮、头像/性别选择等非输入操作前强制清焦点；HarmonyOS 在资料选择、滚动、认证按钮及返回/反馈操作前通过 API 12 FocusController 清焦点，以结束输入并请求收起键盘。
+- [HLTH-EDIT-021] iOS 正常数据编辑器的输入 Binding 在页面本地字典尚无值时回退 common 表单的 `field.value`，进入页面即可显示当前内存或持久化数据。
+- [HLTH-EDIT-020] common 体型管理表单删除 `weightKg`，只保留锻炼部位；保存部位时不再改写当前体重或追加体重历史，Android/iOS/HarmonyOS 统一消费该共享表单。
+- [AUTH-PROFILE-DEFAULT-001] 新增 `LoginRules.profileDefaults`，首次资料用户名默认为 `COROS user`，手机号账号只预填手机号、邮箱账号只预填邮箱；`UserProfile.email` 已贯通 Proto、JSON、Swift/KNOI/ArkTS 和三端资料界面。
+
+## 人工审查点
+- Android 红色输入高光、HarmonyOS 软键盘收起和 iOS 已有健康数据首屏回填属于运行时交互，本轮已完成稳定结构检查与平台构建，仍建议在真实设备上各执行一次“输入→点滚轮/空白处”的手势复验。
+- 注销现在清理当前用户全部本地健康快照，属于不可恢复的数据操作；回归测试同时验证其他账号快照不会被误删。
+- 工作区中 iOS `ScrollViewPanObserver 2.swift` 与 `Health/ScrollViewPanObserver.swift` 处于本轮开始前已有的暂存新增/工作区删除状态，本轮未恢复、覆盖或纳入实现。
+
+## 验证结果
+- 共享红灯真实执行：最初因 `onDeleteUserData`、`UserProfile.email`、资料默认值 API 缺失而编译失败；体型管理测试在旧表单仍含体重字段时失败。实现后 `LoginUseCaseTest.profileDefaultsUseAccountTypeAndCorosUserName`、`HealthDashboardUseCaseTest.deletingAccountClearsOnlyItsHealthSnapshot`、`EditableHealthDataTest.bodyManagementFormEditsOnlyMusclesAndPreservesWeightHistory` 通过。
+- `./gradlew :common:check` 与 `./gradlew :androidApp:assembleDebug` 通过；iOS Simulator `xcodebuild ... -scheme IOSDemo ... CODE_SIGNING_ALLOWED=NO build` 通过；HarmonyOS `hvigorw assembleApp --no-daemon` 通过。
+- `./tools/check-account-profile-regressions.sh`、`./tools/check-health-editable-normal-data.sh`、`./tools/check-resources.sh`、`./tools/check-resource-maintainability.sh`、`./tools/check-sdd.sh` 与 `git diff --check` 通过。
+- `./tools/check-docs.sh` 的测试计数已同步为业务 107 条、common 共 118 条；仍仅因本轮前即存在且 Git HEAD 本身一致的 `docs/reference/注册登陆模块介绍.md` 哈希与门禁内旧可信值不一致而失败，本轮未修改该历史参考文档或既有 `docs/worklog/` 归档。
+
+## 人工修正点
+- HarmonyOS 首次使用了当前工具链不存在的 `focusControl.clearFocus()` 并导致构建失败；改为 `getUIContext().getFocusController().clearFocus()` 后重新构建通过。
+- iOS 首次调整资料默认值 helper 时遗漏 Swift 显式 `return`，修正后重新构建通过。
+- 健康编辑专项门禁仍检查旧 `transientNormalDraft`/旧 Android 延迟字面量；已改为当前 `transientDashboardDraft`、持久化回退与 `delay(1_500.milliseconds)` 稳定符号，没有把过时代码重新塞回实现。
+
+# 2026-08-03 11:50 — 跨场景健康数据回填与字段级审核
+
+## 采纳内容
+- [HLTH-EDIT-022] 将正常、异常、部分缺失、全空和读取失败统一视为同一健康数据契约的不同内容/来源状态；进入正常数据编辑器时按当前内存快照、当前用户持久化快照、默认数据的优先级投影，不再因来源场景不是 Normal 而清空异常数据。
+- [HLTH-EDIT-022] 保存改为只审核和覆盖当前编辑模块；其他模块缺失不再连带阻止当前模块保存，未编辑的 null 模块继续保持 null。
+- [HLTH-EDIT-023] 新增 Available、Partial、Empty、Corrupted 来源状态。全空与损坏在输入控件中都显示 0/无数据，但分别保留“读取成功但无模块数据”和“读取失败”的来源语义，并由三端展示不同提示。
+- [HLTH-EDIT-024] 保存结果从 nullable/Boolean 扩展为结构化审核结果，包含字段、本地化标签、必填/数字/范围/选项/数量/一致性原因及参数；Android、iOS、HarmonyOS 均显示具体失败原因。
+
+## 人工审查点
+- 原审核把整份草稿的所有模块用一个 Boolean 联合判断：还强制周计划 7 天、心率 288 点、压力 48 点、睡眠阶段非空且连续等。因此异常场景或部分缺失场景即使当前字段合法，也会被其他模块缺失或集合长度不符连带判失败；这不是“异常数值必然不合法”，而是审核作用域错误。
+- 改造后异常业务状态与结构合法性分离：异常数据只要满足字段数字格式、允许范围、合法选项、集合数量和内部一致性，就可以回填与保存；当前模块确有问题时提示会点名字段和原因。
+- 全空与损坏虽共享 0/无数据的编辑投影，但 Corrupted 状态不会被重新解释为 Empty；设备侧仍需人工确认三端来源提示和具体错误提示的最终视觉体验。
+
+## 验证结果
+- 4 条共享红灯先行：实现前分别因异常场景被替换为空草稿、缺少来源状态 API、全局审核阻止部分模块保存，以及没有结构化审核结果而失败；实现后 `EditableHealthDataTest` 16 条全部通过。
+- `./gradlew :common:check`（common 共 122 条）、`./gradlew :androidApp:assembleDebug`、iOS Simulator `xcodebuild ... -scheme IOSDemo ... CODE_SIGNING_ALLOWED=NO build`、`./tools/build-shared-harmony.sh`（含 KNOI 生成与 HarmonyOS `assembleApp`）均通过。
+- `./tools/check-health-cross-scenario-editing.sh`、`./tools/check-health-editable-normal-data.sh`、`./tools/check-resources.sh` 与 `./tools/check-resource-maintainability.sh` 通过；新增 9 个来源/审核中英文资源键已进入三端资源、解析入口和资源清单。
+- `./tools/check-sdd.sh` 与 `git diff --check` 通过；`./tools/check-docs.sh` 的测试计数已同步为业务 111 条、common 共 122 条，仍仅因本轮前已有的 `docs/reference/注册登陆模块介绍.md` 与门禁内旧可信哈希不一致而失败，本轮未修改该历史参考文档。
+
+## 人工修正点
+- 第一版跨场景测试直接在 Abnormal 场景打开编辑器，未覆盖产品实际的“先切异常、再切正常后进入编辑器”路径；调整为真实场景切换后发现 Normal 选择会清掉瞬时来源，增加独立 `transientEditSourceKind` 后同时保留异常内存数据和损坏来源语义。
+- 表单预检最初复用了默认 schema，无法处理睡眠阶段和锻炼部位动态增删后的字段索引；改为按提交字段动态构造当前模块 schema，既保留数量审核，也兼容已有动态集合测试。
+- HarmonyOS 首次单独构建使用了过期 SDK 环境变量而无法找到 SDK；改用项目开发文档对应的 DevEco Studio SDK/Node 路径后构建成功，最终 `build-shared-harmony.sh` 已完整复跑通过。
+
+# 2026-08-03 13:58 — 修复鸿蒙输入跳焦与 iOS 换号刷新提示
+
+## 采纳内容
+- [HLTH-EDIT-025] HarmonyOS 正常数据模块页的独立字段和重复字段不再把 `field.value` 拼入 `ForEach` key，统一使用稳定 `field.id`，逐字符更新只改变字段值，不再销毁当前 `TextInput`。
+- [HLTH-UI-ARCH-015] iOS 将换号程序化刷新从普通 Boolean 改为 `@Published` 单调递增请求序号；健康页在 `onAppear` 与 `onChange` 共用去重消费函数，覆盖页面先出现、认证 Effect 后到达的时序。
+- [HLTH-UI-ARCH-015] iOS 程序化刷新在消费请求时立即进入 `Refreshing`，显示圆形刷新图标和“数据同步中”，继续沿用既有 4460ms 同步与复位流程。
+
+## 人工审查点
+- HarmonyOS 根因是组件身份不稳定而不是 common 表单值串行或键盘 Next：输入一个字符后 key 变化，ArkUI 重建控件并重新分配焦点；修复不改变表单数据、校验或保存协议。
+- iOS 根因是 SwiftUI 导航与认证 Effect 的先后不固定：登录状态可能先组合健康页，普通 `needsProgrammaticRefresh` 随后变化不会触发视图观察；请求序号可同时处理页面出现前和出现后的请求。
+- 两项都属于运行时焦点/动画行为，自动化结构门禁和平台构建不能代替真实设备上的连续输入与换号视觉确认。
+
+## 验证结果
+- `./tools/check-health-input-focus-and-account-refresh.sh` 实现前报告 HarmonyOS 动态 key 2 项、iOS 不可观察请求链路 6 项红灯，最小实现后 9 项检查全部通过。
+- iOS Simulator `xcodebuild ... -scheme IOSDemo ... CODE_SIGNING_ALLOWED=NO build` 通过，仅保留项目既有资源、弃用 API 和脚本阶段警告。
+- HarmonyOS `hvigorw assembleApp --no-daemon` 通过，仅保留项目既有资源重名、弃用 API、NAPI 未验证和未配置签名警告。
+
+## 人工修正点
+- iOS 没有简单地把 Boolean 标成 `@Published`：Boolean 在登出和再次登录连续请求中容易覆盖事件，改用单调递增 ID，由页面保存已消费 ID、ViewModel 保存已认领 ID，确保请求可观察且跨 View 重建也只消费一次。
+- 程序化刷新使用 `beginRefresh(showImmediately: true)`，只让账号切换路径立即显示刷新态；用户手势刷新仍保留原先约 300ms 吸附后进入 `Refreshing` 的节奏。
+
+# 2026-08-03 14:13 — 对齐 iOS 登录换号刷新生命周期
+
+## 采纳内容
+- [HLTH-UI-ARCH-015] 撤销“ViewModel 开始即认领、View 持有刷新 Task”的方案，改由长期存活的 `HealthDashboardViewModel` 持有 `accountRefreshPending`、`AccountRefreshPhase` 和账号刷新 Task。
+- [HLTH-UI-ARCH-015] iOS 健康首页用 `effectiveRefreshPhase/effectiveDragOffset` 合并手势刷新与账号刷新，账号刷新期间显示主体停留偏移、圆形进度图标、“数据同步中”和右上角同步动画，刷新完成进入约 300ms Resetting。
+- [HLTH-UI-ARCH-015] 认证成功调用 `staleForNewAccount(shouldRefreshOnDashboard: true)`，退出登录调用 false；首次资料完善期间 pending 保留，进入健康首页后再启动 4460ms 刷新并加载当前账号数据。
+
+## 人工审查点
+- 上一版没有动作的根因是旧健康页在 NavigationStack ResetTo 完成前观察到请求并抢先全局认领，随后 `onDisappear` 取消本地 Task；新页因请求已认领而无法补做。
+- 新实现中旧页可以触发 pending 启动，但 Task 和阶段状态属于共享 ViewModel；旧页消失只会取消它自己的手势刷新，新页仍能继续展示同一账号刷新周期。
+- 平台构建能验证 SwiftUI 状态链和接口，但换号动画的实际可见位置、持续时间及新账号数据仍需模拟器或真机完整登录回归。
+
+## 验证结果
+- 修订后的 `./tools/check-health-input-focus-and-account-refresh.sh` 在旧实现上产生 13 项红灯，覆盖 pending、ViewModel Task/phase、有效 UI 阶段和登录/退出分流；实现后全部通过。
+- iOS Simulator `xcodebuild ... -scheme IOSDemo ... CODE_SIGNING_ALLOWED=NO build` 通过，仅保留项目既有资源、弃用 API 和脚本阶段警告。
+- 本轮只修改 iOS 健康刷新生命周期及其 Spec/门禁，没有改变 common 数据规则、Android 或 HarmonyOS 已通过的账号刷新实现。
+- `./tools/check-sdd.sh` 与 `git diff --check` 通过；`./tools/check-docs.sh` 仍仅因本轮前已有的 `docs/reference/注册登陆模块介绍.md` 与门禁可信哈希不一致而失败，本轮未修改该历史参考文档。
+
+## 人工修正点
+- 账号刷新 Task 若因同时存在的刷新而未能启动，不再永久停在 Refreshing；它会恢复 Idle、重新标记 pending，等待健康页再次启动。
+- `HealthDashboardViewModel.refresh()` 改为可取消并返回是否真正完成；页面离开导致手势 Task 取消时，不再忽略取消异常后继续读取账号数据。

@@ -90,6 +90,8 @@
     <string name="profile_date_month_suffix">月</string>
     <string name="profile_date_year_suffix">年</string>
     <string name="profile_edit_username">修改用户名</string>
+    <string name="profile_email">邮箱</string>
+    <string name="profile_email_placeholder">输入邮箱</string>
     <string name="profile_fill_in">去填写</string>
     <string name="profile_gender">性别</string>
     <string name="profile_height">身高</string>
@@ -302,6 +304,15 @@
     <string name="health_edit_saved_refresh">数据已保存，下拉刷新后生效</string>
     <string name="health_edit_defaults_refresh">已使用默认数据，下拉刷新后生效</string>
     <string name="health_edit_invalid">输入数据不合法，请检查范围</string>
+    <string name="health_edit_source_partial">当前场景部分卡片无数据；缺失项以 0 或无数据显示。</string>
+    <string name="health_edit_source_empty">当前为全空数据场景；读取成功但所有卡片均无数据，编辑器以 0 或无数据显示。</string>
+    <string name="health_edit_source_corrupted">当前为数据损坏场景；没有可信数据，编辑器以 0 或无数据显示。</string>
+    <string name="health_edit_error_required">%1$s不能为空</string>
+    <string name="health_edit_error_number">%1$s必须是有效数字</string>
+    <string name="health_edit_error_range">%1$s必须在 %2$s 至 %3$s 之间</string>
+    <string name="health_edit_error_choice">%1$s包含无效选项</string>
+    <string name="health_edit_error_count">%1$s数量必须在 %2$s 至 %3$s 之间</string>
+    <string name="health_edit_error_inconsistent">%1$s的数据关系不一致，请检查相关字段</string>
     <string name="health_edit_select_hint">选择要编辑的数据模块</string>
     <string name="health_edit_title_dailySummary">顶部摘要</string>
     <string name="health_edit_title_todayActivity">今日活动</string>

@@ -90,6 +90,8 @@
     <string name="profile_date_month_suffix"> mo</string>
     <string name="profile_date_year_suffix"> yr</string>
     <string name="profile_edit_username">Edit username</string>
+    <string name="profile_email">Email</string>
+    <string name="profile_email_placeholder">Enter an email address</string>
     <string name="profile_fill_in">Fill in</string>
     <string name="profile_gender">Gender</string>
     <string name="profile_height">Height</string>
@@ -302,6 +304,15 @@
     <string name="health_edit_saved_refresh">Data saved. Pull to refresh to apply.</string>
     <string name="health_edit_defaults_refresh">Defaults selected. Pull to refresh to apply.</string>
     <string name="health_edit_invalid">Invalid input. Check the allowed ranges.</string>
+    <string name="health_edit_source_partial">Some cards have no data in this scenario; missing values are shown as 0 or no data.</string>
+    <string name="health_edit_source_empty">This is the all-empty scenario: reading succeeded but every card has no data, shown here as 0 or no data.</string>
+    <string name="health_edit_source_corrupted">This is the corrupted-data scenario: no data is trusted, so fields are shown as 0 or no data.</string>
+    <string name="health_edit_error_required">%1$s is required</string>
+    <string name="health_edit_error_number">%1$s must be a valid number</string>
+    <string name="health_edit_error_range">%1$s must be between %2$s and %3$s</string>
+    <string name="health_edit_error_choice">%1$s contains an invalid option</string>
+    <string name="health_edit_error_count">%1$s must contain between %2$s and %3$s items</string>
+    <string name="health_edit_error_inconsistent">%1$s contains inconsistent related values</string>
     <string name="health_edit_select_hint">Choose a data module to edit</string>
     <string name="health_edit_title_dailySummary">Top summary</string>
     <string name="health_edit_title_todayActivity">Today activity</string>

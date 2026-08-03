@@ -217,13 +217,13 @@
 | 测试类 | 测试数 | 所属 Spec |
 |--------|--------|-----------|
 | `LoginRulesTest.kt` | 8 | auth-mock-spec §7, §8, §9；RES-LOC-001 |
-| `LoginUseCaseTest.kt` | 35 | auth-mock-spec §14；AUTH-SESSION-001~002 |
+| `LoginUseCaseTest.kt` | 36 | auth-mock-spec §14；AUTH-SESSION-001~002；AUTH-PROFILE-DEFAULT-001 |
 | `BusinessMockDataSourceTest.kt` | 4 | auth-mock-spec §10, §11, §14 |
 | `HealthDashboardUseCaseTest.kt` | 47 | health-dashboard-cards 测试要求；HLTH-EMPTY-001；HLTH-CONTRACT-001~002；HLTH-SCENARIO-001；RES-MAINT-008；HLTH-VIS-001~003、027~032、042、044、046；HLTH-PERSIST-001~007 |
-| `EditableHealthDataTest.kt` | 11 | HLTH-EDIT-001~005、008、011~013、017~018 |
-| **合计** | **105** | 业务需求映射测试 |
+| `EditableHealthDataTest.kt` | 16 | HLTH-EDIT-001~005、008、011~013、017~018、020、022~024 |
+| **合计** | **111** | 业务需求映射测试 |
 | `HealthStoreTest.kt` | 11 | HLTH-MVI-001~004、HLTH-MVI-010；HLTH-VIS-042 |
-| **common 全部合计** | **116** | 含 Health MVI 架构测试 |
+| **common 全部合计** | **122** | 含 Health MVI 架构测试 |
 | `SessionLifecycleCoordinatorTest.kt` | 2 | AUTH-SESSION-003（Android JVM） |
 
 ---
@@ -297,6 +297,7 @@
 | `HLTH-PERSIST-007` | HarmonyOS 使用单一健康快照集合 | 集合 codec 测试；KNOI `ohosArm64Binaries`、`hvigorw assembleApp --no-daemon`、结构扫描 | `HarmonyLoginService.export/restoreHealthSnapshot`、`StorePersister.ets`、`SignedInPage.ets` | ✅ |
 | `HLTH-PERSIST-008` | 三端读取失败展示独立前台损坏态并保留最后有效快照 | `failedRefreshPreservesLastDashboardSnapshot`；专项门禁；`:common:check` 与三端构建 | `LoginFacade.healthDashboardError`；Android `result`；iOS `isDataCorrupted`；Harmony bridge error JSON / `healthDataCorrupted` | ✅ |
 | `HLTH-PERSIST-009` | 账号切换时健康首页重置为空卡片并触发刷新动画，刷新后恢复新账号持久化数据 | `./gradlew :common:check :androidApp:assembleDebug` 通过；人工验收：登出→换号登录后健康首页初始为空，刷新动画播放，数据正确切换 | `HealthStore.staleForNewAccount`；`HealthDashboardViewModel.staleForNewAccount`；`HealthDashboardScreen.LaunchedEffect` 延迟加载；`AuthNavGraph.AuthSucceeded/LoggedOut` 调用重置 | ✅（构建通过，运行时待验收） |
+| `AUTH-ACCOUNT-DELETE-001` | 注销账户同步删除该用户健康快照且保留其他用户数据 | `HealthDashboardUseCaseTest.deletingAccountClearsOnlyItsHealthSnapshot` 在新增删除回调前编译红灯、实现后通过；`:common:check`；三端构建 | `LoginStore.onDeleteUserData`、`HealthStore.clear`、三端 Store/Adapter 注销组合根 | ✅ |
 
 ---
 
@@ -347,6 +348,7 @@
 | `HLTH-UI-ARCH-012` | Android 达阈值后主体固定吸附，刷新与复位仍保持提示固定间距，4460ms Lottie 同步 | `PullToRefreshStateTest.refreshAndResetKeepTheSameBodyAttachment` 红灯后转绿；`:androidApp:assembleDebug`、`:androidApp:lintDebug`；emulator-5554 阈值保持态与松手同步态截图 | `indicatorTopForPhase` 将五个阶段统一映射为 `bodyTop - indicatorHeight - 80dp`，主体吸附到当前 34dp，删除刷新停靠插值与复位额外上移 | ✅ |
 | `HLTH-UI-ARCH-013` | iOS/HarmonyOS 对齐 Android 最终分层下拉刷新与 `80/34/80/0.4/300/4460` 视觉参数 | 五态/参数静态检查由无匹配红灯转绿；`xcodebuild ... -scheme IOSDemo ... build`；HarmonyOS `hvigorw assembleApp --no-daemon`；Android 基准测试/构建/Lint 回归 | iOS `HealthDashboardView` + `ScrollViewPanObserver`；HarmonyOS `PullToRefreshState.ets` + `SignedInPage.HealthDashboard`；三端中英刷新文案与资源清单同步 | ✅（编译与静态验证；双端交互截图待设备人工复核） |
 | `HLTH-UI-ARCH-014` | HarmonyOS 刷新阈值与主体停留高度独立可调 | `.refreshOffset(PULL_REFRESH_HOLD_OFFSET)`、`.pullToRefresh(false)`、手动释放资格静态检查由无匹配红灯转绿；HarmonyOS `hvigorw assembleApp --no-daemon` | `SignedInPage.handleRefreshOffset/finishRefreshGesture/beginHarmonyRefresh`；有效 `refreshOffset` 使用停留高度，80 阈值由页面独立判定 | ✅ |
+| `HLTH-UI-ARCH-015` | iOS 账号切换刷新由长期存活 ViewModel 持有，首页展示 pending/refreshing/resetting 全周期 | 上一版请求被旧 View 抢先认领后用户复验仍无动画；修订门禁产生 13 项红灯，ViewModel 所有权实现后通过；iOS Simulator 构建 | `HealthDashboardViewModel.accountRefreshPending/accountRefreshPhase/accountRefreshTask/startPendingAccountRefresh`；`HealthDashboardView.effectiveRefreshPhase/effectiveDragOffset`；`AuthCoordinator` 登录 true/退出 false | ⚠️（结构与构建通过，换号动画待设备人工复验） |
 
 ---
 
@@ -373,6 +375,21 @@
 | `HLTH-EDIT-017` | 体型管理按 common 区域契约叠加同画布蒙版并只显示“本周锻炼部位” | `EditableHealthDataTest.bodyVisualDerivesAlignedHighlightRegions` 实现前因字段缺失编译红灯、实现后通过；专项门禁实现前 95 项红灯、实现后通过；16 份资源三端逐文件一致性检查；common/Android/iOS/HarmonyOS 构建；Android emulator-5554 截图 | common `bodyRegionsByMuscleGroup`/`highlightedBodyRegions`/`footer`；`health_dashboard_resources/body_muscle_masks`；三端 `AppImages` 语义映射与 Body visual 同画布 Template 蒙版叠加 | ⚠️（Android 运行时确认胸部/股四头肌精确高光；iOS/HarmonyOS 构建通过但本轮无设备截图） |
 | `HLTH-EDIT-018` | Normal 刷新只保留用户体重及历史，草稿锻炼部位进入有效快照并改变高光 | `EditableHealthDataTest.bodyMuscleDraftReplacesOldMusclesOnRefreshWhileWeightHistoryIsPreserved` 实现前在刷新区域断言红灯、修复后通过；全量 `:common:check`；Android emulator-5554 实际选择“背部”并完成刷新前/后截图；三端构建 | `HealthDashboardStore.refresh` 只把旧 `weightKg/weightHistoryKg` 合并到草稿 `bodyManagement`，保留草稿 `trainedMuscleGroups`；专项结构门禁禁止旧整对象覆盖写法 | ⚠️（Android 完整编辑—刷新链路通过；iOS/HarmonyOS 共享逻辑与构建通过但本轮无设备截图） |
 | `HLTH-EDIT-019` | HarmonyOS 模块编辑页保存按钮可点击并直接消费布尔保存结果 | 专项门禁实现前因字符串返回、Text 操作入口等 5 项红灯，修复后通过；KNOI bridge 生成与 HarmonyOS `assembleApp` 通过；设备点击待验收 | `HarmonyLoginService.saveNormalHealthEditForm`/生成 provider 返回 Boolean；`NormalDataSectionPage` 使用原生 Button、保存中禁用与直接布尔判断 | ⚠️（自动验证通过，鸿蒙设备点击待验收） |
+| `HLTH-EDIT-020` | 体型管理正常数据编辑器只编辑锻炼部位并保留体重历史 | `EditableHealthDataTest.bodyManagementFormEditsOnlyMusclesAndPreservesWeightHistory` 实现前因表单仍含体重而红灯、实现后通过；专项门禁；`:common:check`；三端构建 | `HealthEditableForms.form/apply`；三端消费共享表单，无平台体重字段 | ✅ |
+| `HLTH-EDIT-021` | iOS 正常数据编辑器使用 common 当前表单值初始化 | `./tools/check-account-profile-regressions.sh`；iOS Simulator 构建 | `NormalDataEditor.swift` 输入 Binding 缺本地值时回退 `field.value` | ⚠️（结构与构建通过，已有持久数据的设备展示待人工复验） |
+| `HLTH-EDIT-022` | 五场景同构数据按内存/持久化优先级投影到编辑器，单模块审核不受其他缺失模块连带影响 | `abnormalScenarioProjectsCurrentMemoryAndPersistedValuesIntoEditor`、`partialScenarioCanSaveOneValidModuleWithoutAuditingMissingModules` 实现前因异常场景被强制替换为空草稿、整份数据联审而红灯，修复后通过；`:common:check`；三端构建 | `HealthEditableRules.project/validateSection/deriveSection`；`HealthDashboardStore.resolveBaseDraft/saveNormalDraft`；`HealthStore.normalDraftForEditing` | ✅ |
+| `HLTH-EDIT-023` | 全空与数据损坏均映射 0/无数据但保留 Empty/Corrupted 来源语义 | `emptyAndCorruptedScenariosShareZeroProjectionButKeepDifferentSourceMeaning` 实现前因无来源状态 API 编译红灯，修复后通过；`check-health-cross-scenario-editing.sh`；三端构建 | `HealthEditSourceKind`/`HealthEditableProjection`；`HealthState.editSourceKind`；三端来源提示 | ⚠️（自动验证通过，三端来源提示待设备人工复验） |
+| `HLTH-EDIT-024` | 编辑保存失败返回具体字段、原因和范围/数量参数 | `detailedFormAuditNamesTheFieldAndReasonInsteadOfReturningOnlyFalse` 实现前因保存仅返回 nullable/Boolean 编译红灯，修复后通过；专项门禁、资源门禁、三端构建 | `HealthEditValidationIssue`/`HealthEditApplyResult`/`applyDetailed`；Facade/KNOI 结果 JSON；三端字段级提示渲染 | ⚠️（自动验证通过，三端具体提示文案待设备人工复验） |
+| `HLTH-EDIT-025` | HarmonyOS 正常数据输入框逐字符更新时保持稳定组件身份和当前焦点 | `check-health-input-focus-and-account-refresh.sh` 实现前因两处 key 包含字段值而红灯，改为稳定 `field.id` 后通过；HarmonyOS `assembleApp` | `NormalDataSectionPage` 独立字段和重复字段 `ForEach` key 均只使用 `field.id` | ⚠️（结构与构建通过，连续输入焦点待设备人工复验） |
+
+---
+
+## auth-mock-spec.md 本轮补充追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `AUTH-PROFILE-DEFAULT-001` | 首次资料完善以账号类型预填手机号/邮箱且用户名默认为 COROS user | `LoginUseCaseTest.profileDefaultsUseAccountTypeAndCorosUserName` 实现前因默认值 API/email 字段缺失编译红灯、实现后通过；专项门禁；三端构建 | `LoginRules.profileDefaults`、`UserProfile.email`、Proto/JSON/KNOI/Swift/ArkTS 资料链路及三端 Profile Completion UI | ✅ |
+| `AUTH-PROFILE-FOCUS-001` | Android/HarmonyOS 离开输入操作后清焦点并收起键盘 | `./tools/check-account-profile-regressions.sh`；Android/HarmonyOS 构建 | Android `FocusManager.clearFocus(force=true)`；HarmonyOS API 12 `UIContext.getFocusController().clearFocus()` 接入非输入操作 | ⚠️（结构与构建通过，键盘/红色高光交互待设备复验） |
 
 ---
 

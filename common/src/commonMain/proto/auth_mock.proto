@@ -51,6 +51,7 @@ message UserProfile {
   string phone = 7;
   string country_region = 8;
   optional UserGender gender = 9;
+  string email = 10;
 }
 
 message MockAccount {

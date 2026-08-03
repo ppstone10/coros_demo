@@ -35,6 +35,7 @@ class HealthDashboardStore(
     private val useCase = HealthDashboardUseCase(dashboardDataSource)
     private val pendingScenarios = mutableMapOf<String, HealthMockScenario>()
     private var transientDashboardDraft: HealthDashboardData? = null
+    private var transientEditSourceKind: HealthEditSourceKind? = null
 
     fun emptyUiState(): DashboardUiState = useCase.toUiState(
         HealthDashboardData(null, null, null, null)
@@ -56,8 +57,14 @@ class HealthDashboardStore(
             pendingScenarios[access.data.userId] = scenario
             if (scenario != HealthMockScenario.Normal) {
                 when (val generated = dashboardDataSource.load(scenario)) {
-                    is MockResult.Success -> transientDashboardDraft = generated.data
-                    is MockResult.Failure -> {}
+                    is MockResult.Success -> {
+                        transientDashboardDraft = generated.data
+                        transientEditSourceKind = HealthEditableRules.project(generated.data).sourceKind
+                    }
+                    is MockResult.Failure -> {
+                        transientDashboardDraft = null
+                        transientEditSourceKind = HealthEditSourceKind.Corrupted
+                    }
                 }
             }
             MockResult.Success(Unit)
@@ -74,6 +81,9 @@ class HealthDashboardStore(
                     val scenario = pendingScenarios[userId] ?: resolved.data.sourceScenario
                     if (scenario == HealthMockScenario.Normal) {
                         val source = transientDashboardDraft
+                            ?: if (transientEditSourceKind == HealthEditSourceKind.Corrupted) {
+                                HealthDashboardData(null, null, null, null)
+                            } else null
                             ?: resolved.data.dashboardData
                             ?: resolved.data.editableData?.let { HealthEditableRules.derive(it) }
                             ?: HealthDashboardData(null, null, null, null)
@@ -87,6 +97,7 @@ class HealthDashboardStore(
                         else {
                             pendingScenarios.remove(userId)
                             transientDashboardDraft = null
+                            transientEditSourceKind = null
                             updated.toPersistedDashboard()
                         }
                     } else {
@@ -119,6 +130,7 @@ class HealthDashboardStore(
                             else {
                                 pendingScenarios.remove(userId)
                                 transientDashboardDraft = null
+                                transientEditSourceKind = null
                                 updated.toPersistedDashboard()
                             }
                         }
@@ -137,20 +149,31 @@ class HealthDashboardStore(
     fun clearTransientState() {
         pendingScenarios.clear()
         transientDashboardDraft = null
+        transientEditSourceKind = null
     }
 
     fun dashboardDraft(): HealthDashboardData? = transientDashboardDraft
 
-    fun saveNormalDraft(data: EditableHealthData): Boolean {
-        if (!HealthEditableRules.validate(data)) return false
-        transientDashboardDraft = HealthEditableRules.derive(data)
+    fun saveNormalDraft(data: EditableHealthData, section: HealthEditableSection): Boolean {
+        if (!HealthEditableRules.validateSection(data, section)) return false
+        val access = authRepository.verifyBusinessAccess() as? MockResult.Success ?: return false
+        val stored = stateDataSource.load(access.data.userId)
+        val base = transientDashboardDraft
+            ?: if (transientEditSourceKind == HealthEditSourceKind.Corrupted) {
+                HealthDashboardData(null, null, null, null)
+            } else null
+            ?: stored?.dashboardData
+            ?: stored?.editableData?.takeIf(HealthEditableRules::validate)?.let(HealthEditableRules::derive)
+            ?: HealthDashboardData(null, null, null, null)
+        val sectionData = HealthEditableRules.deriveSection(data, section)
+        transientDashboardDraft = base.withSection(sectionData, section)
         return true
     }
 
     fun restoreNormalDraftSection(section: HealthEditableSection): EditableHealthData {
-        val current = resolveBaseDraft()
+        val current = resolveBaseDraft().data
         return HealthEditableRules.restoreSection(current, section).also {
-            transientDashboardDraft = HealthEditableRules.derive(it)
+            saveNormalDraft(it, section)
         }
     }
 
@@ -159,18 +182,34 @@ class HealthDashboardStore(
             transientDashboardDraft = HealthEditableRules.derive(it)
         }
 
-    fun resolveBaseDraft(): EditableHealthData {
-        transientDashboardDraft?.let { return HealthEditableRules.fromDashboard(it) ?: DefaultEditableHealthData.allEmpty() }
+    fun resolveBaseDraft(
+        scenario: HealthMockScenario? = null
+    ): HealthEditableProjection {
         val access = authRepository.verifyBusinessAccess()
         val userId = (access as? MockResult.Success)?.data?.userId
-        val stored = userId?.let(stateDataSource::load)
-        return if (stored?.sourceScenario == HealthMockScenario.Normal) {
-            stored.dashboardData?.let { HealthEditableRules.fromDashboard(it) }
-                ?: stored.editableData
-                ?: DefaultEditableHealthData.allEmpty()
-        } else {
-            DefaultEditableHealthData.allEmpty()
+        val effectiveScenario = scenario ?: userId?.let(pendingScenarios::get)
+        if (
+            effectiveScenario == HealthMockScenario.ReadFailure ||
+            transientEditSourceKind == HealthEditSourceKind.Corrupted
+        ) {
+            return HealthEditableRules.project(
+                HealthDashboardData(null, null, null, null),
+                corrupted = true
+            )
         }
+        transientDashboardDraft?.let { return HealthEditableRules.project(it) }
+        val stored = userId?.let(stateDataSource::load)
+        if (stored?.sourceScenario == HealthMockScenario.ReadFailure) {
+            return HealthEditableRules.project(
+                HealthDashboardData(null, null, null, null),
+                corrupted = true
+            )
+        }
+        stored?.dashboardData?.let { return HealthEditableRules.project(it) }
+        stored?.editableData?.let {
+            return HealthEditableProjection(it, HealthEditSourceKind.Available)
+        }
+        return HealthEditableProjection(DefaultEditableHealthData.value, HealthEditSourceKind.Available)
     }
 
     fun saveCardConfiguration(types: List<HealthCardType>): MockResult<PersistedDashboard> {
@@ -248,7 +287,7 @@ class HealthDashboardStore(
         if (stored?.editableData != null || stored?.dashboardData != null) {
             if (stored.sourceScenario == HealthMockScenario.Normal && stored.editableData == null) {
                 val migratedSource = stored.dashboardData?.let(HealthEditableRules::fromDashboard)
-                if (migratedSource != null) {
+                if (migratedSource != null && HealthEditableRules.validate(migratedSource)) {
                     val migrated = stored.copy(
                         dashboardData = null,
                         editableData = migratedSource,
@@ -303,5 +342,26 @@ class HealthDashboardStore(
     private fun ordered(cards: List<HealthCardUiModel>, types: List<HealthCardType>): List<HealthCardUiModel> {
         val byType = cards.associateBy { it.type }
         return types.mapNotNull(byType::get)
+    }
+
+    private fun HealthDashboardData.withSection(
+        source: HealthDashboardData,
+        section: HealthEditableSection
+    ): HealthDashboardData = when (section) {
+        HealthEditableSection.DailySummary -> copy(dailySummary = source.dailySummary)
+        HealthEditableSection.TodayActivity -> copy(todayActivity = source.todayActivity)
+        HealthEditableSection.WeeklyPlan -> copy(weeklyPlan = source.weeklyPlan)
+        HealthEditableSection.TrainingLoad -> copy(trainingLoad = source.trainingLoad)
+        HealthEditableSection.TrainingAssessment -> copy(trainingAssessment = source.trainingAssessment)
+        HealthEditableSection.Recovery -> copy(recovery = source.recovery)
+        HealthEditableSection.RunningAbility -> copy(runningAbility = source.runningAbility)
+        HealthEditableSection.CyclingAbility -> copy(cyclingAbility = source.cyclingAbility)
+        HealthEditableSection.HeartRate -> copy(heartRate = source.heartRate)
+        HealthEditableSection.Stress -> copy(stress = source.stress)
+        HealthEditableSection.Sleep -> copy(sleepSummary = source.sleepSummary)
+        HealthEditableSection.HrvAssessment -> copy(hrvAssessment = source.hrvAssessment)
+        HealthEditableSection.RestingHeartRate -> copy(restingHeartRate = source.restingHeartRate)
+        HealthEditableSection.HealthCheck -> copy(healthCheck = source.healthCheck)
+        HealthEditableSection.BodyManagement -> copy(bodyManagement = source.bodyManagement)
     }
 }

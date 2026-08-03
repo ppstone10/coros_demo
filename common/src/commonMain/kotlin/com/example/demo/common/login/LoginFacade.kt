@@ -58,6 +58,15 @@ class LoginFacade(
         return LoginRules.normalizePasswordInput(value)
     }
 
+    fun profileDefaultUsername(account: String): String =
+        LoginRules.profileDefaults(account).username
+
+    fun profileDefaultPhone(account: String): String =
+        LoginRules.profileDefaults(account).phone
+
+    fun profileDefaultEmail(account: String): String =
+        LoginRules.profileDefaults(account).email
+
     fun isLoginReady(account: String, password: String, isLoading: Boolean): Boolean {
         return LoginRules.isLoginReady(account, password, isLoading)
     }
@@ -179,6 +188,7 @@ class LoginFacade(
         weightKg: Double,
         measurementSystem: String,
         phone: String,
+        email: String,
         countryRegion: String,
         gender: String
     ) {
@@ -192,6 +202,7 @@ class LoginFacade(
                     weightKg = weightKg.takeIf { it > 0.0 },
                     measurementSystem = measurementSystem.toMeasurementSystemOrDefault(),
                     phone = phone,
+                    email = email,
                     countryRegion = countryRegion,
                     gender = gender.toUserGenderOrNull()
                 )

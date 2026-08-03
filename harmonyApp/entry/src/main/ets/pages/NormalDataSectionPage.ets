@@ -36,8 +36,23 @@ interface NormalEditRepeatGroup {
 interface NormalEditForm {
   section: string;
   titleKey: string;
+  sourceKind: string;
+  sourceMessageKey: string;
   fields: NormalEditField[];
   repeatGroups: NormalEditRepeatGroup[];
+}
+
+interface NormalEditValidationIssue {
+  fieldId: string;
+  labelKey: string;
+  labelArguments: string[];
+  reason: string;
+  reasonArguments: string[];
+}
+
+interface NormalEditSaveResult {
+  success: boolean;
+  issue?: NormalEditValidationIssue;
 }
 
 @Entry
@@ -47,6 +62,7 @@ struct NormalDataSectionPage {
   @State titleKey: string = '';
   @State fields: NormalEditField[] = [];
   @State repeatGroups: NormalEditRepeatGroup[] = [];
+  @State sourceMessageKey: string = '';
   @State selectedChoiceFieldId: string = '';
   @State isSaving: boolean = false;
 
@@ -90,6 +106,17 @@ struct NormalDataSectionPage {
         .padding({ left: 16, right: 16 })
 
         List({ space: 12 }) {
+          if (this.sourceMessageKey.length > 0) {
+            ListItem() {
+              Text(healthResource(this.sourceMessageKey))
+                .fontSize(AppTypography.LABEL)
+                .fontColor(AppColors.HEALTH_WARNING)
+                .width('100%')
+                .padding(12)
+                .backgroundColor(AppColors.HEALTH_CARD)
+                .borderRadius(10)
+            }
+          }
           ListItem() {
             Text($r('app.string.health_edit_restore_card'))
               .fontSize(AppTypography.LABEL)
@@ -105,7 +132,7 @@ struct NormalDataSectionPage {
             ListItem() {
               this.EditField(field)
             }
-          }, (field: NormalEditField) => `${field.id}_${field.value}`)
+          }, (field: NormalEditField) => field.id)
           ForEach(this.repeatGroups, (group: NormalEditRepeatGroup) => {
             ListItem() {
               this.RepeatGroupEditor(group)
@@ -199,7 +226,7 @@ struct NormalDataSectionPage {
           .width('100%')
           ForEach(this.groupFields(group.id, rowIndex), (field: NormalEditField) => {
             this.EditField(field)
-          }, (field: NormalEditField) => `${field.id}_${field.value}`)
+          }, (field: NormalEditField) => field.id)
         }
         .width('100%')
         .padding(12)
@@ -293,6 +320,7 @@ struct NormalDataSectionPage {
         : getService().normalHealthEditFormJson(this.section);
       const form: NormalEditForm = JSON.parse(json) as NormalEditForm;
       this.titleKey = form.titleKey;
+      this.sourceMessageKey = form.sourceMessageKey;
       this.fields = form.fields;
       this.repeatGroups = form.repeatGroups;
     } catch (error) {
@@ -365,6 +393,7 @@ struct NormalDataSectionPage {
       );
       const form: NormalEditForm = JSON.parse(json) as NormalEditForm;
       this.titleKey = form.titleKey;
+      this.sourceMessageKey = form.sourceMessageKey;
       this.fields = form.fields;
       this.repeatGroups = form.repeatGroups;
     } catch (error) {
@@ -402,8 +431,13 @@ struct NormalDataSectionPage {
     if (this.isSaving) return;
     this.isSaving = true;
     try {
-      if (!getService().saveNormalHealthEditForm(this.section, this.valuesSpec())) {
-        promptAction.showToast({ message: $r('app.string.health_edit_invalid'), duration: 1500 });
+      const json: string = getService().saveNormalHealthEditFormResultJson(this.section, this.valuesSpec());
+      const result: NormalEditSaveResult = JSON.parse(json) as NormalEditSaveResult;
+      if (!result.success) {
+        promptAction.showToast({
+          message: result.issue ? this.validationMessage(result.issue) : $r('app.string.health_edit_invalid'),
+          duration: 1500
+        });
         return;
       }
       promptAction.showToast({
@@ -416,5 +450,16 @@ struct NormalDataSectionPage {
     } finally {
       this.isSaving = false;
     }
+  }
+
+  private validationMessage(issue: NormalEditValidationIssue): string {
+    const label: string = this.localized(issue.labelKey, issue.labelArguments || []);
+    let reasonKey: string = 'health_edit_error_inconsistent';
+    if (issue.reason === 'Required') reasonKey = 'health_edit_error_required';
+    else if (issue.reason === 'InvalidNumber') reasonKey = 'health_edit_error_number';
+    else if (issue.reason === 'OutOfRange') reasonKey = 'health_edit_error_range';
+    else if (issue.reason === 'InvalidChoice') reasonKey = 'health_edit_error_choice';
+    else if (issue.reason === 'InvalidCount') reasonKey = 'health_edit_error_count';
+    return this.localized(reasonKey, [label].concat(issue.reasonArguments || []));
   }
 }

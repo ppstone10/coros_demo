@@ -118,6 +118,8 @@ internal object HarmonyLoginJson {
             append(',')
             appendJsonField("phone", session.profile?.phone.orEmpty())
             append(',')
+            appendJsonField("email", session.profile?.email.orEmpty())
+            append(',')
             appendJsonField("countryRegion", session.profile?.countryRegion.orEmpty())
             append(',')
             appendJsonField("gender", session.profile?.gender?.name.orEmpty())

@@ -253,9 +253,13 @@ class LoginViewModel(
                 nowEpochMs = { System.currentTimeMillis() }
             )
             val healthDataSource = AndroidHealthDashboardStateDataSource(context.applicationContext)
+            val healthStore = HealthStore(repository, healthDataSource)
             return LoginViewModel(
-                store = LoginStore.create(authRepository = repository),
-                healthStore = HealthStore(repository, healthDataSource)
+                store = LoginStore.create(
+                    authRepository = repository,
+                    onDeleteUserData = healthStore::clear
+                ),
+                healthStore = healthStore
             )
         }
     }

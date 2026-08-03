@@ -163,6 +163,7 @@ export struct CorosButton {
       .enabled(!this.loading && this.enabledValue)
       .onClick(() => {
         if (this.enabledValue && !this.loading) {
+          this.getUIContext().getFocusController().clearFocus();
           this.tapRequested();
         }
       })
@@ -185,14 +186,20 @@ export struct AuthHeader {
           .textAlign(TextAlign.Center)
           .width(48)
           .height(52)
-          .onClick(() => { this.backRequested(); })
+          .onClick(() => {
+            this.getUIContext().getFocusController().clearFocus();
+            this.backRequested();
+          })
       }
       Blank()
       if (this.showFeedback) {
         Text($r('app.string.auth_feedback'))
           .fontSize(14)
           .fontColor(COROS_MUTED)
-          .onClick(() => { this.feedbackRequested(); })
+          .onClick(() => {
+            this.getUIContext().getFocusController().clearFocus();
+            this.feedbackRequested();
+          })
       }
     }
     .width('100%')

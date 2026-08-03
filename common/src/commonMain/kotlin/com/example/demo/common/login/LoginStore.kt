@@ -3,7 +3,8 @@ package com.example.demo.common.login
 class LoginStore(
     private val authRepository: AuthRepository,
     private val loginUseCase: LoginUseCase = LoginUseCase(authRepository),
-    private val registerUseCase: RegisterUseCase = RegisterUseCase(authRepository)
+    private val registerUseCase: RegisterUseCase = RegisterUseCase(authRepository),
+    private val onDeleteUserData: (String) -> Boolean = { true }
 ) {
     var state: LoginState = createInitialState(authRepository)
         private set
@@ -108,6 +109,11 @@ class LoginStore(
     }
 
     fun deleteCurrentAccount(): MockResult<Unit> {
+        val userId = authRepository.currentSession()?.userId
+            ?: return MockResult.Failure(MockError.AuthRequired)
+        if (!onDeleteUserData(userId)) {
+            return MockResult.Failure(MockError.PersistFailed)
+        }
         val result = authRepository.deleteCurrentAccount()
         if (result is MockResult.Success) {
             state = state.copy(
@@ -310,9 +316,10 @@ class LoginStore(
         }
 
         fun create(
-            authRepository: AuthRepository
+            authRepository: AuthRepository,
+            onDeleteUserData: (String) -> Boolean = { true }
         ): LoginStore {
-            return LoginStore(authRepository)
+            return LoginStore(authRepository, onDeleteUserData = onDeleteUserData)
         }
 
         private fun createInitialState(authRepository: AuthRepository): LoginState {

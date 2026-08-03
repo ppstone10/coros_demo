@@ -47,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -58,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.demo.R
 import com.example.demo.common.login.MeasurementSystem
+import com.example.demo.common.login.LoginRules
 import com.example.demo.common.login.UserGender
 import com.example.demo.common.login.UserProfile
 import com.example.demo.common.login.toProfileCountryCode
@@ -97,10 +99,13 @@ fun ProfileCompletionScreen(
 ) {
     val state = viewModel.state
     val savedProfile = state.currentSession?.profile
-    val sessionName = state.currentSession?.resolvedDisplayName.orEmpty()
+    val accountDefaults = LoginRules.profileDefaults(
+        account = state.currentSession?.account.orEmpty(),
+        savedProfile = savedProfile
+    )
     var avatarUri by rememberSaveable(savedProfile?.avatarUri) { mutableStateOf(savedProfile?.avatarUri) }
-    var username by rememberSaveable(savedProfile?.username, sessionName) {
-        mutableStateOf(savedProfile?.username?.takeIf { it.isNotBlank() } ?: sessionName)
+    var username by rememberSaveable(savedProfile?.username, accountDefaults.username) {
+        mutableStateOf(accountDefaults.username)
     }
     var birthDate by rememberSaveable(savedProfile?.birthDate) { mutableStateOf(savedProfile?.birthDate.orEmpty()) }
     var heightCm by rememberSaveable(savedProfile?.heightCm) { mutableStateOf(savedProfile?.heightCm) }
@@ -108,7 +113,12 @@ fun ProfileCompletionScreen(
     var measurementSystem by rememberSaveable(savedProfile?.measurementSystem) {
         mutableStateOf(savedProfile?.measurementSystem ?: MeasurementSystem.Metric)
     }
-    var phone by rememberSaveable(savedProfile?.phone) { mutableStateOf(savedProfile?.phone.orEmpty()) }
+    var phone by rememberSaveable(savedProfile?.phone, accountDefaults.phone) {
+        mutableStateOf(accountDefaults.phone)
+    }
+    var email by rememberSaveable(savedProfile?.email, accountDefaults.email) {
+        mutableStateOf(accountDefaults.email)
+    }
     val registeredCountryRegion = state.currentSession?.region?.toProfileCountryCode().orEmpty()
     val defaultCountry = "CN"
     var countryRegion by rememberSaveable(savedProfile?.countryRegion, registeredCountryRegion) {
@@ -121,6 +131,11 @@ fun ProfileCompletionScreen(
     var picker by remember { mutableStateOf<ProfilePicker?>(null) }
     var showAvatarSheet by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    fun openPicker(next: ProfilePicker) {
+        focusManager.clearFocus(force = true)
+        picker = next
+    }
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) avatarUri = copyAvatarToPrivateFile(context, uri)
     }
@@ -136,6 +151,7 @@ fun ProfileCompletionScreen(
         weightKg = weightKg,
         measurementSystem = measurementSystem,
         phone = phone,
+        email = email,
         countryRegion = countryRegion,
         gender = gender
     )
@@ -186,7 +202,10 @@ fun ProfileCompletionScreen(
                 ProfileAvatar(
                     avatarUri = avatarUri,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
-                    onClick = { showAvatarSheet = true }
+                    onClick = {
+                        focusManager.clearFocus(force = true)
+                        showAvatarSheet = true
+                    }
                 )
                 Spacer(modifier = Modifier.height(20.dp))
                 ProfileTextRow(
@@ -202,28 +221,28 @@ fun ProfileCompletionScreen(
                     required = true,
                     value = birthDate,
                     placeholder = stringResource(R.string.profile_fill_in),
-                    onClick = { picker = ProfilePicker.BirthDate }
+                    onClick = { openPicker(ProfilePicker.BirthDate) }
                 )
                 ProfilePickerRow(
                     label = stringResource(R.string.profile_height),
                     required = true,
                     value = heightCm?.let { "$it cm" }.orEmpty(),
                     placeholder = stringResource(R.string.profile_fill_in),
-                    onClick = { picker = ProfilePicker.Height }
+                    onClick = { openPicker(ProfilePicker.Height) }
                 )
                 ProfilePickerRow(
                     label = stringResource(R.string.profile_weight),
                     required = true,
                     value = weightKg?.let { String.format("%.1f kg", it) }.orEmpty(),
                     placeholder = stringResource(R.string.profile_fill_in),
-                    onClick = { picker = ProfilePicker.Weight }
+                    onClick = { openPicker(ProfilePicker.Weight) }
                 )
                 ProfilePickerRow(
                     label = stringResource(R.string.profile_measurement),
                     required = false,
                     value = measurementSystem.displayText(),
                     placeholder = "",
-                    onClick = { picker = ProfilePicker.Unit }
+                    onClick = { openPicker(ProfilePicker.Unit) }
                 )
                 ProfileTextRow(
                     label = stringResource(R.string.profile_phone),
@@ -233,14 +252,25 @@ fun ProfileCompletionScreen(
                     keyboardType = KeyboardType.Phone,
                     onValueChange = { phone = it.filter { char -> char.isDigit() || char == '+' || char == '-' }.take(20) }
                 )
+                ProfileTextRow(
+                    label = stringResource(R.string.profile_email),
+                    required = false,
+                    value = email,
+                    placeholder = stringResource(R.string.profile_email_placeholder),
+                    keyboardType = KeyboardType.Email,
+                    onValueChange = { email = viewModel.normalizeEmailInput(it).take(100) }
+                )
                 ProfilePickerRow(
                     label = stringResource(R.string.profile_country_region),
                     required = false,
                     value = countryDisplayName(countryRegion),
                     placeholder = stringResource(R.string.common_china),
-                    onClick = { picker = ProfilePicker.Country }
+                    onClick = { openPicker(ProfilePicker.Country) }
                 )
-                GenderRow(selected = gender, onSelected = { gender = it })
+                GenderRow(selected = gender, onSelected = {
+                    focusManager.clearFocus(force = true)
+                    gender = it
+                })
                 Spacer(modifier = Modifier.height(10.dp))
             }
             Column(

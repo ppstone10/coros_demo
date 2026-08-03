@@ -355,7 +355,7 @@ extension LoginViewModel {
                 avatarUri: nil,
                 username: state.currentSession?.resolvedDisplayName ?? state.currentSession?.account ?? "",
                 birthDate: "", heightCm: nil, weightKg: nil, measurementSystem: .metric,
-                phone: "", countryRegion: state.currentSession?.region ?? "CN", gender: nil
+                phone: "", email: "", countryRegion: state.currentSession?.region ?? "CN", gender: nil
             )
         }
         let genderName = String(describing: profile.gender).lowercased()
@@ -369,6 +369,7 @@ extension LoginViewModel {
             weightKg: profile.weightKg.map { $0.doubleValue },
             measurementSystem: measurementName.contains("imperial") ? .imperial : .metric,
             phone: profile.phone,
+            email: profile.email,
             countryRegion: profile.countryRegion,
             gender: gender
         )

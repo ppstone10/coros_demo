@@ -2499,6 +2499,69 @@
         }
       }
     },
+    "health_edit_error_choice" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ contains an invalid option" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@包含无效选项" } }
+      }
+    },
+    "health_edit_error_count" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ must contain between %@ and %@ items" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@数量必须在 %@ 至 %@ 之间" } }
+      }
+    },
+    "health_edit_error_inconsistent" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ contains inconsistent related values" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@的数据关系不一致，请检查相关字段" } }
+      }
+    },
+    "health_edit_error_number" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ must be a valid number" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@必须是有效数字" } }
+      }
+    },
+    "health_edit_error_range" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ must be between %@ and %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@必须在 %@ 至 %@ 之间" } }
+      }
+    },
+    "health_edit_error_required" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ is required" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@不能为空" } }
+      }
+    },
+    "health_edit_source_corrupted" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This is the corrupted-data scenario: no data is trusted, so fields are shown as 0 or no data." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前为数据损坏场景；没有可信数据，编辑器以 0 或无数据显示。" } }
+      }
+    },
+    "health_edit_source_empty" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This is the all-empty scenario: reading succeeded but every card has no data, shown here as 0 or no data." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前为全空数据场景；读取成功但所有卡片均无数据，编辑器以 0 或无数据显示。" } }
+      }
+    },
+    "health_edit_source_partial" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Some cards have no data in this scenario; missing values are shown as 0 or no data." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前场景部分卡片无数据；缺失项以 0 或无数据显示。" } }
+      }
+    },
     "health_edit_invalid" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6116,6 +6179,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "修改用户名"
+          }
+        }
+      }
+    },
+    "profile_email" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "邮箱"
+          }
+        }
+      }
+    },
+    "profile_email_placeholder" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter an email address"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入邮箱"
           }
         }
       }

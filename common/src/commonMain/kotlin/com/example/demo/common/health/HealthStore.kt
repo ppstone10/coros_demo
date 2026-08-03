@@ -37,9 +37,13 @@ class HealthStore(
     }
 
     fun normalDraftForEditing(): EditableHealthData {
-        val draft = state.normalDraft ?: dashboardStore.resolveBaseDraft()
-        if (state.normalDraft == null) state = state.copy(normalDraft = draft)
-        return draft
+        state.normalDraft?.let { return it }
+        val projection = dashboardStore.resolveBaseDraft(state.currentScenario)
+        state = state.copy(
+            normalDraft = projection.data,
+            editSourceKind = projection.sourceKind
+        )
+        return projection.data
     }
 
     private fun load() {
@@ -54,7 +58,16 @@ class HealthStore(
 
     private fun selectScenario(scenario: HealthMockScenario) {
         dashboardStore.selectScenario(scenario)
-        state = state.copy(currentScenario = scenario)
+        state = state.copy(
+            currentScenario = scenario,
+            normalDraft = null,
+            editSourceKind = when (scenario) {
+                HealthMockScenario.ReadFailure -> HealthEditSourceKind.Corrupted
+                HealthMockScenario.AllEmpty -> HealthEditSourceKind.Empty
+                HealthMockScenario.PartialMissing -> HealthEditSourceKind.Partial
+                else -> HealthEditSourceKind.Available
+            }
+        )
     }
 
     private fun refresh() {
@@ -104,12 +117,16 @@ class HealthStore(
     }
 
     private fun saveNormalDraft(data: EditableHealthData, section: HealthEditableSection) {
-        if (!HealthEditableRules.validate(data)) {
+        if (!HealthEditableRules.validateSection(data, section)) {
             state = state.copy(error = HealthError.CorruptedData)
             pendingEffect = HealthEffect.ShowMessage(HealthMessageKeys.ErrorHealthDataUnavailable)
             return
         }
-        dashboardStore.saveNormalDraft(data)
+        if (!dashboardStore.saveNormalDraft(data, section)) {
+            state = state.copy(error = HealthError.CorruptedData)
+            pendingEffect = HealthEffect.ShowMessage(HealthMessageKeys.ErrorHealthDataUnavailable)
+            return
+        }
         state = state.copy(normalDraft = data, error = null)
         pendingEffect = HealthEffect.NormalDraftSaved(section, ++effectSequence)
     }
@@ -142,7 +159,14 @@ class HealthStore(
         )
     }
 
-    fun clear(userId: String): Boolean = dashboardStore.clear(userId)
+    fun clear(userId: String): Boolean {
+        val cleared = dashboardStore.clear(userId)
+        if (cleared) {
+            state = HealthState(uiState = dashboardStore.emptyUiState())
+            pendingEffect = null
+        }
+        return cleared
+    }
 
     fun staleForNewAccount() {
         dashboardStore.clearTransientState()

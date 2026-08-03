@@ -15,6 +15,7 @@ export class AuthSession {
   weightKg: number = 0;
   measurementSystem: string = 'Metric';
   phone: string = '';
+  email: string = '';
   countryRegion: string = 'CN';
   gender: string = '';
 }

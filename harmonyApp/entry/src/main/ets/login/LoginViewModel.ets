@@ -125,10 +125,14 @@ export class LoginViewModel {
   submitProfile(
     avatarUri: string, username: string, birthDate: string,
     heightCm: number, weightKg: number, measurementSystem: string,
-    phone: string, countryRegion: string, gender: string
+    phone: string, email: string, countryRegion: string, gender: string
   ): void {
-    this.adapter.submitProfile(avatarUri, username, birthDate, heightCm, weightKg, measurementSystem, phone, countryRegion, gender);
+    this.adapter.submitProfile(avatarUri, username, birthDate, heightCm, weightKg, measurementSystem, phone, email, countryRegion, gender);
   }
+
+  profileDefaultUsername(account: string): string { return this.adapter.profileDefaultUsername(account); }
+  profileDefaultPhone(account: string): string { return this.adapter.profileDefaultPhone(account); }
+  profileDefaultEmail(account: string): string { return this.adapter.profileDefaultEmail(account); }
 
   deleteCurrentAccountMessage(): string {
     return this.adapter.deleteCurrentAccount();

@@ -7,6 +7,7 @@ import { healthResource } from '../resources/HealthLocalization';
 
 interface NormalEditFormTitle {
   titleKey: string;
+  sourceMessageKey: string;
 }
 
 @Entry
@@ -14,6 +15,7 @@ interface NormalEditFormTitle {
 struct NormalDataEditorPage {
   @State sections: string[] = [];
   @State titleKeys: string[] = [];
+  @State sourceMessageKey: string = '';
 
   aboutToAppear(): void {
     try {
@@ -21,6 +23,9 @@ struct NormalDataEditorPage {
       this.titleKeys = this.sections.map((section: string) => {
         const json: string = getService().normalHealthEditFormJson(section);
         const form: NormalEditFormTitle = JSON.parse(json) as NormalEditFormTitle;
+        if (this.sourceMessageKey.length === 0 && form.sourceMessageKey.length > 0) {
+          this.sourceMessageKey = form.sourceMessageKey;
+        }
         return form.titleKey;
       });
     } catch (error) {
@@ -87,7 +92,18 @@ struct NormalDataEditorPage {
         .fontSize(AppTypography.LABEL)
         .fontColor(AppColors.MUTED)
         .width('100%')
-        .padding({ left: AppSpacing.SCREEN, right: AppSpacing.SCREEN, top: 12, bottom: 12 })
+      .padding({ left: AppSpacing.SCREEN, right: AppSpacing.SCREEN, top: 12, bottom: 12 })
+
+      if (this.sourceMessageKey.length > 0) {
+        Text(healthResource(this.sourceMessageKey))
+          .fontSize(AppTypography.LABEL)
+          .fontColor(AppColors.HEALTH_WARNING)
+          .width('100%')
+          .padding(12)
+          .backgroundColor(AppColors.HEALTH_CARD)
+          .borderRadius(10)
+          .margin({ left: AppSpacing.SCREEN, right: AppSpacing.SCREEN, bottom: 10 })
+      }
 
       List({ space: 10 }) {
         ForEach(this.sections, (section: string, index: number) => {

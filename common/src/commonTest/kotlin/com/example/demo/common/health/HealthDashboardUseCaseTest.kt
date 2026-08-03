@@ -502,10 +502,23 @@ class HealthDashboardUseCaseTest {
         val persistence = InMemoryHealthDashboardStateDataSource()
         val repository = repository(true)
         val userId = requireNotNull(repository.currentSession()).userId
+        val otherSnapshot = HealthDashboardSnapshot(
+            userId = "other-user",
+            sourceScenario = HealthMockScenario.Abnormal,
+            dashboardData = domain(HealthMockScenario.Abnormal)
+        )
+        persistence.save(otherSnapshot)
         val healthStore = HealthDashboardStore(repository, persistence)
         assertIs<MockResult.Success<PersistedDashboard>>(healthStore.load())
-        healthStore.clear(userId)
+
+        val loginStore = com.example.demo.common.login.LoginStore(
+            authRepository = repository,
+            onDeleteUserData = healthStore::clear
+        )
+        assertIs<MockResult.Success<Unit>>(loginStore.deleteCurrentAccount())
+
         assertNull(persistence.load(userId))
+        assertEquals(otherSnapshot, persistence.load("other-user"))
     }
 
     private fun state(scenario: HealthMockScenario) = assertIs<MockResult.Success<DashboardUiState>>(useCase().load(scenario)).data

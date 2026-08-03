@@ -59,11 +59,11 @@ require_text "common/src/commonMain/kotlin/com/example/demo/common/health/Health
 require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthEditableForms.kt" \
   "enum class BodyMuscleGroup"
 require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardStore.kt" \
-  "transientNormalDraft"
+  "transientDashboardDraft"
 require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardStore.kt" \
-  "editableData = source"
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardStore.kt" \
-  "bodyManagement = baseSource.bodyManagement.copy("
+  "stored.editableData"
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthEditableForms.kt" \
+  "bodyManagement = source.bodyManagement.copy("
 require_absent "common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardStore.kt" \
   "baseSource.copy(bodyManagement = requireNotNull(previousBody))"
 require_text "common/src/commonTest/kotlin/com/example/demo/common/health/EditableHealthDataTest.kt" \
@@ -78,7 +78,7 @@ require_text "common/src/commonMain/kotlin/com/example/demo/common/health/Health
 require_text "androidApp/src/main/java/com/example/demo/navigation/AuthRoute.kt" \
   "NormalDataEditorRoute"
 require_text "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \
-  "delay(1_500)"
+  "delay(1_500.milliseconds)"
 require_text "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \
   "viewModel.normalEditForm(section)"
 require_text "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \

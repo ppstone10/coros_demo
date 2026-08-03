@@ -23,6 +23,7 @@ interface AuthSessionPayload {
   weightKg?: number;
   measurementSystem?: string;
   phone?: string;
+  email?: string;
   countryRegion?: string;
   gender?: string;
 }
@@ -261,15 +262,19 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
   submitProfile(
     avatarUri: string, username: string, birthDate: string,
     heightCm: number, weightKg: number, measurementSystem: string,
-    phone: string, countryRegion: string, gender: string
+    phone: string, email: string, countryRegion: string, gender: string
   ): void {
     this.harmonyLoginService.submitProfile(
       avatarUri, username, birthDate, heightCm, weightKg,
-      measurementSystem, phone, countryRegion, gender
+      measurementSystem, phone, email, countryRegion, gender
     );
     this.refreshState();
     this.persistSnapshot();
   }
+
+  profileDefaultUsername(account: string): string { return this.harmonyLoginService.profileDefaultUsername(account); }
+  profileDefaultPhone(account: string): string { return this.harmonyLoginService.profileDefaultPhone(account); }
+  profileDefaultEmail(account: string): string { return this.harmonyLoginService.profileDefaultEmail(account); }
 
   deleteCurrentAccount(): string {
     let message: string = this.harmonyLoginService.deleteCurrentAccount();
@@ -410,6 +415,7 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     session.weightKg = payload.weightKg === undefined ? 0 : payload.weightKg;
     session.measurementSystem = payload.measurementSystem === undefined ? 'Metric' : payload.measurementSystem;
     session.phone = payload.phone === undefined ? '' : payload.phone;
+    session.email = payload.email === undefined ? '' : payload.email;
     session.countryRegion = payload.countryRegion === undefined || payload.countryRegion.length === 0 ?
       session.region : payload.countryRegion;
     session.gender = payload.gender === undefined ? '' : payload.gender;
@@ -448,6 +454,7 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     snapshot.weightKg = source.weightKg;
     snapshot.measurementSystem = source.measurementSystem;
     snapshot.phone = source.phone;
+    snapshot.email = source.email;
     snapshot.countryRegion = source.countryRegion;
     snapshot.gender = source.gender;
     return snapshot;

@@ -144,6 +144,15 @@ export function healthResource(key: string): Resource {
     case 'health_edit_heart_rate': return $r('app.string.health_edit_heart_rate');
     case 'health_edit_hrv': return $r('app.string.health_edit_hrv');
     case 'health_edit_invalid': return $r('app.string.health_edit_invalid');
+    case 'health_edit_source_partial': return $r('app.string.health_edit_source_partial');
+    case 'health_edit_source_empty': return $r('app.string.health_edit_source_empty');
+    case 'health_edit_source_corrupted': return $r('app.string.health_edit_source_corrupted');
+    case 'health_edit_error_required': return $r('app.string.health_edit_error_required');
+    case 'health_edit_error_number': return $r('app.string.health_edit_error_number');
+    case 'health_edit_error_range': return $r('app.string.health_edit_error_range');
+    case 'health_edit_error_choice': return $r('app.string.health_edit_error_choice');
+    case 'health_edit_error_count': return $r('app.string.health_edit_error_count');
+    case 'health_edit_error_inconsistent': return $r('app.string.health_edit_error_inconsistent');
     case 'health_edit_long_load': return $r('app.string.health_edit_long_load');
     case 'health_edit_measured_time': return $r('app.string.health_edit_measured_time');
     case 'health_edit_muscle_groups': return $r('app.string.health_edit_muscle_groups');

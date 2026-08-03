@@ -36,7 +36,10 @@ export interface LoginLogicAdapter {
   isProfileRequiredComplete(username: string, birthDate: string, heightCm: number, weightKg: number, gender: string, isLoading: boolean): boolean;
   resetPassword(account: string, newPassword: string): string;
   changePassword(account: string, oldPassword: string, newPassword: string): string;
-  submitProfile(avatarUri: string, username: string, birthDate: string, heightCm: number, weightKg: number, measurementSystem: string, phone: string, countryRegion: string, gender: string): void;
+  submitProfile(avatarUri: string, username: string, birthDate: string, heightCm: number, weightKg: number, measurementSystem: string, phone: string, email: string, countryRegion: string, gender: string): void;
+  profileDefaultUsername(account: string): string;
+  profileDefaultPhone(account: string): string;
+  profileDefaultEmail(account: string): string;
   deleteCurrentAccount(): string;
   clearSessionSilently(): void;
   consumeEffect(): LoginEffect | null;

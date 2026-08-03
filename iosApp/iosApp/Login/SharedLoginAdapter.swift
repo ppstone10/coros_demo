@@ -14,6 +14,9 @@ protocol SharedLoginAdapterProtocol {
     func normalizeEmailInput(_ value: String) -> String
     func normalizeVerifyCodeInput(_ value: String) -> String
     func normalizePasswordInput(_ value: String) -> String
+    func profileDefaultUsername(_ account: String) -> String
+    func profileDefaultPhone(_ account: String) -> String
+    func profileDefaultEmail(_ account: String) -> String
     func isLoginReady(account: String, password: String, isLoading: Bool) -> Bool
     func isPhoneAccountValid(_ account: String) -> Bool
     func isEmailAccountValid(_ email: String) -> Bool
@@ -45,6 +48,7 @@ protocol SharedLoginAdapterProtocol {
         weightKg: Double,
         measurementSystem: String,
         phone: String,
+        email: String,
         countryRegion: String,
         gender: String
     )
@@ -75,6 +79,7 @@ protocol SharedLoginAdapterProtocol {
         rowIndex: Int
     ) -> String?
     func saveNormalHealthEditForm(_ section: String, valuesSpec: String) -> Bool
+    func saveNormalHealthEditFormResultJson(_ section: String, valuesSpec: String) -> String
     func restoreAllNormalHealthDefaults() -> Bool
 }
 
@@ -165,6 +170,18 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
 
     func normalizePasswordInput(_ value: String) -> String {
         facade.normalizePasswordInput(value: value)
+    }
+
+    func profileDefaultUsername(_ account: String) -> String {
+        facade.profileDefaultUsername(account: account)
+    }
+
+    func profileDefaultPhone(_ account: String) -> String {
+        facade.profileDefaultPhone(account: account)
+    }
+
+    func profileDefaultEmail(_ account: String) -> String {
+        facade.profileDefaultEmail(account: account)
     }
 
     func isLoginReady(account: String, password: String, isLoading: Bool) -> Bool {
@@ -265,6 +282,7 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
         weightKg: Double,
         measurementSystem: String,
         phone: String,
+        email: String,
         countryRegion: String,
         gender: String
     ) {
@@ -276,13 +294,18 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
             weightKg: weightKg,
             measurementSystem: measurementSystem,
             phone: phone,
+            email: email,
             countryRegion: countryRegion,
             gender: gender
         )
     }
 
     func deleteCurrentAccount() -> String? {
-        facade.deleteCurrentAccount()
+        if let userId = facade.state.currentSession?.userId,
+           !healthFacade.clearUserData(userId: userId) {
+            return "auth_error_persist_failed"
+        }
+        return facade.deleteCurrentAccount()
     }
 
     func submit() {
@@ -378,6 +401,10 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
 
     func saveNormalHealthEditForm(_ section: String, valuesSpec: String) -> Bool {
         healthFacade.saveNormalEditForm(sectionName: section, valuesSpec: valuesSpec)
+    }
+
+    func saveNormalHealthEditFormResultJson(_ section: String, valuesSpec: String) -> String {
+        healthFacade.saveNormalEditFormResultJson(sectionName: section, valuesSpec: valuesSpec)
     }
 
     func restoreAllNormalHealthDefaults() -> Bool {

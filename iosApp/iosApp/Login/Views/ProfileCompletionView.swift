@@ -47,21 +47,7 @@ struct ProfileCompletionView: View {
     init(viewModel: LoginViewModel, router: AuthRouter) {
         self.viewModel = viewModel
         self.router = router
-        let session = viewModel.state.currentSession
-        let defaultName = session?.resolvedDisplayName ?? session?.account ?? ""
-        self._draft = State(
-            initialValue: ProfileDraft(
-                avatarUri: nil,
-                username: defaultName,
-                birthDate: "",
-                heightCm: nil,
-                weightKg: nil,
-                measurementSystem: .metric,
-                phone: "",
-                countryRegion: session?.region ?? "CN",
-                gender: nil
-            )
-        )
+        self._draft = State(initialValue: viewModel.initialProfileDraft())
     }
 
     var body: some View {
@@ -144,6 +130,16 @@ struct ProfileCompletionView: View {
                             ),
                             placeholder: appLocalized("profile_phone_placeholder"),
                             keyboardType: .phonePad
+                        )
+                        ProfileTextRow(
+                            label: appLocalized("profile_email"),
+                            required: false,
+                            value: Binding(
+                                get: { draft.email },
+                                set: { draft.email = String($0.trimmingCharacters(in: .whitespacesAndNewlines).prefix(100)) }
+                            ),
+                            placeholder: appLocalized("profile_email_placeholder"),
+                            keyboardType: .emailAddress
                         )
                         ProfileActionRow(
                             label: appLocalized("profile_country_region"),

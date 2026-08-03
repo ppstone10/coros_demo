@@ -147,6 +147,8 @@ object MockAuthStoreJson {
             append(',')
             appendJsonField("phone", phone)
             append(',')
+            appendJsonField("email", email)
+            append(',')
             appendJsonField("countryRegion", countryRegion)
             append(',')
             appendJsonNullableField("gender", gender?.toProtoJsonName())
@@ -229,6 +231,7 @@ object MockAuthStoreJson {
         val weightStr = optionalRawValue(profileJson, "weightKg", "weight_kg")
         val measureSys = optionalString(profileJson, "measurementSystem", "measurement_system").orEmpty()
         val phone = optionalString(profileJson, "phone").orEmpty()
+        val email = optionalString(profileJson, "email").orEmpty()
         val countryRegion = optionalString(profileJson, "countryRegion", "country_region").orEmpty()
         val genderStr = optionalString(profileJson, "gender") ?: optionalRawValue(profileJson, "gender")
         val avatarUri = optionalString(profileJson, "avatarUri", "avatar_uri")
@@ -241,6 +244,7 @@ object MockAuthStoreJson {
             weightKg = weightStr?.takeUnless { it == "null" }?.toDoubleOrNull(),
             measurementSystem = measureSys.toMeasurementSystem(),
             phone = phone,
+            email = email,
             countryRegion = countryRegion.toProfileCountryCode(),
             gender = genderStr
                 ?.trim('"')

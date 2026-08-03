@@ -164,6 +164,15 @@ private fun healthStringResource(key: String): Int = when (key) {
     "health_edit_heart_rate" -> R.string.health_edit_heart_rate
     "health_edit_hrv" -> R.string.health_edit_hrv
     "health_edit_invalid" -> R.string.health_edit_invalid
+    "health_edit_source_partial" -> R.string.health_edit_source_partial
+    "health_edit_source_empty" -> R.string.health_edit_source_empty
+    "health_edit_source_corrupted" -> R.string.health_edit_source_corrupted
+    "health_edit_error_required" -> R.string.health_edit_error_required
+    "health_edit_error_number" -> R.string.health_edit_error_number
+    "health_edit_error_range" -> R.string.health_edit_error_range
+    "health_edit_error_choice" -> R.string.health_edit_error_choice
+    "health_edit_error_count" -> R.string.health_edit_error_count
+    "health_edit_error_inconsistent" -> R.string.health_edit_error_inconsistent
     "health_edit_long_load" -> R.string.health_edit_long_load
     "health_edit_measured_time" -> R.string.health_edit_measured_time
     "health_edit_muscle_groups" -> R.string.health_edit_muscle_groups

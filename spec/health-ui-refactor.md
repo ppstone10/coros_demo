@@ -115,6 +115,16 @@
 - And：未达到阈值不得刷新；达到阈值后再回推到阈值以下并松手也不得刷新；刷新与复位期间提示继续使用真实主体偏移保持固定间距
 - 异常/边界：程序化进入 `refreshing` 后只启动一次 4460ms 定时刷新，不得与 `onRefreshing` 重复调度
 
+### `HLTH-UI-ARCH-015`：iOS 账号切换刷新请求可观察且只消费一次
+
+- Given：认证状态可能先让新的健康首页出现，`LoginEffect.AuthSucceeded` 随后才要求健康数据失效并刷新
+- When：认证成功调用 `HealthDashboardViewModel.staleForNewAccount(shouldRefreshOnDashboard: true)`
+- Then：ViewModel 发布 `accountRefreshPending`，健康首页在 `onAppear` 或 pending 变化时调用 `startPendingAccountRefresh()`；不得由某个 View 在导航完成前全局认领并拥有刷新 Task
+- And：程序化刷新 Task、Refreshing/Resetting 状态均由长期存活的 HealthDashboardViewModel 持有；旧健康页因 ResetTo 消失时，只取消手势刷新，不得取消账号刷新
+- And：新健康页根据 ViewModel 的账号刷新状态显示主体停留偏移、圆形图标、“数据同步中”和右上角同步动画，保持既有 4460ms 同步时长及约 300ms 复位
+- And：退出登录只调用 `staleForNewAccount(shouldRefreshOnDashboard: false)` 清理旧数据，不在无账号时启动刷新；下一次认证成功重新标记 pending
+- 异常/边界：首次资料完善会延迟进入健康首页，pending 必须保留到资料保存后再由首页启动；刷新中发生新的账号变化时取消旧账号刷新 Task 并以最新账号状态重新等待
+
 ### `HLTH-UI-ARCH-004`：创建独立 HealthDashboardViewModel
 
 - Given：健康模块数据加载挂在 `LoginViewModel` 上（`loadHealthDashboard()`、`refreshHealthDashboard()`、`saveHealthCardConfiguration()`）
@@ -228,6 +238,7 @@
 | `HLTH-UI-ARCH-012` | `PullToRefreshStateTest`；Android 构建；人工观察 4460ms Lottie/提示随主体吸附/复位 | 达阈值后主体固定吸附，提示全程保持统一间距，同步刷新并约 300ms 连续复位 |
 | `HLTH-UI-ARCH-013` | iOS/HarmonyOS 构建；跨端刷新状态与参数静态门禁；人工拖动验收 | 两端与 Android 使用 `80/34/80/0.4/300/4460` 视觉基准，Hero 固定、主体独立移动、三态提示全程等距 |
 | `HLTH-UI-ARCH-014` | HarmonyOS 静态门禁；`hvigorw assembleApp`；人工修改 `PULL_REFRESH_HOLD_OFFSET` 对比 | `.refreshOffset` 使用停留高度，阈值由页面独立判断，修改停留参数能直接改变刷新主体位置 |
+| `HLTH-UI-ARCH-015` | iOS 请求序号/`onChange`/立即刷新态结构门禁；iOS Simulator 构建；换号人工验收 | 页面出现前后到达的刷新请求均只消费一次，图标和“数据同步中”可见 |
 
 ## 验收标准
 

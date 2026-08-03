@@ -75,6 +75,18 @@ data class EditableHealthData(
     val bodyManagement: BodyManagementInput
 )
 
+enum class HealthEditSourceKind(val messageKey: String) {
+    Available(""),
+    Partial("health_edit_source_partial"),
+    Empty("health_edit_source_empty"),
+    Corrupted("health_edit_source_corrupted")
+}
+
+data class HealthEditableProjection(
+    val data: EditableHealthData,
+    val sourceKind: HealthEditSourceKind
+)
+
 object DefaultEditableHealthData {
     val value: EditableHealthData by lazy {
         EditableHealthData(
@@ -145,11 +157,11 @@ object DefaultEditableHealthData {
         cyclingAbility = CyclingAbilityInput(0),
         heartRate = HeartRateInput(List(288) { 0 }),
         stress = StressInput(List(48) { 0 }),
-        sleep = SleepInput(0, listOf(SleepStageInput(SleepStage.Awake, 0, 480))),
+        sleep = SleepInput(0, emptyList()),
         hrvAssessment = HrvAssessmentInput(0),
         restingHeartRate = RestingHeartRateInput(0, "", 0),
         healthCheck = HealthCheckInput(0, 0, 0, 0, 0, ""),
-        bodyManagement = BodyManagementInput(0.0, emptyList(), listOf(0.0))
+        bodyManagement = BodyManagementInput(0.0, emptyList(), emptyList())
     )
 }
 
@@ -329,6 +341,63 @@ object HealthEditableRules {
             source.bodyManagement.weightHistoryKg.isNotEmpty() &&
             source.bodyManagement.weightHistoryKg.all { it in 30.0..200.0 }
 
+    fun validateSection(source: EditableHealthData, section: HealthEditableSection): Boolean =
+        when (section) {
+            HealthEditableSection.DailySummary ->
+                source.dailySummary.steps in 0..200_000 &&
+                    source.dailySummary.calories in 0..20_000 &&
+                    source.dailySummary.activeMinutes in 0..1_440
+            HealthEditableSection.TodayActivity ->
+                source.todayActivity.distanceKm in 0.0..500.0 &&
+                    source.todayActivity.paceSecondsPerKm in 120..1_800
+            HealthEditableSection.WeeklyPlan ->
+                source.weeklyPlan.days.size == 7 && source.weeklyPlan.days.all {
+                    (it.type == WorkoutType.Rest && it.distanceKm == 0.0) ||
+                        (it.type != WorkoutType.Rest && it.distanceKm in 0.1..500.0)
+                }
+            HealthEditableSection.TrainingLoad ->
+                source.trainingLoad.dailyLoads.size == 7 &&
+                    source.trainingLoad.dailyLoads.all { it in 0..5_000 }
+            HealthEditableSection.TrainingAssessment ->
+                source.assessment.shortTermLoad in 0..10_000 &&
+                    source.assessment.longTermLoad in 1..10_000
+            HealthEditableSection.Recovery -> source.recovery.score in 0..100
+            HealthEditableSection.RunningAbility -> source.runningAbility.score in 0..100
+            HealthEditableSection.CyclingAbility -> source.cyclingAbility.score in 0..100
+            HealthEditableSection.HeartRate ->
+                source.heartRate.fiveMinuteSamples.size == HeartSamplesPerDay &&
+                    source.heartRate.fiveMinuteSamples.all { it in 35..220 }
+            HealthEditableSection.Stress ->
+                source.stress.halfHourSamples.size == StressSamplesPerDay &&
+                    source.stress.halfHourSamples.all { it in 0..100 }
+            HealthEditableSection.Sleep -> validateSleep(source.sleep)
+            HealthEditableSection.HrvAssessment -> source.hrvAssessment.averageMs in 1..300
+            HealthEditableSection.RestingHeartRate ->
+                source.restingHeartRate.value in 30..220 &&
+                    source.restingHeartRate.thirtyDayAverage in 30..220 &&
+                    validTime(source.restingHeartRate.measuredTime)
+            HealthEditableSection.HealthCheck ->
+                source.healthCheck.heartRate in 30..220 &&
+                    source.healthCheck.hrvMs in 1..300 &&
+                    source.healthCheck.stress in 0..100 &&
+                    source.healthCheck.respiratoryRate in 5..60 &&
+                    source.healthCheck.bloodOxygen in 50..100 &&
+                    validTime(source.healthCheck.measuredTime)
+            HealthEditableSection.BodyManagement ->
+                source.bodyManagement.trainedMuscleGroups.distinct().size ==
+                    source.bodyManagement.trainedMuscleGroups.size &&
+                    source.bodyManagement.trainedMuscleGroups.all { muscle ->
+                        BodyMuscleGroup.entries.any { it.id == muscle }
+                    }
+        }
+
+    fun deriveSection(source: EditableHealthData, section: HealthEditableSection): HealthDashboardData {
+        require(validateSection(source, section)) { "invalid editable health section" }
+        val complete = DefaultEditableHealthData.value.withSectionFrom(source, section)
+        val derived = derive(complete)
+        return HealthDashboardData(null, null, null, null).withSectionFrom(derived, section)
+    }
+
     fun validateSleep(input: SleepInput): Boolean {
         if (input.startMinuteOfDay !in 0..1_439 || input.stages.isEmpty()) return false
         var nextStart = 0
@@ -397,74 +466,136 @@ object HealthEditableRules {
     fun restoreAll(@Suppress("UNUSED_PARAMETER") source: EditableHealthData): EditableHealthData =
         DefaultEditableHealthData.value
 
-    fun fromDashboard(data: HealthDashboardData): EditableHealthData? {
-        val daily = data.dailySummary ?: return null
-        val activity = data.todayActivity ?: return null
-        val weekly = data.weeklyPlan ?: return null
-        val load = data.trainingLoad ?: return null
-        val assessment = data.trainingAssessment ?: return null
-        val recovery = data.recovery ?: return null
-        val running = data.runningAbility ?: return null
-        val cycling = data.cyclingAbility ?: return null
-        val heart = data.heartRate ?: return null
-        val stress = data.stress ?: return null
-        val sleep = data.sleepSummary ?: return null
-        val hrv = data.hrvAssessment ?: return null
-        val resting = data.restingHeartRate ?: return null
-        val check = data.healthCheck ?: return null
-        val body = data.bodyManagement ?: return null
-        val heartSamples = heart.fiveMinuteSamples.takeIf { it.size == HeartSamplesPerDay }
-            ?: return null
-        val stressSamples = when (stress.samples.size) {
+    fun project(data: HealthDashboardData, corrupted: Boolean = false): HealthEditableProjection {
+        if (corrupted) return HealthEditableProjection(
+            DefaultEditableHealthData.allEmpty(),
+            HealthEditSourceKind.Corrupted
+        )
+        val modules = listOf(
+            data.dailySummary, data.todayActivity, data.weeklyPlan, data.trainingLoad,
+            data.trainingAssessment, data.recovery, data.runningAbility, data.cyclingAbility,
+            data.heartRate, data.stress, data.sleepSummary, data.hrvAssessment,
+            data.restingHeartRate, data.healthCheck, data.bodyManagement
+        )
+        val sourceKind = when {
+            modules.all { it == null } -> HealthEditSourceKind.Empty
+            modules.any { it == null } -> HealthEditSourceKind.Partial
+            else -> HealthEditSourceKind.Available
+        }
+        return HealthEditableProjection(fromDashboard(data), sourceKind)
+    }
+
+    fun fromDashboard(data: HealthDashboardData): EditableHealthData {
+        val empty = DefaultEditableHealthData.allEmpty()
+        val daily = data.dailySummary
+        val activity = data.todayActivity
+        val weekly = data.weeklyPlan
+        val load = data.trainingLoad
+        val assessment = data.trainingAssessment
+        val recovery = data.recovery
+        val running = data.runningAbility
+        val cycling = data.cyclingAbility
+        val heart = data.heartRate
+        val stress = data.stress
+        val sleep = data.sleepSummary
+        val hrv = data.hrvAssessment
+        val resting = data.restingHeartRate
+        val check = data.healthCheck
+        val body = data.bodyManagement
+        val heartSamples = heart?.fiveMinuteSamples?.takeIf { it.size == HeartSamplesPerDay }
+            ?: empty.heartRate.fiveMinuteSamples
+        val stressSamples = when (stress?.samples?.size) {
             StressSamplesPerDay -> stress.samples
             StressSamplesPerDay / 2 -> stress.samples.flatMap { listOf(it, it) }
-            else -> return null
+            else -> empty.stress.halfHourSamples
         }
-        val dayPlans = weekly.dayPlans.takeIf { it.size == 7 } ?: return null
+        val dayPlans = weekly?.dayPlans?.takeIf { it.size == 7 }.orEmpty()
         return EditableHealthData(
-            DailySummaryInput(daily.steps ?: 0, daily.calories ?: 0, daily.activeMinutes ?: 0),
-            TodayActivityInput(activity.distanceKm ?: 0.0, activity.paceSecondsPerKm ?: 600),
-            WeeklyPlanInput(dayPlans.map { plan ->
+            DailySummaryInput(daily?.steps ?: 0, daily?.calories ?: 0, daily?.activeMinutes ?: 0),
+            TodayActivityInput(activity?.distanceKm ?: 0.0, activity?.paceSecondsPerKm ?: 0),
+            WeeklyPlanInput((dayPlans.map { plan ->
                 val type = workoutTypeFromKey(plan.workoutName?.key)
                 val pace = paceSeconds(type)
                 val distance = if (type == WorkoutType.Rest) 0.0
                 else (plan.workoutDurationMinutes ?: 0) * 60.0 / pace
                 WeeklyWorkoutInput(type, (distance * 10).roundToInt() / 10.0)
-            }),
-            TrainingLoadInput(load.dailyLoads.takeIf { it.size == 7 } ?: List(7) { 0 }),
+            }).takeIf { it.size == 7 } ?: empty.weeklyPlan.days),
+            TrainingLoadInput(load?.dailyLoads?.takeIf { it.size == 7 } ?: empty.trainingLoad.dailyLoads),
             TrainingAssessmentInput(
-                assessment.shortTermLoad ?: 0,
-                (assessment.longTermLoad ?: 1).coerceAtLeast(1)
+                assessment?.shortTermLoad ?: 0,
+                assessment?.longTermLoad ?: 0
             ),
-            RecoveryInput((recovery.score ?: 0).coerceIn(0, 100)),
-            RunningAbilityInput((running.score ?: running.displayScore?.roundToInt() ?: 0).coerceIn(0, 100)),
-            CyclingAbilityInput((cycling.score ?: cycling.displayScore?.roundToInt() ?: 0).coerceIn(0, 100)),
+            RecoveryInput(recovery?.score ?: 0),
+            RunningAbilityInput(running?.score ?: running?.displayScore?.roundToInt() ?: 0),
+            CyclingAbilityInput(cycling?.score ?: cycling?.displayScore?.roundToInt() ?: 0),
             HeartRateInput(heartSamples),
             StressInput(stressSamples),
             SleepInput(
-                parseTime(sleep.startTime) ?: 0,
-                sleep.stages.map { SleepStageInput(it.stage, it.startMinute, it.durationMinutes) }
+                sleep?.startTime?.let(::parseTime) ?: 0,
+                sleep?.stages?.map { SleepStageInput(it.stage, it.startMinute, it.durationMinutes) }.orEmpty()
             ),
-            HrvAssessmentInput(hrv.averageMs ?: hrv.hrvScore ?: 1),
+            HrvAssessmentInput(hrv?.averageMs ?: hrv?.hrvScore ?: 0),
             RestingHeartRateInput(
-                resting.value ?: 30,
-                resting.measuredTime?.takeIf(::validTime) ?: "00:00",
-                resting.thirtyDayAverage ?: resting.value ?: 30
+                resting?.value ?: 0,
+                resting?.measuredTime?.takeIf(::validTime).orEmpty(),
+                resting?.thirtyDayAverage ?: resting?.value ?: 0
             ),
             HealthCheckInput(
-                check.heartRate ?: 30,
-                check.hrvMs ?: 1,
-                check.stress ?: 0,
-                check.respiratoryRate ?: 5,
-                check.bloodOxygen ?: 50,
-                check.measuredTime?.takeIf(::validTime) ?: "00:00"
+                check?.heartRate ?: 0,
+                check?.hrvMs ?: 0,
+                check?.stress ?: 0,
+                check?.respiratoryRate ?: 0,
+                check?.bloodOxygen ?: 0,
+                check?.measuredTime?.takeIf(::validTime).orEmpty()
             ),
             BodyManagementInput(
-                body.weightKg ?: 30.0,
-                body.trainedMuscleGroups,
-                body.weightHistoryKg.ifEmpty { listOf(body.weightKg ?: 30.0) }
+                body?.weightKg ?: 0.0,
+                body?.trainedMuscleGroups.orEmpty(),
+                body?.weightHistoryKg?.ifEmpty { body.weightKg?.let(::listOf).orEmpty() }.orEmpty()
             )
-        ).takeIf(::validate)
+        )
+    }
+
+    private fun EditableHealthData.withSectionFrom(
+        source: EditableHealthData,
+        section: HealthEditableSection
+    ): EditableHealthData = when (section) {
+        HealthEditableSection.DailySummary -> copy(dailySummary = source.dailySummary)
+        HealthEditableSection.TodayActivity -> copy(todayActivity = source.todayActivity)
+        HealthEditableSection.WeeklyPlan -> copy(weeklyPlan = source.weeklyPlan)
+        HealthEditableSection.TrainingLoad -> copy(trainingLoad = source.trainingLoad)
+        HealthEditableSection.TrainingAssessment -> copy(assessment = source.assessment)
+        HealthEditableSection.Recovery -> copy(recovery = source.recovery)
+        HealthEditableSection.RunningAbility -> copy(runningAbility = source.runningAbility)
+        HealthEditableSection.CyclingAbility -> copy(cyclingAbility = source.cyclingAbility)
+        HealthEditableSection.HeartRate -> copy(heartRate = source.heartRate)
+        HealthEditableSection.Stress -> copy(stress = source.stress)
+        HealthEditableSection.Sleep -> copy(sleep = source.sleep)
+        HealthEditableSection.HrvAssessment -> copy(hrvAssessment = source.hrvAssessment)
+        HealthEditableSection.RestingHeartRate -> copy(restingHeartRate = source.restingHeartRate)
+        HealthEditableSection.HealthCheck -> copy(healthCheck = source.healthCheck)
+        HealthEditableSection.BodyManagement -> copy(bodyManagement = source.bodyManagement)
+    }
+
+    private fun HealthDashboardData.withSectionFrom(
+        source: HealthDashboardData,
+        section: HealthEditableSection
+    ): HealthDashboardData = when (section) {
+        HealthEditableSection.DailySummary -> copy(dailySummary = source.dailySummary)
+        HealthEditableSection.TodayActivity -> copy(todayActivity = source.todayActivity)
+        HealthEditableSection.WeeklyPlan -> copy(weeklyPlan = source.weeklyPlan)
+        HealthEditableSection.TrainingLoad -> copy(trainingLoad = source.trainingLoad)
+        HealthEditableSection.TrainingAssessment -> copy(trainingAssessment = source.trainingAssessment)
+        HealthEditableSection.Recovery -> copy(recovery = source.recovery)
+        HealthEditableSection.RunningAbility -> copy(runningAbility = source.runningAbility)
+        HealthEditableSection.CyclingAbility -> copy(cyclingAbility = source.cyclingAbility)
+        HealthEditableSection.HeartRate -> copy(heartRate = source.heartRate)
+        HealthEditableSection.Stress -> copy(stress = source.stress)
+        HealthEditableSection.Sleep -> copy(sleepSummary = source.sleepSummary)
+        HealthEditableSection.HrvAssessment -> copy(hrvAssessment = source.hrvAssessment)
+        HealthEditableSection.RestingHeartRate -> copy(restingHeartRate = source.restingHeartRate)
+        HealthEditableSection.HealthCheck -> copy(healthCheck = source.healthCheck)
+        HealthEditableSection.BodyManagement -> copy(bodyManagement = source.bodyManagement)
     }
 
     private fun deriveWeekly(input: WeeklyPlanInput): WeeklyPlan {

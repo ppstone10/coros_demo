@@ -1,6 +1,25 @@
 import Foundation
 import Shared
 
+struct NormalEditValidationIssue: Decodable {
+    let fieldId: String
+    let labelKey: String
+    let labelArguments: [String]
+    let reason: String
+    let reasonArguments: [String]
+}
+
+struct NormalEditSaveResult: Decodable {
+    let success: Bool
+    let issue: NormalEditValidationIssue?
+}
+
+enum AccountRefreshPhase: Equatable {
+    case idle
+    case refreshing
+    case resetting
+}
+
 @MainActor
 final class HealthDashboardViewModel: ObservableObject {
     @Published private(set) var cards: [HealthCard] = []
@@ -14,11 +33,12 @@ final class HealthDashboardViewModel: ObservableObject {
     @Published private(set) var selectedScenario = "Normal"
     @Published private(set) var scenarios: [HealthScenarioDescriptor] = []
     @Published private(set) var editNotice: (id: Int, messageKey: String)?
+    @Published private(set) var accountRefreshPending = false
+    @Published private(set) var accountRefreshPhase: AccountRefreshPhase = .idle
     private var editNoticeSequence = 0
+    private var accountRefreshTask: Task<Void, Never>?
 
     var onEffect: ((HealthEffect) -> Void)?
-
-    var needsProgrammaticRefresh = false
 
     private let adapter: SharedLoginAdapterProtocol
 
@@ -35,10 +55,41 @@ final class HealthDashboardViewModel: ObservableObject {
         }
     }
 
-    func staleForNewAccount() {
+    func staleForNewAccount(shouldRefreshOnDashboard: Bool) {
+        accountRefreshTask?.cancel()
+        accountRefreshTask = nil
+        accountRefreshPhase = .idle
         adapter.staleHealthForNewAccount()
         apply(adapter.healthState())
-        needsProgrammaticRefresh = true
+        accountRefreshPending = shouldRefreshOnDashboard
+    }
+
+    func startPendingAccountRefresh() {
+        guard accountRefreshPending, accountRefreshPhase == .idle, !isLoading else { return }
+        accountRefreshPending = false
+        accountRefreshPhase = .refreshing
+        accountRefreshTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let refreshed = await self.refresh()
+            guard !Task.isCancelled else { return }
+            guard refreshed else {
+                self.accountRefreshPhase = .idle
+                self.accountRefreshTask = nil
+                self.accountRefreshPending = true
+                return
+            }
+            self.accountRefreshPhase = .resetting
+            do {
+                try await Task.sleep(
+                    nanoseconds: HealthPullRefreshConfiguration.settleDurationNanoseconds
+                )
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
+            self.accountRefreshPhase = .idle
+            self.accountRefreshTask = nil
+        }
     }
 
     func selectScenario(_ name: String) {
@@ -89,13 +140,16 @@ final class HealthDashboardViewModel: ObservableObject {
         )
     }
 
-    func saveNormalEditForm(_ section: String, valuesSpec: String) -> Bool {
-        let saved = adapter.saveNormalHealthEditForm(section, valuesSpec: valuesSpec)
-        if saved {
+    func saveNormalEditForm(_ section: String, valuesSpec: String) -> NormalEditSaveResult {
+        let json = adapter.saveNormalHealthEditFormResultJson(section, valuesSpec: valuesSpec)
+        let result = json.data(using: .utf8).flatMap {
+            try? JSONDecoder().decode(NormalEditSaveResult.self, from: $0)
+        } ?? NormalEditSaveResult(success: false, issue: nil)
+        if result.success {
             editNoticeSequence += 1
             editNotice = (editNoticeSequence, "health_edit_saved_refresh")
         }
-        return saved
+        return result
     }
 
     func restoreAllNormalDefaults() {
@@ -110,19 +164,30 @@ final class HealthDashboardViewModel: ObservableObject {
         }
     }
 
-    func refresh() async {
-        guard !isLoading else { return }
+    @discardableResult
+    func refresh() async -> Bool {
+        guard !isLoading else { return false }
         syncCycle += 1
         isLoading = true
-        try? await Task.sleep(
-            nanoseconds: HealthPullRefreshConfiguration.syncingDurationNanoseconds
-        )
+        do {
+            try await Task.sleep(
+                nanoseconds: HealthPullRefreshConfiguration.syncingDurationNanoseconds
+            )
+        } catch {
+            isLoading = false
+            return false
+        }
+        guard !Task.isCancelled else {
+            isLoading = false
+            return false
+        }
         adapter.refreshHealth()
         apply(adapter.healthState())
         if let effect = adapter.consumeHealthEffect() {
             onEffect?(effect)
         }
         isLoading = false
+        return true
     }
 
     private func apply(_ state: HealthState?) {

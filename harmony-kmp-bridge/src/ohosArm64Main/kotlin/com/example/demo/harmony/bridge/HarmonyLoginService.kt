@@ -110,6 +110,9 @@ open class HarmonyLoginService {
     fun saveNormalHealthEditForm(sectionName: String, valuesSpec: String): Boolean =
         healthFacade.saveNormalEditForm(sectionName, valuesSpec)
 
+    fun saveNormalHealthEditFormResultJson(sectionName: String, valuesSpec: String): String =
+        healthFacade.saveNormalEditFormResultJson(sectionName, valuesSpec)
+
     fun restoreAllNormalHealthDefaults(): String =
         healthFacade.restoreAllNormalDefaults().toString()
 
@@ -260,6 +263,7 @@ open class HarmonyLoginService {
         weightKg: Double,
         measurementSystem: String,
         phone: String,
+        email: String,
         countryRegion: String,
         gender: String
     ) {
@@ -271,6 +275,7 @@ open class HarmonyLoginService {
             weightKg = weightKg,
             measurementSystem = measurementSystem,
             phone = phone,
+            email = email,
             countryRegion = countryRegion,
             gender = gender
         )
@@ -279,6 +284,10 @@ open class HarmonyLoginService {
     fun deleteCurrentAccount(): String {
         return facade.deleteCurrentAccount().orEmpty()
     }
+
+    fun profileDefaultUsername(account: String): String = facade.profileDefaultUsername(account)
+    fun profileDefaultPhone(account: String): String = facade.profileDefaultPhone(account)
+    fun profileDefaultEmail(account: String): String = facade.profileDefaultEmail(account)
 
     fun loadHealthSnapshot(): String {
         healthFacade.load()
@@ -375,7 +384,12 @@ open class HarmonyLoginService {
         dataSource: MemoryAuthStoreDataSource,
         healthDataSource: InMemoryHealthDashboardStateDataSource
     ): LoginFacade {
-        return LoginFacade(LoginStore.create(LocalMockAuthRepository(dataSource)))
+        return LoginFacade(
+            LoginStore.create(
+                authRepository = LocalMockAuthRepository(dataSource),
+                onDeleteUserData = healthDataSource::clear
+            )
+        )
     }
 
     private fun createHealthFacade(

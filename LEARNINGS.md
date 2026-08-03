@@ -127,6 +127,13 @@
 | **刷新时持久数据与草稿的字段级合并** | 同一模块同时含“用户长期数据”和“可丢弃场景草稿”时，刷新只能按字段保留长期数据，不能用旧模块对象整体覆盖草稿。体型管理保留旧 `weightKg/weightHistoryKg`，但 `trainedMuscleGroups` 必须来自当前 Normal 草稿；回归测试需覆盖“已有多条历史 → 保存草稿 → 刷新前不变 → 刷新后变化 → 重建仍一致”。 |
 | **Compose 长按拖拽手势的滚动泄露** | `detectDragGesturesAfterLongPress` 在长按检测完成后、拖拽循环建立前存在指针事件泄露窗口，导致 LazyColumn 滚动与拖拽竞争。应使用 `awaitLongPressOrCancellation` 手动分两阶段：长按等待（由框架消费事件）→ 确认后立即进入 `while(true)` 拖拽循环逐帧消费 `PointerInputChange`。`pointerInput` 的 key 需绑定到拖拽目标列表引用以响应列表变更。 |
 | **HealthState 跨账号复用导致数据串号** | `HealthDashboardViewModel` 在 AuthNavGraph 层用 `remember(viewModel)` 唯一缓存，登出再换号登录后 HealthState 仍持有旧账号数据。修复方案：在 `LoginEffect.AuthSucceeded` 和 `LoggedOut` 时调用 `HealthStore.staleForNewAccount()` 置空 `uiState` 并设 `isRefreshing=true`，使 HealthDashboardScreen 的 `LaunchedEffect` 识别空态并延迟 640ms 后重新 `load()`，产生"空卡片→刷新→恢复数据"的视觉过渡。 |
+| **账号注销的数据域边界** | 注销不能只删除认证仓库；组合根必须先按当前稳定 `userId` 调用健康数据清理，再执行认证账号删除，并让清理失败阻止注销。清理实现同时复位内存中的 UI、草稿与待消费 Effect，回归测试需证明目标用户快照删除且其他用户不受影响。 |
+| **HarmonyOS API 12 清焦点入口** | ArkUI 页面需要在滚动、打开滚轮/弹层或点击非输入操作前通过 `getUIContext().getFocusController().clearFocus()` 结束编辑；`focusControl.clearFocus()` 在当前 API 12 工具链不可用。结构门禁只能防 API 回退，键盘是否收起仍需设备交互复验。 |
+| **健康场景不是编辑数据类型边界** | 正常、异常、部分缺失、全空与读取失败只描述同一健康契约的数据内容或读取结果；编辑器取值不得用场景枚举过滤。应按“当前内存快照 → 当前用户持久化快照 → 默认数据”投影，异常业务值原样回填，缺失模块才映射为 0/无数据。 |
+| **空数据与读取损坏必须正交建模** | 全空是成功读取到各模块为 null，数据损坏是读取失败；两者在输入控件中都可投影为 0/无数据，但必须用独立来源状态保留语义，不能仅凭投影后的数值反推，否则保存或提示会把损坏误判为普通空数据。 |
+| **健康编辑审核按模块返回结构化原因** | 模块编辑保存只审核当前模块，不能让其他缺失模块造成整份草稿失败；失败结果至少包含字段 ID、本地化标签、原因和范围/数量参数。业务上的“异常”不等于结构不合法，只有数字解析、取值范围、选项、数量和字段一致性违反契约时才拒绝。 |
+| **ArkUI 输入字段 key 不得包含输入值** | `ForEach` key 决定组件身份；若使用 `${field.id}_${field.value}`，每输入一个字符都会销毁并重建 `TextInput`，导致焦点跳到其他输入框。静态和重复表单字段均使用稳定 `field.id`，只有动态增删导致 ID/行结构变化时才重建。 |
+| **SwiftUI 跨导航长任务不能由旧 View 抢先认领** | 认证 Effect 与 NavigationStack ResetTo 可能重叠：旧健康页仍观察到请求并先认领，随后 `onDisappear` 取消本地 Task，新页便无任务可执行。账号刷新等跨导航长任务由长期存活 ViewModel 持有 pending/refreshing/resetting 状态；View 只触发 pending 启动并展示状态，退出登录只失效数据而不在无账号时刷新。 |
 
 ## Spec 文件索引
 
