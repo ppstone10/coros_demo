@@ -17,6 +17,7 @@ import { AuthRoutes, ResetPasswordParams } from '../login/AuthRoutes';
 import { navigate, NavOperation } from '../login/AuthNavigator';
 import { AppColors } from '../resources/AppResources';
 
+@Preview
 @Entry
 @Component
 struct ResetPasswordPage {

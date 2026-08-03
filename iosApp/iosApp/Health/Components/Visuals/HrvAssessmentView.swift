@@ -50,6 +50,11 @@ struct HrvAssessmentView: View {
     }
 }
 
+#Preview("HRV assessment") {
+    HrvAssessmentView(visual: previewHealthVisual("HrvAssessment"))
+        .healthVisualPreviewSurface()
+}
+
 private struct HrvAssessmentOverviewView: View {
     let visual: HealthCardVisualData
     let fraction: CGFloat

@@ -1133,6 +1133,7 @@ struct GenderPickerSheetV2 {
 }
 
 
+@Preview
 @Entry
 @Component
 struct ProfileCompletionPage {

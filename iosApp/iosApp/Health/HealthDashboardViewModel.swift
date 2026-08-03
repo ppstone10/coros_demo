@@ -42,9 +42,15 @@ final class HealthDashboardViewModel: ObservableObject {
 
     private let adapter: SharedLoginAdapterProtocol
 
-    init(adapter: SharedLoginAdapterProtocol = SharedLoginAdapter()) {
+    init(
+        adapter: SharedLoginAdapterProtocol = SharedLoginAdapter(),
+        previewState: HealthState? = nil
+    ) {
         self.adapter = adapter
         self.scenarios = adapter.healthScenarioDescriptors()
+        if let previewState {
+            apply(previewState)
+        }
     }
 
     func load() {

@@ -20,3 +20,8 @@ struct TrainingAssessmentView: View {
         .frame(minHeight: 130, alignment: .topLeading)
     }
 }
+
+#Preview("Training assessment") {
+    TrainingAssessmentView(visual: previewHealthVisual("TrainingAssessment"))
+        .healthVisualPreviewSurface()
+}

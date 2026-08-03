@@ -40,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.R
@@ -57,6 +58,8 @@ import com.example.demo.ui.resources.AppColors
 import com.example.demo.ui.resources.AppImage
 import com.example.demo.ui.resources.AppImages
 import com.example.demo.ui.resources.AppSpacing
+import com.example.demo.ui.theme.DemoTheme
+import com.example.demo.login.LoginViewModel
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -550,6 +553,18 @@ private fun EditorHeader(
                 .align(Alignment.CenterEnd)
                 .clickable(onClick = onAction)
                 .padding(horizontal = 8.dp, vertical = 14.dp)
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF000000, locale = "zh")
+@Composable
+private fun NormalDataEditorOverviewPreview() {
+    DemoTheme {
+        NormalDataEditorOverview(
+            viewModel = HealthDashboardViewModel(LoginViewModel().healthStore),
+            onBack = {},
+            onOpenSection = {}
         )
     }
 }

@@ -18,3 +18,8 @@ struct ActivityView: View {
         }.padding(.top, 10)
     }
 }
+
+#Preview("Today activity") {
+    ActivityView(visual: previewHealthVisual("TodayActivity"))
+        .healthVisualPreviewSurface()
+}

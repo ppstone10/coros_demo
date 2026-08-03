@@ -221,9 +221,10 @@
 | `BusinessMockDataSourceTest.kt` | 4 | auth-mock-spec §10, §11, §14 |
 | `HealthDashboardUseCaseTest.kt` | 47 | health-dashboard-cards 测试要求；HLTH-EMPTY-001；HLTH-CONTRACT-001~002；HLTH-SCENARIO-001；RES-MAINT-008；HLTH-VIS-001~003、027~032、042、044、046；HLTH-PERSIST-001~007 |
 | `EditableHealthDataTest.kt` | 16 | HLTH-EDIT-001~005、008、011~013、017~018、020、022~024 |
-| **合计** | **111** | 业务需求映射测试 |
+| `HealthPreviewFixturesTest.kt` | 1 | UI-PREVIEW-001 |
+| **合计** | **112** | 业务需求映射测试 |
 | `HealthStoreTest.kt` | 11 | HLTH-MVI-001~004、HLTH-MVI-010；HLTH-VIS-042 |
-| **common 全部合计** | **122** | 含 Health MVI 架构测试 |
+| **common 全部合计** | **123** | 含 Health MVI 架构测试 |
 | `SessionLifecycleCoordinatorTest.kt` | 2 | AUTH-SESSION-003（Android JVM） |
 
 ---
@@ -401,8 +402,23 @@
 
 ## 跨平台预览注解
 
+> 旧计数仅代表历史注解存在性；完整生产页面、独立视觉组件与跨语言 fixture 的新验收口径见 `cross-platform-ui-previews.md`。
+
 | Spec 章节 | 对应代码位置 | 状态 |
 |-----------|-------------|------|
 | **iOS #Preview** | 23 个 View 文件均有 `#Preview` 块（Login/Home/Account/Health 全部 View 和组件） | ✅ |
 | **HarmonyOS @Preview** | 6 个纯 `@Component` 文件均有 `@Preview` 装饰器（DashboardCard/HeroTopRow/Metric/ScenarioPicker/HealthDetail/CardEditor） | ✅ |
 | **Android @Preview** | 21 个 Compose 屏幕/组件文件均有 `@Preview` 注解 | ✅ |
+
+## cross-platform-ui-previews.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `UI-PREVIEW-001` | common 提供确定性健康 Preview fixture | `HealthPreviewFixturesTest.normalPreviewStateContainsEveryCardWithDeterministicVisualData`；`./gradlew :common:check` | `HealthPreviewFixtures.normalState()` | ✅ |
+| `UI-PREVIEW-002` | Android 直连、iOS typed mapping、HarmonyOS KNOI JSON 映射 | Android/iOS/HarmonyOS 平台构建通过；`./tools/check-ui-previews.sh` | `HealthDashboardScreen`、`HealthDashboardViewModel.init(previewState:)`、`HarmonyLoginService.previewHealthSnapshot()`、ArkTS `loadPreview()` | ✅ |
+| `UI-PREVIEW-003` | 三端生产导航页面均有可发现 Preview | 门禁检查 Android 19、iOS 20、HarmonyOS 16 个生产页面；三端平台构建通过 | 三端页面文件中的 `@Preview` / `#Preview` | ✅ |
+| `UI-PREVIEW-004` | 独立复用组件可预览有数据/预填状态 | 组件目录经门禁且三端构建通过；IDE Canvas 人工视觉检视待执行 | Android/iOS 既有命名 Preview、HarmonyOS `ComponentPreviewCatalog.ets` | ⚠️ |
+| `UI-PREVIEW-005` | 显式清单门禁防止覆盖回退 | `./tools/check-ui-previews.sh`（实现前 24 项失败，实现后通过） | `tools/check-ui-previews.sh` | ✅ |
+| `UI-PREVIEW-006` | 带 `@Prop/@Link/@ObjectLink/@Consume` 的 ArkUI 子组件只通过无外部依赖父 Host 预览 | 门禁实现前定位 2 个直接预览违规，实施后 `./tools/check-ui-previews.sh` 与 HarmonyOS `assembleApp` 通过；Catalog 无 service/lifecycle 调用 | `HealthComponentPreviewCatalog`、`CardEditorPreviewHost`、`HealthDetailPreviewHost`；子组件移除直接 `@Preview` | ✅ |
+| `UI-PREVIEW-007` | 每个生产 SwiftUI View 文件至少有一个 `#Preview` | 门禁实现前定位 16 个缺失文件，实施后 40/40 文件覆盖且 iOS Simulator `xcodebuild` 通过 | 13 个健康 Visual 文件、`AuthCoordinator.swift`、`AuthComponents.swift`、`AppResources.swift`；`previewHealthVisual()` | ✅ |
+| `UI-PREVIEW-008` | ArkUI Preview 静态 import 图不得加载 KNOI native module | 用户 Previewer 日志复现 `knoi.setup` 导出错误；专项门禁实现前 7 项失败，实施后通过；HarmonyOS `assembleApp` 通过 | `HarmonyLoginServiceContract`、`PreviewLoginAdapter`、惰性 `LoginViewModelProvider`、`KnoiHarmonyServiceAdapter`、`EntryAbility` 安装边界 | ✅ |

@@ -27,6 +27,26 @@ func barColor(_ name: String) -> Color {
     name == "High" ? AppColors.Health.warning : name == "Elevated" ? AppColors.Health.visualOrange : name == "Good" ? AppColors.Health.visualYellow : AppColors.Health.visualBar
 }
 
+@MainActor
+func previewHealthVisual(_ cardID: String) -> HealthCardVisualData {
+    let viewModel = HealthDashboardViewModel(
+        previewState: HealthPreviewFixtures.shared.normalState()
+    )
+    guard let visual = viewModel.cards.first(where: { $0.id == cardID })?.visual else {
+        preconditionFailure("Missing shared preview visual for \(cardID)")
+    }
+    return visual
+}
+
+extension View {
+    func healthVisualPreviewSurface() -> some View {
+        padding(16)
+            .frame(width: 360, alignment: .leading)
+            .background(AppColors.Health.card)
+            .preferredColorScheme(.dark)
+    }
+}
+
 func stageOffset(_ name: String) -> CGFloat {
     name == "Awake" ? 0 : name == "Rem" ? 16 : name == "Deep" ? 48 : 32
 }

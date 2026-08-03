@@ -1,7 +1,6 @@
 import hilog from '@ohos.hilog';
 import preferences from '@ohos.data.preferences';
-import { HarmonyLoginService } from '../knoi/provider';
-import { getService } from './HarmonyServiceProvider';
+import { getService, HarmonyLoginServiceContract } from './HarmonyServiceProvider';
 
 const PREFERENCES_NAME = 'mock_auth_store';
 const KEY_STORE_JSON = 'store_json';
@@ -33,14 +32,14 @@ export async function initPersistence(context: Context): Promise<void> {
   }
 }
 
-export function saveStoreSnapshot(service?: HarmonyLoginService): boolean {
+export function saveStoreSnapshot(service?: HarmonyLoginServiceContract): boolean {
   hilog.info(0x0001, 'demo_persist', 'saveStoreSnapshot called');
   if (prefsInstance === null) {
     hilog.warn(0x0001, 'demo_persist', 'saveStoreSnapshot skipped: prefsInstance is null');
     return false;
   }
   try {
-    const svc: HarmonyLoginService = service ?? getService();
+    const svc: HarmonyLoginServiceContract = service ?? getService();
     const json = svc.exportStoreSnapshot();
     prefsInstance.putSync(KEY_STORE_JSON, json);
     const healthJson = svc.exportHealthSnapshot();

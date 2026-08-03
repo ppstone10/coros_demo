@@ -30,13 +30,14 @@ KMP `common` 共享业务层的认证与业务 mock 模块，以及 Android 本�
 | `BusinessMockDataSourceTest` | `common/src/commonTest/.../BusinessMockDataSourceTest.kt` | 4 |
 | `HealthDashboardUseCaseTest` | `common/src/commonTest/.../HealthDashboardUseCaseTest.kt` | 47 |
 | `EditableHealthDataTest` | `common/src/commonTest/.../EditableHealthDataTest.kt` | 16 |
+| `HealthPreviewFixturesTest` | `common/src/commonTest/.../HealthPreviewFixturesTest.kt` | 1 |
 | `HealthStoreTest` | `common/src/commonTest/.../HealthStoreTest.kt` | 11 |
-| **业务需求映射小计** | | **111** |
-| **common 全部合计（含 HealthStore）** | | **122** |
+| **业务需求映射小计** | | **112** |
+| **common 全部合计（含 HealthStore）** | | **123** |
 | `SessionLifecycleCoordinatorTest` | `androidApp/src/test/.../SessionLifecycleCoordinatorTest.kt` | 2 |
 | `AndroidAuthStoreDataSourceTest` | `androidApp/src/androidTest/.../AndroidAuthStoreDataSourceTest.kt` | 1 |
 
-共享业务测试合计：**111 条**；另有 `HealthStoreTest` 11 条架构测试，common 当前共 **122 条**。Android JVM 单元测试当前共 **9 条**，其中本轮会话生命周期调度测试 2 条。计数由源码中的 `@Test` 动态核对。
+共享业务测试合计：**112 条**；另有 `HealthStoreTest` 11 条架构测试，common 当前共 **123 条**。Android JVM 单元测试当前共 **9 条**，其中本轮会话生命周期调度测试 2 条。计数由源码中的 `@Test` 动态核对。
 
 ## 运行命令
 

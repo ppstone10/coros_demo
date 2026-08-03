@@ -10,6 +10,7 @@ interface NormalEditFormTitle {
   sourceMessageKey: string;
 }
 
+@Preview
 @Entry
 @Component
 struct NormalDataEditorPage {

@@ -19,6 +19,11 @@ struct TrainingLoadView: View {
     }
 }
 
+#Preview("Training load") {
+    TrainingLoadView(visual: previewHealthVisual("TrainingLoad"))
+        .healthVisualPreviewSurface()
+}
+
 struct LoadOverviewView: View {
     let visual: HealthCardVisualData
     var body: some View {

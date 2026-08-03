@@ -8,7 +8,11 @@ import { LoginLogicAdapter } from './LoginLogicAdapter';
 import { LoginLogicProvider } from './LoginLogicProvider';
 
 export class LoginViewModel {
-  private adapter: LoginLogicAdapter = LoginLogicProvider.create();
+  private adapter: LoginLogicAdapter;
+
+  constructor(adapter?: LoginLogicAdapter) {
+    this.adapter = adapter ?? LoginLogicProvider.create();
+  }
 
   get state(): LoginState {
     return this.adapter.getState();

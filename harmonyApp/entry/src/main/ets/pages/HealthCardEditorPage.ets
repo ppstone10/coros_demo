@@ -3,6 +3,7 @@ import { HealthDashboardViewModel } from '../health/HealthDashboardViewModel';
 import { navigate, NavOperation } from '../login/AuthNavigator';
 import { saveStoreSnapshot } from '../login/StorePersister';
 
+@Preview
 @Entry
 @Component
 struct HealthCardEditorPage {

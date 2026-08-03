@@ -21,6 +21,7 @@
 | **法律正文资源结构** | Demo 法律正文使用原生本地化资源保存，并以空行、`## ` 标题和 `**...**` 强调组成受限轻量结构；三端解析器恢复段落样式。英文仅为 Demo 翻译，正式发布前必须法律审校 |
 | **视觉 Token 边界** | 生产页面颜色使用三端语义 `AppColors`，健康页重复字号/间距使用有限 `AppTypography`/`AppSpacing`；门禁只排除 Token 定义文件和明确不发布的 HarmonyOS 调试页，一次性几何与动画参数可保留局部值 |
 | **应用语言边界** | 应用语言是平台 UI 状态，不进入 KMP；三端首次统一 `zh-Hans`，支持 `zh-Hans/en` 应用内选择并由 SharedPreferences、UserDefaults、PersistentStorage/i18n 分别持久化，不能再直接依赖设备 Locale 决定默认展示 |
+| **三端 Preview 数据边界** | Preview 的确定性业务场景定义在 `commonMain`，不包含平台 UI 类型或副作用；Android 直接消费共享模型，iOS 经 Kotlin/Native typed model 进入 Swift 展示适配器，HarmonyOS 经 KNOI JSON 进入 ArkTS 运行时同款 DTO 映射。Preview 宿主缺少 native service 时应安全退化。 |
 
 ## 数据契约
 
@@ -50,6 +51,8 @@
 | Compose 本地化层用 `createConfigurationContext` 覆盖 `LocalContext` 后，`rememberLauncherForActivityResult` 找不到 Activity owner 并在组合时崩溃 | 覆盖前读取 `LocalActivityResultRegistryOwner.current`，覆盖 Context 后在子树显式继续提供；预览等 owner 为空的宿主保持可组合。仅升级 `activity-compose` 不能修复，因为当前实现仍从 `LocalContext` 查找该 owner |
 | iOS KMP 导出：`AuthMode.Register` 在 Swift 中为 `AuthMode.register_`（尾随下划线） | 适配层需使用正确的导出名 |
 | HarmonyOS KNOI `@ServiceProvider` 实例模型不确定是 singleton 还是 factory | 持久化操作前需确认 service 实例一致性；`restoreStoreSnapshot` 后需同步 adapter 状态 |
+| ArkUI 不能直接 Preview 带外部状态装饰器的子组件 | 含 `@Consume`、`@Link`、`@ObjectLink` 或 `@Prop` 的子组件移除直接 `@Preview`；由不含这些外部入参的父 `@Component` Preview Host 持有完整 `@State`/常量，再传给子组件。只通过 ArkTS 构建不足以发现 DevEco 设计态限制，需专项静态门禁。 |
+| ArkUI Preview 会解析完整静态 import 图 | 即使页面未调用 native，只要 `Page → ViewModelProvider → Adapter → knoi/provider` 可达，Previewer 仍会在模块加载阶段因缺少 native `setup` 导出而失败，try/catch 无效。页面必须只 import 纯 ArkTS 契约；生成 service 和 KNOI delegate 仅由 `EntryAbility` 运行时组合根安装，ViewModel provider 禁止模块顶层立即实例化。 |
 | `LoginFacade` 在 Android IDE 中显示 unused warning | 保留 `@Suppress("unused")`，它是给 iOS/HarmonyOS 用的跨语言导出 API |
 | 会话只保留一套冷启动 TTL，冷/暖恢复必须分离 | `pauseSession()` 在后台保存截止时间；`restoreSessionOnColdStart()` 仅冷启动校验；`resumeSessionInSameProcess()` 暖恢复不判过期并清除旧截止时间。Android 不得让独立 `LaunchedEffect` 与 `ON_START` 分别触发冷/暖恢复，否则生命周期补发可能先清除 TTL；应由单一 `ON_START` 协调器保证首次冷恢复、后续暖恢复。强杀时刻不可可靠观测，TTL 从上一次进入后台计算；`SessionTtlMs = 10 * 1000` 仅用于 Demo |
 | Xcode KMP framework 构建：`ENABLE_USER_SCRIPT_SANDBOXING` 必须为 NO | 否则 Run Script phase 被沙箱拦截 |
@@ -66,6 +69,7 @@
 | **Mock 时钟** | 通过 `LocalMockAuthRepository(..., nowEpochMs = { ... })` 注入可控时钟，测试验证码过期、会话 TTL |
 | **覆盖要求** | 至少覆盖：正常流程、校验错误、重复操作、空数据、损坏数据、持久化失败、未登录拦截、会话失效拦截 |
 | **测试写法** | 函数名用 BDD 风格描述行为场景，如 `registerSuccessSavesSessionAndCanBeRestored` |
+| **SwiftUI Preview 覆盖** | 每个包含生产 `struct ...: View` 的 Swift 文件至少有一个 `#Preview`；同文件私有叶组件可由命名 Catalog 覆盖，纯滚动/手势 `UIViewRepresentable` 无独立视觉语义时由所属页面覆盖。健康视觉数据必须从 common fixture 经 Swift adapter 获取。 |
 
 ## SDD 治理约定
 
@@ -150,3 +154,4 @@
 - `spec/android-profile-activity-result.md` — Android 本地化 Context 与资料头像 Activity Result 宿主兼容性规范
 - `spec/profile-edit-layout.md` — 三端个人资料编辑页固定标题栏与滚动内容边界规范
 - `spec/health-editable-normal-data.md` — 正常健康 Mock 的最小源数据、进程内草稿、刷新提交与三端编辑导航规范
+- `spec/cross-platform-ui-previews.md` — 三端生产页面 Preview、共享 fixture 与跨语言展示适配规范

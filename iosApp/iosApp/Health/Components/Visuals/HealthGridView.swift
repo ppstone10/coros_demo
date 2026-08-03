@@ -11,3 +11,8 @@ struct HealthGridView: View {
         }.padding(.top, 8)
     }
 }
+
+#Preview("Health check") {
+    HealthGridView(visual: previewHealthVisual("HealthCheck"))
+        .healthVisualPreviewSurface()
+}

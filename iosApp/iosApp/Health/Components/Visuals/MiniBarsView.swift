@@ -29,3 +29,12 @@ struct MiniBarsView: View {
         .frame(width: width, height: height)
     }
 }
+
+#Preview("Mini bars") {
+    MiniBarsView(
+        points: previewHealthVisual("TrainingLoad").chartPoints,
+        highlightedIndex: previewHealthVisual("TrainingLoad").highlightedIndex?.intValue
+    )
+    .frame(width: 130, height: 54)
+    .healthVisualPreviewSurface()
+}

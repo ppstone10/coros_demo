@@ -38,6 +38,33 @@ export class HealthDashboardViewModel {
     }
   }
 
+  loadPreview(context?: object): void {
+    this.clearEffectMessage();
+    try {
+      this.loadScenarioCatalog();
+    } catch (e) {
+      // Scenario selection is not required for rendering the design preview.
+    }
+    try {
+      this.applySnapshotFromJson(getService().previewHealthSnapshot(), context);
+      this.dashboardVersion++;
+    } catch (e) {
+      this.applyPreviewFallback(context);
+    }
+  }
+
+  private applyPreviewFallback(context?: object): void {
+    this.healthDataCorrupted = false;
+    this.healthSteps = 0;
+    this.healthCalories = 0;
+    this.healthActiveMinutes = 0;
+    this.healthCards = createDefaultHealthCards();
+    if (context) {
+      this.healthDateLabel = localizedHealthText(context, 'health_demo_date', []);
+    }
+    this.dashboardVersion++;
+  }
+
   loadScenarioCatalogOnly(): void {
     try {
       this.loadScenarioCatalog();

@@ -280,3 +280,11 @@ enum ProfileImageStore {
         return UIImage(contentsOfFile: key)
     }
 }
+
+#Preview("Language selection button") {
+    LanguageSelectionButton()
+        .environmentObject(AppLanguageStore.shared)
+        .padding(24)
+        .background(AppColors.Core.black)
+        .preferredColorScheme(.dark)
+}

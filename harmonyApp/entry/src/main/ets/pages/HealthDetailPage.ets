@@ -4,6 +4,7 @@ import { HealthDetailComp } from '../health/detail/HealthDetailComp';
 import { navigate, NavOperation } from '../login/AuthNavigator';
 import { HealthDetailParams } from '../login/AuthRoutes';
 
+@Preview
 @Entry
 @Component
 struct HealthDetailPage {

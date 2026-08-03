@@ -34,6 +34,11 @@ struct AbilityView: View {
     }
 }
 
+#Preview("Running ability") {
+    AbilityView(cardType: "RunningAbility", visual: previewHealthVisual("RunningAbility"))
+        .healthVisualPreviewSurface()
+}
+
 private struct AbilityGaugeOverviewView: View {
     let progress: CGFloat
     let accent: Color

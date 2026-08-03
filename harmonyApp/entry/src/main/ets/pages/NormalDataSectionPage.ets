@@ -55,6 +55,7 @@ interface NormalEditSaveResult {
   issue?: NormalEditValidationIssue;
 }
 
+@Preview
 @Entry
 @Component
 struct NormalDataSectionPage {

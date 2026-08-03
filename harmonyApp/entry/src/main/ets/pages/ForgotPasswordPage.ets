@@ -16,6 +16,7 @@ import {
 import { AuthRoutes } from '../login/AuthRoutes';
 import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
 
+@Preview
 @Entry
 @Component
 struct ForgotPasswordPage {

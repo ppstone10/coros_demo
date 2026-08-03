@@ -7,9 +7,8 @@ import {
   LoginState
 } from './LoginState';
 import { LoginLogicAdapter } from './LoginLogicAdapter';
-import { HarmonyLoginService } from '../knoi/provider';
 import { saveStoreSnapshot } from './StorePersister';
-import { getService } from './HarmonyServiceProvider';
+import { getService, HarmonyLoginServiceContract } from './HarmonyServiceProvider';
 
 interface AuthSessionPayload {
   account: string;
@@ -50,7 +49,7 @@ interface LoginEffectPayload {
 }
 
 export class KnoiLoginAdapter implements LoginLogicAdapter {
-  private readonly harmonyLoginService: HarmonyLoginService = getService();
+  private readonly harmonyLoginService: HarmonyLoginServiceContract = getService();
   private state: LoginState = new LoginState();
 
   constructor() {

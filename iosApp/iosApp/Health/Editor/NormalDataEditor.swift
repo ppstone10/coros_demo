@@ -1,4 +1,5 @@
 import SwiftUI
+import Shared
 
 private struct NormalEditOption: Decodable, Identifiable {
     let value: String
@@ -499,4 +500,20 @@ private func editorHeader(
     }
     .padding(.horizontal, 8)
     .frame(height: 62)
+}
+
+#Preview("Normal data overview") {
+    NormalDataEditorOverview(
+        viewModel: HealthDashboardViewModel(
+            previewState: HealthPreviewFixtures.shared.normalState()
+        ),
+        router: AuthRouter(
+            push: { _ in },
+            pop: {},
+            replaceTop: { _ in },
+            resetTo: { _ in },
+            resetKeepingEntranceAndPush: { _ in }
+        )
+    )
+    .preferredColorScheme(.dark)
 }

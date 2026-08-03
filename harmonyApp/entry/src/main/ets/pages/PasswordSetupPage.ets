@@ -27,6 +27,7 @@ import { navigate, NavOperation } from '../login/AuthNavigator';
 import { handleAuthEffect } from '../login/AuthEffectHandler';
 import { AppColors } from '../resources/AppResources';
 
+@Preview
 @Entry
 @Component
 struct PasswordSetupPage {

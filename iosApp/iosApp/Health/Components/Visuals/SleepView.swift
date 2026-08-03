@@ -19,6 +19,11 @@ struct SleepView: View {
     }
 }
 
+#Preview("Sleep") {
+    SleepView(visual: previewHealthVisual("Sleep"))
+        .healthVisualPreviewSurface()
+}
+
 struct SleepStageOverviewView: View {
     let stages: [SleepStageSegment]
     var body: some View {

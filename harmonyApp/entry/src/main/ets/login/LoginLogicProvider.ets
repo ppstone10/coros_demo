@@ -1,8 +1,16 @@
 import { LoginLogicAdapter } from './LoginLogicAdapter';
-import { KnoiLoginAdapter } from './KnoiLoginAdapter';
+import { PreviewLoginAdapter } from './PreviewLoginAdapter';
+
+type LoginLogicFactory = () => LoginLogicAdapter;
+
+let adapterFactory: LoginLogicFactory = (): LoginLogicAdapter => new PreviewLoginAdapter();
 
 export class LoginLogicProvider {
+  static install(factory: LoginLogicFactory): void {
+    adapterFactory = factory;
+  }
+
   static create(): LoginLogicAdapter {
-    return new KnoiLoginAdapter();
+    return adapterFactory();
   }
 }

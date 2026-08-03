@@ -229,3 +229,9 @@ private func handleNavigation(_ effect: LoginEffect, viewModel: LoginViewModel, 
         break
     }
 }
+
+#Preview("Authentication coordinator") {
+    AuthCoordinator()
+        .environmentObject(AppLanguageStore.shared)
+        .preferredColorScheme(.dark)
+}

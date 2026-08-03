@@ -24,6 +24,14 @@ struct TrendView: View {
     }
 }
 
+#Preview("Heart rate and stress") {
+    VStack(spacing: 20) {
+        TrendView(cardType: "HeartRate", visual: previewHealthVisual("HeartRate"))
+        TrendView(cardType: "Stress", visual: previewHealthVisual("Stress"))
+    }
+    .healthVisualPreviewSurface()
+}
+
 struct HeartRateIntervalOverviewView: View {
     let points: [HealthChartPoint]
     var body: some View {

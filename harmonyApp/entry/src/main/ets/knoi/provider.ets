@@ -113,6 +113,8 @@ export interface HarmonyLoginService {
 
    loadHealthSnapshot(): string;
 
+   previewHealthSnapshot(): string;
+
    selectHealthScene(name: string): string;
 
    refreshHealthSnapshot(): string;

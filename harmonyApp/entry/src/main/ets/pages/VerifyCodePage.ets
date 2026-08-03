@@ -25,6 +25,7 @@ import { AuthRoutes, VerifyCodeParams } from '../login/AuthRoutes';
 import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
 import { AppColors } from '../resources/AppResources';
 
+@Preview
 @Entry
 @Component
 struct VerifyCodePage {

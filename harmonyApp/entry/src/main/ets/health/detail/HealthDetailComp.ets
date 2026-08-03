@@ -1,7 +1,6 @@
 import { AppColors, AppTypography, AppImages } from '../../resources/AppResources';
 import { HealthCardModel, localizedHealthText, resourceText } from '../HealthDashboardTypes';
 
- @Preview
 @Component
 export struct HealthDetailComp {
   @Prop cardId: string = '';

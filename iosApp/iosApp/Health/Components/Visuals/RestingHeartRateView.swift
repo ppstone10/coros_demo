@@ -29,6 +29,11 @@ struct RestingHeartRateView: View {
     }
 }
 
+#Preview("Resting heart rate") {
+    RestingHeartRateView(visual: previewHealthVisual("RestingHeartRate"))
+        .healthVisualPreviewSurface()
+}
+
 private struct RestingHeartRateOverviewView: View {
     let visual: HealthCardVisualData
     let fraction: CGFloat

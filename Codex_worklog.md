@@ -699,3 +699,74 @@
 ## 人工修正点
 - 账号刷新 Task 若因同时存在的刷新而未能启动，不再永久停在 Refreshing；它会恢复 Idle、重新标记 pending，等待健康页再次启动。
 - `HealthDashboardViewModel.refresh()` 改为可取消并返回是否真正完成；页面离开导致手势 Task 取消时，不再忽略取消异常后继续读取账号数据。
+
+# 2026-08-03 14:45 — 完善三端原生 UI Preview 与跨语言 fixture
+
+## 采纳内容
+- [UI-PREVIEW-001] 在 `commonMain` 新增无副作用、可重复的 `HealthPreviewFixtures.normalState()`，以共享健康规则生成完整卡片数据，避免三端分别伪造图表和业务状态。
+- [UI-PREVIEW-002] Android Preview 直接消费共享 `HealthState`；iOS 通过 `HealthDashboardViewModel(previewState:)` 复用现有 Swift 映射；HarmonyOS 通过 KNOI `previewHealthSnapshot()` 输出 JSON，并由 ArkTS `loadPreview()` 复用运行时快照映射。
+- [UI-PREVIEW-003] 补齐三端生产导航页面的工具链 Preview，覆盖 Android 19、iOS 20、HarmonyOS 16 个显式页面清单，并补齐三端正常数据编辑器 Preview。
+- [UI-PREVIEW-004] 健康首页的完整共享数据可驱动卡片族；HarmonyOS 新增组件 Preview catalog，直接展示 Hero、指标、全部健康卡片、账户概览和底部导航。
+- [UI-PREVIEW-004] DevEco Preview 无法加载 KNOI native service 时显式回退为 14 张原生空态卡片和日期/指标壳层；native 可用时仍优先展示 common fixture 的完整有数据状态，不在 ArkTS 重写业务推导。
+- [UI-PREVIEW-005] 新增 `tools/check-ui-previews.sh`，用显式页面清单和跨语言适配稳定符号阻止 Preview 覆盖回退。
+
+## 人工审查点
+- 三端仍保持 KMP 共享业务层 + Compose/SwiftUI/ArkUI 原生 UI；共享 fixture 不引入平台类型，Swift 和 ArkTS 适配均走现有生产展示边界。
+- 自动门禁与平台构建能证明 Preview 可发现、可编译及数据链闭合，不能代替 Android Studio、Xcode、DevEco Studio Canvas 的最终视觉检查；需人工各打开全页面、数据卡和表单 Preview 检查布局。
+- 工作区中 iOS `ScrollViewPanObserver 2.swift` 与 `Health/ScrollViewPanObserver.swift` 的暂存新增/工作区删除状态为本轮开始前已有，本轮未恢复、覆盖或纳入实现。
+
+## 验证结果
+- 红灯先行：`./tools/check-ui-previews.sh` 在实现前报告 24 项缺口；共享测试最初因 `HealthPreviewFixtures` 不存在而编译失败。实现后 `HealthPreviewFixturesTest.normalPreviewStateContainsEveryCardWithDeterministicVisualData` 随 `./gradlew :common:check` 通过。
+- `./gradlew :androidApp:assembleDebug` 通过；iOS Simulator `xcodebuild ... -scheme IOSDemo ... CODE_SIGNING_ALLOWED=NO build` 通过；`./tools/build-shared-harmony.sh` 通过 common 检查、KNOI 生成与 HarmonyOS `assembleApp`，新增组件目录后再次执行 HarmonyOS `assembleApp` 通过。
+- `./tools/check-ui-previews.sh`、`./tools/check-sdd.sh` 与 `git diff --check` 通过；测试报告与动态文档门禁已纳入新增 fixture 测试，common 当前共 123 条。`./tools/check-docs.sh` 仍仅因本轮前已有的 `docs/reference/注册登陆模块介绍.md` 与门禁可信哈希不一致而失败，本轮未修改该历史参考文档。
+
+## 人工修正点
+- Android 首次收敛重复 fixture 时遗漏既有 `HealthMockScenario` import，恢复 import 后重新构建通过。
+- iOS 正常数据编辑器首次加入 typed fixture 时遗漏 `import Shared`，补齐后重新执行 Simulator 构建通过。
+- 共享 fixture 测试最初只接受图表/进度/区间数据，误拒绝以 `primaryValue` 或 `assetKey` 表达的合法卡片；扩展为完整视觉契约后通过。
+- HarmonyOS Preview 最初把场景目录与快照加载放在同一 `try` 中，任一设计宿主能力缺失都会阻止卡片渲染；拆分容错并补显式原生空态回退后，设计态至少始终展示完整卡片结构。
+
+# 2026-08-03 15:00 — 修复 ArkUI Preview Host 并补全 iOS View Preview
+
+## 采纳内容
+- [UI-PREVIEW-006] 移除 `CardEditorComp`、`HealthDetailComp` 上不合法的直接 `@Preview`；新增不含 `@Prop/@Link/@ObjectLink/@Consume` 的 `CardEditorPreviewHost` 与 `HealthDetailPreviewHost`，由父组件持有完整卡片 `@State` 后传入子组件。
+- [UI-PREVIEW-006] 健康组件 Catalog 同步移除 `aboutToAppear`/KNOI 调用，父 Host 直接持有 `createDefaultHealthCards()` 与静态指标，保证 DevEco 设计器不依赖 native service 或页面生命周期；实际页面仍保留 common fixture 的 KNOI JSON 映射能力。
+- [UI-PREVIEW-007] 将 iOS 覆盖口径从导航页面扩大到所有包含生产 `struct ...: View` 的 Swift 文件，补齐 13 个健康可视化模块、认证协调器、认证组件 Catalog 和语言按钮 Preview，当前覆盖为 40/40 文件。
+- [UI-PREVIEW-007] 新增 `previewHealthVisual(cardID:)`，所有 iOS 健康叶组件继续消费 `HealthPreviewFixtures.normalState()` 经 `HealthDashboardViewModel` 映射后的 `HealthCardVisualData`，没有在 Swift 中复制业务图表 fixture。
+- [UI-PREVIEW-005] Preview 门禁新增 ArkUI 直接装饰器违规扫描和 SwiftUI View 文件动态清单；后续新增 View 文件或再次给带外部状态的 ArkUI 子组件直接加 Preview 会立即失败。
+
+## 人工审查点
+- DevEco 的限制发生在设计态而非普通 ArkTS 编译：本轮父 Host 结构和平台构建已验证，但仍建议在 Previewer 中实际打开 `CardEditorPreviewHost`、`HealthDetailPreviewHost` 各确认一次渲染。
+- iOS 两个纯滚动/手势桥接 `UIViewRepresentable` 不具备独立可视内容，按 Spec 由健康页面和编辑器 Preview 覆盖；其余 40 个包含 SwiftUI `View` 的文件均已有 `#Preview`。
+- 工作区中两个 `ScrollViewPanObserver` 的暂存新增/工作区删除状态为本轮前已有，本轮仍未恢复、覆盖或纳入实现。
+
+## 验证结果
+- 红灯先行：升级后的 `./tools/check-ui-previews.sh` 在实现前报告 20 项失败，包括 16 个 iOS View 文件缺 Preview、2 个 ArkUI 子组件直接预览违规、2 个父 Host 缺失；实施后全部通过。
+- iOS Simulator `xcodebuild -project iosApp/iosApp.xcodeproj -scheme IOSDemo -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build` 通过。
+- HarmonyOS `hvigorw assembleApp --no-daemon` 通过；仅保留项目既有的弃用 API、NAPI 验证和未配置签名警告。
+
+## 人工修正点
+- 上轮只按导航页面清单检查 iOS，漏掉独立 Visual 与组件文件；本轮改为从源码动态发现所有 `struct ...: View` 文件，避免静态清单继续失真。
+- 上轮把 `@Prop` 子组件自身视为可直接 Preview，普通 `assembleApp` 没有暴露 DevEco Previewer 的限制；本轮将约束编码进门禁并改用父级 Host。
+
+# 2026-08-03 15:12 — 隔离 ArkUI Preview 与 KNOI native 模块
+
+## 采纳内容
+- [UI-PREVIEW-008] 根据 Previewer 调用栈确认模块加载链 `LoginViewModelProvider → LoginViewModel → LoginLogicProvider → KnoiLoginAdapter → knoi/provider` 会在页面渲染前解析 native 模块；改为纯 ArkTS `HarmonyLoginServiceContract`，页面、健康 ViewModel、编辑表单和持久化层不再静态 import 生成 provider。
+- [UI-PREVIEW-008] `EntryAbility` 在 KNOI `setup/init` 完成后，通过名义类型兼容的 `KnoiHarmonyServiceAdapter` 安装真实 service，并安装 `KnoiLoginAdapter` factory；native import 只保留在运行态组合根、生成 provider 和显式 delegate。
+- [UI-PREVIEW-008] 新增无副作用 `PreviewLoginAdapter` 作为设计宿主默认实现；`LoginViewModelProvider` 改为惰性单例，禁止模块加载时立即创建 ViewModel/native adapter。
+- [UI-PREVIEW-005] Preview 门禁新增 native import 边界、纯 service provider、非 native 登录 factory 和 ViewModel 顶层实例扫描，防止同类模块解析崩溃回归。
+
+## 人工审查点
+- 这次错误发生在 ECMAScript 模块链接阶段，不能通过调用位置的 try/catch 修复；关键验收是任何 `@Preview` 页面静态 import 图均不能到达 `@kuiklybase/knoi`。
+- 生产运行时仍由 `EntryAbility` 安装真实 KNOI service 和登录 adapter，不改变 KMP 数据与认证规则；Preview 默认 adapter 只提供表单可展示、可输入的本地状态，不执行持久化或真实认证。
+- DevEco 命令行构建不能完全替代 Previewer 进程，本轮已从源码图上移除报错路径，仍应在用户当前 DevEco Previewer 中重新打开原报错页面确认缓存已刷新。
+
+## 验证结果
+- `./tools/check-ui-previews.sh` 新门禁在实现前报告 7 项红灯：缺少安装边界、纯 provider 仍 import native、登录 provider 静态 import KNOI adapter、ViewModel 顶层立即创建，以及 3 个越界 native import；实施后全部通过。
+- HarmonyOS `hvigorw assembleApp --no-daemon` 最终通过，仅保留项目既有弃用 API、NAPI 验证和未配置签名警告。
+- `rg` 复核显示 KNOI import 仅存在于 `EntryAbility.ets`、生成的 `knoi/provider.ets` 和仅由 EntryAbility 引用的 `KnoiHarmonyServiceAdapter.ets`；所有 Preview 页面依赖的 provider、ViewModel 与 StorePersister 均为纯 ArkTS 模块。
+
+## 人工修正点
+- 第一版直接把生成 `HarmonyLoginService` 传给同形纯接口，ArkTS 因禁止结构化类型而编译失败；增加显式逐方法 delegate 后满足名义类型约束并重新构建通过。
+- 单纯把原全局 ViewModel 改为惰性仍不足以切断模块 import；同时移除 `LoginLogicProvider` 对 `KnoiLoginAdapter` 的静态依赖，并由 `EntryAbility` 安装 factory，才真正避免 Previewer 解析 native 模块。

@@ -27,6 +27,11 @@ struct RecoveryView: View {
     }
 }
 
+#Preview("Recovery") {
+    RecoveryView(visual: previewHealthVisual("Recovery"))
+        .healthVisualPreviewSurface()
+}
+
 private struct RecoveryGaugeOverviewView: View {
     let progress: CGFloat
 

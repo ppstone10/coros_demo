@@ -6,6 +6,7 @@ import com.example.demo.common.health.HealthEffect
 import com.example.demo.common.health.HealthFacade
 import com.example.demo.common.health.HealthFacadeFactory
 import com.example.demo.common.health.HealthMockScenario
+import com.example.demo.common.health.HealthPreviewFixtures
 import com.example.demo.common.health.HealthState
 import com.example.demo.common.health.healthScenarioFromPersistedCode
 import com.example.demo.common.health.InMemoryHealthDashboardStateDataSource
@@ -298,6 +299,10 @@ open class HarmonyLoginService {
             healthSnapshotFromState(state)
         }
     }
+
+    /** Side-effect-free common fixture for ArkUI Preview and screenshot tooling. */
+    fun previewHealthSnapshot(): String =
+        healthSnapshotFromState(HealthPreviewFixtures.normalState())
 
     fun selectHealthScene(name: String): String {
         return healthFacade.selectScenario(name).toString()

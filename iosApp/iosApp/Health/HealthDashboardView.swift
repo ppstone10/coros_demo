@@ -479,7 +479,9 @@ private extension Comparable {
 
 #Preview {
     HealthDashboardView(
-        viewModel: HealthDashboardViewModel(),
+        viewModel: HealthDashboardViewModel(
+            previewState: HealthPreviewFixtures.shared.normalState()
+        ),
         onOpenDetail: { _ in },
         onOpenEditor: {},
         onOpenNormalDataEditor: {},

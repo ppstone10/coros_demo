@@ -4,6 +4,7 @@ import { LegalParagraph, parseLegalDocument } from '../login/components/LegalCon
 import { LegalDocumentParams } from '../login/AuthRoutes';
 import { navigate, NavOperation } from '../login/AuthNavigator';
 
+@Preview
 @Entry
 @Component
 struct PrivacyPolicyPage {

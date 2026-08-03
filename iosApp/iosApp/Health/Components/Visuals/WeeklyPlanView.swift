@@ -54,3 +54,8 @@ struct WeeklyPlanView: View {
         .onAppear { selectedDay = initDay }
     }
 }
+
+#Preview("Weekly plan") {
+    WeeklyPlanView(visual: previewHealthVisual("WeeklyPlan"))
+        .healthVisualPreviewSurface()
+}

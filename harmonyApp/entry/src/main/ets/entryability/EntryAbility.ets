@@ -3,8 +3,12 @@ import UIAbility from '@ohos.app.ability.UIAbility';
 import { BusinessError } from '@ohos.base';
 import window from '@ohos.window';
 import { init, setup } from '@kuiklybase/knoi';
+import { getHarmonyLoginService } from '../knoi/provider';
 import { initPersistence, saveStoreSnapshot } from '../login/StorePersister';
-import { getService } from '../login/HarmonyServiceProvider';
+import { getService, installHarmonyService } from '../login/HarmonyServiceProvider';
+import { LoginLogicProvider } from '../login/LoginLogicProvider';
+import { KnoiLoginAdapter } from '../login/KnoiLoginAdapter';
+import { KnoiHarmonyServiceAdapter } from '../login/KnoiHarmonyServiceAdapter';
 import { AppColors } from '../resources/AppResources';
 import { initializeAppLanguage } from '../resources/AppLanguage';
 import font from '@ohos.font';
@@ -17,6 +21,8 @@ function initKnoiBridge(): void {
   }
   setup('libkn.so', false);
   init();
+  installHarmonyService(new KnoiHarmonyServiceAdapter(getHarmonyLoginService()));
+  LoginLogicProvider.install(() => new KnoiLoginAdapter());
   knoiInitialized = true;
 }
 

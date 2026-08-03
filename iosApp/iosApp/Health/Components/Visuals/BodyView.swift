@@ -65,3 +65,8 @@ struct BodyView: View {
         }
     }
 }
+
+#Preview("Body management") {
+    BodyView(visual: previewHealthVisual("BodyManagement"), onWeightEdit: {})
+        .healthVisualPreviewSurface()
+}

@@ -40,6 +40,7 @@ import {
 const PAGE_MAIN: string = 'main';
 const PAGE_SCENARIO_PICKER: string = 'scenario_picker';
 
+@Preview
 @Entry
 @Component
 struct SignedInPage {

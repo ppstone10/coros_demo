@@ -1,7 +1,10 @@
 import { LoginViewModel } from './LoginViewModel';
 
-const loginViewModel: LoginViewModel = new LoginViewModel();
+let loginViewModel: LoginViewModel | null = null;
 
 export function getLoginViewModel(): LoginViewModel {
+  if (loginViewModel === null) {
+    loginViewModel = new LoginViewModel();
+  }
   return loginViewModel;
 }

@@ -192,15 +192,18 @@ rules_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/com
 business_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/common/login/BusinessMockDataSourceTest.kt)"
 health_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/common/health/HealthDashboardUseCaseTest.kt)"
 editable_health_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/common/health/EditableHealthDataTest.kt)"
-common_total=$((login_count + rules_count + business_count + health_count + editable_health_count))
+preview_fixture_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/common/health/HealthPreviewFixturesTest.kt)"
+common_total=$((login_count + rules_count + business_count + health_count + editable_health_count + preview_fixture_count))
 
 require_text "TEST_REPORT.md" "### LoginUseCaseTest（${login_count} 条）"
 require_text "TEST_REPORT.md" "### HealthDashboardUseCaseTest（${health_count} 条）"
 require_text "TEST_REPORT.md" "### EditableHealthDataTest（${editable_health_count} 条）"
+require_text "TEST_REPORT.md" "HealthPreviewFixturesTest\` | \`common/src/commonTest/.../HealthPreviewFixturesTest.kt\` | ${preview_fixture_count}"
 require_text "TEST_REPORT.md" "共享业务测试合计：**${common_total} 条**"
 require_text "spec/TRACE.md" "| \`LoginUseCaseTest.kt\` | ${login_count} |"
 require_text "spec/TRACE.md" "| \`HealthDashboardUseCaseTest.kt\` | ${health_count} |"
 require_text "spec/TRACE.md" "| \`EditableHealthDataTest.kt\` | ${editable_health_count} |"
+require_text "spec/TRACE.md" "| \`HealthPreviewFixturesTest.kt\` | ${preview_fixture_count} |"
 require_text "spec/TRACE.md" "| **合计** | **${common_total}** |"
 
 require_text "docs/README.md" "docs/worklog/"

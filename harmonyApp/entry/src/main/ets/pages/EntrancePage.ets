@@ -13,7 +13,9 @@ import {
   selectAppLanguage
 } from '../resources/AppLanguage';
 
-@Entry @Component
+@Preview
+@Entry
+@Component
 struct EntrancePage {
   private viewModel = getLoginViewModel();
   @State isLoggedIn: boolean = false;
