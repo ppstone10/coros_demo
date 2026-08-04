@@ -10,8 +10,8 @@ import androidx.compose.ui.unit.dp
 import com.example.demo.common.health.HealthCardType
 import com.example.demo.common.health.HealthCardVisualData
 import com.example.demo.common.health.HealthPreviewFixtures
-import com.example.demo.ui.resources.AppColors
-import com.example.demo.ui.theme.DemoTheme
+import com.example.demo.core.resources.AppColors
+import com.example.demo.core.theme.DemoTheme
 
 internal fun previewHealthVisual(type: HealthCardType): HealthCardVisualData =
     requireNotNull(

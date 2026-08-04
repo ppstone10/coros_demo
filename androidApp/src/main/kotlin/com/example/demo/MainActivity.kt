@@ -5,10 +5,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.Surface
-import com.example.demo.ui.theme.DemoTheme
+import com.example.demo.core.theme.DemoTheme
 import com.example.demo.navigation.AuthNavGraph
-import com.example.demo.ui.language.ProvideAppLanguage
-import com.example.demo.ui.language.AppLanguageDialogHost
+import com.example.demo.core.resources.ProvideAppLanguage
+import com.example.demo.core.resources.AppLanguageDialogHost
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

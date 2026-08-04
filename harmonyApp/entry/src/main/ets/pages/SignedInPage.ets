@@ -3,26 +3,26 @@ import {
   LoginEffect,
   LoginEffectType,
   LoginState
-} from '../login/LoginState';
-import { getLoginViewModel } from '../login/LoginViewModelProvider';
-import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
-import { AuthRoutes } from '../login/AuthRoutes';
-import { handleAuthEffect } from '../login/AuthEffectHandler';
-import { saveStoreSnapshot } from '../login/StorePersister';
-import { AppColors, AppImages, AppSpacing, AppTypography } from '../resources/AppResources';
+} from '../auth/logic/LoginState';
+import { getLoginViewModel } from '../auth/viewmodel/LoginViewModelProvider';
+import { navigate, navigateWithParams, NavOperation } from '../auth/navigation/AuthNavigator';
+import { AuthRoutes } from '../auth/navigation/AuthRoutes';
+import { handleAuthEffect } from '../auth/navigation/AuthEffectHandler';
+import { saveStoreSnapshot } from '../core/bridge/StorePersister';
+import { AppColors, AppImages, AppSpacing, AppTypography } from '../core/resources/AppResources';
 import {
   APP_LANGUAGE_CHINESE,
   APP_LANGUAGE_ENGLISH,
   selectAppLanguage
-} from '../resources/AppLanguage';
+} from '../core/resources/AppLanguage';
 import { HealthCardModel, createDefaultHealthCards } from '../health/HealthDashboardTypes';
 import { HealthDashboardViewModel, consumePendingStaleRefresh } from '../health/HealthDashboardViewModel';
-import { AccountOverviewComp } from '../account/AccountOverviewComp';
-import { RecordsPlaceholderComp } from './RecordsPlaceholderComp';
-import { ExplorePlaceholderComp } from './ExplorePlaceholderComp';
+import { AccountOverviewComp } from '../home/account/AccountOverviewComp';
+import { RecordsPlaceholderComp } from '../home/RecordsPlaceholderComp';
+import { ExplorePlaceholderComp } from '../home/ExplorePlaceholderComp';
 import { HeroTopRowComp } from '../health/components/HeroTopRowComp';
 import { ScenarioPickerComp } from '../health/components/ScenarioPickerComp';
-import { BottomNavBarComp } from './BottomNavBarComp';
+import { BottomNavBarComp } from '../home/BottomNavBarComp';
 import { MetricComp } from '../health/components/MetricComp';
 import { DashboardCardComp } from '../health/components/DashboardCardComp';
 import { HealthWeightPickerSheetComp } from '../health/components/HealthWeightPickerSheetComp';

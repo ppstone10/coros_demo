@@ -1,4 +1,4 @@
-import { AppColors, AppImages, AppSpacing, AppTypography } from '../../resources/AppResources';
+import { AppColors, AppImages, AppSpacing, AppTypography } from '../../core/resources/AppResources';
 import { HealthCardModel, createDefaultHealthCards, localizedHealthText } from '../HealthDashboardTypes';
 
 @Component

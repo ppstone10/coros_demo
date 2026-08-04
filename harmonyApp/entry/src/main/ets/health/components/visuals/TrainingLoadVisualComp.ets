@@ -1,4 +1,4 @@
-import { AppColors } from '../../../resources/AppResources';
+import { AppColors } from '../../../core/resources/AppResources';
 import { HealthChartPointData, HealthVisualData, localizedHealthText } from '../../HealthDashboardTypes';
 import { barColor, barHeight } from './HealthVisualHelpers';
 

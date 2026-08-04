@@ -7,8 +7,8 @@ import {
   LoginEffect,
   LoginEffectType,
   LoginState
-} from '../login/LoginState';
-import { getLoginViewModel } from '../login/LoginViewModelProvider';
+} from '../auth/logic/LoginState';
+import { getLoginViewModel } from '../auth/viewmodel/LoginViewModelProvider';
 import {
   COROS_BUTTON_RED,
   COROS_BLACK,
@@ -17,7 +17,7 @@ import {
   COROS_MUTED,
   COROS_OVERLAY_COLOR,
   VERSION_TEXT
-} from '../login/components/AuthColors';
+} from '../auth/components/AuthColors';
 import {
   TermsPromptAction,
   AuthTitle,
@@ -27,11 +27,11 @@ import {
   UnderlineInput,
   AgreementRowComp,
   ThirdPartyAreaComp
-} from '../login/components/AuthComponents';
-import { AuthRoutes } from '../login/AuthRoutes';
-import { navigate, NavOperation } from '../login/AuthNavigator';
-import { handleAuthEffect } from '../login/AuthEffectHandler';
-import { AppColors } from '../resources/AppResources';
+} from '../auth/components/AuthComponents';
+import { AuthRoutes } from '../auth/navigation/AuthRoutes';
+import { navigate, NavOperation } from '../auth/navigation/AuthNavigator';
+import { handleAuthEffect } from '../auth/navigation/AuthEffectHandler';
+import { AppColors } from '../core/resources/AppResources';
 
 @Preview
 @Entry

@@ -19,10 +19,10 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.common.health.HealthCardVisualData
-import com.example.demo.ui.resources.AppColors
-import com.example.demo.ui.resources.AppImage
-import com.example.demo.ui.resources.AppImageAsset
-import com.example.demo.ui.resources.AppImages
+import com.example.demo.core.resources.AppColors
+import com.example.demo.core.resources.AppImage
+import com.example.demo.core.resources.AppImageAsset
+import com.example.demo.core.resources.AppImages
 import androidx.compose.ui.res.stringResource
 import com.example.demo.R
 

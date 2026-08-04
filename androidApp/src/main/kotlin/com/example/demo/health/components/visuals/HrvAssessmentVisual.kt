@@ -28,7 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.example.demo.R
 import com.example.demo.common.health.HealthCardVisualData
 import com.example.demo.common.health.HealthRangeLevel
-import com.example.demo.ui.resources.AppColors
+import com.example.demo.core.resources.AppColors
 import kotlin.math.max
 
 @Composable

@@ -1,5 +1,5 @@
 import { CardEntry, HealthCardModel, HealthScenarioEntry, HealthSnapshot, cardIconIndex, createDefaultHealthCards, localizedHealthText } from './HealthDashboardTypes';
-import { getService } from '../login/HarmonyServiceProvider';
+import { getService } from '../core/bridge/HarmonyServiceProvider';
 
 let gPendingStaleRefresh: boolean = false;
 

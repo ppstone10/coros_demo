@@ -1,10 +1,10 @@
 import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
-import { getLoginViewModel } from '../login/LoginViewModelProvider';
+import { getLoginViewModel } from '../auth/viewmodel/LoginViewModelProvider';
 import {
   COROS_BUTTON_RED,
   COROS_BLACK
-} from '../login/components/AuthColors';
+} from '../auth/components/AuthColors';
 import {
   AuthTitle,
   ErrorText,
@@ -12,10 +12,10 @@ import {
   AuthHeader,
   UnderlineInput,
   DisabledUnderlineValue
-} from '../login/components/AuthComponents';
-import { AuthRoutes, ResetPasswordParams } from '../login/AuthRoutes';
-import { navigate, NavOperation } from '../login/AuthNavigator';
-import { AppColors } from '../resources/AppResources';
+} from '../auth/components/AuthComponents';
+import { AuthRoutes, ResetPasswordParams } from '../auth/navigation/AuthRoutes';
+import { navigate, NavOperation } from '../auth/navigation/AuthNavigator';
+import { AppColors } from '../core/resources/AppResources';
 
 @Preview
 @Entry

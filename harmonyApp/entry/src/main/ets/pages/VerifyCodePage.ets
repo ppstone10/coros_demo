@@ -4,14 +4,14 @@ import {
   AuthMode,
   LoginActionType,
   LoginState
-} from '../login/LoginState';
-import { getLoginViewModel } from '../login/LoginViewModelProvider';
+} from '../auth/logic/LoginState';
+import { getLoginViewModel } from '../auth/viewmodel/LoginViewModelProvider';
 import {
   COROS_RED,
   COROS_BLACK,
   COROS_WHITE,
   COROS_MUTED
-} from '../login/components/AuthColors';
+} from '../auth/components/AuthColors';
 import {
   VerifyTargetKind,
   verifyCodeMessage,
@@ -20,10 +20,10 @@ import {
   AuthHeader,
   CodeBoxesComp,
   BlockingLoadingOverlay
-} from '../login/components/AuthComponents';
-import { AuthRoutes, VerifyCodeParams } from '../login/AuthRoutes';
-import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
-import { AppColors } from '../resources/AppResources';
+} from '../auth/components/AuthComponents';
+import { AuthRoutes, VerifyCodeParams } from '../auth/navigation/AuthRoutes';
+import { navigate, navigateWithParams, NavOperation } from '../auth/navigation/AuthNavigator';
+import { AppColors } from '../core/resources/AppResources';
 
 @Preview
 @Entry

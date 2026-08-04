@@ -44,11 +44,11 @@ import com.example.demo.common.health.HealthMetric
 import com.example.demo.common.health.HealthPreviewFixtures
 import com.example.demo.common.health.HealthVisualLevel
 import com.example.demo.common.health.LocalizedTextSpec
-import com.example.demo.ui.resources.AppColors
-import com.example.demo.ui.resources.AppImage
-import com.example.demo.ui.resources.AppImages
-import com.example.demo.ui.resources.AppSpacing
-import com.example.demo.ui.theme.DemoTheme
+import com.example.demo.core.resources.AppColors
+import com.example.demo.core.resources.AppImage
+import com.example.demo.core.resources.AppImages
+import com.example.demo.core.resources.AppSpacing
+import com.example.demo.core.theme.DemoTheme
 import kotlin.math.max
 
 internal val CorosFontFamily = FontFamily(

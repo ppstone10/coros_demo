@@ -30,28 +30,28 @@ import com.example.demo.common.login.AuthMode
 import com.example.demo.common.login.LoginEffect
 import com.example.demo.common.login.PostLoginRoute
 import com.example.demo.common.login.VerifyTarget
-import com.example.demo.login.components.rememberLoginViewModel
-import com.example.demo.login.components.findActivity
-import com.example.demo.login.components.localizedAuthMessage
-import com.example.demo.login.entrance.EntranceScreen
-import com.example.demo.login.legal.PrivacyPolicyScreen
-import com.example.demo.login.legal.ServiceTermsScreen
-import com.example.demo.login.login.LoginPageScreen
-import com.example.demo.login.password.ForgotPasswordScreen
-import com.example.demo.login.password.PasswordSetupScreen
-import com.example.demo.login.password.ResetPasswordScreen
-import com.example.demo.login.profile.ProfileCompletionScreen
-import com.example.demo.login.register.EmailRegisterScreen
-import com.example.demo.login.register.PhoneRegisterScreen
+import com.example.demo.auth.components.rememberLoginViewModel
+import com.example.demo.auth.components.findActivity
+import com.example.demo.auth.components.localizedAuthMessage
+import com.example.demo.auth.screens.entrance.EntranceScreen
+import com.example.demo.auth.screens.legal.PrivacyPolicyScreen
+import com.example.demo.auth.screens.legal.ServiceTermsScreen
+import com.example.demo.auth.screens.login.LoginPageScreen
+import com.example.demo.auth.screens.password.ForgotPasswordScreen
+import com.example.demo.auth.screens.password.PasswordSetupScreen
+import com.example.demo.auth.screens.password.ResetPasswordScreen
+import com.example.demo.auth.screens.profile.ProfileCompletionScreen
+import com.example.demo.auth.screens.register.EmailRegisterScreen
+import com.example.demo.auth.screens.register.PhoneRegisterScreen
 import com.example.demo.home.MainTabsScreen
 import com.example.demo.health.CardEditor
 import com.example.demo.health.DetailPlaceholder
-import com.example.demo.health.HealthDashboardViewModel
+import com.example.demo.health.viewmodel.HealthDashboardViewModel
 import com.example.demo.health.NormalDataEditorOverview
 import com.example.demo.health.NormalDataSectionEditor
 import com.example.demo.common.health.HealthEditableSection
-import com.example.demo.login.profile.PersonalProfileEditScreen
-import com.example.demo.login.verify.VerifyCodeScreen
+import com.example.demo.auth.screens.profile.PersonalProfileEditScreen
+import com.example.demo.auth.screens.verify.VerifyCodeScreen
 import kotlinx.coroutines.launch
 
 private enum class NavOperation {
@@ -168,7 +168,7 @@ fun AuthNavGraph() {
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = com.example.demo.login.components.CorosBlack,
+        containerColor = com.example.demo.auth.components.CorosBlack,
         contentWindowInsets = WindowInsets(0.dp),
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->

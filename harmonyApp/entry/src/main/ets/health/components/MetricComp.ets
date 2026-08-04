@@ -1,4 +1,4 @@
-import { AppColors, AppTypography } from '../../resources/AppResources';
+import { AppColors, AppTypography } from '../../core/resources/AppResources';
 
 @Component
 export struct MetricComp {

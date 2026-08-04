@@ -8,7 +8,7 @@ import { RestingHeartRateVisualComp } from '../health/components/visuals/Resting
 import { SleepVisualComp } from '../health/components/visuals/SleepVisualComp';
 import { TrainingAssessmentVisualComp } from '../health/components/visuals/TrainingAssessmentVisualComp';
 import { TrainingLoadVisualComp } from '../health/components/visuals/TrainingLoadVisualComp';
-import { AppColors } from '../resources/AppResources';
+import { AppColors } from '../core/resources/AppResources';
 import {
   abilityPreviewVisual,
   activityPreviewVisual,

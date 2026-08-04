@@ -5,9 +5,9 @@ import {
   LoginEffect,
   LoginEffectType,
   LoginState
-} from '../login/LoginState';
-import { getLoginViewModel } from '../login/LoginViewModelProvider';
-import { navigate, NavOperation, showToast } from '../login/AuthNavigator';
+} from '../auth/logic/LoginState';
+import { getLoginViewModel } from '../auth/viewmodel/LoginViewModelProvider';
+import { navigate, NavOperation, showToast } from '../auth/navigation/AuthNavigator';
 import {
   COROS_BUTTON_RED,
   COROS_BLACK,
@@ -15,16 +15,16 @@ import {
   COROS_RED,
   COROS_MUTED,
   COROS_LINE
-} from '../login/components/AuthColors';
+} from '../auth/components/AuthColors';
 import {
   AuthTitle,
   ErrorText,
   CorosButton,
   AuthHeader
-} from '../login/components/AuthComponents';
-import { AuthRoutes, ProfilePageParams } from '../login/AuthRoutes';
-import { handleAuthEffect } from '../login/AuthEffectHandler';
-import { AppColors } from '../resources/AppResources';
+} from '../auth/components/AuthComponents';
+import { AuthRoutes, ProfilePageParams } from '../auth/navigation/AuthRoutes';
+import { handleAuthEffect } from '../auth/navigation/AuthEffectHandler';
+import { AppColors } from '../core/resources/AppResources';
 
 
 function pcBuildNumberRange(min: number, max: number, suffix: string = ''): string[] {

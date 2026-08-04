@@ -1,20 +1,20 @@
 import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
-import { getLoginViewModel } from '../login/LoginViewModelProvider';
+import { getLoginViewModel } from '../auth/viewmodel/LoginViewModelProvider';
 import {
   COROS_BUTTON_RED,
   COROS_BLACK,
   COROS_WHITE
-} from '../login/components/AuthColors';
+} from '../auth/components/AuthColors';
 import {
   AuthTitle,
   ErrorText,
   CorosButton,
   AuthHeader,
   UnderlineInput
-} from '../login/components/AuthComponents';
-import { AuthRoutes } from '../login/AuthRoutes';
-import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
+} from '../auth/components/AuthComponents';
+import { AuthRoutes } from '../auth/navigation/AuthRoutes';
+import { navigate, navigateWithParams, NavOperation } from '../auth/navigation/AuthNavigator';
 
 @Preview
 @Entry

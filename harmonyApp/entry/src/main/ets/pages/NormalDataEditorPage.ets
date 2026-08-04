@@ -1,9 +1,9 @@
 import promptAction from '@ohos.promptAction';
-import { getService } from '../login/HarmonyServiceProvider';
-import { AuthRoutes } from '../login/AuthRoutes';
-import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
-import { AppColors, AppSpacing, AppTypography } from '../resources/AppResources';
-import { healthResource } from '../resources/HealthLocalization';
+import { getService } from '../core/bridge/HarmonyServiceProvider';
+import { AuthRoutes } from '../auth/navigation/AuthRoutes';
+import { navigate, navigateWithParams, NavOperation } from '../auth/navigation/AuthNavigator';
+import { AppColors, AppSpacing, AppTypography } from '../core/resources/AppResources';
+import { healthResource } from '../core/resources/HealthLocalization';
 
 interface NormalEditFormTitle {
   titleKey: string;

@@ -1,4 +1,4 @@
-import { AppColors } from '../../../resources/AppResources';
+import { AppColors } from '../../../core/resources/AppResources';
 import { HealthChartPointData, HealthRangeData } from '../../HealthDashboardTypes';
 
 export function barColor(kind: string, point: HealthChartPointData, index: number, highlightedIndex: number): ResourceColor {

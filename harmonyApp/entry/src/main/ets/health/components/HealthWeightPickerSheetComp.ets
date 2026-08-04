@@ -1,4 +1,4 @@
-import { AppColors } from '../../resources/AppResources';
+import { AppColors } from '../../core/resources/AppResources';
 
 @Component
 export struct HealthWeightPickerSheetComp {

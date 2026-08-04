@@ -1,4 +1,4 @@
-import { AppColors, AppTypography, AppImages } from '../../resources/AppResources';
+import { AppColors, AppTypography, AppImages } from '../../core/resources/AppResources';
 import lottie, { AnimationItem } from '@ohos/lottie';
 
 @Component

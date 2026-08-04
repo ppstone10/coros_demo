@@ -1,10 +1,10 @@
 import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
-import { getService } from '../login/HarmonyServiceProvider';
-import { NormalDataSectionParams } from '../login/AuthRoutes';
-import { navigate, NavOperation } from '../login/AuthNavigator';
-import { AppColors, AppImages, AppSpacing, AppTypography } from '../resources/AppResources';
-import { healthResource } from '../resources/HealthLocalization';
+import { getService } from '../core/bridge/HarmonyServiceProvider';
+import { NormalDataSectionParams } from '../auth/navigation/AuthRoutes';
+import { navigate, NavOperation } from '../auth/navigation/AuthNavigator';
+import { AppColors, AppImages, AppSpacing, AppTypography } from '../core/resources/AppResources';
+import { healthResource } from '../core/resources/HealthLocalization';
 import { localizedHealthText } from '../health/HealthDashboardTypes';
 
 interface NormalEditOption {

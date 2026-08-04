@@ -27,9 +27,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.common.health.HealthCardVisualData
 import com.example.demo.common.health.LocalizedTextSpec
-import com.example.demo.ui.resources.AppColors
-import com.example.demo.ui.resources.AppImage
-import com.example.demo.ui.resources.AppImages
+import com.example.demo.core.resources.AppColors
+import com.example.demo.core.resources.AppImage
+import com.example.demo.core.resources.AppImages
 
 @Composable
 fun WeeklyVisual(v: HealthCardVisualData) {

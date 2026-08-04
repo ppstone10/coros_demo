@@ -27,15 +27,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.R
 import com.example.demo.common.health.HealthCardType
-import com.example.demo.health.HealthDashboardScreen
-import com.example.demo.health.HealthDashboardViewModel
-import com.example.demo.login.LoginViewModel
-import com.example.demo.login.signedin.SignedInScreen
-import com.example.demo.ui.resources.AppColors
-import com.example.demo.ui.resources.AppImage
-import com.example.demo.ui.resources.AppImages
-import com.example.demo.ui.resources.SelectableImageAssets
-import com.example.demo.ui.theme.DemoTheme
+import com.example.demo.health.screens.HealthDashboardScreen
+import com.example.demo.health.viewmodel.HealthDashboardViewModel
+import com.example.demo.auth.viewmodel.LoginViewModel
+import com.example.demo.auth.screens.signedin.SignedInScreen
+import com.example.demo.core.resources.AppColors
+import com.example.demo.core.resources.AppImage
+import com.example.demo.core.resources.AppImages
+import com.example.demo.core.resources.SelectableImageAssets
+import com.example.demo.core.theme.DemoTheme
 import androidx.compose.ui.tooling.preview.Preview
 
 private enum class HomeTab(

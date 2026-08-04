@@ -30,11 +30,11 @@ import com.example.demo.common.health.HealthCardUiModel
 import com.example.demo.common.health.HealthCardVisualData
 import com.example.demo.common.health.HealthCardVisualKind
 import com.example.demo.common.health.LocalizedTextSpec
-import com.example.demo.ui.resources.AppColors
-import com.example.demo.ui.resources.AppImage
-import com.example.demo.ui.resources.AppSpacing
-import com.example.demo.ui.resources.AppTypography
-import com.example.demo.ui.theme.DemoTheme
+import com.example.demo.core.resources.AppColors
+import com.example.demo.core.resources.AppImage
+import com.example.demo.core.resources.AppSpacing
+import com.example.demo.core.resources.AppTypography
+import com.example.demo.core.theme.DemoTheme
 
 private val PageBlack = AppColors.Health.Page
 

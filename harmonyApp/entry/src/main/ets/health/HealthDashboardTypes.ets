@@ -1,4 +1,4 @@
-import { healthResource } from '../resources/HealthLocalization';
+import { healthResource } from '../core/resources/HealthLocalization';
 
 export interface CardEntry {
   type: string;

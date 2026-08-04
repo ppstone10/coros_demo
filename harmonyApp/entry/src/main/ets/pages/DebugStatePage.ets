@@ -1,7 +1,7 @@
 import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
-import { LoginViewModel } from '../login/LoginViewModel';
-import { AuthMode, LoginAction, LoginActionType } from '../login/LoginState';
+import { LoginViewModel } from '../auth/viewmodel/LoginViewModel';
+import { AuthMode, LoginAction, LoginActionType } from '../auth/logic/LoginState';
 import {
   COROS_RED,
   COROS_BUTTON_RED,
@@ -9,13 +9,13 @@ import {
   COROS_WHITE,
   COROS_MUTED,
   COROS_LINE
-} from '../login/components/AuthColors';
+} from '../auth/components/AuthColors';
 import {
   CorosButton,
   UnderlineInput,
   AuthHeader,
   ErrorText
-} from '../login/components/AuthComponents';
+} from '../auth/components/AuthComponents';
 
 @Entry
 @Component

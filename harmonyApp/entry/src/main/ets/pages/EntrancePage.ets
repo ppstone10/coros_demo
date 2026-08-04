@@ -1,17 +1,17 @@
 import router from '@ohos.router';
-import { AuthMode, LoginState } from '../login/LoginState';
-import { getLoginViewModel } from '../login/LoginViewModelProvider';
-import { COROS_RED, COROS_BLACK } from '../login/components/AuthColors';
-import { CorosButton } from '../login/components/AuthComponents';
-import { AuthRoutes } from '../login/AuthRoutes';
-import { navigate, NavOperation } from '../login/AuthNavigator';
-import { handleAuthEffect } from '../login/AuthEffectHandler';
-import { AppColors } from '../resources/AppResources';
+import { AuthMode, LoginState } from '../auth/logic/LoginState';
+import { getLoginViewModel } from '../auth/viewmodel/LoginViewModelProvider';
+import { COROS_RED, COROS_BLACK } from '../auth/components/AuthColors';
+import { CorosButton } from '../auth/components/AuthComponents';
+import { AuthRoutes } from '../auth/navigation/AuthRoutes';
+import { navigate, NavOperation } from '../auth/navigation/AuthNavigator';
+import { handleAuthEffect } from '../auth/navigation/AuthEffectHandler';
+import { AppColors } from '../core/resources/AppResources';
 import {
   APP_LANGUAGE_CHINESE,
   APP_LANGUAGE_ENGLISH,
   selectAppLanguage
-} from '../resources/AppLanguage';
+} from '../core/resources/AppLanguage';
 
 @Preview
 @Entry

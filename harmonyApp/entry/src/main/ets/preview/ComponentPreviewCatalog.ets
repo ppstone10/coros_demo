@@ -2,11 +2,11 @@ import { HealthCardModel, createDefaultHealthCards } from '../health/HealthDashb
 import { HeroTopRowComp } from '../health/components/HeroTopRowComp';
 import { MetricComp } from '../health/components/MetricComp';
 import { DashboardCardComp } from '../health/components/DashboardCardComp';
-import { AccountOverviewComp } from '../account/AccountOverviewComp';
-import { BottomNavBarComp } from '../pages/BottomNavBarComp';
+import { AccountOverviewComp } from '../home/account/AccountOverviewComp';
+import { BottomNavBarComp } from '../home/BottomNavBarComp';
 import { CardEditorComp } from '../health/editor/CardEditorComp';
 import { HealthDetailComp } from '../health/detail/HealthDetailComp';
-import { AppColors, AppImages } from '../resources/AppResources';
+import { AppColors, AppImages } from '../core/resources/AppResources';
 
 /**
  * Pure Preview hosts keep required @Prop/@Link values in a parent component.

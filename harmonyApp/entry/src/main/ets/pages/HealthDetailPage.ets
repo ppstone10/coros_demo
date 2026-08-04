@@ -1,8 +1,8 @@
 import router from '@ohos.router';
 import { HealthDashboardViewModel } from '../health/HealthDashboardViewModel';
 import { HealthDetailComp } from '../health/detail/HealthDetailComp';
-import { navigate, NavOperation } from '../login/AuthNavigator';
-import { HealthDetailParams } from '../login/AuthRoutes';
+import { navigate, NavOperation } from '../auth/navigation/AuthNavigator';
+import { HealthDetailParams } from '../auth/navigation/AuthRoutes';
 
 @Preview
 @Entry

@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.common.health.HealthCardType
 import com.example.demo.common.health.HealthCardVisualData
-import com.example.demo.ui.resources.AppColors
+import com.example.demo.core.resources.AppColors
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin

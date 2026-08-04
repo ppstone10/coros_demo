@@ -1,4 +1,4 @@
-import { AppColors, AppImages } from '../../resources/AppResources';
+import { AppColors, AppImages } from '../../core/resources/AppResources';
 import { HealthCardModel, HealthMetricData, localizedHealthText } from '../HealthDashboardTypes';
 import { ActivityVisualComp } from './visuals/ActivityVisualComp';
 import { WeeklyPlanVisualComp } from './visuals/WeeklyPlanVisualComp';

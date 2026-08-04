@@ -1,4 +1,4 @@
-import { AppColors } from '../../../resources/AppResources';
+import { AppColors } from '../../../core/resources/AppResources';
 import { HealthVisualData, SleepStageData, localizedHealthText } from '../../HealthDashboardTypes';
 
 @Component

@@ -16,8 +16,6 @@
 		BF527894301362B700D53B2B /* HealthGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527894301362B700D53B2B /* HealthGridView.swift */; };
 		BF527895301362B700D53B2B /* MiniBarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527895301362B700D53B2B /* MiniBarsView.swift */; };
 		BF527896301362B700D53B2B /* RestingHeartRateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527896301362B700D53B2B /* RestingHeartRateView.swift */; };
-		BF640001301362B700D53B2B /* AbilityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92640001301362B700D53B2B /* AbilityView.swift */; };
-		BF640002301362B700D53B2B /* HrvAssessmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92640002301362B700D53B2B /* HrvAssessmentView.swift */; };
 		BF527897301362B700D53B2B /* SleepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527897301362B700D53B2B /* SleepView.swift */; };
 		BF527898301362B700D53B2B /* TrainingAssessmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527898301362B700D53B2B /* TrainingAssessmentView.swift */; };
 		BF527899301362B700D53B2B /* TrainingLoadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92527899301362B700D53B2B /* TrainingLoadView.swift */; };
@@ -27,15 +25,12 @@
 		BF52789E301362B700D53B2B /* HeroTopRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9252789E301362B700D53B2B /* HeroTopRow.swift */; };
 		BF52789F301362B700D53B2B /* ScenarioPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9252789F301362B700D53B2B /* ScenarioPickerView.swift */; };
 		BF5278A0301362B700D53B2B /* ScrollViewPanObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A0301362B700D53B2B /* ScrollViewPanObserver.swift */; };
-
 		BF5278A3301362B700D53B2B /* HealthDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A3301362B700D53B2B /* HealthDetailView.swift */; };
 		BF5278A5301362B700D53B2B /* HealthCardEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A5301362B700D53B2B /* HealthCardEditor.swift */; };
-		BF5278E5301362B700D53B2B /* NormalDataEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278E5301362B700D53B2B /* NormalDataEditor.swift */; };
 		BF5278A6301362B700D53B2B /* ScrollViewAccessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A6301362B700D53B2B /* ScrollViewAccessor.swift */; };
 		BF5278A8301362B700D53B2B /* HealthCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A8301362B700D53B2B /* HealthCard.swift */; };
 		BF5278A9301362B700D53B2B /* HealthDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A9301362B700D53B2B /* HealthDashboardView.swift */; };
 		BF5278AA301362B700D53B2B /* HealthDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278AA301362B700D53B2B /* HealthDashboardViewModel.swift */; };
-
 		BF5278AD301362B700D53B2B /* ExplorePlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278AD301362B700D53B2B /* ExplorePlaceholderView.swift */; };
 		BF5278AE301362B700D53B2B /* MainTabsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278AE301362B700D53B2B /* MainTabsView.swift */; };
 		BF5278AF301362B700D53B2B /* RecordsPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278AF301362B700D53B2B /* RecordsPlaceholderView.swift */; };
@@ -57,16 +52,19 @@
 		BF5278C2301362B700D53B2B /* AuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278C2301362B700D53B2B /* AuthCoordinator.swift */; };
 		BF5278C3301362B700D53B2B /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278C3301362B700D53B2B /* LoginViewModel.swift */; };
 		BF5278C4301362B700D53B2B /* SharedLoginAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278C4301362B700D53B2B /* SharedLoginAdapter.swift */; };
-		BF5278C9301362B700D53B2B /* AppResources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278C9301362B700D53B2B /* AppResources.swift */; };
-		BF5278CF301362B700D53B2B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278CF301362B700D53B2B /* ContentView.swift */; };
-		BF5278D0301362B700D53B2B /* IOSDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278D0301362B700D53B2B /* IOSDemoApp.swift */; };
 		BF5278C6301362B700D53B2B /* COROS-APP-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 925278C6301362B700D53B2B /* COROS-APP-Bold.ttf */; };
 		BF5278C7301362B700D53B2B /* COROS-APP-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 925278C7301362B700D53B2B /* COROS-APP-Regular.ttf */; };
+		BF5278C9301362B700D53B2B /* AppResources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278C9301362B700D53B2B /* AppResources.swift */; };
 		BF5278CA301362B700D53B2B /* home.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 925278CA301362B700D53B2B /* home.mp4 */; };
 		BF5278CB301362B700D53B2B /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 925278CB301362B700D53B2B /* Localizable.xcstrings */; };
 		BF5278CC301362B700D53B2B /* watch_status.json in Resources */ = {isa = PBXBuildFile; fileRef = 925278CC301362B700D53B2B /* watch_status.json */; };
 		BF5278CE301362B700D53B2B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 925278CE301362B700D53B2B /* Assets.xcassets */; };
+		BF5278CF301362B700D53B2B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278CF301362B700D53B2B /* ContentView.swift */; };
+		BF5278D0301362B700D53B2B /* IOSDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278D0301362B700D53B2B /* IOSDemoApp.swift */; };
 		BF5278D1301362B700D53B2B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 925278D1301362B700D53B2B /* LaunchScreen.storyboard */; };
+		BF5278E5301362B700D53B2B /* NormalDataEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278E5301362B700D53B2B /* NormalDataEditor.swift */; };
+		BF640001301362B700D53B2B /* AbilityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92640001301362B700D53B2B /* AbilityView.swift */; };
+		BF640002301362B700D53B2B /* HrvAssessmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92640002301362B700D53B2B /* HrvAssessmentView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -78,8 +76,6 @@
 		92527894301362B700D53B2B /* HealthGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthGridView.swift; sourceTree = "<group>"; };
 		92527895301362B700D53B2B /* MiniBarsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniBarsView.swift; sourceTree = "<group>"; };
 		92527896301362B700D53B2B /* RestingHeartRateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestingHeartRateView.swift; sourceTree = "<group>"; };
-		92640001301362B700D53B2B /* AbilityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AbilityView.swift; sourceTree = "<group>"; };
-		92640002301362B700D53B2B /* HrvAssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HrvAssessmentView.swift; sourceTree = "<group>"; };
 		92527897301362B700D53B2B /* SleepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepView.swift; sourceTree = "<group>"; };
 		92527898301362B700D53B2B /* TrainingAssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingAssessmentView.swift; sourceTree = "<group>"; };
 		92527899301362B700D53B2B /* TrainingLoadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrainingLoadView.swift; sourceTree = "<group>"; };
@@ -91,7 +87,6 @@
 		925278A0301362B700D53B2B /* ScrollViewPanObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollViewPanObserver.swift; sourceTree = "<group>"; };
 		925278A3301362B700D53B2B /* HealthDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDetailView.swift; sourceTree = "<group>"; };
 		925278A5301362B700D53B2B /* HealthCardEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCardEditor.swift; sourceTree = "<group>"; };
-		925278E5301362B700D53B2B /* NormalDataEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NormalDataEditor.swift; sourceTree = "<group>"; };
 		925278A6301362B700D53B2B /* ScrollViewAccessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollViewAccessor.swift; sourceTree = "<group>"; };
 		925278A8301362B700D53B2B /* HealthCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCard.swift; sourceTree = "<group>"; };
 		925278A9301362B700D53B2B /* HealthDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDashboardView.swift; sourceTree = "<group>"; };
@@ -127,6 +122,9 @@
 		925278CF301362B700D53B2B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		925278D0301362B700D53B2B /* IOSDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSDemoApp.swift; sourceTree = "<group>"; };
 		925278D1301362B700D53B2B /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		925278E5301362B700D53B2B /* NormalDataEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NormalDataEditor.swift; sourceTree = "<group>"; };
+		92640001301362B700D53B2B /* AbilityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AbilityView.swift; sourceTree = "<group>"; };
+		92640002301362B700D53B2B /* HrvAssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HrvAssessmentView.swift; sourceTree = "<group>"; };
 		A20000000000000000000007 /* IOSDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = IOSDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -142,6 +140,87 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		9229F5093021BD35003AF38B /* App */ = {
+			isa = PBXGroup;
+			children = (
+				925278CF301362B700D53B2B /* ContentView.swift */,
+				925278D0301362B700D53B2B /* IOSDemoApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		9229F50A3021BD63003AF38B /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				9229F50C3021BD7D003AF38B /* Resources */,
+				9229F50B3021BD6F003AF38B /* Bridge */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		9229F50B3021BD6F003AF38B /* Bridge */ = {
+			isa = PBXGroup;
+			children = (
+				925278C4301362B700D53B2B /* SharedLoginAdapter.swift */,
+			);
+			path = Bridge;
+			sourceTree = "<group>";
+		};
+		9229F50C3021BD7D003AF38B /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				925278C9301362B700D53B2B /* AppResources.swift */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		9229F50D3021BE0B003AF38B /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				9229F50E3021BE2A003AF38B /* ViewModel */,
+				925278C2301362B700D53B2B /* AuthCoordinator.swift */,
+				925278B5301362B700D53B2B /* Components */,
+				925278C1301362B700D53B2B /* Views */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		9229F50E3021BE2A003AF38B /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				925278C3301362B700D53B2B /* LoginViewModel.swift */,
+			);
+			path = ViewModel;
+			sourceTree = "<group>";
+		};
+		9229F50F3021BEB9003AF38B /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				925278AA301362B700D53B2B /* HealthDashboardViewModel.swift */,
+			);
+			path = ViewModel;
+			sourceTree = "<group>";
+		};
+		9229F5103021BEC6003AF38B /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				925278A8301362B700D53B2B /* HealthCard.swift */,
+				925278A9301362B700D53B2B /* HealthDashboardView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		9229F5113021BF8E003AF38B /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				925278C8301362B700D53B2B /* Fonts */,
+				925278CA301362B700D53B2B /* home.mp4 */,
+				925278CB301362B700D53B2B /* Localizable.xcstrings */,
+				925278CC301362B700D53B2B /* watch_status.json */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		9252788F301362B700D53B2B /* Account */ = {
 			isa = PBXGroup;
 			children = (
@@ -204,12 +283,11 @@
 		925278AC301362B700D53B2B /* Health */ = {
 			isa = PBXGroup;
 			children = (
+				9229F5103021BEC6003AF38B /* Views */,
+				9229F50F3021BEB9003AF38B /* ViewModel */,
 				925278A2301362B700D53B2B /* Components */,
 				925278A4301362B700D53B2B /* Detail */,
 				925278A7301362B700D53B2B /* Editor */,
-				925278A8301362B700D53B2B /* HealthCard.swift */,
-				925278A9301362B700D53B2B /* HealthDashboardView.swift */,
-				925278AA301362B700D53B2B /* HealthDashboardViewModel.swift */,
 			);
 			path = Health;
 			sourceTree = "<group>";
@@ -220,6 +298,7 @@
 				925278AD301362B700D53B2B /* ExplorePlaceholderView.swift */,
 				925278AE301362B700D53B2B /* MainTabsView.swift */,
 				925278AF301362B700D53B2B /* RecordsPlaceholderView.swift */,
+				9252788F301362B700D53B2B /* Account */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -253,18 +332,6 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		925278C5301362B700D53B2B /* Login */ = {
-			isa = PBXGroup;
-			children = (
-				925278B5301362B700D53B2B /* Components */,
-				925278C1301362B700D53B2B /* Views */,
-				925278C2301362B700D53B2B /* AuthCoordinator.swift */,
-				925278C3301362B700D53B2B /* LoginViewModel.swift */,
-				925278C4301362B700D53B2B /* SharedLoginAdapter.swift */,
-			);
-			path = Login;
-			sourceTree = "<group>";
-		};
 		925278C8301362B700D53B2B /* Fonts */ = {
 			isa = PBXGroup;
 			children = (
@@ -274,29 +341,16 @@
 			path = Fonts;
 			sourceTree = "<group>";
 		};
-		925278CD301362B700D53B2B /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				925278C8301362B700D53B2B /* Fonts */,
-				925278C9301362B700D53B2B /* AppResources.swift */,
-				925278CA301362B700D53B2B /* home.mp4 */,
-				925278CB301362B700D53B2B /* Localizable.xcstrings */,
-				925278CC301362B700D53B2B /* watch_status.json */,
-			);
-			path = Resources;
-			sourceTree = "<group>";
-		};
 		925278D2301362B700D53B2B /* iosApp */ = {
 			isa = PBXGroup;
 			children = (
-				9252788F301362B700D53B2B /* Account */,
+				9229F5113021BF8E003AF38B /* Resources */,
+				9229F50D3021BE0B003AF38B /* Auth */,
+				9229F50A3021BD63003AF38B /* Core */,
+				9229F5093021BD35003AF38B /* App */,
 				925278AC301362B700D53B2B /* Health */,
 				925278B0301362B700D53B2B /* Home */,
-				925278C5301362B700D53B2B /* Login */,
-				925278CD301362B700D53B2B /* Resources */,
 				925278CE301362B700D53B2B /* Assets.xcassets */,
-				925278CF301362B700D53B2B /* ContentView.swift */,
-				925278D0301362B700D53B2B /* IOSDemoApp.swift */,
 				925278D1301362B700D53B2B /* LaunchScreen.storyboard */,
 			);
 			path = iosApp;

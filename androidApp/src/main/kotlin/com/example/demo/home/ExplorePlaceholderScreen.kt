@@ -11,8 +11,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.demo.R
-import com.example.demo.ui.resources.AppColors
-import com.example.demo.ui.theme.DemoTheme
+import com.example.demo.core.resources.AppColors
+import com.example.demo.core.theme.DemoTheme
 
 @Composable
 fun ExplorePlaceholderScreen() {

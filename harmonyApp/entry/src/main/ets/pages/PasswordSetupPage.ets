@@ -7,13 +7,13 @@ import {
   LoginEffect,
   LoginEffectType,
   LoginState
-} from '../login/LoginState';
-import { getLoginViewModel } from '../login/LoginViewModelProvider';
+} from '../auth/logic/LoginState';
+import { getLoginViewModel } from '../auth/viewmodel/LoginViewModelProvider';
 import {
   COROS_BUTTON_RED,
   COROS_BLACK,
   COROS_WHITE
-} from '../login/components/AuthColors';
+} from '../auth/components/AuthColors';
 import {
   VerifyTargetKind,
   AuthTitle,
@@ -21,11 +21,11 @@ import {
   CorosButton,
   AuthHeader,
   UnderlineInput
-} from '../login/components/AuthComponents';
-import { AuthRoutes, PasswordSetupParams } from '../login/AuthRoutes';
-import { navigate, NavOperation } from '../login/AuthNavigator';
-import { handleAuthEffect } from '../login/AuthEffectHandler';
-import { AppColors } from '../resources/AppResources';
+} from '../auth/components/AuthComponents';
+import { AuthRoutes, PasswordSetupParams } from '../auth/navigation/AuthRoutes';
+import { navigate, NavOperation } from '../auth/navigation/AuthNavigator';
+import { handleAuthEffect } from '../auth/navigation/AuthEffectHandler';
+import { AppColors } from '../core/resources/AppResources';
 
 @Preview
 @Entry

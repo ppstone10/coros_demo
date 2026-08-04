@@ -1,7 +1,7 @@
 import { CardEditorComp } from '../health/editor/CardEditorComp';
 import { HealthDashboardViewModel } from '../health/HealthDashboardViewModel';
-import { navigate, NavOperation } from '../login/AuthNavigator';
-import { saveStoreSnapshot } from '../login/StorePersister';
+import { navigate, NavOperation } from '../auth/navigation/AuthNavigator';
+import { saveStoreSnapshot } from '../core/bridge/StorePersister';
 
 @Preview
 @Entry

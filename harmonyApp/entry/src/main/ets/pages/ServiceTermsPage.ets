@@ -1,8 +1,8 @@
 import router from '@ohos.router';
-import { COROS_BLACK, COROS_LEGAL_TEXT, COROS_WHITE } from '../login/components/AuthColors';
-import { LegalParagraph, parseLegalDocument } from '../login/components/LegalContent';
-import { LegalDocumentParams } from '../login/AuthRoutes';
-import { navigate, NavOperation } from '../login/AuthNavigator';
+import { COROS_BLACK, COROS_LEGAL_TEXT, COROS_WHITE } from '../auth/components/AuthColors';
+import { LegalParagraph, parseLegalDocument } from '../auth/components/LegalContent';
+import { LegalDocumentParams } from '../auth/navigation/AuthRoutes';
+import { navigate, NavOperation } from '../auth/navigation/AuthNavigator';
 
 @Preview
 @Entry

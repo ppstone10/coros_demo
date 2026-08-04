@@ -1,6 +1,6 @@
 import { TrendVisualComp } from '../health/components/visuals/TrendVisualComp';
 import { WeeklyPlanVisualComp } from '../health/components/visuals/WeeklyPlanVisualComp';
-import { AppColors } from '../resources/AppResources';
+import { AppColors } from '../core/resources/AppResources';
 import {
   heartRatePreviewVisual,
   stressPreviewVisual,

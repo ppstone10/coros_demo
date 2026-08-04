@@ -4,8 +4,8 @@ import {
   AuthMode,
   LoginActionType,
   LoginState
-} from '../login/LoginState';
-import { getLoginViewModel } from '../login/LoginViewModelProvider';
+} from '../auth/logic/LoginState';
+import { getLoginViewModel } from '../auth/viewmodel/LoginViewModelProvider';
 import {
   COROS_BUTTON_RED,
   COROS_BLACK,
@@ -14,7 +14,7 @@ import {
   COROS_OVERLAY_COLOR,
   REGISTER_AGREEMENT_TOP_SPACING,
   REGISTER_ACTION_TOP_SPACING
-} from '../login/components/AuthColors';
+} from '../auth/components/AuthColors';
 import {
   TermsPromptAction,
   VerifyTargetKind,
@@ -24,10 +24,10 @@ import {
   AuthHeader,
   AgreementRowComp,
   PhoneInputComp
-} from '../login/components/AuthComponents';
-import { AuthRoutes } from '../login/AuthRoutes';
-import { navigate, navigateWithParams, NavOperation } from '../login/AuthNavigator';
-import { AppColors } from '../resources/AppResources';
+} from '../auth/components/AuthComponents';
+import { AuthRoutes } from '../auth/navigation/AuthRoutes';
+import { navigate, navigateWithParams, NavOperation } from '../auth/navigation/AuthNavigator';
+import { AppColors } from '../core/resources/AppResources';
 
 @Preview
 @Entry

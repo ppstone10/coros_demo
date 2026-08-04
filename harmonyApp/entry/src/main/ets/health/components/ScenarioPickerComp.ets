@@ -1,5 +1,5 @@
-import { AppColors } from '../../resources/AppResources';
-import { healthResource } from '../../resources/HealthLocalization';
+import { AppColors } from '../../core/resources/AppResources';
+import { healthResource } from '../../core/resources/HealthLocalization';
 import { HealthScenarioEntry } from '../HealthDashboardTypes';
 
 @Component
