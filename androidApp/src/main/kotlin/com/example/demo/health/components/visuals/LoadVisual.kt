@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,4 +61,10 @@ private fun LoadOverview(v: HealthCardVisualData) {
             }
         }
     }
+}
+
+@Preview(name = "Training load visual", showBackground = true, backgroundColor = 0xFF171719)
+@Composable
+private fun LoadVisualPreview() {
+    PreviewVisualSurface { LoadVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.TrainingLoad)) }
 }

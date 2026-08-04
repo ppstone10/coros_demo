@@ -57,6 +57,14 @@ iOS 每个包含生产 `struct ...: View` 声明的 Swift 文件必须至少有�
 
 任何带 `@Preview` 的 ArkTS 文件，其静态 import 图不得到达 `@kuiklybase/knoi` 或生成的 `knoi/provider.ets`。KNOI 初始化、生成 service 获取和 native adapter 安装只允许从 `EntryAbility` 运行时组合根进入；普通页面依赖纯 ArkTS service contract/provider。登录 ViewModel 在 native factory 尚未安装时使用无副作用 Preview adapter，且不得在模块顶层立即创建 native ViewModel/service。
 
+### UI-PREVIEW-009：Android/HarmonyOS Visual 模块覆盖
+
+- Android 每个生产健康 Visual Kotlin 文件必须包含至少一个命名 `@Preview`，并从 common fixture 按稳定卡片 ID 获取真实 `HealthCardVisualData`。
+- HarmonyOS 每个生产 `*VisualComp.ets` 必须被纯 ArkTS `VisualPreviewCatalog` 父 Host 直接实例化覆盖；由于 VisualComp 使用 `@Prop`，不得在子组件文件上直接标注 `@Preview`。
+- 单个 ArkTS 文件最多声明 10 个 `@Preview`；超过时必须拆分为多个纯父 Catalog，门禁按全部 `VisualPreviewCatalog*.ets` 合并检查覆盖。
+- HarmonyOS Preview 数据中的对象数组必须声明为 `HealthChartPointData[]` 等已知契约类型，不依赖 ArkTS 对对象字面量数组的隐式推断。
+- Preview 宿主必须提供非空图表、区间、阶段或指标等完整合法数据，使专项 Preview 展示有数据状态而非只有空壳。
+
 ## 异常与边界
 
 - Preview 宿主缺少 Activity、导航栈、相册、KNOI native service 或持久化上下文时，页面仍可组合/构建；交互回调退化为空操作。

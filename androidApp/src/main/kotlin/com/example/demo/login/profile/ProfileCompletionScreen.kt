@@ -871,7 +871,7 @@ internal fun copyAvatarToPrivateFile(context: Context, uri: Uri): String {
     return Uri.fromFile(file).toString()
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, locale = "zh")
 @Composable
 private fun ProfileCompletionScreenPreview() {
     DemoTheme {

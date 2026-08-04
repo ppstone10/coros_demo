@@ -53,6 +53,7 @@
 | HarmonyOS KNOI `@ServiceProvider` 实例模型不确定是 singleton 还是 factory | 持久化操作前需确认 service 实例一致性；`restoreStoreSnapshot` 后需同步 adapter 状态 |
 | ArkUI 不能直接 Preview 带外部状态装饰器的子组件 | 含 `@Consume`、`@Link`、`@ObjectLink` 或 `@Prop` 的子组件移除直接 `@Preview`；由不含这些外部入参的父 `@Component` Preview Host 持有完整 `@State`/常量，再传给子组件。只通过 ArkTS 构建不足以发现 DevEco 设计态限制，需专项静态门禁。 |
 | ArkUI Preview 会解析完整静态 import 图 | 即使页面未调用 native，只要 `Page → ViewModelProvider → Adapter → knoi/provider` 可达，Previewer 仍会在模块加载阶段因缺少 native `setup` 导出而失败，try/catch 无效。页面必须只 import 纯 ArkTS 契约；生成 service 和 KNOI delegate 仅由 `EntryAbility` 运行时组合根安装，ViewModel provider 禁止模块顶层立即实例化。 |
+| 健康 Visual 叶组件需要专项 Preview | Android 每个 `*Visual.kt` 在同文件放命名 `@Preview`，通过 `HealthPreviewFixtures` 适配器取 common 数据；HarmonyOS 的 `*VisualComp.ets` 含 `@Prop`，不得直接标 `@Preview`，由不含 KNOI/native import 的纯父 `VisualPreviewCatalog*.ets` 传入完整 ArkTS DTO。DevEco 限制单个文件最多 10 个 `@Preview`，超过必须拆分；Preview DTO 的对象数组必须显式标注 `HealthChartPointData[]` 等已知接口类型。普通平台构建通过不等于设计态通过，仍需专项静态门禁和 Previewer 人工检查。 |
 | `LoginFacade` 在 Android IDE 中显示 unused warning | 保留 `@Suppress("unused")`，它是给 iOS/HarmonyOS 用的跨语言导出 API |
 | 会话只保留一套冷启动 TTL，冷/暖恢复必须分离 | `pauseSession()` 在后台保存截止时间；`restoreSessionOnColdStart()` 仅冷启动校验；`resumeSessionInSameProcess()` 暖恢复不判过期并清除旧截止时间。Android 不得让独立 `LaunchedEffect` 与 `ON_START` 分别触发冷/暖恢复，否则生命周期补发可能先清除 TTL；应由单一 `ON_START` 协调器保证首次冷恢复、后续暖恢复。强杀时刻不可可靠观测，TTL 从上一次进入后台计算；`SessionTtlMs = 10 * 1000` 仅用于 Demo |
 | Xcode KMP framework 构建：`ENABLE_USER_SCRIPT_SANDBOXING` 必须为 NO | 否则 Run Script phase 被沙箱拦截 |

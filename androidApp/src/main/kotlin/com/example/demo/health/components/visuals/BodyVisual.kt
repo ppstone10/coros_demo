@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -106,4 +107,12 @@ private fun BodyRegionLayer(asset: AppImageAsset) {
         modifier = Modifier.fillMaxSize(),
         colorFilter = ColorFilter.tint(AppColors.Health.Action)
     )
+}
+
+@Preview(name = "Body management visual", showBackground = true, backgroundColor = 0xFF171719)
+@Composable
+private fun BodyVisualPreview() {
+    PreviewVisualSurface {
+        BodyVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.BodyManagement), onWeightClick = {})
+    }
 }

@@ -770,3 +770,46 @@
 ## 人工修正点
 - 第一版直接把生成 `HarmonyLoginService` 传给同形纯接口，ArkTS 因禁止结构化类型而编译失败；增加显式逐方法 delegate 后满足名义类型约束并重新构建通过。
 - 单纯把原全局 ViewModel 改为惰性仍不足以切断模块 import；同时移除 `LoginLogicProvider` 对 `KnoiLoginAdapter` 的静态依赖，并由 `EntryAbility` 安装 factory，才真正避免 Previewer 解析 native 模块。
+
+# 2026-08-04 09:55 — 补齐 Android 与 HarmonyOS 健康 Visual Preview
+
+## 采纳内容
+- [UI-PREVIEW-009] 为 Android 12 个独立健康 Visual 文件补充同文件命名 `@Preview`；统一通过 `previewHealthVisual()` 从 common `HealthPreviewFixtures.normalState()` 选取生产 `HealthCardVisualData`，并用共享 Preview 容器提供主题与卡片背景。
+- [UI-PREVIEW-009] 为 HarmonyOS 12 个带 `@Prop` 的 `*VisualComp.ets` 新增纯父 `VisualPreviewCatalog.ets`，覆盖能力、活动、身体、健康指标、HRV、恢复、静息心率、睡眠、训练评估、训练负荷、心率/压力趋势和周计划。
+- [UI-PREVIEW-009] 新增纯 ArkTS `VisualPreviewData.ets` 提供完整非空 DTO；该设计态数据不 import KNOI/native，避免 DevEco Previewer 在模块链接阶段加载 `knoi.setup`。
+- [UI-PREVIEW-005] Preview 门禁改为动态发现两端 Visual 文件，并修正 Android 源码从 `src/main/java` 迁移至 `src/main/kotlin` 后失效的页面路径。
+
+## 人工审查点
+- Android Visual Preview 使用 common fixture；HarmonyOS 当前使用与 `HealthVisualData` 契约一致的纯 ArkTS 设计态 DTO，因为 Previewer 无法加载 KMP `.so`。它不是生产数据源；App 运行时仍通过 KNOI 调用 common 动态库并映射真实快照。
+- HarmonyOS 子 Visual 本身继续保留 `@Prop` 且不直接加 `@Preview`，需要在 DevEco Studio 打开 `VisualPreviewCatalog.ets` 的各父 Host 检查实际画布尺寸、文字资源和 Canvas 绘制效果。
+- 工作区中 Profile、Theme 迁移和两个 iOS `ScrollViewPanObserver` 的既有修改未被本轮恢复或覆盖。
+
+## 验证结果
+- 红灯先行：升级 `./tools/check-ui-previews.sh` 后定位 Android 12 个 Visual 缺少 Preview/common fixture 适配，以及 HarmonyOS 纯父 Visual Catalog 缺失；实现后门禁通过，动态覆盖 Android 12/12、HarmonyOS 12/12。
+- Android 执行 `./gradlew :androidApp:clean :androidApp:assembleDebug --no-configuration-cache` 通过；清理前因源码根迁移残留增量符号而出现同文件声明冲突，清理生成缓存后消失。
+- HarmonyOS 执行 `hvigorw assembleApp --no-daemon` 通过，仅保留项目既有弃用 API、NAPI 检查与未配置签名警告。
+- `./tools/check-ui-previews.sh`、`./tools/check-sdd.sh` 与 `git diff --check` 通过；`./tools/check-docs.sh` 仍仅因本轮前已有的 `docs/reference/注册登陆模块介绍.md` 与可信来源哈希不一致而失败，本轮未修改该参考文档。
+
+## 人工修正点
+- HarmonyOS 趋势组合 Preview 初次引用了不存在的 `AppColors.HEALTH_DIVIDER`，按现有设计令牌修正为 `AppColors.DIVIDER` 后通过 ArkTS 编译。
+- Android 初次增量构建把迁移前后的同名源码符号同时留在编译缓存中；确认编译输入清单只有一份源码后，仅清理模块生成目录再重建，没有调整或删除用户源码。
+
+# 2026-08-04 10:07 — 修复 DevEco Visual Preview 文件上限与数组类型
+
+## 采纳内容
+- [UI-PREVIEW-009] 根据 DevEco 设计态报错，将原含 12 个 `@Preview` 的 `VisualPreviewCatalog.ets` 拆为主 Catalog 10 个和 `VisualPreviewCatalogSecondary.ets` 2 个，仍合并覆盖全部 12 个 Visual 子组件。
+- [UI-PREVIEW-009] `VisualPreviewData.ets` 导入并使用 `HealthChartPointData`、`HealthMetricData`、`HealthRangeSegmentData`、`SleepStageData`、`WeeklyDayPlanData`，所有对象数组与空数组均通过显式契约类型变量传入 DTO。
+- [UI-PREVIEW-005] Preview 门禁新增单文件最多 10 个装饰器、跨多个 Visual Catalog 合并覆盖和对象数组显式类型检查。
+
+## 人工审查点
+- `VisualPreviewCatalog.ets` 展示前 10 组 Visual；趋势与周计划需要在 DevEco Studio 打开 `VisualPreviewCatalogSecondary.ets` 查看。
+- 命令行 ArkTS 编译不等价于 Previewer 的设计态规则；本轮已把用户报告的两条设计态限制固化为静态门禁，仍需在 Previewer 中重新加载两个 Catalog 确认 IDE 缓存刷新。
+
+## 验证结果
+- 红灯先行：`./tools/check-ui-previews.sh` 在修复前稳定报告 Catalog 有 12 个 Preview、`weekPoints` 对象数组缺少显式契约类型共 2 项；修复后通过。
+- HarmonyOS `hvigorw assembleApp --no-daemon` 在完整类型化前后均通过；最终构建成功，仅保留项目既有弃用 API、NAPI 检查和未配置签名警告。
+- 最终 `./tools/check-ui-previews.sh`、`./tools/check-sdd.sh` 与 `git diff --check` 通过；主/次 Catalog 装饰器计数分别为 10、2。`./tools/check-docs.sh` 仍仅因既有 `docs/reference/注册登陆模块介绍.md` 可信哈希不一致失败，本轮未修改该参考文档。
+
+## 人工修正点
+- 不只给最先报错的 `weekPoints` 增加类型，还把指标、区间段、睡眠阶段、趋势点、周计划及空数组全部显式类型化，避免 Previewer 继续逐项报告同类问题。
+- Catalog 门禁由只检查单一文件调整为扫描 `VisualPreviewCatalog*.ets`，拆分后不会误判 Trend/WeeklyPlan 覆盖丢失。

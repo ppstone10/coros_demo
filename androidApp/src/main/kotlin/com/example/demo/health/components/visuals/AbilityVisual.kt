@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -104,5 +105,13 @@ private fun AbilityGaugeOverview(v: HealthCardVisualData, accent: Color) {
             Text("0", color = AppColors.Health.Muted, fontSize = 10.sp)
             Text("100", color = AppColors.Health.Muted, fontSize = 10.sp)
         }
+    }
+}
+
+@Preview(name = "Running ability visual", showBackground = true, backgroundColor = 0xFF171719)
+@Composable
+private fun AbilityVisualPreview() {
+    PreviewVisualSurface {
+        AbilityVisual(HealthCardType.RunningAbility, previewHealthVisual(HealthCardType.RunningAbility))
     }
 }

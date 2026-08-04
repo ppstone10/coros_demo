@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -108,4 +109,10 @@ private fun WeekLabels(v: HealthCardVisualData, selectedDayIndex: Int, onDaySele
             }
         }
     }
+}
+
+@Preview(name = "Weekly plan visual", showBackground = true, backgroundColor = 0xFF171719)
+@Composable
+private fun WeeklyVisualPreview() {
+    PreviewVisualSurface { WeeklyVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.WeeklyPlan)) }
 }

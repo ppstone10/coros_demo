@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -97,6 +98,17 @@ private fun StressOverview(v: HealthCardVisualData) {
             }
             val x = index * step
             drawLine(color, Offset(x, size.height), Offset(x, size.height - height), 1.dp.toPx(), StrokeCap.Butt)
+        }
+    }
+}
+
+@Preview(name = "Heart rate and stress visuals", showBackground = true, backgroundColor = 0xFF171719)
+@Composable
+private fun TrendVisualPreview() {
+    PreviewVisualSurface {
+        Column {
+            TrendVisual(HealthCardType.HeartRate, previewHealthVisual(HealthCardType.HeartRate))
+            TrendVisual(HealthCardType.Stress, previewHealthVisual(HealthCardType.Stress))
         }
     }
 }

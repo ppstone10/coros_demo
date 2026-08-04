@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -84,4 +85,10 @@ private fun RecoveryGaugeOverview(v: HealthCardVisualData) {
             maxLines = 1,
         )
     }
+}
+
+@Preview(name = "Recovery visual", showBackground = true, backgroundColor = 0xFF171719)
+@Composable
+private fun RecoveryVisualPreview() {
+    PreviewVisualSurface { RecoveryVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.Recovery)) }
 }

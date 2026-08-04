@@ -35,7 +35,7 @@ struct HealthComponentPreviewCatalog {
       }
       .layoutWeight(1).scrollBar(BarState.Off)
     }
-    .width('100%').height('100%').backgroundColor(AppColors.HEALTH_PAGE)
+    .width('100%').height('100%').backgroundColor(AppColors.HEALTH_DATE)
   }
 }
 
@@ -55,7 +55,7 @@ struct AccountAndNavigationPreviewCatalog {
       })
       BottomNavBarComp({ selectedTab: 3 })
     }
-    .width('100%').height('100%').backgroundColor(AppColors.HEALTH_PAGE)
+    .width('100%').height('100%').backgroundColor(AppColors.HEALTH_DATE)
   }
 }
 

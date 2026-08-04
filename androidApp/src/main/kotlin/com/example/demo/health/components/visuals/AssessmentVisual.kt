@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,4 +47,10 @@ fun AssessmentVisual(v: HealthCardVisualData) {
             }
         }
     }
+}
+
+@Preview(name = "Training assessment visual", showBackground = true, backgroundColor = 0xFF171719)
+@Composable
+private fun AssessmentVisualPreview() {
+    PreviewVisualSurface { AssessmentVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.TrainingAssessment)) }
 }

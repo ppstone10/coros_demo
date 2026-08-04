@@ -14,25 +14,25 @@ require_pattern() {
 }
 
 android_pages=(
-  androidApp/src/main/java/com/example/demo/health/HealthDashboardScreen.kt
-  androidApp/src/main/java/com/example/demo/health/editor/CardEditor.kt
-  androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt
-  androidApp/src/main/java/com/example/demo/health/detail/DetailPlaceholder.kt
-  androidApp/src/main/java/com/example/demo/home/MainTabsScreen.kt
-  androidApp/src/main/java/com/example/demo/home/ExplorePlaceholderScreen.kt
-  androidApp/src/main/java/com/example/demo/home/RecordsPlaceholderScreen.kt
-  androidApp/src/main/java/com/example/demo/login/entrance/EntranceScreen.kt
-  androidApp/src/main/java/com/example/demo/login/login/LoginPageScreen.kt
-  androidApp/src/main/java/com/example/demo/login/register/PhoneRegisterScreen.kt
-  androidApp/src/main/java/com/example/demo/login/register/EmailRegisterScreen.kt
-  androidApp/src/main/java/com/example/demo/login/verify/VerifyCodeScreen.kt
-  androidApp/src/main/java/com/example/demo/login/password/ForgotPasswordScreen.kt
-  androidApp/src/main/java/com/example/demo/login/password/PasswordSetupScreen.kt
-  androidApp/src/main/java/com/example/demo/login/password/ResetPasswordScreen.kt
-  androidApp/src/main/java/com/example/demo/login/profile/ProfileCompletionScreen.kt
-  androidApp/src/main/java/com/example/demo/login/profile/PersonalProfileEditScreen.kt
-  androidApp/src/main/java/com/example/demo/login/legal/LegalDocumentScreen.kt
-  androidApp/src/main/java/com/example/demo/login/signedin/SignedInScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/health/HealthDashboardScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/health/editor/CardEditor.kt
+  androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt
+  androidApp/src/main/kotlin/com/example/demo/health/detail/DetailPlaceholder.kt
+  androidApp/src/main/kotlin/com/example/demo/home/MainTabsScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/home/ExplorePlaceholderScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/home/RecordsPlaceholderScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/login/entrance/EntranceScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/login/login/LoginPageScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/login/register/PhoneRegisterScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/login/register/EmailRegisterScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/login/verify/VerifyCodeScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/login/password/ForgotPasswordScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/login/password/PasswordSetupScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/login/password/ResetPasswordScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/login/profile/ProfileCompletionScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/login/profile/PersonalProfileEditScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/login/legal/LegalDocumentScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/login/signedin/SignedInScreen.kt
 )
 
 ios_pages=(
@@ -85,6 +85,12 @@ while IFS= read -r file; do
   require_pattern "$file" '#Preview' 'iOS SwiftUI View file preview missing'
 done < <(rg -l 'struct[[:space:]]+[A-Za-z0-9_]+:[[:space:]]*View' iosApp/iosApp -g '*.swift' | sort)
 
+while IFS= read -r file; do
+  require_pattern "$file" '@Preview' 'Android health Visual preview missing'
+  require_pattern "$file" 'previewHealthVisual' 'Android health Visual must consume common preview fixture adapter'
+done < <(find androidApp/src/main/kotlin/com/example/demo/health/components/visuals -maxdepth 1 -type f -name '*Visual.kt' | sort)
+require_pattern androidApp/src/main/kotlin/com/example/demo/health/components/visuals/PreviewSupport.kt 'HealthPreviewFixtures' 'Android Visual preview fixture adapter missing'
+
 while IFS=: read -r file line _; do
   preview_block="$(tail -n +"$line" "$file" | sed -n '1,/^[[:space:]]*build()[[:space:]]*{/p')"
   if rg -q '@(Consume|Link|ObjectLink|Prop)' <<<"$preview_block"; then
@@ -94,7 +100,7 @@ while IFS=: read -r file line _; do
 done < <(rg -n '^[[:space:]]*@Preview' harmonyApp/entry/src/main/ets -g '*.ets' | sort)
 
 require_pattern common/src/commonMain/kotlin/com/example/demo/common/health/HealthPreviewFixtures.kt 'object HealthPreviewFixtures' 'shared preview fixture missing'
-require_pattern androidApp/src/main/java/com/example/demo/health/HealthDashboardScreen.kt 'HealthPreviewFixtures' 'Android preview must consume shared fixture'
+require_pattern androidApp/src/main/kotlin/com/example/demo/health/HealthDashboardScreen.kt 'HealthPreviewFixtures' 'Android preview must consume shared fixture'
 require_pattern iosApp/iosApp/Health/HealthDashboardViewModel.swift 'previewState: HealthState' 'iOS typed preview adapter missing'
 require_pattern iosApp/iosApp/Health/HealthDashboardView.swift 'HealthPreviewFixtures' 'iOS preview must consume shared fixture'
 require_pattern harmony-kmp-bridge/src/ohosArm64Main/kotlin/com/example/demo/harmony/bridge/HarmonyLoginService.kt 'previewHealthSnapshot' 'HarmonyOS preview JSON bridge missing'
@@ -104,6 +110,37 @@ require_pattern harmonyApp/entry/src/main/ets/preview/ComponentPreviewCatalog.et
 require_pattern harmonyApp/entry/src/main/ets/preview/ComponentPreviewCatalog.ets 'AccountOverviewComp' 'HarmonyOS shell component preview catalog missing'
 require_pattern harmonyApp/entry/src/main/ets/preview/ComponentPreviewCatalog.ets 'CardEditorPreviewHost' 'HarmonyOS card editor parent preview host missing'
 require_pattern harmonyApp/entry/src/main/ets/preview/ComponentPreviewCatalog.ets 'HealthDetailPreviewHost' 'HarmonyOS health detail parent preview host missing'
+require_pattern harmonyApp/entry/src/main/ets/preview/VisualPreviewCatalog.ets '@Preview' 'HarmonyOS Visual parent preview catalog missing'
+while IFS= read -r file; do
+  visual_name="$(rg -o 'export struct [A-Za-z0-9_]+' "$file" | head -1 | sed 's/export struct //')"
+  if [[ -n "$visual_name" ]]; then
+    if ! rg -q "$visual_name" harmonyApp/entry/src/main/ets/preview/VisualPreviewCatalog*.ets; then
+      echo "FAIL: HarmonyOS Visual parent catalogs do not cover $visual_name"
+      failures=$((failures + 1))
+    fi
+  fi
+done < <(find harmonyApp/entry/src/main/ets/health/components/visuals -maxdepth 1 -type f -name '*VisualComp.ets' | sort)
+for file in harmonyApp/entry/src/main/ets/preview/VisualPreviewCatalog*.ets; do
+  preview_count="$(rg -c '^[[:space:]]*@Preview' "$file")"
+  if (( preview_count > 10 )); then
+    echo "FAIL: HarmonyOS permits at most 10 Preview decorators per file ($file has $preview_count)"
+    failures=$((failures + 1))
+  fi
+done
+require_pattern harmonyApp/entry/src/main/ets/preview/VisualPreviewData.ets \
+  'const weekPoints: HealthChartPointData\[\]' \
+  'HarmonyOS Visual Preview object array must use an explicit contract type'
+if rg -q '(chartPoints|metrics|sleepStages|weeklyDayPlans|segments):[[:space:]]*\[' \
+  harmonyApp/entry/src/main/ets/preview/VisualPreviewData.ets; then
+  echo 'FAIL: HarmonyOS Visual Preview contract arrays must be assigned through explicitly typed variables'
+  failures=$((failures + 1))
+fi
+if rg -q '@kuiklybase/knoi|knoi/provider|getService|loadPreview|aboutToAppear' \
+  harmonyApp/entry/src/main/ets/preview/VisualPreviewCatalog*.ets \
+  harmonyApp/entry/src/main/ets/preview/VisualPreviewData.ets; then
+  echo 'FAIL: HarmonyOS Visual preview catalog/data must remain pure ArkTS and native-module-free'
+  failures=$((failures + 1))
+fi
 if rg -q 'getService|loadPreview|aboutToAppear' harmonyApp/entry/src/main/ets/preview/ComponentPreviewCatalog.ets; then
   echo 'FAIL: HarmonyOS parent preview hosts must not depend on runtime services'
   failures=$((failures + 1))
