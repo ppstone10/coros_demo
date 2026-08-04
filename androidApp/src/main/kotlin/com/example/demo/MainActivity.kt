@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.Surface
 import com.example.demo.core.theme.DemoTheme
-import com.example.demo.navigation.AuthNavGraph
+import com.example.demo.auth.navigation.AuthNavGraph
 import com.example.demo.core.resources.ProvideAppLanguage
 import com.example.demo.core.resources.AppLanguageDialogHost
 

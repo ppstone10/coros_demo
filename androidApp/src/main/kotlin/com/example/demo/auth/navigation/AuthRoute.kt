@@ -1,4 +1,4 @@
-package com.example.demo.navigation
+package com.example.demo.auth.navigation
 
 import com.example.demo.common.login.VerifyTarget
 import kotlinx.serialization.Serializable

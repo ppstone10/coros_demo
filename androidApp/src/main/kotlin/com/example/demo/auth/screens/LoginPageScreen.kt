@@ -1,4 +1,4 @@
-package com.example.demo.auth.screens.login
+package com.example.demo.auth.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer

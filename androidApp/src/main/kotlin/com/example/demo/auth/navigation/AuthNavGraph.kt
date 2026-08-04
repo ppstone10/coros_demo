@@ -1,4 +1,4 @@
-package com.example.demo.navigation
+package com.example.demo.auth.navigation
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +26,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.demo.R
+import com.example.demo.auth.components.CorosBlack
 import com.example.demo.common.login.AuthMode
 import com.example.demo.common.login.LoginEffect
 import com.example.demo.common.login.PostLoginRoute
@@ -36,7 +37,7 @@ import com.example.demo.auth.components.localizedAuthMessage
 import com.example.demo.auth.screens.entrance.EntranceScreen
 import com.example.demo.auth.screens.legal.PrivacyPolicyScreen
 import com.example.demo.auth.screens.legal.ServiceTermsScreen
-import com.example.demo.auth.screens.login.LoginPageScreen
+import com.example.demo.auth.screens.LoginPageScreen
 import com.example.demo.auth.screens.password.ForgotPasswordScreen
 import com.example.demo.auth.screens.password.PasswordSetupScreen
 import com.example.demo.auth.screens.password.ResetPasswordScreen
@@ -168,7 +169,7 @@ fun AuthNavGraph() {
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = com.example.demo.auth.components.CorosBlack,
+        containerColor = CorosBlack,
         contentWindowInsets = WindowInsets(0.dp),
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
