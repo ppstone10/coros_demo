@@ -62,7 +62,7 @@ struct PasswordSetupPage {
   }
 
   onBackPress(): boolean {
-    const target = this.targetKind === VerifyTargetKind.Email ? AuthRoutes.EMAIL_REGISTER : AuthRoutes.PHONE_REGISTER
+    const target = this.targetKind === VerifyTargetKind.Email ? AuthRoutes.auth.EMAIL_REGISTER : AuthRoutes.auth.PHONE_REGISTER
     navigate(NavOperation.ResetKeepingEntranceAndPush, target);
     return true;
   }
@@ -73,7 +73,7 @@ struct PasswordSetupPage {
         Column() {
         AuthHeader({ showBack: true, showFeedback: false,
           backRequested: () => {
-            const target = this.targetKind === VerifyTargetKind.Email ? AuthRoutes.EMAIL_REGISTER : AuthRoutes.PHONE_REGISTER
+            const target = this.targetKind === VerifyTargetKind.Email ? AuthRoutes.auth.EMAIL_REGISTER : AuthRoutes.auth.PHONE_REGISTER
             navigate(NavOperation.ResetKeepingEntranceAndPush, target);
           } });
         AuthTitle($r('app.string.auth_set_login_password'));

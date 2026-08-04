@@ -34,7 +34,7 @@ struct EntrancePage {
     if (this.isLoggedIn && this.sessionAccount.length > 0) {
       let state: LoginState = this.viewModel.state;
       let targetUrl: string = state.currentSession !== null && state.currentSession.isProfileComplete ?
-        AuthRoutes.SIGNED_IN : AuthRoutes.PROFILE_COMPLETION;
+        AuthRoutes.home.SIGNED_IN : AuthRoutes.auth.PROFILE_COMPLETION;
       navigate(NavOperation.ResetTo, targetUrl);
     }
   }
@@ -65,10 +65,10 @@ struct EntrancePage {
           CorosButton({ textValue: $r('app.string.auth_register'), color: COROS_RED, enabledValue: true, loading: false,
             tapRequested: () => {
               this.viewModel.dispatch({ type: 0, mode: AuthMode.Register, username: '', password: '', verifyCode: '', displayName: '', region: 'CN' });
-              navigate(NavOperation.Push, AuthRoutes.PHONE_REGISTER);
+              navigate(NavOperation.Push, AuthRoutes.auth.PHONE_REGISTER);
             } });
           CorosButton({ textValue: $r('app.string.auth_login'), color: AppColors.AUTH_ENTRANCE_BUTTON, enabledValue: true, loading: false,
-            tapRequested: () => { navigate(NavOperation.Push, AuthRoutes.LOGIN); } });
+            tapRequested: () => { navigate(NavOperation.Push, AuthRoutes.auth.LOGIN); } });
         }
         .width('100%')
         .padding({ left: 20, right: 20, bottom: 60 })

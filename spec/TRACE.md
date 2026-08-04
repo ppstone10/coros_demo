@@ -394,6 +394,17 @@
 
 ---
 
+## three-platform-structure.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `STRUCT-001` | common 大文件按职责拆分且公共 API 不变 | ✅ `./gradlew :common:check` 全绿 | ✅ 拆分 `HealthEditableForms.kt`→`HealthEditFormModels/HealthEditFormJson`；`EditableHealthData.kt`→`DefaultEditableHealthData/HealthEditableRules`；`MockHealthDashboardStoreJson.kt`→`HealthJson.kt`；`AuthRepository.kt`→`AuthStoreDataSource/LocalMockAuthRepository`；`MockAuthStoreJson.kt`→`AuthJson/JsonAuthStoreDataSource` | ✅ |
+| `STRUCT-002` | health 导航按域从 auth 导航拆出，路由行为不变 | ✅ Android `assembleDebug`；iOS `xcodebuild`（Simulator build）；HarmonyOS `hvigorw assembleApp` 全部通过 | ✅ Android `health/navigation/HealthNavGraph.kt`+`HealthRoute.kt`（AuthNavGraph 单行挂载）；iOS `Health/Navigation/HealthNavigation.swift`（AuthCoordinator 转发）；HarmonyOS `AuthRoutes` 按 `auth/home/health/debug` 分组（interface 类型，13 个调用文件同步更新） | ✅ |
+| `STRUCT-003` | 平台大文件按组件拆分，三端一一对应 | ✅ Android `./gradlew :androidApp:assembleDebug`；iOS/HarmonyOS 其余项未执行（见债务） | ⚠️ Android `ProfileCompletionScreen.kt`(883)→`ProfileFieldRows/ProfilePickerSheets/ProfileAvatarSheet/ProfileEditHelpers`（368 行主文件）；**债务**：HarmonyOS `ProfileCompletionPage.ets`(1557)、`SignedInPage.ets`(563)、三端 `AuthComponents.*`（.kt785/.swift608/.ets474）、三端 `NormalDataEditor`（.kt571/.swift519/页466）、iOS `HealthDashboardView.swift`(491) 未拆分 | ⚠️（部分完成，剩余为显式结构债务） |
+| `STRUCT-004` | 拆分可追溯，不留孤儿代码 | ✅ `./tools/check-sdd.sh` 通过；`git diff --check` 无冲突标记；`./tools/check-docs.sh` 仅因既有 `docs/reference/注册登陆模块介绍.md` 可信哈希不一致失败（本轮未修改，见历史 worklog） | ✅ 本 TRACE 行记录拆前→拆后落点，无孤儿重复声明 | ✅ |
+
+---
+
 ## 使用约定
 
 1. **新加功能**：先在 `spec/` 下写 .md 或追加章节 → 在本文件预留映射行（状态标为 ⏳）→ 写测试 → 写实现 → 改状态为 ✅

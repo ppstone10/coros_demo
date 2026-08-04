@@ -114,7 +114,7 @@ struct ResetPasswordPage {
       return;
     }
     this.localError = '';
-    navigate(NavOperation.ResetKeepingEntranceAndPush, AuthRoutes.LOGIN);
+    navigate(NavOperation.ResetKeepingEntranceAndPush, AuthRoutes.auth.LOGIN);
     this.showMessage('auth_password_updated');
   }
 

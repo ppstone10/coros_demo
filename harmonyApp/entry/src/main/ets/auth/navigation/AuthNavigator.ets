@@ -28,7 +28,7 @@ export function navigate(operation: NavOperation, target: string): void {
       break;
     case NavOperation.ResetKeepingEntranceAndPush:
       router.clear();
-      router.replaceUrl({ url: AuthRoutes.ENTRANCE });
+      router.replaceUrl({ url: AuthRoutes.auth.ENTRANCE });
       router.pushUrl({ url: target });
       break;
   }
@@ -51,7 +51,7 @@ export function navigateWithParams(operation: NavOperation, options: router.Rout
       break;
     case NavOperation.ResetKeepingEntranceAndPush:
       router.clear();
-      router.replaceUrl({ url: AuthRoutes.ENTRANCE });
+      router.replaceUrl({ url: AuthRoutes.auth.ENTRANCE });
       router.pushUrl(options);
       break;
   }

@@ -30,6 +30,7 @@
 		BF5278A6301362B700D53B2B /* ScrollViewAccessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A6301362B700D53B2B /* ScrollViewAccessor.swift */; };
 		BF5278A8301362B700D53B2B /* HealthCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A8301362B700D53B2B /* HealthCard.swift */; };
 		BF5278A9301362B700D53B2B /* HealthDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278A9301362B700D53B2B /* HealthDashboardView.swift */; };
+		BF5278AA301362B700D53B2C /* HealthNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278AD301362B700D53B2C /* HealthNavigation.swift */; };
 		BF5278AA301362B700D53B2B /* HealthDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278AA301362B700D53B2B /* HealthDashboardViewModel.swift */; };
 		BF5278AD301362B700D53B2B /* ExplorePlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278AD301362B700D53B2B /* ExplorePlaceholderView.swift */; };
 		BF5278AE301362B700D53B2B /* MainTabsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278AE301362B700D53B2B /* MainTabsView.swift */; };
@@ -90,6 +91,7 @@
 		925278A6301362B700D53B2B /* ScrollViewAccessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollViewAccessor.swift; sourceTree = "<group>"; };
 		925278A8301362B700D53B2B /* HealthCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCard.swift; sourceTree = "<group>"; };
 		925278A9301362B700D53B2B /* HealthDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDashboardView.swift; sourceTree = "<group>"; };
+		925278AD301362B700D53B2C /* HealthNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthNavigation.swift; sourceTree = "<group>"; };
 		925278AA301362B700D53B2B /* HealthDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDashboardViewModel.swift; sourceTree = "<group>"; };
 		925278AD301362B700D53B2B /* ExplorePlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplorePlaceholderView.swift; sourceTree = "<group>"; };
 		925278AE301362B700D53B2B /* MainTabsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabsView.swift; sourceTree = "<group>"; };
@@ -288,8 +290,17 @@
 				925278A2301362B700D53B2B /* Components */,
 				925278A4301362B700D53B2B /* Detail */,
 				925278A7301362B700D53B2B /* Editor */,
+				9229F5123021BEC6003AF38B /* Navigation */,
 			);
 			path = Health;
+			sourceTree = "<group>";
+		};
+		9229F5123021BEC6003AF38B /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+				925278AD301362B700D53B2C /* HealthNavigation.swift */,
+			);
+			path = Navigation;
 			sourceTree = "<group>";
 		};
 		925278B0301362B700D53B2B /* Home */ = {
@@ -497,6 +508,7 @@
 				BF5278A6301362B700D53B2B /* ScrollViewAccessor.swift in Sources */,
 				BF5278A8301362B700D53B2B /* HealthCard.swift in Sources */,
 				BF5278A9301362B700D53B2B /* HealthDashboardView.swift in Sources */,
+				BF5278AA301362B700D53B2C /* HealthNavigation.swift in Sources */,
 				BF5278AA301362B700D53B2B /* HealthDashboardViewModel.swift in Sources */,
 				BF5278AD301362B700D53B2B /* ExplorePlaceholderView.swift in Sources */,
 				BF5278AE301362B700D53B2B /* MainTabsView.swift in Sources */,

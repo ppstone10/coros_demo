@@ -74,8 +74,8 @@ struct EmailRegisterPage {
 
           AgreementRowComp({ accepted: this.acceptedTerms,
             acceptedChanged: (_: boolean) => { this.localError = ''; },
-            privacyRequested: () => { this.openLegal(AuthRoutes.PRIVACY_POLICY); },
-            serviceTermsRequested: () => { this.openLegal(AuthRoutes.SERVICE_TERMS); } });
+            privacyRequested: () => { this.openLegal(AuthRoutes.auth.PRIVACY_POLICY); },
+            serviceTermsRequested: () => { this.openLegal(AuthRoutes.auth.SERVICE_TERMS); } });
 
           Blank().height(REGISTER_ACTION_TOP_SPACING)
 
@@ -96,7 +96,7 @@ struct EmailRegisterPage {
                 type: LoginActionType.UsernameChanged, mode: AuthMode.Register, username: '', password: '',
                 verifyCode: '', displayName: '', region: 'CN'
               });
-              navigate(NavOperation.ReplaceTop, AuthRoutes.PHONE_REGISTER);
+              navigate(NavOperation.ReplaceTop, AuthRoutes.auth.PHONE_REGISTER);
             })
 
           Blank().layoutWeight(1)
@@ -140,10 +140,10 @@ struct EmailRegisterPage {
           .textAlign(TextAlign.Center).margin({ top: 12 })
         Row() {
           Text($r('app.string.auth_privacy_policy_link')).fontSize(18).fontColor(COROS_RED)
-            .onClick(() => { this.openLegal(AuthRoutes.PRIVACY_POLICY); })
+            .onClick(() => { this.openLegal(AuthRoutes.auth.PRIVACY_POLICY); })
           Text($r('app.string.auth_terms_joiner')).fontSize(18).fontColor(COROS_WHITE)
           Text($r('app.string.auth_service_terms_link')).fontSize(18).fontColor(COROS_RED)
-            .onClick(() => { this.openLegal(AuthRoutes.SERVICE_TERMS); })
+            .onClick(() => { this.openLegal(AuthRoutes.auth.SERVICE_TERMS); })
         }
         .width('100%').justifyContent(FlexAlign.Center).margin({ top: 8 })
         Blank().height(42)

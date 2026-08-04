@@ -813,3 +813,29 @@
 ## 人工修正点
 - 不只给最先报错的 `weekPoints` 增加类型，还把指标、区间段、睡眠阶段、趋势点、周计划及空数组全部显式类型化，避免 Previewer 继续逐项报告同类问题。
 - Catalog 门禁由只检查单一文件调整为扫描 `VisualPreviewCatalog*.ets`，拆分后不会误判 Trend/WeeklyPlan 覆盖丢失。
+
+# 2026-08-04 16:22 — 三端结构收敛 Phase 2：common 大文件拆分、health 导航按域拆、Android Profile 拆分
+
+## 采纳内容
+- [STRUCT-001] 新增 `spec/three-platform-structure.md`（STRUCT-* 稳定 ID），在 `spec/TRACE.md` 预留 ⏳ 后执行，符合 SDD 强制顺序。
+- [STRUCT-001] common 五个大文件按职责拆分且公共 API 不变：`HealthEditableForms.kt`(748)→`HealthEditFormModels.kt`+`HealthEditFormJson.kt`；`EditableHealthData.kt`(716)→`DefaultEditableHealthData.kt`+`HealthEditableRules.kt`；`MockHealthDashboardStoreJson.kt`(681)→`HealthJson.kt`（自包含 JSON 基础设施，保持 KNOI OHOS 兼容）；`AuthRepository.kt`(534)→`AuthStoreDataSource.kt`+`LocalMockAuthRepository.kt`；`MockAuthStoreJson.kt`(518)→`AuthJson.kt`+`JsonAuthStoreDataSource.kt`。
+- [STRUCT-002] health 导航按域从 auth 导航拆出：Android `health/navigation/HealthNavGraph.kt`（NavGraphBuilder 扩展）+`HealthRoute.kt`，AuthNavGraph 单行挂载；iOS `Health/Navigation/HealthNavigation.swift`（AuthCoordinator 转发，AuthRoute 保持全局 NavigationStack 单一容器）；HarmonyOS `AuthRoutes` 按 `auth/home/health/debug` 分组（ArkTS interface 类型），13 个调用文件同步更新。
+- [STRUCT-003] Android `ProfileCompletionScreen.kt`(883)→`ProfileFieldRows/ProfilePickerSheets/ProfileAvatarSheet/ProfileEditHelpers`，主文件降至 368 行，同包可见性（private→internal 收敛跨文件引用）。
+- [STRUCT-003] 剩余结构债务显式登记：HarmonyOS `ProfileCompletionPage.ets`(1557)、`SignedInPage.ets`(563)、三端 `AuthComponents.*`、三端 `NormalDataEditor`、iOS `HealthDashboardView.swift`(491) 待下一轮拆分。
+
+## 人工审查点
+- iOS `AuthRoute` 枚举仍为全局 NavigationStack 单一路径容器（SwiftUI 约束），本轮只把健康目的地渲染归入 Health 模块；health 的 URL 常量在 HarmonyOS 与 `main_pages.json` 必须保持同步。
+- 拆分严格保持公共 API 与行为不变：`HealthEditFormJson` 用委托函数保留 `HealthEditableForms.formJson/applyResultJson` 等既有入口；Swift/KNOI 类名未动。
+- 剩余 STRUCT-003 债务项涉及 ArkTS 页面与三端共享组件，拆分会触碰预览门禁（`check-ui-previews.sh`）与三端构建，需逐项小步验证，未在本轮强行拆完。
+
+## 验证结果
+- 红灯先行：先在 `spec/TRACE.md` 以 ⏳ 预留 `STRUCT-*` 行；common 基线 `./gradlew :common:check` 拆分前后均全绿（123 条测试回归）。
+- Android：`./gradlew :androidApp:assembleDebug` 在导航拆分与 Profile 拆分后均通过（中途 GenderRow/ProfileTextRow 跨文件 private 编译红灯，改为 internal 后转绿）。
+- iOS：`xcodebuild -project iosApp/iosApp.xcodeproj -scheme IOSDemo -sdk iphonesimulator -configuration Debug build CODE_SIGNING_ALLOWED=NO` 通过（新文件 `HealthNavigation.swift` 手工登记 pbxproj 后）。
+- HarmonyOS：`hvigorw assembleApp --no-daemon` 通过（首次因 ArkTS 对象字面量缺显式类型红灯，补 `AuthRouteGroup/HomeRouteGroup/HealthRouteGroup/DebugRouteGroup` interface 后通过）。
+
+## 人工修正点
+- macOS BSD `sed` 不支持 `\b` 且 zsh 不对未加引号变量按空白切分：改用 zsh `${(f)VAR}` 换行拆分 + 纯字符串替换，避免替换静默失败。
+- ArkTS 禁止无类型对象字面量：`AuthRoutes` 分组静态常量改为声明 `interface` 后以类型化对象赋值。
+- Xcode 显式 pbxproj（非文件系统同步组）：新增 Swift 文件需手工补 PBXBuildFile/PBXFileReference/分组/Sources phase 四处登记，且文件路径须与分组 `path` 一致（`Health/Navigation/`）。
+- Profile 拆分跨文件 private 引用（`ProfileTextRow`/`GenderRow`/`displayText`/`localizedCountryOptions`/`parseBirthDate`）统一收敛为 `internal`，未改变对外公共 API。

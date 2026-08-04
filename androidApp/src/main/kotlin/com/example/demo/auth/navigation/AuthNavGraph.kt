@@ -45,12 +45,11 @@ import com.example.demo.auth.screens.profile.ProfileCompletionScreen
 import com.example.demo.auth.screens.register.EmailRegisterScreen
 import com.example.demo.auth.screens.register.PhoneRegisterScreen
 import com.example.demo.home.MainTabsScreen
-import com.example.demo.health.CardEditor
-import com.example.demo.health.DetailPlaceholder
+import com.example.demo.health.navigation.HealthDetailRoute
+import com.example.demo.health.navigation.HealthEditorRoute
+import com.example.demo.health.navigation.NormalDataEditorRoute
+import com.example.demo.health.navigation.healthNavGraph
 import com.example.demo.health.viewmodel.HealthDashboardViewModel
-import com.example.demo.health.NormalDataEditorOverview
-import com.example.demo.health.NormalDataSectionEditor
-import com.example.demo.common.health.HealthEditableSection
 import com.example.demo.auth.screens.profile.PersonalProfileEditScreen
 import com.example.demo.auth.screens.verify.VerifyCodeScreen
 import kotlinx.coroutines.launch
@@ -351,69 +350,7 @@ fun AuthNavGraph() {
                 )
             }
 
-            composable<HealthDetailRoute> { backStackEntry ->
-                val route: HealthDetailRoute = backStackEntry.toRoute()
-                val card = healthViewModel.state.uiState?.cards
-                    ?.firstOrNull { it.type.name == route.cardType }
-                if (card == null) {
-                    LaunchedEffect(route.cardType) {
-                        navController.popBackStack()
-                    }
-                } else {
-                    DetailPlaceholder(card) {
-                        navController.navigateWithOperation(Unit, NavOperation.Pop)
-                    }
-                }
-            }
-
-            composable<HealthEditorRoute> {
-                CardEditor(
-                    initial = healthViewModel.state.enabledCardTypes,
-                    onClose = {
-                        navController.navigateWithOperation(Unit, NavOperation.Pop)
-                    },
-                    onSave = { types ->
-                        healthViewModel.saveCardConfiguration(types)
-                        navController.navigateWithOperation(Unit, NavOperation.Pop)
-                    }
-                )
-            }
-
-            composable<NormalDataEditorRoute> {
-                NormalDataEditorOverview(
-                    viewModel = healthViewModel,
-                    onBack = {
-                        navController.navigateWithOperation(Unit, NavOperation.Pop)
-                    },
-                    onOpenSection = { section ->
-                        navController.navigateWithOperation(
-                            NormalDataSectionRoute(section.name),
-                            NavOperation.Push
-                        )
-                    }
-                )
-            }
-
-            composable<NormalDataSectionRoute> { backStackEntry ->
-                val route: NormalDataSectionRoute = backStackEntry.toRoute()
-                val section = HealthEditableSection.entries.firstOrNull {
-                    it.name == route.section
-                }
-                if (section == null) {
-                    LaunchedEffect(route.section) { navController.popBackStack() }
-                } else {
-                    NormalDataSectionEditor(
-                        section = section,
-                        viewModel = healthViewModel,
-                        onBack = {
-                            navController.navigateWithOperation(Unit, NavOperation.Pop)
-                        },
-                        onSaved = {
-                            navController.navigateWithOperation(Unit, NavOperation.Pop)
-                        }
-                    )
-                }
-            }
+            healthNavGraph(navController = navController, viewModel = healthViewModel)
 
             composable<ProfileEditRoute> {
                 PersonalProfileEditScreen(

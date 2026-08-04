@@ -116,39 +116,8 @@ struct AuthCoordinator: View {
                                 router: router
                             )
                                 .navigationBarBackButtonHidden(true)
-                        case let .healthDetail(cardID):
-                            if let card = healthViewModel.cards.first(where: { $0.id == cardID }) {
-                                HealthDetailView(card: card) { router.pop() }
-                                    .navigationBarBackButtonHidden(true)
-                            } else {
-                                AppColors.Core.black
-                                    .ignoresSafeArea()
-                                    .onAppear { router.pop() }
-                                    .navigationBarBackButtonHidden(true)
-                            }
-                        case .healthEditor:
-                            HealthCardEditor(
-                                initial: healthViewModel.cards,
-                                onClose: { router.pop() },
-                                onSave: { cards in
-                                    healthViewModel.saveCardConfiguration(cards.map(\.id))
-                                    router.pop()
-                                }
-                            )
-                            .navigationBarBackButtonHidden(true)
-                        case .normalDataEditor:
-                            NormalDataEditorOverview(
-                                viewModel: healthViewModel,
-                                router: router
-                            )
-                            .navigationBarBackButtonHidden(true)
-                        case let .normalDataSection(section):
-                            NormalDataSectionEditor(
-                                section: section,
-                                viewModel: healthViewModel,
-                                router: router
-                            )
-                            .navigationBarBackButtonHidden(true)
+                        case .healthDetail, .healthEditor, .normalDataEditor, .normalDataSection:
+                            healthDestination(route, healthViewModel: healthViewModel, router: router)
                         case .profileEdit:
                             PersonalProfileEditView(viewModel: viewModel) {
                                 router.pop()

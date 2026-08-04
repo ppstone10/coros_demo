@@ -1404,7 +1404,7 @@ struct ProfileCompletionPage {
     }
     this.viewModel.clearSessionSilently();
     this.syncState();
-    navigate(NavOperation.ResetTo, AuthRoutes.ENTRANCE);
+    navigate(NavOperation.ResetTo, AuthRoutes.auth.ENTRANCE);
   }
 
 

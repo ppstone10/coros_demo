@@ -40,16 +40,4 @@ object ProfileCompletionRoute
 object SignedInRoute
 
 @Serializable
-data class HealthDetailRoute(val cardType: String)
-
-@Serializable
-object HealthEditorRoute
-
-@Serializable
-object NormalDataEditorRoute
-
-@Serializable
-data class NormalDataSectionRoute(val section: String)
-
-@Serializable
 object ProfileEditRoute

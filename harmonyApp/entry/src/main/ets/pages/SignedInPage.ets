@@ -139,7 +139,7 @@ struct SignedInPage {
               this.healthVM.selectScenario(name);
               this.currentPage = PAGE_MAIN;
               if (name === 'Normal') {
-                navigate(NavOperation.Push, AuthRoutes.NORMAL_DATA_EDITOR);
+                navigate(NavOperation.Push, AuthRoutes.health.NORMAL_DATA_EDITOR);
               }
             },
             onDismiss: () => {
@@ -260,7 +260,7 @@ struct SignedInPage {
                   .backgroundColor(AppColors.HEALTH_CARD)
                   .borderRadius(22)
                   .margin({ top: AppSpacing.LARGE, bottom: 42 })
-                  .onClick(() => { navigate(NavOperation.Push, AuthRoutes.HEALTH_EDITOR); })
+                  .onClick(() => { navigate(NavOperation.Push, AuthRoutes.health.EDITOR); })
               }
             }
             .width('100%')

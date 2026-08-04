@@ -60,6 +60,11 @@
 | Xcode `FRAMEWORK_SEARCH_PATHS` 需包含所有架构路径 | `iosSimulatorArm64`、`iosX64`、`iosArm64` 的 debug/release 路径 |
 | HarmonyOS hvigor 插件版本必须与本机 DevEco Studio 版本匹配 | DevEco 自动调整后需同步更新 `oh-package.json5` |
 | `iosArm64/debugFramework` 模拟器构建时找不到 | 非阻塞 warning；真机运行需补齐 device framework 或改用 XCFramework |
+| macOS BSD `sed` 不支持 `\b` 且 zsh 不对未加引号变量按空白切分 | 批量替换先 `for f in ${(f)VAR}` 换行拆分，替换模式用纯字符串（常量名无前缀冲突时不用 `\b`），否则 sed 会静默失败 |
+| ArkTS 禁止无类型对象字面量（`arkts-no-untyped-obj-literals`） | 分组常量/配置对象必须声明 `interface` 后以类型化对象赋值；直接 `static auth = {...}` 编译失败 |
+| Xcode 显式 pbxproj 新增 Swift 文件 | 非文件系统同步组时须手工登记 PBXBuildFile/PBXFileReference/分组/Sources phase 四处，且文件磁盘路径必须与分组 `path` 一致，否则 "cannot find in scope" |
+| SwiftUI NavigationStack 要求单一路径类型 | 域级导航拆分只移动目的地渲染（@ViewBuilder 函数归 Health 模块），`AuthRoute` 枚举保持全局 NavigationStack 容器，避免破坏 NavigationPath |
+| 平台大文件拆分的跨文件可见性 | 同一包内拆分时把被其他文件引用的 `private` 收敛为 `internal`（如 `ProfileTextRow/GenderRow/displayText/parseBirthDate`），保持对外公共 API 不变即可通过构建 |
 
 ## 测试约定
 
