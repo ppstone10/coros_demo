@@ -23,7 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.R
-import com.example.demo.common.login.AuthMode
+import com.example.demo.common.auth.model.AuthMode
 import com.example.demo.auth.viewmodel.LoginViewModel
 import com.example.demo.auth.components.AuthTitleSize
 import com.example.demo.auth.components.AuthTitleTopPadding
@@ -35,7 +35,7 @@ import com.example.demo.auth.components.BlockingLoadingOverlay
 import com.example.demo.auth.components.CodeBoxes
 import com.example.demo.auth.components.ErrorText
 import com.example.demo.auth.components.UnavailableFeatureDialog
-import com.example.demo.common.login.VerifyTarget
+import com.example.demo.common.auth.model.VerifyTarget
 import com.example.demo.auth.components.verifyCodeMessage
 import com.example.demo.core.resources.AppColors
 import com.example.demo.core.theme.DemoTheme

@@ -47,8 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.example.demo.R
-import com.example.demo.common.health.DefaultHealthCardOrder
-import com.example.demo.common.health.HealthCardType
+import com.example.demo.common.health.model.DefaultHealthCardOrder
+import com.example.demo.common.health.model.HealthCardType
 import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.AppImage
 import com.example.demo.core.resources.AppImages

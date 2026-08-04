@@ -25,7 +25,7 @@ import com.example.demo.auth.components.ErrorText
 import com.example.demo.auth.components.UnderlineInput
 import androidx.compose.ui.res.stringResource
 import com.example.demo.R
-import com.example.demo.common.login.AuthMessageKeys
+import com.example.demo.common.auth.model.AuthMessageKeys
 import com.example.demo.core.theme.DemoTheme
 
 @Composable

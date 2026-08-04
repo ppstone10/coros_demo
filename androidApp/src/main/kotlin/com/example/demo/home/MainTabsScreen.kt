@@ -26,7 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.R
-import com.example.demo.common.health.HealthCardType
+import com.example.demo.common.health.model.HealthCardType
 import com.example.demo.health.screens.HealthDashboardScreen
 import com.example.demo.health.viewmodel.HealthDashboardViewModel
 import com.example.demo.auth.viewmodel.LoginViewModel

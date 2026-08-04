@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.demo.common.health.HealthCardVisualData
+import com.example.demo.common.health.model.HealthCardVisualData
 import com.example.demo.core.resources.AppColors
 
 @Composable
@@ -52,5 +52,5 @@ fun AssessmentVisual(v: HealthCardVisualData) {
 @Preview(name = "Training assessment visual", showBackground = true, backgroundColor = 0xFF171719)
 @Composable
 private fun AssessmentVisualPreview() {
-    PreviewVisualSurface { AssessmentVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.TrainingAssessment)) }
+    PreviewVisualSurface { AssessmentVisual(previewHealthVisual(com.example.demo.common.health.model.HealthCardType.TrainingAssessment)) }
 }

@@ -1,17 +1,24 @@
 package com.example.demo.common.health
 
-import com.example.demo.common.login.AuthRepository
-import com.example.demo.common.login.InMemoryAuthStoreDataSource
-import com.example.demo.common.login.LocalMockAuthRepository
-import com.example.demo.common.login.LocalMockAuthRepository.Companion.DefaultVerifyCode
-import com.example.demo.common.login.LoginResult
-import com.example.demo.common.login.RegisterUseCase
+import com.example.demo.common.auth.repository.AuthRepository
+import com.example.demo.common.auth.repository.InMemoryAuthStoreDataSource
+import com.example.demo.common.auth.mock.LocalMockAuthRepository
+import com.example.demo.common.auth.mock.LocalMockAuthRepository.Companion.DefaultVerifyCode
+import com.example.demo.common.auth.model.LoginResult
+import com.example.demo.common.auth.usecase.RegisterUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.example.demo.common.health.model.HealthAction
+import com.example.demo.common.health.model.HealthCardType
+import com.example.demo.common.health.model.HealthEffect
+import com.example.demo.common.health.model.HealthError
+import com.example.demo.common.health.model.HealthMockScenario
+import com.example.demo.common.health.store.HealthStore
+import com.example.demo.common.health.store.InMemoryHealthDashboardStateDataSource
 
 class HealthStoreTest {
 

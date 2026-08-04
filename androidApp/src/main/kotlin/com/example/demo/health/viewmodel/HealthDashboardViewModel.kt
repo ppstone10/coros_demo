@@ -3,21 +3,21 @@ package com.example.demo.health.viewmodel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.example.demo.common.health.DefaultEditableHealthData
-import com.example.demo.common.health.EditableHealthData
-import com.example.demo.common.health.HealthAction
-import com.example.demo.common.health.HealthCardType
-import com.example.demo.common.health.HealthEditApplyResult
-import com.example.demo.common.health.HealthEditForm
-import com.example.demo.common.health.HealthEditRepeatOperation
-import com.example.demo.common.health.HealthEditValidationIssue
-import com.example.demo.common.health.HealthEditValidationReason
-import com.example.demo.common.health.HealthEditableForms
-import com.example.demo.common.health.HealthEditableSection
-import com.example.demo.common.health.HealthEffect
-import com.example.demo.common.health.HealthMockScenario
-import com.example.demo.common.health.HealthState
-import com.example.demo.common.health.HealthStore
+import com.example.demo.common.health.mock.DefaultEditableHealthData
+import com.example.demo.common.health.model.EditableHealthData
+import com.example.demo.common.health.model.HealthAction
+import com.example.demo.common.health.model.HealthCardType
+import com.example.demo.common.health.model.HealthEditApplyResult
+import com.example.demo.common.health.model.HealthEditForm
+import com.example.demo.common.health.model.HealthEditRepeatOperation
+import com.example.demo.common.health.model.HealthEditValidationIssue
+import com.example.demo.common.health.model.HealthEditValidationReason
+import com.example.demo.common.health.rules.HealthEditableForms
+import com.example.demo.common.health.model.HealthEditableSection
+import com.example.demo.common.health.model.HealthEffect
+import com.example.demo.common.health.model.HealthMockScenario
+import com.example.demo.common.health.model.HealthState
+import com.example.demo.common.health.store.HealthStore
 
 class HealthDashboardViewModel(
     private val store: HealthStore

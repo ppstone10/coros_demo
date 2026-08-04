@@ -15,7 +15,7 @@ check() {
   fi
 }
 
-ios="iosApp/iosApp/Health/HealthDashboardView.swift"
+ios="iosApp/iosApp/Health/Views/HealthDashboardView.swift"
 ios_strings="iosApp/iosApp/Resources/Localizable.xcstrings"
 harmony="harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets"
 harmony_page="harmonyApp/entry/src/main/ets/pages/SignedInPage.ets"

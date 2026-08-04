@@ -26,10 +26,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import com.example.demo.R
-import com.example.demo.common.health.HealthCardVisualData
-import com.example.demo.common.health.HealthRangeLevel
+import com.example.demo.common.health.model.HealthCardVisualData
+import com.example.demo.common.health.model.HealthRangeLevel
 import com.example.demo.core.resources.AppColors
 import kotlin.math.max
+import com.example.demo.common.health.model.HealthCardType
 
 @Composable
 fun HrvAssessmentVisual(v: HealthCardVisualData) {
@@ -127,5 +128,5 @@ private fun HrvRangeOverview(v: HealthCardVisualData) {
 @Preview(name = "HRV assessment visual", showBackground = true, backgroundColor = 0xFF171719)
 @Composable
 private fun HrvAssessmentVisualPreview() {
-    PreviewVisualSurface { HrvAssessmentVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.HrvAssessment)) }
+    PreviewVisualSurface { HrvAssessmentVisual(previewHealthVisual(HealthCardType.HrvAssessment)) }
 }

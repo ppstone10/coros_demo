@@ -122,11 +122,11 @@ for key in shared_text_keys:
 
 han_literal = re.compile(r'["\'][^"\'\n]*[\u4e00-\u9fff][^"\'\n]*["\']')
 debt_sources = {
-    "androidHanLiterals": (root / "androidApp/src/main/java", {".kt"}, han_literal),
+    "androidHanLiterals": (root / "androidApp/src/main/kotlin", {".kt"}, han_literal),
     "iosHanLiterals": (root / "iosApp/iosApp", {".swift"}, han_literal),
     "harmonyHanLiterals": (root / "harmonyApp/entry/src/main/ets", {".ets"}, han_literal),
     "commonHanLiterals": (root / "common/src/commonMain/kotlin", {".kt"}, han_literal),
-    "androidDirectColors": (root / "androidApp/src/main/java", {".kt"}, re.compile(r'Color\((?:0x[0-9A-Fa-f]+)|Color\.(?:Black|White|Red|Gray|Transparent)')),
+    "androidDirectColors": (root / "androidApp/src/main/kotlin", {".kt"}, re.compile(r'Color\((?:0x[0-9A-Fa-f]+)|Color\.(?:Black|White|Red|Gray|Transparent)')),
     "iosDirectColors": (root / "iosApp/iosApp", {".swift"}, re.compile(r'Color\(red:|Color\.(?:black|white|red|gray|clear)')),
     "harmonyDirectColors": (root / "harmonyApp/entry/src/main/ets", {".ets"}, re.compile(r'#[0-9A-Fa-f]{6,8}')),
 }
@@ -161,18 +161,18 @@ if debt_exclusions.get("harmonyHanLiterals") != [expected_debug_exclusion]:
 
 expected_color_token_exclusions = {
     "androidDirectColors": [
-        "androidApp/src/main/java/com/example/demo/ui/resources/AppColors.kt",
-        "androidApp/src/main/java/com/example/demo/ui/theme/Color.kt",
-        "androidApp/src/main/java/com/example/demo/ui/theme/Theme.kt",
+        "androidApp/src/main/kotlin/com/example/demo/core/resources/AppColors.kt",
+        "androidApp/src/main/kotlin/com/example/demo/core/theme/Color.kt",
+        "androidApp/src/main/kotlin/com/example/demo/core/theme/Theme.kt",
     ],
     "iosDirectColors": [
-        "iosApp/iosApp/Login/Components/AuthColors.swift",
-        "iosApp/iosApp/Resources/AppResources.swift",
+        "iosApp/iosApp/Auth/Components/AuthColors.swift",
+        "iosApp/iosApp/Core/Resources/AppResources.swift",
     ],
     "harmonyDirectColors": [
         "harmonyApp/entry/src/main/ets/pages/DebugStatePage.ets",
-        "harmonyApp/entry/src/main/ets/login/components/AuthColors.ets",
-        "harmonyApp/entry/src/main/ets/resources/AppResources.ets",
+        "harmonyApp/entry/src/main/ets/auth/components/AuthColors.ets",
+        "harmonyApp/entry/src/main/ets/core/resources/AppResources.ets",
     ],
 }
 for debt_name, expected in expected_color_token_exclusions.items():

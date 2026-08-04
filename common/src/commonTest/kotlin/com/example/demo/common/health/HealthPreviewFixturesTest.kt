@@ -4,6 +4,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import com.example.demo.common.health.mock.HealthPreviewFixtures
+import com.example.demo.common.health.model.HealthCardStatus
+import com.example.demo.common.health.model.HealthMockScenario
+import com.example.demo.common.health.model.DefaultHealthCardOrder
 
 class HealthPreviewFixturesTest {
     @Test

@@ -1,22 +1,13 @@
 package com.example.demo.harmony.bridge
 
-import com.example.demo.common.health.HealthCardType
-import com.example.demo.common.health.HealthCardUiModel
-import com.example.demo.common.health.HealthEffect
-import com.example.demo.common.health.HealthFacade
-import com.example.demo.common.health.HealthFacadeFactory
-import com.example.demo.common.health.HealthMockScenario
-import com.example.demo.common.health.HealthPreviewFixtures
-import com.example.demo.common.health.HealthState
-import com.example.demo.common.health.healthScenarioFromPersistedCode
-import com.example.demo.common.health.InMemoryHealthDashboardStateDataSource
-import com.example.demo.common.health.MockHealthDashboardStoreJson
-import com.example.demo.common.health.PersistedDashboard
-import com.example.demo.common.login.AuthStoreDataSource
-import com.example.demo.common.login.LocalMockAuthRepository
-import com.example.demo.common.login.LoginFacade
-import com.example.demo.common.login.LoginStore
-import com.example.demo.common.login.MockAuthStore
+import com.example.demo.common.health.facade.HealthFacade
+import com.example.demo.common.health.facade.HealthFacadeFactory
+import com.example.demo.common.health.store.InMemoryHealthDashboardStateDataSource
+import com.example.demo.common.auth.repository.AuthStoreDataSource
+import com.example.demo.common.auth.mock.LocalMockAuthRepository
+import com.example.demo.common.auth.facade.LoginFacade
+import com.example.demo.common.auth.store.LoginStore
+import com.example.demo.common.auth.model.MockAuthStore
 import com.tencent.tmm.knoi.annotation.ServiceProvider
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.posix.time
@@ -27,6 +18,7 @@ open class HarmonyLoginService {
     private val healthDataSource = InMemoryHealthDashboardStateDataSource()
     private var facade: LoginFacade = createFacade(dataSource, healthDataSource)
     private var healthFacade: HealthFacade = createHealthFacade(dataSource, healthDataSource)
+    private val healthBridge = HarmonyHealthBridge(healthDataSource, healthFacade)
 
     fun stateSnapshot(): String {
         return HarmonyLoginJson.stateSnapshot(facade.state)
@@ -45,9 +37,10 @@ open class HarmonyLoginService {
             dataSource.replaceStore(store)
             facade = createFacade(dataSource, healthDataSource)
             healthFacade = createHealthFacade(dataSource, healthDataSource)
+            healthBridge.updateFacade(healthFacade)
             syncClock()
             facade.restoreSession()
-            restoreLegacyHealthFromStoreJson(json)
+            healthBridge.restoreLegacyHealthFromStoreJson(json)
             true
         } catch (e: Exception) {
             false
@@ -77,22 +70,15 @@ open class HarmonyLoginService {
         facade.resumeSessionInSameProcess()
     }
 
-    fun healthScenarioDescriptorsJson(): String {
-        return healthFacade.scenarioDescriptors().joinToString(prefix = "[", postfix = "]") {
-            """{"code":"${it.code.esc()}","displayKey":"${it.displayKey.esc()}"}"""
-        }
-    }
+    fun healthScenarioDescriptorsJson(): String = healthBridge.healthScenarioDescriptorsJson()
 
-    fun healthEditableSectionsJson(): String =
-        healthFacade.editableSectionNames().joinToString(prefix = "[", postfix = "]") {
-            "\"${it.esc()}\""
-        }
+    fun healthEditableSectionsJson(): String = healthBridge.healthEditableSectionsJson()
 
     fun normalHealthEditFormJson(sectionName: String): String =
-        healthFacade.normalEditFormJson(sectionName).orEmpty()
+        healthBridge.normalHealthEditFormJson(sectionName)
 
     fun defaultNormalHealthEditFormJson(sectionName: String): String =
-        healthFacade.defaultNormalEditFormJson(sectionName).orEmpty()
+        healthBridge.defaultNormalHealthEditFormJson(sectionName)
 
     fun mutateNormalHealthEditFormJson(
         sectionName: String,
@@ -100,26 +86,23 @@ open class HarmonyLoginService {
         groupId: String,
         operationName: String,
         rowIndex: Int
-    ): String = healthFacade.mutateNormalEditFormJson(
+    ): String = healthBridge.mutateNormalHealthEditFormJson(
         sectionName,
         valuesSpec,
         groupId,
         operationName,
         rowIndex
-    ).orEmpty()
+    )
 
     fun saveNormalHealthEditForm(sectionName: String, valuesSpec: String): Boolean =
-        healthFacade.saveNormalEditForm(sectionName, valuesSpec)
+        healthBridge.saveNormalHealthEditForm(sectionName, valuesSpec)
 
     fun saveNormalHealthEditFormResultJson(sectionName: String, valuesSpec: String): String =
-        healthFacade.saveNormalEditFormResultJson(sectionName, valuesSpec)
+        healthBridge.saveNormalHealthEditFormResultJson(sectionName, valuesSpec)
 
-    fun restoreAllNormalHealthDefaults(): String =
-        healthFacade.restoreAllNormalDefaults().toString()
+    fun restoreAllNormalHealthDefaults(): String = healthBridge.restoreAllNormalHealthDefaults()
 
-    fun staleHealthForNewAccount() {
-        healthFacade.staleForNewAccount()
-    }
+    fun staleHealthForNewAccount() = healthBridge.staleHealthForNewAccount()
 
     fun consumeEffectSnapshot(): String {
         return HarmonyLoginJson.effectSnapshot(facade.consumeEffect())
@@ -290,99 +273,22 @@ open class HarmonyLoginService {
     fun profileDefaultPhone(account: String): String = facade.profileDefaultPhone(account)
     fun profileDefaultEmail(account: String): String = facade.profileDefaultEmail(account)
 
-    fun loadHealthSnapshot(): String {
-        healthFacade.load()
-        val state = healthFacade.state
-        return if (state.error != null) {
-            "{\"error\":\"${state.error.name}\"}"
-        } else {
-            healthSnapshotFromState(state)
-        }
-    }
+    fun loadHealthSnapshot(): String = healthBridge.loadHealthSnapshot()
 
     /** Side-effect-free common fixture for ArkUI Preview and screenshot tooling. */
-    fun previewHealthSnapshot(): String =
-        healthSnapshotFromState(HealthPreviewFixtures.normalState())
+    fun previewHealthSnapshot(): String = healthBridge.previewHealthSnapshot()
 
-    fun selectHealthScene(name: String): String {
-        return healthFacade.selectScenario(name).toString()
-    }
+    fun selectHealthScene(name: String): String = healthBridge.selectHealthScene(name)
 
-    fun refreshHealthSnapshot(): String {
-        healthFacade.refresh()
-        val state = healthFacade.state
-        return if (state.error != null) {
-            "{\"error\":\"${state.error.name}\"}"
-        } else {
-            healthSnapshotFromState(state)
-        }
-    }
+    fun refreshHealthSnapshot(): String = healthBridge.refreshHealthSnapshot()
 
-    fun saveCardConfig(typeNamesCsv: String): String {
-        val names = typeNamesCsv.split(",").map { it.trim() }.filter { it.isNotBlank() }
-        val error = healthFacade.saveCardConfiguration(names)
-        return if (error != null) {
-            "{\"error\":\"$error\"}"
-        } else {
-            healthSnapshotFromState(healthFacade.state)
-        }
-    }
+    fun saveCardConfig(typeNamesCsv: String): String = healthBridge.saveCardConfig(typeNamesCsv)
 
-    fun saveHealthBodyWeight(weightKg: Double): String {
-        val error = healthFacade.saveBodyWeight(weightKg)
-        return if (error != null) {
-            "{\"error\":\"${error.esc()}\"}"
-        } else {
-            healthSnapshotFromState(healthFacade.state)
-        }
-    }
+    fun saveHealthBodyWeight(weightKg: Double): String = healthBridge.saveHealthBodyWeight(weightKg)
 
-    fun exportHealthSnapshot(): String {
-        return MockHealthDashboardStoreJson.encodeCollection(healthDataSource.allSnapshots())
-    }
+    fun exportHealthSnapshot(): String = healthBridge.exportHealthSnapshot()
 
-    fun restoreHealthSnapshot(json: String): Boolean {
-        return try {
-            if (json.isBlank() || json == "{}") return false
-            healthDataSource.replaceAll(MockHealthDashboardStoreJson.decodeCollection(json))
-            true
-        } catch (_: Exception) { false }
-    }
-
-    private fun restoreLegacyHealthFromStoreJson(json: String) {
-        try {
-            if (healthDataSource.allSnapshots().isNotEmpty()) return
-            val healthIdx = json.indexOf("\"_health\":{")
-            if (healthIdx < 0) return
-            val start = json.indexOf('{', healthIdx) + 1
-            val end = json.indexOf('}', start)
-            if (end < 0) return
-            val body = json.substring(start, end)
-            val scenarioKey = "\"scenario\":\""
-            val scenarioIdx = body.indexOf(scenarioKey)
-            if (scenarioIdx >= 0) {
-                val sStart = scenarioIdx + scenarioKey.length
-                val sEnd = body.indexOf('"', sStart)
-                val scenario = healthScenarioFromPersistedCode(
-                    body.substring(sStart, if (sEnd >= 0) sEnd else body.length)
-                ).name
-                if (healthFacade.selectScenario(scenario)) {
-                    healthFacade.refresh()
-                }
-            }
-            val typesKey = "\"enabledTypes\":\""
-            val typesIdx = body.indexOf(typesKey)
-            if (typesIdx >= 0) {
-                val tStart = typesIdx + typesKey.length
-                val tEnd = body.indexOf('"', tStart)
-                val typesStr = body.substring(tStart, if (tEnd >= 0) tEnd else body.length)
-                if (typesStr.isNotBlank()) {
-                    val names = typesStr.split(",").map { it.trim() }.filter { it.isNotBlank() }
-                    healthFacade.saveCardConfiguration(names)
-                }
-            }
-        } catch (_: Exception) { }
-    }
+    fun restoreHealthSnapshot(json: String): Boolean = healthBridge.restoreHealthSnapshot(json)
 
     @OptIn(ExperimentalForeignApi::class)
     private fun createFacade(
@@ -429,130 +335,3 @@ private class MemoryAuthStoreDataSource(
         this.store = newStore
     }
 }
-
-private fun healthSnapshotFromState(state: HealthState): String {
-    val uiState = state.uiState ?: return "{}"
-    val sb = StringBuilder()
-    sb.append("{\"scenario\":\"")
-    sb.append(state.currentScenario.name)
-    sb.append("\",\"dateLabelKey\":\"")
-    sb.append(uiState.dateLabel.key.esc())
-    sb.append("\",\"steps\":")
-    sb.append(uiState.dailySummary?.steps ?: 0)
-    sb.append(",\"calories\":")
-    sb.append(uiState.dailySummary?.calories ?: 0)
-    sb.append(",\"activeMinutes\":")
-    sb.append(uiState.dailySummary?.activeMinutes ?: 0)
-    sb.append(",\"cards\":[")
-    uiState.cards.forEachIndexed { index, card ->
-        if (index > 0) sb.append(",")
-        sb.append("{\"type\":\"")
-        sb.append(card.type.name)
-        sb.append("\",\"titleKey\":\"")
-        sb.append(card.title.key.esc())
-        sb.append("\",\"summaryKey\":\"")
-        sb.append(card.summary.key.esc())
-        sb.append("\",\"summaryArgs\":[")
-        card.summary.arguments.forEachIndexed { argumentIndex, argument ->
-            if (argumentIndex > 0) sb.append(",")
-            sb.append("\"").append(argument.esc()).append("\"")
-        }
-        sb.append("]")
-        sb.append(",\"status\":\"")
-        sb.append(card.status.name)
-        sb.append("\"")
-        sb.append(",\"isRisk\":")
-        sb.append(card.status.name == "Risk")
-        sb.append(",\"visual\":{")
-        sb.append("\"kind\":\"").append(card.visual.kind.name).append("\"")
-        card.visual.primaryValue?.let { sb.append(",\"primaryValue\":\"").append(it.esc()).append("\"") }
-        card.visual.primaryUnit?.let { sb.append(",\"primaryUnitKey\":\"").append(it.key.esc()).append("\"") }
-        card.visual.secondaryValue?.let { sb.append(",\"secondaryValue\":\"").append(it.esc()).append("\"") }
-        card.visual.secondaryUnit?.let { sb.append(",\"secondaryUnitKey\":\"").append(it.key.esc()).append("\"") }
-        card.visual.caption?.let { spec ->
-            sb.append(",\"captionKey\":\"").append(spec.key.esc()).append("\",\"captionArgs\":[")
-            spec.arguments.forEachIndexed { i, arg -> if (i > 0) sb.append(","); sb.append("\"").append(arg.esc()).append("\"") }
-            sb.append("]")
-        }
-        card.visual.detail?.let { spec ->
-            sb.append(",\"detailKey\":\"").append(spec.key.esc()).append("\",\"detailArgs\":[")
-            spec.arguments.forEachIndexed { i, arg -> if (i > 0) sb.append(","); sb.append("\"").append(arg.esc()).append("\"") }
-            sb.append("]")
-        }
-        card.visual.footer?.let { spec ->
-            sb.append(",\"footerKey\":\"").append(spec.key.esc()).append("\",\"footerArgs\":[")
-            spec.arguments.forEachIndexed { i, arg -> if (i > 0) sb.append(","); sb.append("\"").append(arg.esc()).append("\"") }
-            sb.append("]")
-        }
-        card.visual.progress?.let { sb.append(",\"progress\":").append(it) }
-        card.visual.highlightedIndex?.let { sb.append(",\"highlightedIndex\":").append(it) }
-        sb.append(",\"weeklyDayPlans\":[")
-        card.visual.weeklyDayPlans.forEachIndexed { i, plan ->
-            if (i > 0) sb.append(",")
-            sb.append("{\"dayIndex\":").append(plan.dayIndex)
-            plan.workoutName?.let { sb.append(",\"workoutNameKey\":\"").append(it.key.esc()).append("\"") }
-            plan.workoutDurationMinutes?.let { sb.append(",\"workoutDurationMinutes\":").append(it) }
-            plan.workoutTrainingLoad?.let { sb.append(",\"workoutTrainingLoad\":").append(it) }
-            sb.append("}")
-        }
-        sb.append("]")
-        sb.append(",\"chartPoints\":[")
-        card.visual.chartPoints.forEachIndexed { i, point ->
-            if (i > 0) sb.append(",")
-            sb.append("{\"label\":\"").append(point.label.esc()).append("\",\"value\":").append(point.value)
-                .append(",\"level\":\"").append(point.level.name).append("\"")
-            point.minimum?.let { sb.append(",\"minimum\":").append(it) }
-            point.maximum?.let { sb.append(",\"maximum\":").append(it) }
-            point.average?.let { sb.append(",\"average\":").append(it) }
-            sb.append("}")
-        }
-        sb.append("],\"metrics\":[")
-        card.visual.metrics.forEachIndexed { i, metric ->
-            if (i > 0) sb.append(",")
-            sb.append("{\"labelKey\":\"").append(metric.label.key.esc()).append("\",\"value\":\"").append(metric.value.esc()).append("\"")
-            metric.unit?.let { sb.append(",\"unitKey\":\"").append(it.key.esc()).append("\"") }
-            sb.append("}")
-        }
-        sb.append("]")
-        sb.append(",\"highlightedBodyRegions\":[")
-        card.visual.highlightedBodyRegions.forEachIndexed { i, region ->
-            if (i > 0) sb.append(",")
-            sb.append("\"").append(region.esc()).append("\"")
-        }
-        sb.append("]")
-        card.visual.range?.let { range ->
-            sb.append(",\"range\":{\"minimum\":").append(range.minimum).append(",\"maximum\":").append(range.maximum)
-                .append(",\"current\":").append(range.current)
-            range.normalMin?.let { sb.append(",\"normalMin\":").append(it) }
-            range.normalMax?.let { sb.append(",\"normalMax\":").append(it) }
-            range.average?.let { sb.append(",\"average\":").append(it) }
-            sb.append(",\"segments\":[")
-            range.segments.forEachIndexed { index, segment ->
-                if (index > 0) sb.append(",")
-                sb.append("{\"minimum\":").append(segment.minimum)
-                    .append(",\"maximum\":").append(segment.maximum)
-                    .append(",\"level\":\"").append(segment.level.name).append("\"}")
-            }
-            sb.append("]")
-            sb.append("}")
-        }
-        sb.append(",\"sleepStages\":[")
-        card.visual.sleepStages.forEachIndexed { i, stage ->
-            if (i > 0) sb.append(",")
-            sb.append("{\"stage\":\"").append(stage.stage.name).append("\",\"startMinute\":").append(stage.startMinute)
-                .append(",\"durationMinutes\":").append(stage.durationMinutes).append("}")
-        }
-        sb.append("]")
-        card.visual.startTime?.let { sb.append(",\"startTime\":\"").append(it.esc()).append("\"") }
-        card.visual.endTime?.let { sb.append(",\"endTime\":\"").append(it.esc()).append("\"") }
-        card.visual.assetKey?.let { sb.append(",\"assetKey\":\"").append(it.esc()).append("\"") }
-        sb.append("}")
-        sb.append("}")
-    }
-    sb.append("],\"enabledTypes\":\"")
-    sb.append(state.enabledCardTypes.joinToString(",") { it.name })
-    sb.append("\"}")
-    return sb.toString()
-}
-
-private fun String.esc(): String = replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")

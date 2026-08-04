@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.demo.R
-import com.example.demo.common.login.UserGender
+import com.example.demo.common.auth.model.UserGender
 import com.example.demo.auth.components.CorosLine
 import com.example.demo.auth.components.CorosMuted
 import com.example.demo.auth.components.CorosRed

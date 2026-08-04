@@ -1,6 +1,6 @@
 package com.example.demo.auth.navigation
 
-import com.example.demo.common.login.VerifyTarget
+import com.example.demo.common.auth.model.VerifyTarget
 import kotlinx.serialization.Serializable
 
 @Serializable

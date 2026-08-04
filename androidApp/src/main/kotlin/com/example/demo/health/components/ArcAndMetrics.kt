@@ -27,9 +27,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.R
-import com.example.demo.common.health.DailySummary
-import com.example.demo.common.health.DashboardUiState
-import com.example.demo.common.health.LocalizedTextSpec
+import com.example.demo.common.health.model.DailySummary
+import com.example.demo.common.health.model.DashboardUiState
+import com.example.demo.common.health.model.LocalizedTextSpec
 import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.AppImage
 import com.example.demo.core.resources.AppImageAsset

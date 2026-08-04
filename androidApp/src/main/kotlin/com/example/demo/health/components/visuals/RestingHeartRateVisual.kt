@@ -19,9 +19,10 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.demo.common.health.HealthCardVisualData
+import com.example.demo.common.health.model.HealthCardVisualData
 import com.example.demo.core.resources.AppColors
 import kotlin.math.max
+import com.example.demo.common.health.model.HealthCardType
 
 @Composable
 fun RestingHeartRateVisual(v: HealthCardVisualData) {
@@ -123,5 +124,5 @@ private fun RestingHeartRangeOverview(v: HealthCardVisualData) {
 @Preview(name = "Resting heart rate visual", showBackground = true, backgroundColor = 0xFF171719)
 @Composable
 private fun RestingHeartRateVisualPreview() {
-    PreviewVisualSurface { RestingHeartRateVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.RestingHeartRate)) }
+    PreviewVisualSurface { RestingHeartRateVisual(previewHealthVisual(HealthCardType.RestingHeartRate)) }
 }

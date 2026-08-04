@@ -40,10 +40,10 @@ import com.example.demo.auth.components.UnavailableFeatureDialog
 import com.example.demo.auth.components.findActivity
 import androidx.compose.ui.res.stringResource
 import com.example.demo.R
-import com.example.demo.common.login.AuthMessageKeys
+import com.example.demo.common.auth.model.AuthMessageKeys
 import com.example.demo.core.theme.DemoTheme
 import androidx.compose.material3.Text
-import com.example.demo.common.login.LoginEffect
+import com.example.demo.common.auth.model.LoginEffect
 
 @Composable
 fun EmailRegisterScreen(

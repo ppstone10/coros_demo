@@ -1,8 +1,8 @@
 package com.example.demo.health
 
-import com.example.demo.common.health.HealthCardVisualData
-import com.example.demo.common.health.HealthMetric
-import com.example.demo.common.health.LocalizedTextSpec
+import com.example.demo.common.health.model.HealthCardVisualData
+import com.example.demo.common.health.model.HealthMetric
+import com.example.demo.common.health.model.LocalizedTextSpec
 import kotlin.math.max
 import kotlin.math.min
 

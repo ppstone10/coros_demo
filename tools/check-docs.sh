@@ -187,9 +187,9 @@ for pattern in "${stale_references[@]}"; do
   fi
 done
 
-login_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/common/login/LoginUseCaseTest.kt)"
-rules_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/common/login/LoginRulesTest.kt)"
-business_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/common/login/BusinessMockDataSourceTest.kt)"
+login_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/common/auth/LoginUseCaseTest.kt)"
+rules_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/common/auth/LoginRulesTest.kt)"
+business_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/common/auth/BusinessMockDataSourceTest.kt)"
 health_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/common/health/HealthDashboardUseCaseTest.kt)"
 editable_health_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/common/health/EditableHealthDataTest.kt)"
 preview_fixture_count="$(grep -c '@Test' common/src/commonTest/kotlin/com/example/demo/common/health/HealthPreviewFixturesTest.kt)"

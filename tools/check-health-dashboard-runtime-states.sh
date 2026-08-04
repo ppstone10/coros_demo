@@ -26,11 +26,11 @@ check_absent() {
   fi
 }
 
-android="androidApp/src/main/java/com/example/demo/health/HealthDashboardScreen.kt"
-facade="common/src/commonMain/kotlin/com/example/demo/common/login/LoginFacade.kt"
-ios_adapter="iosApp/iosApp/Login/SharedLoginAdapter.swift"
-ios_model="iosApp/iosApp/Health/HealthDashboardViewModel.swift"
-ios_view="iosApp/iosApp/Health/HealthDashboardView.swift"
+android="androidApp/src/main/kotlin/com/example/demo/health/screens/HealthDashboardScreen.kt"
+facade="common/src/commonMain/kotlin/com/example/demo/common/auth/LoginFacade.kt"
+ios_adapter="iosApp/iosApp/Auth/SharedLoginAdapter.swift"
+ios_model="iosApp/iosApp/Health/ViewModel/HealthDashboardViewModel.swift"
+ios_view="iosApp/iosApp/Health/Views/HealthDashboardView.swift"
 ios_hero="iosApp/iosApp/Health/Components/HeroTopRow.swift"
 harmony_bridge="harmony-kmp-bridge/src/ohosArm64Main/kotlin/com/example/demo/harmony/bridge/HarmonyLoginService.kt"
 harmony_page="harmonyApp/entry/src/main/ets/pages/SignedInPage.ets"

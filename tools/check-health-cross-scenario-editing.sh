@@ -26,8 +26,8 @@ require_text "common/src/commonTest/kotlin/com/example/demo/common/health/Editab
 require_text "common/src/commonTest/kotlin/com/example/demo/common/health/EditableHealthDataTest.kt" "emptyAndCorruptedScenariosShareZeroProjectionButKeepDifferentSourceMeaning"
 require_text "common/src/commonTest/kotlin/com/example/demo/common/health/EditableHealthDataTest.kt" "detailedFormAuditNamesTheFieldAndReasonInsteadOfReturningOnlyFalse"
 
-require_text "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" "validationIssueText(issue)"
-require_text "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" "SourceNotice(key)"
+require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" "validationIssueText(issue)"
+require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" "SourceNotice(key)"
 require_text "iosApp/iosApp/Health/Editor/NormalDataEditor.swift" "sourceMessageKey"
 require_text "iosApp/iosApp/Health/Editor/NormalDataEditor.swift" "validationMessage(_ issue: NormalEditValidationIssue)"
 require_text "harmonyApp/entry/src/main/ets/pages/NormalDataEditorPage.ets" "sourceMessageKey"

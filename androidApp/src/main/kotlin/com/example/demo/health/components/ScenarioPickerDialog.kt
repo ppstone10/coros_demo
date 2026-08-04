@@ -23,9 +23,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.demo.R
-import com.example.demo.common.health.HealthMockScenario
-import com.example.demo.common.health.HealthScenarios
-import com.example.demo.common.health.LocalizedTextSpec
+import com.example.demo.common.health.model.HealthMockScenario
+import com.example.demo.common.health.model.HealthScenarios
+import com.example.demo.common.health.model.LocalizedTextSpec
 import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.AppTypography
 import com.example.demo.core.theme.DemoTheme

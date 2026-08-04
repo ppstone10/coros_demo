@@ -46,9 +46,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.R
-import com.example.demo.common.login.MeasurementSystem
-import com.example.demo.common.login.UserGender
-import com.example.demo.common.login.UserProfile
+import com.example.demo.common.auth.model.MeasurementSystem
+import com.example.demo.common.auth.model.UserGender
+import com.example.demo.common.auth.model.UserProfile
 import com.example.demo.auth.viewmodel.LoginViewModel
 import com.example.demo.auth.components.CorosBlack
 import com.example.demo.auth.components.CorosLine

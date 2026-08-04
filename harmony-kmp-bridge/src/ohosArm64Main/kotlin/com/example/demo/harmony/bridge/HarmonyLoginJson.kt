@@ -1,10 +1,11 @@
 package com.example.demo.harmony.bridge
 
-import com.example.demo.common.login.AuthSession
-import com.example.demo.common.login.LoginEffect
-import com.example.demo.common.login.LoginState
-import com.example.demo.common.login.MockAuthStore
-import com.example.demo.common.login.MockAuthStoreJson
+import com.example.demo.common.auth.model.AuthSession
+import com.example.demo.common.auth.model.LoginEffect
+import com.example.demo.common.auth.model.LoginState
+import com.example.demo.common.auth.model.MockAuthStore
+import com.example.demo.common.auth.mock.MockAuthStoreJson
+import com.example.demo.common.health.mock.jsonEscaped
 
 internal object HarmonyLoginJson {
     fun stateSnapshot(state: LoginState): String {

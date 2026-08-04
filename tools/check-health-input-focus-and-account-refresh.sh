@@ -29,8 +29,8 @@ forbid_text() {
 }
 
 HARMONY_EDITOR="harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets"
-IOS_VIEW_MODEL="iosApp/iosApp/Health/HealthDashboardViewModel.swift"
-IOS_VIEW="iosApp/iosApp/Health/HealthDashboardView.swift"
+IOS_VIEW_MODEL="iosApp/iosApp/Health/ViewModel/HealthDashboardViewModel.swift"
+IOS_VIEW="iosApp/iosApp/Health/Views/HealthDashboardView.swift"
 
 forbid_text "$HARMONY_EDITOR" '${field.id}_${field.value}'
 require_text "$HARMONY_EDITOR" '(field: NormalEditField) => field.id)'
@@ -48,8 +48,8 @@ require_text "$IOS_VIEW" '.onChange(of: viewModel.isLoading)'
 require_text "$IOS_VIEW" 'viewModel.startPendingAccountRefresh()'
 require_text "$IOS_VIEW" 'effectiveRefreshPhase'
 require_text "$IOS_VIEW" 'effectiveDragOffset'
-require_text "iosApp/iosApp/Login/AuthCoordinator.swift" 'staleForNewAccount(shouldRefreshOnDashboard: true)'
-require_text "iosApp/iosApp/Login/AuthCoordinator.swift" 'staleForNewAccount(shouldRefreshOnDashboard: false)'
+require_text "iosApp/iosApp/Auth/AuthCoordinator.swift" 'staleForNewAccount(shouldRefreshOnDashboard: true)'
+require_text "iosApp/iosApp/Auth/AuthCoordinator.swift" 'staleForNewAccount(shouldRefreshOnDashboard: false)'
 
 if (( failures > 0 )); then
   echo

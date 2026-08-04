@@ -1,7 +1,7 @@
 package com.example.demo.auth.components
 
 import androidx.activity.compose.BackHandler
-import com.example.demo.common.login.VerifyTarget
+import com.example.demo.common.auth.model.VerifyTarget
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -682,7 +682,7 @@ fun LegalParagraphText(paragraph: LegalParagraph) {
     )
 }
 
-// Use com.example.demo.common.login.VerifyTarget instead of local enum
+// Use com.example.demo.common.auth.model.VerifyTarget instead of local enum
 enum class TermsPromptAction { Login, PhoneCode, EmailCode }
 
 @Preview(showBackground = true, backgroundColor = 0xFF000000)

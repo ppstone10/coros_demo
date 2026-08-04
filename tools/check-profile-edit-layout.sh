@@ -9,8 +9,8 @@ import sys
 
 root = Path(sys.argv[1])
 
-android = (root / "androidApp/src/main/java/com/example/demo/login/profile/PersonalProfileEditScreen.kt").read_text()
-ios = (root / "iosApp/iosApp/Account/AccountView.swift").read_text()
+android = (root / "androidApp/src/main/kotlin/com/example/demo/auth/screens/profile/PersonalProfileEditScreen.kt").read_text()
+ios = (root / "iosApp/iosApp/Home/Account/AccountView.swift").read_text()
 harmony = (root / "harmonyApp/entry/src/main/ets/pages/ProfileCompletionPage.ets").read_text()
 
 errors: list[str] = []

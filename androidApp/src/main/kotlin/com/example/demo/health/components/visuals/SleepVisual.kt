@@ -15,10 +15,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.demo.common.health.HealthCardVisualData
-import com.example.demo.common.health.SleepStage
+import com.example.demo.common.health.model.HealthCardVisualData
+import com.example.demo.common.health.model.SleepStage
 import com.example.demo.core.resources.AppColors
 import kotlin.math.max
+import com.example.demo.common.health.model.HealthCardType
 
 @Composable
 fun SleepVisual(v: HealthCardVisualData) {
@@ -64,5 +65,5 @@ private fun SleepOverview(v: HealthCardVisualData) {
 @Preview(name = "Sleep visual", showBackground = true, backgroundColor = 0xFF171719)
 @Composable
 private fun SleepVisualPreview() {
-    PreviewVisualSurface { SleepVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.Sleep)) }
+    PreviewVisualSurface { SleepVisual(previewHealthVisual(HealthCardType.Sleep)) }
 }

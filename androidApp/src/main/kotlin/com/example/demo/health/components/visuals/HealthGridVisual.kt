@@ -9,7 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.demo.common.health.HealthCardVisualData
+import com.example.demo.common.health.model.HealthCardType
+import com.example.demo.common.health.model.HealthCardVisualData
 
 @Composable
 fun HealthGridVisual(v: HealthCardVisualData) {
@@ -28,5 +29,5 @@ fun HealthGridVisual(v: HealthCardVisualData) {
 @Preview(name = "Health check visual", showBackground = true, backgroundColor = 0xFF171719)
 @Composable
 private fun HealthGridVisualPreview() {
-    PreviewVisualSurface { HealthGridVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.HealthCheck)) }
+    PreviewVisualSurface { HealthGridVisual(previewHealthVisual(HealthCardType.HealthCheck)) }
 }

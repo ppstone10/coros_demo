@@ -1,9 +1,9 @@
 package com.example.demo.health
 
-import com.example.demo.common.health.HealthCardVisualData
-import com.example.demo.common.health.HealthCardVisualKind
-import com.example.demo.common.health.LocalizedTextSpec
-import com.example.demo.common.health.WeeklyDayPlan
+import com.example.demo.common.health.model.HealthCardVisualData
+import com.example.demo.common.health.model.HealthCardVisualKind
+import com.example.demo.common.health.model.LocalizedTextSpec
+import com.example.demo.common.health.model.WeeklyDayPlan
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

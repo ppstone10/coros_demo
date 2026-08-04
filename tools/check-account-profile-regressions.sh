@@ -6,8 +6,8 @@ from pathlib import Path
 
 root = Path.cwd()
 files = {
-    "android": root / "androidApp/src/main/java/com/example/demo/login/profile/ProfileCompletionScreen.kt",
-    "ios_profile": root / "iosApp/iosApp/Login/Views/ProfileCompletionView.swift",
+    "android": root / "androidApp/src/main/kotlin/com/example/demo/auth/screens/profile/ProfileCompletionScreen.kt",
+    "ios_profile": root / "iosApp/iosApp/Auth/Views/ProfileCompletionView.swift",
     "ios_health": root / "iosApp/iosApp/Health/Editor/NormalDataEditor.swift",
     "harmony": root / "harmonyApp/entry/src/main/ets/pages/ProfileCompletionPage.ets",
 }

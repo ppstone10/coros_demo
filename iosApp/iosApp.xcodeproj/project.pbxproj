@@ -53,6 +53,7 @@
 		BF5278C2301362B700D53B2B /* AuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278C2301362B700D53B2B /* AuthCoordinator.swift */; };
 		BF5278C3301362B700D53B2B /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278C3301362B700D53B2B /* LoginViewModel.swift */; };
 		BF5278C4301362B700D53B2B /* SharedLoginAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278C4301362B700D53B2B /* SharedLoginAdapter.swift */; };
+		BF5278C4301362B700D53B2D /* SharedLoginAdapter+Health.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278C4301362B700D53B2D /* SharedLoginAdapter+Health.swift */; };
 		BF5278C6301362B700D53B2B /* COROS-APP-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 925278C6301362B700D53B2B /* COROS-APP-Bold.ttf */; };
 		BF5278C7301362B700D53B2B /* COROS-APP-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 925278C7301362B700D53B2B /* COROS-APP-Regular.ttf */; };
 		BF5278C9301362B700D53B2B /* AppResources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278C9301362B700D53B2B /* AppResources.swift */; };
@@ -114,6 +115,7 @@
 		925278C2301362B700D53B2B /* AuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthCoordinator.swift; sourceTree = "<group>"; };
 		925278C3301362B700D53B2B /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
 		925278C4301362B700D53B2B /* SharedLoginAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedLoginAdapter.swift; sourceTree = "<group>"; };
+		925278C4301362B700D53B2D /* SharedLoginAdapter+Health.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SharedLoginAdapter+Health.swift"; sourceTree = "<group>"; };
 		925278C6301362B700D53B2B /* COROS-APP-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "COROS-APP-Bold.ttf"; sourceTree = "<group>"; };
 		925278C7301362B700D53B2B /* COROS-APP-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "COROS-APP-Regular.ttf"; sourceTree = "<group>"; };
 		925278C9301362B700D53B2B /* AppResources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppResources.swift; sourceTree = "<group>"; };
@@ -164,6 +166,7 @@
 			isa = PBXGroup;
 			children = (
 				925278C4301362B700D53B2B /* SharedLoginAdapter.swift */,
+				925278C4301362B700D53B2D /* SharedLoginAdapter+Health.swift */,
 			);
 			path = Bridge;
 			sourceTree = "<group>";
@@ -531,6 +534,7 @@
 				BF5278C2301362B700D53B2B /* AuthCoordinator.swift in Sources */,
 				BF5278C3301362B700D53B2B /* LoginViewModel.swift in Sources */,
 				BF5278C4301362B700D53B2B /* SharedLoginAdapter.swift in Sources */,
+				BF5278C4301362B700D53B2D /* SharedLoginAdapter+Health.swift in Sources */,
 				BF5278C9301362B700D53B2B /* AppResources.swift in Sources */,
 				BF5278CF301362B700D53B2B /* ContentView.swift in Sources */,
 				BF5278D0301362B700D53B2B /* IOSDemoApp.swift in Sources */,

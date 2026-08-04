@@ -35,7 +35,7 @@ check_absent() {
   fi
 }
 
-android_visuals="androidApp/src/main/java/com/example/demo/health/components/visuals"
+android_visuals="androidApp/src/main/kotlin/com/example/demo/health/components/visuals"
 ios_visuals="iosApp/iosApp/Health/Components/Visuals"
 harmony_visuals="harmonyApp/entry/src/main/ets/health/components/visuals"
 
@@ -55,8 +55,8 @@ for file in \
   check_file "$file"
 done
 
-android_dispatch="androidApp/src/main/java/com/example/demo/health/components/DashboardCard.kt"
-ios_dispatch="iosApp/iosApp/Health/HealthDashboardView.swift"
+android_dispatch="androidApp/src/main/kotlin/com/example/demo/health/components/DashboardCard.kt"
+ios_dispatch="iosApp/iosApp/Health/Views/HealthDashboardView.swift"
 harmony_dispatch="harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets"
 
 check_text "$android_dispatch" "HealthCardType.Recovery -> RecoveryVisual(visual)"

@@ -1,19 +1,52 @@
 package com.example.demo.common.health
 
-import com.example.demo.common.login.AuthRepository
-import com.example.demo.common.login.InMemoryAuthStoreDataSource
-import com.example.demo.common.login.LocalMockAuthRepository
-import com.example.demo.common.login.LocalMockAuthRepository.Companion.DefaultVerifyCode
-import com.example.demo.common.login.LoginResult
-import com.example.demo.common.login.MockError
-import com.example.demo.common.login.MockResult
-import com.example.demo.common.login.RegisterUseCase
+import com.example.demo.common.auth.repository.AuthRepository
+import com.example.demo.common.auth.repository.InMemoryAuthStoreDataSource
+import com.example.demo.common.auth.mock.LocalMockAuthRepository
+import com.example.demo.common.auth.mock.LocalMockAuthRepository.Companion.DefaultVerifyCode
+import com.example.demo.common.auth.model.LoginResult
+import com.example.demo.common.auth.model.MockError
+import com.example.demo.common.auth.model.MockResult
+import com.example.demo.common.auth.usecase.RegisterUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.example.demo.common.health.mock.MockHealthDashboardStoreJson
+import com.example.demo.common.health.mock.aggregateFiveMinuteHeartSamples
+import com.example.demo.common.health.model.BodyManagement
+import com.example.demo.common.health.model.DashboardUiState
+import com.example.demo.common.health.model.HealthCardAction
+import com.example.demo.common.health.model.HealthCardStatus
+import com.example.demo.common.health.model.HealthCardType
+import com.example.demo.common.health.model.HealthCardVisualKind
+import com.example.demo.common.health.model.HealthCheck
+import com.example.demo.common.health.model.HealthDashboardData
+import com.example.demo.common.health.model.HealthDashboardSnapshot
+import com.example.demo.common.health.model.HealthError
+import com.example.demo.common.health.model.HealthMockScenario
+import com.example.demo.common.health.model.toDomain
+import com.example.demo.common.health.model.toProtoMessage
+import com.example.demo.common.health.model.HealthRangeLevel
+import com.example.demo.common.health.model.HealthScenarios
+import com.example.demo.common.health.model.HeartRateInterval
+import com.example.demo.common.health.model.HrvAssessment
+import com.example.demo.common.health.model.hrvRange
+import com.example.demo.common.health.model.hrvStatusKey
+import com.example.demo.common.health.model.hrvVisual
+import com.example.demo.common.health.repository.JsonHealthDashboardStateDataSource
+import com.example.demo.common.health.repository.LocalHealthDashboardDataSource
+import com.example.demo.common.health.store.HealthDashboardStore
+import com.example.demo.common.health.store.InMemoryHealthDashboardStateDataSource
+import com.example.demo.common.health.store.PersistedDashboard
+import com.example.demo.common.health.usecase.HealthDashboardUseCase
+import com.example.demo.common.health.model.toProtoCode
+import com.example.demo.common.health.model.CurrentHealthDashboardSchemaVersion
+import com.example.demo.common.health.model.DefaultHealthCardOrder
+import com.example.demo.common.health.model.currentFraction
+import com.example.demo.common.health.model.segmentFractions
 
 class HealthDashboardUseCaseTest {
     @Test fun normalScenarioShowsCompleteCardCatalog() = assertEquals(14, state(HealthMockScenario.Normal).cards.size)
@@ -511,7 +544,7 @@ class HealthDashboardUseCaseTest {
         val healthStore = HealthDashboardStore(repository, persistence)
         assertIs<MockResult.Success<PersistedDashboard>>(healthStore.load())
 
-        val loginStore = com.example.demo.common.login.LoginStore(
+        val loginStore = com.example.demo.common.auth.store.LoginStore(
             authRepository = repository,
             onDeleteUserData = healthStore::clear
         )

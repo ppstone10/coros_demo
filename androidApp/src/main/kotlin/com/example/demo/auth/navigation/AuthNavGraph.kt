@@ -27,10 +27,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.demo.R
 import com.example.demo.auth.components.CorosBlack
-import com.example.demo.common.login.AuthMode
-import com.example.demo.common.login.LoginEffect
-import com.example.demo.common.login.PostLoginRoute
-import com.example.demo.common.login.VerifyTarget
+import com.example.demo.common.auth.model.AuthMode
+import com.example.demo.common.auth.model.LoginEffect
+import com.example.demo.common.auth.model.PostLoginRoute
+import com.example.demo.common.auth.model.VerifyTarget
 import com.example.demo.auth.components.rememberLoginViewModel
 import com.example.demo.auth.components.findActivity
 import com.example.demo.auth.components.localizedAuthMessage

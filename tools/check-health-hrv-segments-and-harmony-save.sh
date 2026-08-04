@@ -28,7 +28,7 @@ reject() {
 
 models="common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardModels.kt"
 visuals="common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardVisuals.kt"
-android="androidApp/src/main/java/com/example/demo/health/components/visuals/HrvAssessmentVisual.kt"
+android="androidApp/src/main/kotlin/com/example/demo/health/components/visuals/HrvAssessmentVisual.kt"
 ios="iosApp/iosApp/Health/Components/Visuals/HrvAssessmentView.swift"
 harmony="harmonyApp/entry/src/main/ets/health/components/visuals/HrvAssessmentVisualComp.ets"
 harmony_types="harmonyApp/entry/src/main/ets/health/HealthDashboardTypes.ets"

@@ -65,6 +65,10 @@
 | Xcode 显式 pbxproj 新增 Swift 文件 | 非文件系统同步组时须手工登记 PBXBuildFile/PBXFileReference/分组/Sources phase 四处，且文件磁盘路径必须与分组 `path` 一致，否则 "cannot find in scope" |
 | SwiftUI NavigationStack 要求单一路径类型 | 域级导航拆分只移动目的地渲染（@ViewBuilder 函数归 Health 模块），`AuthRoute` 枚举保持全局 NavigationStack 容器，避免破坏 NavigationPath |
 | 平台大文件拆分的跨文件可见性 | 同一包内拆分时把被其他文件引用的 `private` 收敛为 `internal`（如 `ProfileTextRow/GenderRow/displayText/parseBirthDate`），保持对外公共 API 不变即可通过构建 |
+| `MockResult` 与 `MockError` 是 auth 域错误聚合 | `MockResult.Failure` 携带 `MockError`，`MockError` 编码 `AuthMessageKeys` 且引用 `HealthMessageKeys`；把 `MockResult` 单独抽到 core 会形成 core→auth/health 反向依赖。抽取前先检查 Result 类型是否耦合域错误枚举，避免编译红灯后回退 |
+| Swift 跨文件 extension 访问类私有成员受限 | 按域把 Swift 适配类拆成 `Xxx+Domain.swift` 扩展时，跨文件 extension 只能访问 `internal` 及以上成员；先盘点目标方法依赖面（如 health 方法只依赖 `healthFacade` 不含 `syncClock`），再定向放开可见性 |
+| KNOI 契约稳定拆分法 | 保持 `@ServiceProvider` 类与方法签名不变，把大方法体抽到同包内部委托类（`HarmonyHealthBridge`）与序列化文件（`HarmonyHealthSnapshotJson`）；拆分前后用 `provider.ets` 的 `git diff` 验证契约零变化。避免拆成两个 ServiceProvider，那会改 provider 契约并联动 ArkTS 组合根与预览门禁 |
+| common 子包重命名脚本陷阱 | ① 正则需 `re.MULTILINE` 否则 `^` 只匹配首行；② 扩展函数 `fun Receiver.name()` 的符号是 `name` 而非 receiver，否则 `fun String.jsonEscaped()` 会把 `String` 误收进符号表并产生 `import ...mock.String` 污染；③ 单词匹配自动补 import 会产生误导入（`Text(text=)` 的 `text` 误当函数），需按实际调用 `name(`/`::name` 二次判定；④ 跨包同名符号（`toDomain`/`toProtoMessage`）不能单映射，跳过自动导入并按调用方手工补齐 |
 
 ## 测试约定
 

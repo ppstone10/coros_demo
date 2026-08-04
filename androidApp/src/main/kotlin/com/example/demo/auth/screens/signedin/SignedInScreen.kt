@@ -39,7 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.example.demo.R
-import com.example.demo.common.login.toProfileCountryCode
+import com.example.demo.common.auth.model.toProfileCountryCode
 import com.example.demo.auth.viewmodel.LoginViewModel
 import com.example.demo.auth.components.CorosButtonRed
 import com.example.demo.auth.components.CorosWhite

@@ -2,9 +2,9 @@ package com.example.demo.auth.data
 
 import android.annotation.SuppressLint
 import android.content.Context
-import com.example.demo.common.login.AuthStoreDataSource
-import com.example.demo.common.login.MockAuthStore
-import com.example.demo.common.login.MockAuthStoreJson
+import com.example.demo.common.auth.repository.AuthStoreDataSource
+import com.example.demo.common.auth.model.MockAuthStore
+import com.example.demo.common.auth.mock.MockAuthStoreJson
 
 class AndroidAuthStoreDataSource(context: Context) : AuthStoreDataSource {
     private val preferences = context.getSharedPreferences(PreferencesName, Context.MODE_PRIVATE)

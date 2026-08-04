@@ -18,13 +18,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.demo.common.health.HealthCardVisualData
+import com.example.demo.common.health.model.HealthCardVisualData
 import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.AppImage
 import com.example.demo.core.resources.AppImageAsset
 import com.example.demo.core.resources.AppImages
 import androidx.compose.ui.res.stringResource
 import com.example.demo.R
+import com.example.demo.common.health.model.HealthCardType
 
 @Composable
 fun BodyVisual(v: HealthCardVisualData, onWeightClick: () -> Unit) {
@@ -113,6 +114,6 @@ private fun BodyRegionLayer(asset: AppImageAsset) {
 @Composable
 private fun BodyVisualPreview() {
     PreviewVisualSurface {
-        BodyVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.BodyManagement), onWeightClick = {})
+        BodyVisual(previewHealthVisual(HealthCardType.BodyManagement), onWeightClick = {})
     }
 }

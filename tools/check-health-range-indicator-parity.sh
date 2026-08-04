@@ -15,13 +15,13 @@ check() {
   fi
 }
 
-android_hrv="androidApp/src/main/java/com/example/demo/health/components/visuals/HrvAssessmentVisual.kt"
-android_resting="androidApp/src/main/java/com/example/demo/health/components/visuals/RestingHeartRateVisual.kt"
+android_hrv="androidApp/src/main/kotlin/com/example/demo/health/components/visuals/HrvAssessmentVisual.kt"
+android_resting="androidApp/src/main/kotlin/com/example/demo/health/components/visuals/RestingHeartRateVisual.kt"
 ios_hrv="iosApp/iosApp/Health/Components/Visuals/HrvAssessmentView.swift"
 ios_resting="iosApp/iosApp/Health/Components/Visuals/RestingHeartRateView.swift"
 harmony_hrv="harmonyApp/entry/src/main/ets/health/components/visuals/HrvAssessmentVisualComp.ets"
 harmony_resting="harmonyApp/entry/src/main/ets/health/components/visuals/RestingHeartRateVisualComp.ets"
-harmony_localization="harmonyApp/entry/src/main/ets/resources/HealthLocalization.ets"
+harmony_localization="harmonyApp/entry/src/main/ets/core/resources/HealthLocalization.ets"
 
 check "$android_hrv" "val indicatorTop = 10.dp.toPx()"
 check "$android_hrv" "moveTo(x, 2.dp.toPx())"

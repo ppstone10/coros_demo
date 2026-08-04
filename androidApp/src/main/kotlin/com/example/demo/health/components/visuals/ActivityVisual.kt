@@ -18,10 +18,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.demo.common.health.HealthCardVisualData
+import com.example.demo.common.health.model.HealthCardVisualData
 import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.AppImage
 import com.example.demo.core.resources.AppImages
+import com.example.demo.common.health.model.HealthCardType
 
 @Composable
 fun ActivityVisual(v: HealthCardVisualData) {
@@ -65,5 +66,5 @@ fun ActivityVisual(v: HealthCardVisualData) {
 @Preview(name = "Today activity visual", showBackground = true, backgroundColor = 0xFF171719)
 @Composable
 private fun ActivityVisualPreview() {
-    PreviewVisualSurface { ActivityVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.TodayActivity)) }
+    PreviewVisualSurface { ActivityVisual(previewHealthVisual(HealthCardType.TodayActivity)) }
 }

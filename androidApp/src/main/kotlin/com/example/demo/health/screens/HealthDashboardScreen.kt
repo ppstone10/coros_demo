@@ -42,10 +42,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.example.demo.R
-import com.example.demo.common.health.HealthCardType
-import com.example.demo.common.health.HealthError
-import com.example.demo.common.health.HealthMockScenario
-import com.example.demo.common.health.HealthPreviewFixtures
+import com.example.demo.common.health.model.HealthCardType
+import com.example.demo.common.health.model.HealthError
+import com.example.demo.common.health.model.HealthMockScenario
+import com.example.demo.common.health.mock.HealthPreviewFixtures
 import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.AppSpacing
 import com.example.demo.core.resources.AppTypography

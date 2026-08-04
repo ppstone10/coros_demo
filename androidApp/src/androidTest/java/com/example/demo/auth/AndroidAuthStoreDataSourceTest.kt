@@ -3,10 +3,10 @@ package com.example.demo.auth
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.demo.auth.data.AndroidAuthStoreDataSource
-import com.example.demo.common.login.LocalMockAuthRepository
-import com.example.demo.common.login.LoginRequestDto
-import com.example.demo.common.login.LoginResult
-import com.example.demo.common.login.MockResult
+import com.example.demo.common.auth.mock.LocalMockAuthRepository
+import com.example.demo.common.auth.model.LoginRequestDto
+import com.example.demo.common.auth.model.LoginResult
+import com.example.demo.common.auth.model.MockResult
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

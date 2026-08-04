@@ -26,9 +26,9 @@ check_absent() {
   fi
 }
 
-android="androidApp/src/main/java/com/example/demo/health/components/DashboardCard.kt"
-ios_model="iosApp/iosApp/Health/HealthCard.swift"
-ios_view="iosApp/iosApp/Health/HealthDashboardView.swift"
+android="androidApp/src/main/kotlin/com/example/demo/health/components/DashboardCard.kt"
+ios_model="iosApp/iosApp/Health/Views/HealthCard.swift"
+ios_view="iosApp/iosApp/Health/Views/HealthDashboardView.swift"
 harmony_types="harmonyApp/entry/src/main/ets/health/HealthDashboardTypes.ets"
 harmony_view="harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets"
 harmony_page="harmonyApp/entry/src/main/ets/pages/SignedInPage.ets"

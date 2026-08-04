@@ -18,8 +18,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.R
-import com.example.demo.common.login.AuthMode
-import com.example.demo.common.login.LoginEffect
+import com.example.demo.common.auth.model.AuthMode
+import com.example.demo.common.auth.model.LoginEffect
 import com.example.demo.auth.viewmodel.LoginViewModel
 import com.example.demo.auth.components.AuthTitleSize
 import com.example.demo.auth.components.AuthTitleTopPadding
@@ -31,7 +31,7 @@ import com.example.demo.auth.components.ErrorText
 import com.example.demo.auth.components.UnderlineInput
 import com.example.demo.core.theme.DemoTheme
 import androidx.compose.material3.Text
-import com.example.demo.common.login.toProfileCountryCode
+import com.example.demo.common.auth.model.toProfileCountryCode
 import com.example.demo.auth.screens.profile.OptionSheet
 import com.example.demo.auth.screens.profile.ProfilePickerRow
 import com.example.demo.core.resources.AppColors

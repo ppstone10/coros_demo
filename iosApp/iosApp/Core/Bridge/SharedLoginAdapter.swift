@@ -86,7 +86,7 @@ protocol SharedLoginAdapterProtocol {
 final class SharedLoginAdapter: SharedLoginAdapterProtocol {
     private static let storeKey = "training_auth_mock_store"
     private let facade: LoginFacade
-    private let healthFacade: HealthFacade
+    let healthFacade: HealthFacade
 
     init() {
         let defaults = UserDefaults.standard
@@ -333,82 +333,6 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
 
     func consumeEffect() -> LoginEffect? {
         facade.consumeEffect()
-    }
-
-    func healthState() -> HealthState? {
-        healthFacade.state
-    }
-
-    func loadHealth() {
-        healthFacade.load()
-    }
-
-    func staleHealthForNewAccount() {
-        healthFacade.staleForNewAccount()
-    }
-
-    func selectHealthScenario(_ name: String) -> Bool {
-        healthFacade.selectScenario(name: name)
-    }
-
-    func refreshHealth() {
-        healthFacade.refresh()
-    }
-
-    func saveHealthCardConfiguration(_ typeNames: [String]) -> String? {
-        healthFacade.saveCardConfiguration(typeNames: typeNames)
-    }
-
-    func saveHealthBodyWeight(_ weightKg: Double) -> String? {
-        healthFacade.saveBodyWeight(weightKg: weightKg)
-    }
-
-    func consumeHealthEffect() -> HealthEffect? {
-        healthFacade.consumeEffect()
-    }
-
-    func healthScenarioDescriptors() -> [HealthScenarioDescriptor] {
-        healthFacade.scenarioDescriptors()
-    }
-
-    func healthEditableSectionNames() -> [String] {
-        healthFacade.editableSectionNames()
-    }
-
-    func normalHealthEditFormJson(_ section: String) -> String? {
-        healthFacade.normalEditFormJson(sectionName: section)
-    }
-
-    func defaultNormalHealthEditFormJson(_ section: String) -> String? {
-        healthFacade.defaultNormalEditFormJson(sectionName: section)
-    }
-
-    func mutateNormalHealthEditFormJson(
-        _ section: String,
-        valuesSpec: String,
-        groupID: String,
-        operation: String,
-        rowIndex: Int
-    ) -> String? {
-        healthFacade.mutateNormalEditFormJson(
-            sectionName: section,
-            valuesSpec: valuesSpec,
-            groupId: groupID,
-            operationName: operation,
-            rowIndex: Int32(rowIndex)
-        )
-    }
-
-    func saveNormalHealthEditForm(_ section: String, valuesSpec: String) -> Bool {
-        healthFacade.saveNormalEditForm(sectionName: section, valuesSpec: valuesSpec)
-    }
-
-    func saveNormalHealthEditFormResultJson(_ section: String, valuesSpec: String) -> String {
-        healthFacade.saveNormalEditFormResultJson(sectionName: section, valuesSpec: valuesSpec)
-    }
-
-    func restoreAllNormalHealthDefaults() -> Bool {
-        healthFacade.restoreAllNormalDefaults()
     }
 
     private func syncClock() {

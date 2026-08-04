@@ -3,7 +3,7 @@ package com.example.demo.auth.components
 import android.content.res.Resources
 import androidx.annotation.StringRes
 import com.example.demo.R
-import com.example.demo.common.login.AuthMessageKeys
+import com.example.demo.common.auth.model.AuthMessageKeys
 
 @StringRes
 private fun authMessageResourceId(key: String): Int? = when (key) {

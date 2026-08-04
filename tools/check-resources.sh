@@ -14,19 +14,19 @@ from pathlib import Path
 
 root = Path.cwd()
 required = {
-    "shared authentication message keys": root / "common/src/commonMain/kotlin/com/example/demo/common/login/AuthMessageKeys.kt",
-    "Android authentication resolver": root / "androidApp/src/main/java/com/example/demo/login/components/AuthLocalization.kt",
+    "shared authentication message keys": root / "common/src/commonMain/kotlin/com/example/demo/common/auth/AuthMessageKeys.kt",
+    "Android authentication resolver": root / "androidApp/src/main/kotlin/com/example/demo/auth/components/AuthLocalization.kt",
     "Android default strings": root / "androidApp/src/main/res/values/strings.xml",
     "Android English strings": root / "androidApp/src/main/res/values-en/strings.xml",
-    "iOS authentication resolver": root / "iosApp/iosApp/Resources/AppResources.swift",
+    "iOS authentication resolver": root / "iosApp/iosApp/Core/Resources/AppResources.swift",
     "iOS String Catalog": root / "iosApp/iosApp/Resources/Localizable.xcstrings",
-    "HarmonyOS authentication resolver": root / "harmonyApp/entry/src/main/ets/resources/AuthLocalization.ets",
+    "HarmonyOS authentication resolver": root / "harmonyApp/entry/src/main/ets/core/resources/AuthLocalization.ets",
     "HarmonyOS default strings": root / "harmonyApp/entry/src/main/resources/base/element/string.json",
     "HarmonyOS English strings": root / "harmonyApp/entry/src/main/resources/en_US/element/string.json",
-    "Android app language state": root / "androidApp/src/main/java/com/example/demo/ui/language/AppLanguage.kt",
-    "Android language selector": root / "androidApp/src/main/java/com/example/demo/ui/language/LanguageSelection.kt",
-    "iOS app language state": root / "iosApp/iosApp/Resources/AppResources.swift",
-    "HarmonyOS app language state": root / "harmonyApp/entry/src/main/ets/resources/AppLanguage.ets",
+    "Android app language state": root / "androidApp/src/main/kotlin/com/example/demo/core/resources/AppLanguage.kt",
+    "Android language selector": root / "androidApp/src/main/kotlin/com/example/demo/core/resources/LanguageSelection.kt",
+    "iOS app language state": root / "iosApp/iosApp/Core/Resources/AppResources.swift",
+    "HarmonyOS app language state": root / "harmonyApp/entry/src/main/ets/core/resources/AppLanguage.ets",
 }
 
 errors = []
@@ -134,10 +134,10 @@ for label, tokens in language_contracts.items():
             errors.append(f"{label} is missing language contract token: {token}")
 
 language_entrypoints = {
-    "Android Entrance": root / "androidApp/src/main/java/com/example/demo/login/entrance/EntranceScreen.kt",
-    "Android Me": root / "androidApp/src/main/java/com/example/demo/login/signedin/SignedInScreen.kt",
-    "iOS Entrance": root / "iosApp/iosApp/Login/Views/EntranceView.swift",
-    "iOS Me": root / "iosApp/iosApp/Account/AccountView.swift",
+    "Android Entrance": root / "androidApp/src/main/kotlin/com/example/demo/auth/screens/entrance/EntranceScreen.kt",
+    "Android Me": root / "androidApp/src/main/kotlin/com/example/demo/auth/screens/signedin/SignedInScreen.kt",
+    "iOS Entrance": root / "iosApp/iosApp/Auth/Views/EntranceView.swift",
+    "iOS Me": root / "iosApp/iosApp/Home/Account/AccountView.swift",
     "HarmonyOS Entrance": root / "harmonyApp/entry/src/main/ets/pages/EntrancePage.ets",
     "HarmonyOS Me": root / "harmonyApp/entry/src/main/ets/pages/SignedInPage.ets",
 }
@@ -167,10 +167,10 @@ if "this.EntranceTopBar()" not in harmony_entrance:
     errors.append("HarmonyOS Entrance must place the logo and language selector in a full-width top bar")
 
 target_files = [
-    root / "common/src/commonMain/kotlin/com/example/demo/common/login/LoginModels.kt",
-    root / "common/src/commonMain/kotlin/com/example/demo/common/login/LoginRules.kt",
-    root / "common/src/commonMain/kotlin/com/example/demo/common/login/LoginUseCase.kt",
-    root / "common/src/commonMain/kotlin/com/example/demo/common/login/LoginStore.kt",
+    root / "common/src/commonMain/kotlin/com/example/demo/common/auth/LoginModels.kt",
+    root / "common/src/commonMain/kotlin/com/example/demo/common/auth/LoginRules.kt",
+    root / "common/src/commonMain/kotlin/com/example/demo/common/auth/LoginUseCase.kt",
+    root / "common/src/commonMain/kotlin/com/example/demo/common/auth/LoginStore.kt",
 ]
 for path in target_files:
     text = path.read_text(encoding="utf-8")

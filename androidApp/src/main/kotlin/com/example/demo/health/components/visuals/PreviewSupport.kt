@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.demo.common.health.HealthCardType
-import com.example.demo.common.health.HealthCardVisualData
-import com.example.demo.common.health.HealthPreviewFixtures
+import com.example.demo.common.health.model.HealthCardType
+import com.example.demo.common.health.model.HealthCardVisualData
+import com.example.demo.common.health.mock.HealthPreviewFixtures
 import com.example.demo.core.resources.AppColors
 import com.example.demo.core.theme.DemoTheme
 

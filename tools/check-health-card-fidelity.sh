@@ -103,10 +103,10 @@ for asset in "${health_png_assets[@]}"; do
     "harmonyApp/entry/src/main/resources/base/media/${asset}.png"
 done
 
-check_absent_text androidApp/src/main/java/com/example/demo/health/components/DashboardCard.kt "FigmaCardHeight"
-check_text androidApp/src/main/java/com/example/demo/health/components/DashboardCard.kt "clipToBounds()"
-check_absent_text iosApp/iosApp/Health/HealthDashboardView.swift "figmaCardHeight"
-check_text iosApp/iosApp/Health/HealthDashboardView.swift ".clipped()"
+check_absent_text androidApp/src/main/kotlin/com/example/demo/health/components/DashboardCard.kt "FigmaCardHeight"
+check_text androidApp/src/main/kotlin/com/example/demo/health/components/DashboardCard.kt "clipToBounds()"
+check_absent_text iosApp/iosApp/Health/Views/HealthDashboardView.swift "figmaCardHeight"
+check_text iosApp/iosApp/Health/Views/HealthDashboardView.swift ".clipped()"
 check_absent_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets "minimumCardHeight"
 check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets ".clip(true)"
 check_text harmonyApp/entry/src/main/ets/entryability/EntryAbility.ets "COROSAPP"
@@ -117,37 +117,37 @@ check_text harmonyApp/entry/src/main/resources/base/element/string.json '"name":
 # HLTH-VIS-015: Android is the semantic health-resource baseline. All three
 # platform catalogs must expose the Figma overview assets instead of scattering
 # literal resource names through the renderers.
-check_text androidApp/src/main/java/com/example/demo/ui/resources/AppImages.kt "val ActivityMap"
-check_text androidApp/src/main/java/com/example/demo/ui/resources/AppImages.kt "val TodayHeader"
-check_text androidApp/src/main/java/com/example/demo/ui/resources/AppImages.kt "val TodayRunner"
-check_text androidApp/src/main/java/com/example/demo/ui/resources/AppImages.kt "val BodyFront"
-check_text androidApp/src/main/java/com/example/demo/ui/resources/AppImages.kt "val BodyBack"
-check_text iosApp/iosApp/Resources/AppResources.swift "static let activityMap"
-check_text iosApp/iosApp/Resources/AppResources.swift "static let todayHeader"
-check_text iosApp/iosApp/Resources/AppResources.swift "static let todayRunner"
-check_text iosApp/iosApp/Resources/AppResources.swift "static let bodyFront"
-check_text iosApp/iosApp/Resources/AppResources.swift "static let bodyBack"
-check_text harmonyApp/entry/src/main/ets/resources/AppResources.ets "static activityMap()"
-check_text harmonyApp/entry/src/main/ets/resources/AppResources.ets "static todayHeader()"
-check_text harmonyApp/entry/src/main/ets/resources/AppResources.ets "static todayRunner()"
-check_text harmonyApp/entry/src/main/ets/resources/AppResources.ets "static bodyFront()"
-check_text harmonyApp/entry/src/main/ets/resources/AppResources.ets "static bodyBack()"
+check_text androidApp/src/main/kotlin/com/example/demo/core/resources/AppImages.kt "val ActivityMap"
+check_text androidApp/src/main/kotlin/com/example/demo/core/resources/AppImages.kt "val TodayHeader"
+check_text androidApp/src/main/kotlin/com/example/demo/core/resources/AppImages.kt "val TodayRunner"
+check_text androidApp/src/main/kotlin/com/example/demo/core/resources/AppImages.kt "val BodyFront"
+check_text androidApp/src/main/kotlin/com/example/demo/core/resources/AppImages.kt "val BodyBack"
+check_text iosApp/iosApp/Core/Resources/AppResources.swift "static let activityMap"
+check_text iosApp/iosApp/Core/Resources/AppResources.swift "static let todayHeader"
+check_text iosApp/iosApp/Core/Resources/AppResources.swift "static let todayRunner"
+check_text iosApp/iosApp/Core/Resources/AppResources.swift "static let bodyFront"
+check_text iosApp/iosApp/Core/Resources/AppResources.swift "static let bodyBack"
+check_text harmonyApp/entry/src/main/ets/core/resources/AppResources.ets "static activityMap()"
+check_text harmonyApp/entry/src/main/ets/core/resources/AppResources.ets "static todayHeader()"
+check_text harmonyApp/entry/src/main/ets/core/resources/AppResources.ets "static todayRunner()"
+check_text harmonyApp/entry/src/main/ets/core/resources/AppResources.ets "static bodyFront()"
+check_text harmonyApp/entry/src/main/ets/core/resources/AppResources.ets "static bodyBack()"
 
-check_absent_text androidApp/src/main/java/com/example/demo/health/components/DashboardCard.kt "R.drawable.health_"
-check_absent_text iosApp/iosApp/Health/HealthDashboardView.swift 'Image("health_'
+check_absent_text androidApp/src/main/kotlin/com/example/demo/health/components/DashboardCard.kt "R.drawable.health_"
+check_absent_text iosApp/iosApp/Health/Views/HealthDashboardView.swift 'Image("health_'
 check_absent_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets "Image(\$r('app.media.health_"
 
 # HLTH-VIS-016: TodayActivity uses Android's general-card icon identity outside
 # the dashboard's dedicated header treatment; it must never fall through to HR.
-check_text iosApp/iosApp/Resources/AppResources.swift 'static let todayActivity = "icon_small_training_effect"'
-check_text iosApp/iosApp/Health/HealthDashboardViewModel.swift 'case "TodayActivity": return AppImages.Health.todayActivity'
-check_text harmonyApp/entry/src/main/ets/resources/AppResources.ets "case 'TodayActivity': return \$r('app.media.icon_small_training_effect')"
+check_text iosApp/iosApp/Core/Resources/AppResources.swift 'static let todayActivity = "icon_small_training_effect"'
+check_text iosApp/iosApp/Health/ViewModel/HealthDashboardViewModel.swift 'case "TodayActivity": return AppImages.Health.todayActivity'
+check_text harmonyApp/entry/src/main/ets/core/resources/AppResources.ets "case 'TodayActivity': return \$r('app.media.icon_small_training_effect')"
 check_text harmonyApp/entry/src/main/ets/health/editor/CardEditorComp.ets "AppImages.healthCardIcon(card.id)"
 check_text harmonyApp/entry/src/main/ets/health/detail/HealthDetailComp.ets "AppImages.healthCardIcon(this.card().id)"
 
 # HLTH-VIS-030..032: all native renderers keep the accepted Android behavior.
-check_text iosApp/iosApp/Health/HealthDashboardView.swift "RangeIndicatorOverview(cardType: cardType, visual: visual)"
-check_text iosApp/iosApp/Health/HealthDashboardView.swift "if card.id == \"HealthCheck\", let measuredTime = card.visual?.caption"
+check_text iosApp/iosApp/Health/Views/HealthDashboardView.swift "RangeIndicatorOverview(cardType: cardType, visual: visual)"
+check_text iosApp/iosApp/Health/Views/HealthDashboardView.swift "if card.id == \"HealthCheck\", let measuredTime = card.visual?.caption"
 check_text iosApp/iosApp/Health/Components/HeroTopRow.swift "onTapWatch"
 check_text iosApp/iosApp/Home/MainTabsView.swift "onWatchTap: { selected = .me }"
 check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets "this.RangeIndicatorOverview()"
@@ -155,12 +155,12 @@ check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets
 check_text harmonyApp/entry/src/main/ets/health/components/HeroTopRowComp.ets "onTap?: () => void"
 check_text harmonyApp/entry/src/main/ets/pages/SignedInPage.ets "onTap: () => { this.selectedTab = 3;"
 check_text iosApp/iosApp/Health/Components/HeroArcView.swift "private var calorieProgress"
-check_text iosApp/iosApp/Health/HealthDashboardView.swift "HeartRateIntervalOverview"
-check_text iosApp/iosApp/Health/HealthDashboardView.swift "onWeeklyDaySelected"
+check_text iosApp/iosApp/Health/Views/HealthDashboardView.swift "HeartRateIntervalOverview"
+check_text iosApp/iosApp/Health/Views/HealthDashboardView.swift "onWeeklyDaySelected"
 check_text harmonyApp/entry/src/main/ets/pages/SignedInPage.ets "private calorieArcProgress()"
 check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets "HeartRateIntervalOverview"
 check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets "onWeeklyDaySelected"
-check_text iosApp/iosApp/Health/HealthDashboardView.swift "GaugeOverview(cardType: cardType, visual: visual)"
+check_text iosApp/iosApp/Health/Views/HealthDashboardView.swift "GaugeOverview(cardType: cardType, visual: visual)"
 check_text harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets "this.GaugeOverview()"
 
 if [[ "$failed" -ne 0 ]]; then

@@ -91,3 +91,148 @@
 ## 待人工确认
 
 - 无（本轮为纯结构拆分；包重命名与桥接拆分属后续 Phase，将另立 Spec）
+
+---
+
+# 阶段 5 增补：common 内部子包划分
+
+## 目标（阶段 5 增量）
+
+- 在 `com.example.demo.common.auth` 与 `.health` 内部按职责划分子包，使每个文件落点能一眼看出职责层。
+- 三端目录（auth/health 的 data/viewmodel/screens/...）与 common 子包（model/rules/store/usecase/repository/mock/facade）形成语义映射。
+- 保持公共类型名与跨语言导出（Swift/KNOI）不变，仅改变包路径。
+
+## 非目标（阶段 5）
+
+- 不拆分文件内部内容（如 `HealthDashboardStore.kt` 内的接口/实现同文件保留）。
+- 不移动 `MockResult`/`MockError`（auth 域错误聚合，见 STRUCT-006）。
+- 不改变任何行为、消息键、proto 字段或方法签名。
+
+## 子包划分
+
+### auth（7 个子包）
+
+| 子包 | 文件 |
+|------|------|
+| `model` | `LoginModels.kt`、`AuthMessageKeys.kt` |
+| `rules` | `LoginRules.kt` |
+| `store` | `LoginStore.kt` |
+| `usecase` | `LoginUseCase.kt` |
+| `repository` | `AuthRepository.kt`、`AuthStoreDataSource.kt`、`BusinessMockDataSource.kt` |
+| `mock` | `LocalMockAuthRepository.kt`、`MockAuthStoreJson.kt`、`AuthJson.kt`、`JsonAuthStoreDataSource.kt` |
+| `facade` | `LoginFacade.kt` |
+
+### health（7 个子包）
+
+| 子包 | 文件 |
+|------|------|
+| `model` | `HealthModels.kt`、`HealthDashboardModels.kt`、`HealthDashboardVisuals.kt`、`EditableHealthData.kt`、`HealthEditFormModels.kt`、`HealthMessageKeys.kt`、`HealthMockContracts.kt` |
+| `rules` | `HealthRules.kt`、`HealthEditableRules.kt`、`HealthEditableForms.kt` |
+| `store` | `HealthStore.kt`、`HealthDashboardStore.kt`（含 `HealthDashboardStateDataSource`/`InMemoryHealthDashboardStateDataSource`/`PersistedDashboard` 同文件保留） |
+| `usecase` | `HealthDashboardUseCase.kt` |
+| `repository` | `HealthDashboardDataSource.kt`、`LocalHealthDashboardDataSource.kt`、`JsonHealthDashboardStateDataSource.kt` |
+| `mock` | `HealthDashboardMock.kt`、`MockHealthDashboardStoreJson.kt`、`HealthJson.kt`、`HealthEditFormJson.kt`、`HealthPreviewFixtures.kt`、`SimulatedHeartRateSamples.kt`、`DefaultEditableHealthData.kt` |
+| `facade` | `HealthFacade.kt` |
+
+## 行为规范
+
+### `STRUCT-010`：common 两个域按职责子包划分
+
+- Given：`auth`/`health` 下平铺 13+24 个文件
+- When：`git mv` 到子目录并同步 `package` 声明；更新 common 内部与三端全部 import
+- Then：`./gradlew :common:check` 全绿；Android `assembleDebug`、iOS framework+xcodebuild、HarmonyOS KNOI+hvigorw 全部通过
+- 异常/边界：同子包内类型不加 import；跨子包/跨域引用由编译器错误清单逐一补齐；Swift/KNOI 类名不变
+
+## 测试要求
+
+| Spec ID | 自动化测试/人工验收 | 预期结果 |
+|---------|---------------------|----------|
+| `STRUCT-010` | `./gradlew :common:check`；Android `assembleDebug`；iOS `build-shared-xcframework.sh`+`xcodebuild`；HarmonyOS `build-shared-harmony.sh`+`hvigorw assembleApp` | 全部通过 |
+
+> 纯包路径调整不新增业务测试；既有 commonTest 与三端构建即回归网。
+
+---
+
+# 阶段 4 增补：适配层文件拆分（契约稳定）
+
+## 目标（阶段 4 增量）
+
+- 拆分桥接/适配大文件，使每个文件只承载一个清晰职责。
+- **保持跨语言契约不变**：KNOI `@ServiceProvider` 类与方法签名、Swift 适配类与协议、ArkTS provider 接口均不改变。
+
+## 非目标（阶段 4）
+
+- 不拆分为两个 KNOI `@ServiceProvider`（`HarmonyLoginService` + `HarmonyHealthService` 两个服务），那会改变 `provider.ets` 契约并需改 ArkTS 组合根；本轮以内部委托类拆分。
+- 不改变任何业务行为、方法签名或快照 JSON 结构。
+
+## 行为规范
+
+### `STRUCT-007`：`HarmonyLoginService.kt`(558) 文件拆分，契约不变
+
+- Given：单文件混合 login 转发 + health 转发 + 快照序列化
+- When：抽取 `HarmonyHealthBridge`（内部类，持有 healthFacade，承载全部 health 方法）与 `HarmonyHealthSnapshotJson`（快照序列化 `healthSnapshotFromState`/`esc`）；`HarmonyLoginService` 保持单一 `@ServiceProvider`，health 方法委托给 bridge
+- Then：`provider.ets` 不变；`hvigorw assembleApp` 通过；行为与拆分前一致
+- 异常/边界：`MemoryAuthStoreDataSource`/`createFacade`/`createHealthFacade`/`syncClock` 保持 service 内，bridge 由 service 构造
+
+### `STRUCT-008`：iOS `SharedLoginAdapter.swift`(419) 按域拆分为扩展文件，契约不变
+
+- Given：单文件混合 auth 与 health 桥接方法
+- When：保留 `SharedLoginAdapter` 类与 `SharedLoginAdapterProtocol`，health 方法抽到 `SharedLoginAdapter+Health.swift`（`extension SharedLoginAdapter`）
+- Then：Swift 协议与调用方不变；`xcodebuild` 通过
+- 异常/边界：跨扩展共享的 `syncClock`/facade 属性保持类内；新增文件需登记 pbxproj
+
+### `STRUCT-009`：ArkTS `KnoiLoginAdapter.ets`(461) 拆分记录为债务
+
+- Given：ArkTS 不支持跨文件 extension
+- When：评估按域拆分
+- Then：**结论为暂缓**——需以内部辅助类重构并同步 PreviewLoginAdapter/StorePersister，且 DevEco 预览门禁依赖完整 import 图，本轮登记为债务，后续专项执行
+- 异常/边界：不在本轮强行拆分 ArkTS 类
+
+## 测试要求
+
+| Spec ID | 自动化测试/人工验收 | 预期结果 |
+|---------|---------------------|----------|
+| `STRUCT-007` | `hvigorw assembleApp --no-daemon`；`provider.ets` 内容对比 | 构建通过；provider 接口无 diff |
+| `STRUCT-008` | iOS `xcodebuild` | 构建通过 |
+| `STRUCT-009` | —（债务登记） | — |
+
+---
+
+# 阶段 3 增补：common 包重命名与 core 抽取
+
+## 目标（阶段 3 增量）
+
+- 将 `com.example.demo.common.login` 包重命名为 `com.example.demo.common.auth`，与三端目录命名对齐。
+- 将纯通用的 `MockResult` 抽取到 `com.example.demo.common.core`，消除 health 对 auth 域通用 Result 类型的依赖。
+- 同步更新三端 Kotlin 引用与工具脚本/文档中的旧路径。
+
+## 非目标（阶段 3）
+
+- 不移动 `MockError`/`SessionResumeResult`/`MockErrorMessage` 到 core（详见 `STRUCT-006` 评估结论）：`MockResult.Failure` 携带 `MockError`，而 `MockError` 编码 `AuthMessageKeys` 且引用 `HealthMessageKeys`，部分抽取会形成 core→auth/health 反向依赖；错误类型聚合整体保留在 auth 域。
+- 不引入组合根 DI（`AppContainer`）；不拆适配层（Phase 4）。
+- 不改变任何 public 类名、方法签名、消息键或 proto 字段；Swift/KNOI 导出的类名不变。
+
+## 行为规范
+
+### `STRUCT-005`：common 包 `login` 重命名为 `auth`
+
+- Given：`common/src/commonMain/kotlin/com/example/demo/common/login/` 与 `commonTest` 对应目录，47 个 Kotlin 文件引用 `com.example.demo.common.login`
+- When：`git mv` 目录 + 全部 package 声明与 import 同步替换
+- Then：`./gradlew :common:check` 全绿；Android `assembleDebug`、iOS framework+xcodebuild、HarmonyOS KNOI+hvigorw 全部通过
+- 异常/边界：Swift 侧按类名引用（`LoginFacade` 等）不受包名影响，仅需重编 framework；KNOI 按 service 类名生成，仅需重跑 `ohosArm64Binaries`
+
+### `STRUCT-006`：错误类型聚合保持 auth 域（已评估，不抽取）
+
+- Given：`MockResult.Failure` 携带 `MockError`；`MockError` 编码 `AuthMessageKeys` 且引用 `HealthMessageKeys`
+- When：评估将 `MockResult` 单独抽取到 core
+- Then：**结论为不抽取**——`MockResult` 与 `MockError` 是 auth 域错误模型聚合，部分抽取会形成 core→auth/health 消息键反向依赖；`MockResult`/`MockError`/`SessionResumeResult` 整体保留在 `com.example.demo.common.auth`，health 对 auth 的 `MockError`/`AuthRepository` 依赖属既有认证门禁设计
+- 异常/边界：完整错误基础设施（含消息键归属）如要重排，需另立 Spec 并评估 `HealthMessageKeys` 的 core 归属，不在本轮范围
+
+## 测试要求
+
+| Spec ID | 自动化测试/人工验收 | 预期结果 |
+|---------|---------------------|----------|
+| `STRUCT-005` | `./gradlew :common:check`；Android `assembleDebug`；iOS `build-shared-xcframework.sh`+`xcodebuild`；HarmonyOS `build-shared-harmony.sh`+`hvigorw assembleApp` | 全部通过 |
+| `STRUCT-006` | `./gradlew :common:check`；三端构建 | 全部通过 |
+
+> 纯重命名不新增业务测试；既有 commonTest（123 条）与三端构建即回归网。工具脚本 `tools/check-*.sh` 中的旧路径随本轮同步更新。

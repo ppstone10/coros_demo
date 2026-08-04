@@ -5,7 +5,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalResources
 import com.example.demo.R
-import com.example.demo.common.health.LocalizedTextSpec
+import com.example.demo.common.health.model.LocalizedTextSpec
 
 @Composable
 fun localizedHealthText(spec: LocalizedTextSpec): String =

@@ -25,11 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.demo.common.health.HealthCardVisualData
-import com.example.demo.common.health.LocalizedTextSpec
+import com.example.demo.common.health.model.HealthCardVisualData
+import com.example.demo.common.health.model.LocalizedTextSpec
 import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.AppImage
 import com.example.demo.core.resources.AppImages
+import com.example.demo.common.health.model.HealthCardType
 
 @Composable
 fun WeeklyVisual(v: HealthCardVisualData) {
@@ -114,5 +115,5 @@ private fun WeekLabels(v: HealthCardVisualData, selectedDayIndex: Int, onDaySele
 @Preview(name = "Weekly plan visual", showBackground = true, backgroundColor = 0xFF171719)
 @Composable
 private fun WeeklyVisualPreview() {
-    PreviewVisualSurface { WeeklyVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.WeeklyPlan)) }
+    PreviewVisualSurface { WeeklyVisual(previewHealthVisual(HealthCardType.WeeklyPlan)) }
 }

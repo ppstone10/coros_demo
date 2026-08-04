@@ -20,10 +20,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.demo.R
-import com.example.demo.common.health.HealthCardVisualData
+import com.example.demo.common.health.model.HealthCardVisualData
 import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.AppImage
 import com.example.demo.core.resources.AppImages
+import com.example.demo.common.health.model.HealthCardType
 
 @Composable
 fun RecoveryVisual(v: HealthCardVisualData) {
@@ -90,5 +91,5 @@ private fun RecoveryGaugeOverview(v: HealthCardVisualData) {
 @Preview(name = "Recovery visual", showBackground = true, backgroundColor = 0xFF171719)
 @Composable
 private fun RecoveryVisualPreview() {
-    PreviewVisualSurface { RecoveryVisual(previewHealthVisual(com.example.demo.common.health.HealthCardType.Recovery)) }
+    PreviewVisualSurface { RecoveryVisual(previewHealthVisual(HealthCardType.Recovery)) }
 }

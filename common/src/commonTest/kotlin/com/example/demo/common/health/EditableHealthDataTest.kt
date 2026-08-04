@@ -1,11 +1,11 @@
 package com.example.demo.common.health
 
-import com.example.demo.common.login.InMemoryAuthStoreDataSource
-import com.example.demo.common.login.LocalMockAuthRepository
-import com.example.demo.common.login.LocalMockAuthRepository.Companion.DefaultVerifyCode
-import com.example.demo.common.login.LoginResult
-import com.example.demo.common.login.MockResult
-import com.example.demo.common.login.RegisterUseCase
+import com.example.demo.common.auth.repository.InMemoryAuthStoreDataSource
+import com.example.demo.common.auth.mock.LocalMockAuthRepository
+import com.example.demo.common.auth.mock.LocalMockAuthRepository.Companion.DefaultVerifyCode
+import com.example.demo.common.auth.model.LoginResult
+import com.example.demo.common.auth.model.MockResult
+import com.example.demo.common.auth.usecase.RegisterUseCase
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -14,6 +14,36 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.example.demo.common.health.mock.DefaultEditableHealthData
+import com.example.demo.common.health.mock.MockHealthDashboardStoreJson
+import com.example.demo.common.health.model.BodyManagement
+import com.example.demo.common.health.model.BodyMuscleGroup
+import com.example.demo.common.health.model.DailySummaryInput
+import com.example.demo.common.health.model.HealthAction
+import com.example.demo.common.health.model.HealthCardType
+import com.example.demo.common.health.model.HealthDashboardSnapshot
+import com.example.demo.common.health.model.HealthEditFieldType
+import com.example.demo.common.health.model.HealthEditRepeatOperation
+import com.example.demo.common.health.model.HealthEditSourceKind
+import com.example.demo.common.health.model.HealthEditValidationReason
+import com.example.demo.common.health.model.HealthEditableSection
+import com.example.demo.common.health.model.HealthMockScenario
+import com.example.demo.common.health.model.HeartRatePattern
+import com.example.demo.common.health.model.RecoveryInput
+import com.example.demo.common.health.model.SleepInput
+import com.example.demo.common.health.model.SleepStage
+import com.example.demo.common.health.model.SleepStageInput
+import com.example.demo.common.health.model.StressPattern
+import com.example.demo.common.health.model.TodayActivityInput
+import com.example.demo.common.health.model.TrainingAssessmentInput
+import com.example.demo.common.health.model.WeeklyPlanInput
+import com.example.demo.common.health.model.WeeklyWorkoutInput
+import com.example.demo.common.health.model.WorkoutType
+import com.example.demo.common.health.model.bodyVisual
+import com.example.demo.common.health.rules.HealthEditableForms
+import com.example.demo.common.health.rules.HealthEditableRules
+import com.example.demo.common.health.store.HealthStore
+import com.example.demo.common.health.store.InMemoryHealthDashboardStateDataSource
 
 class EditableHealthDataTest {
 
@@ -61,7 +91,7 @@ class EditableHealthDataTest {
         val edited = DefaultEditableHealthData.value.copy(
             dailySummary = DailySummaryInput(steps = 12_345, calories = 888, activeMinutes = 77)
         )
-        val userId = assertIs<MockResult.Success<com.example.demo.common.login.AuthSession>>(
+        val userId = assertIs<MockResult.Success<com.example.demo.common.auth.model.AuthSession>>(
             repository.verifyBusinessAccess()
         ).data.userId
         val snapshotBefore = persistence.load(userId)
@@ -136,7 +166,7 @@ class EditableHealthDataTest {
                 ?.first { it.type == HealthCardType.BodyManagement }
                 ?.visual
         )
-        val userId = assertIs<MockResult.Success<com.example.demo.common.login.AuthSession>>(
+        val userId = assertIs<MockResult.Success<com.example.demo.common.auth.model.AuthSession>>(
             repository.verifyBusinessAccess()
         ).data.userId
         val persistedBody = requireNotNull(persistence.load(userId)?.dashboardData?.bodyManagement)
@@ -501,7 +531,7 @@ class EditableHealthDataTest {
         assertNull(store.state.error)
         store.dispatch(HealthAction.ScenarioSelected(HealthMockScenario.Normal))
         store.dispatch(HealthAction.Refresh)
-        val userId = assertIs<MockResult.Success<com.example.demo.common.login.AuthSession>>(
+        val userId = assertIs<MockResult.Success<com.example.demo.common.auth.model.AuthSession>>(
             repository.verifyBusinessAccess()
         ).data.userId
         assertEquals(1_234, persistence.load(userId)?.dashboardData?.dailySummary?.steps)

@@ -839,3 +839,90 @@
 - ArkTS 禁止无类型对象字面量：`AuthRoutes` 分组静态常量改为声明 `interface` 后以类型化对象赋值。
 - Xcode 显式 pbxproj（非文件系统同步组）：新增 Swift 文件需手工补 PBXBuildFile/PBXFileReference/分组/Sources phase 四处登记，且文件路径须与分组 `path` 一致（`Health/Navigation/`）。
 - Profile 拆分跨文件 private 引用（`ProfileTextRow`/`GenderRow`/`displayText`/`localizedCountryOptions`/`parseBirthDate`）统一收敛为 `internal`，未改变对外公共 API。
+
+# 2026-08-04 17:35 — 阶段 3：common 包 login→auth 重命名与 core 抽取评估
+
+## 采纳内容
+- [STRUCT-005] `common/src/commonMain` 与 `commonTest` 的 `login` 目录 `git mv` 为 `auth`；全部 `package com.example.demo.common.login` 声明与 47 个 Kotlin 文件的 `com.example.demo.common.login` 引用替换为 `com.example.demo.common.auth`。
+- [STRUCT-005] `tools/` 中 7 个脚本（check-docs、check-health-dashboard-runtime-states、check-health-editable-normal-data、check-health-navigation、check-resource-maintainability、check-resources、check-ui-previews）的 `common/login`、`ets/login` 旧路径同步更新为 `auth`。
+- [STRUCT-006] 评估 `MockResult` core 抽取：`MockResult.Failure` 携带 `MockError`，`MockError` 编码 `AuthMessageKeys` 且引用 `HealthMessageKeys`，单独抽取会形成 core→auth/health 消息键反向依赖；结论为不抽取，`MockResult`/`MockError`/`SessionResumeResult` 整体保留 `com.example.demo.common.auth`，结论记入 Spec。
+
+## 人工审查点
+- iOS Swift 按类名（`LoginFacade`/`HealthFacade`）引用 KMP framework，包名变化不影响源码，但必须重编 `build-shared-xcframework.sh` 验证导出；已执行且 xcodebuild 通过。
+- HarmonyOS KNOI 按 `@ServiceProvider` 类名生成 `provider.ets`，service 方法签名未变故接口文件无需重生成；`libkn.so` 已按新包重建，`hvigorw assembleApp` 通过。
+- `MockError` 的 health 消息键（`MinimumCardsRequired`）属既有跨域设计：health 对 auth 的 `MockError`/`AuthRepository` 依赖是认证门禁，不在本轮范围。
+
+## 验证结果
+- `./gradlew :common:check`（123 条 commonTest）在重命名后全绿；重命名前临时 core 抽取引入 `Unresolved reference 'MockError'` 编译红灯，回退后转绿。
+- Android `./gradlew :androidApp:assembleDebug` 通过。
+- iOS `./tools/build-shared-xcframework.sh`（BUILD SUCCESSFUL）后 `xcodebuild -scheme IOSDemo -sdk iphonesimulator build` 通过。
+- HarmonyOS `./tools/build-shared-harmony.sh` 重建 `libkn.so`（Aug 4 17:26）并 `hvigorw assembleApp` 通过。
+- `./tools/check-sdd.sh` 通过；`git diff --check` 无冲突标记；`./tools/check-docs.sh` 仍仅因既有 `docs/reference/注册登陆模块介绍.md` 可信哈希不一致失败（本轮未修改）。
+
+## 人工修正点
+- core 抽取前未预判 `MockResult.Failure` 对 `MockError` 的引用及 `MockError` 对消息键的依赖，导致 core→域 反向依赖编译红灯；改为「先验证后回退」，把结论以 `STRUCT-006` 记录进 Spec，避免带着错误方向继续。
+
+# 2026-08-04 18:05 — 阶段 4：适配层文件拆分（KNOI/Swift 契约稳定）
+
+## 采纳内容
+- [STRUCT-007] `HarmonyLoginService.kt`(558) 拆分：抽取 `HarmonyHealthBridge`（内部委托类，承载全部 health 转发方法与 `restoreLegacyHealthFromStoreJson`）与 `HarmonyHealthSnapshotJson`（`healthSnapshotFromState`/`esc` 序列化）；`HarmonyLoginService` 保持单一 `@ServiceProvider`，health 方法委托 bridge，主文件 558→338 行。
+- [STRUCT-008] iOS `SharedLoginAdapter.swift`(419) 拆分：health 方法抽到 `SharedLoginAdapter+Health.swift`（`extension SharedLoginAdapter`），`healthFacade` 由 private 放开为 internal；协议与调用方不变，主文件 419→344 行。
+- [STRUCT-009] 评估 ArkTS `KnoiLoginAdapter.ets` 拆分：ArkTS 无跨文件 extension，需内部辅助类重构并同步 PreviewLoginAdapter/StorePersister，且 DevEco 预览门禁依赖完整 import 图；结论为暂缓并登记债务。
+
+## 人工审查点
+- KNOI 契约稳定性验证：`provider.ets` 在拆分前后 `git diff` 为空——service 类名与全部方法签名未变，仅实现位置变化。
+- Swift 跨文件 extension 访问类私有成员受限：health 方法需要 `healthFacade`，将其从 `private` 放开为 `internal`（模块内可见，不改变对外 API）。
+- 拆分不改变任何业务行为、方法签名或健康快照 JSON 结构；`restoreStoreSnapshot` 通过 `healthBridge.updateFacade` 保持换号后 bridge 引用最新 facade。
+
+## 验证结果
+- HarmonyOS：`./tools/build-shared-harmony.sh`（bridge `ohosArm64Binaries` + `hvigorw assembleApp`）BUILD SUCCESSFUL；`provider.ets` 无 diff。
+- iOS：`xcodebuild -scheme IOSDemo -sdk iphonesimulator -configuration Debug build` BUILD SUCCEEDED（新扩展文件经 pbxproj 4 处登记）。
+- 新增文件：`HarmonyHealthBridge.kt`(162)、`HarmonyHealthSnapshotJson.kt`(131)、`SharedLoginAdapter+Health.swift`(79)。
+
+## 人工修正点
+- 最初计划将 KNOI 拆为两个 `@ServiceProvider`（Login + Health），评估后放弃：会改变 `provider.ets` 契约并需改 ArkTS 组合根与预览门禁；改为内部委托类，契约零变化、风险最低。
+- Swift extension 跨文件访问私有成员失败是预期约束：先识别 health 方法依赖面（仅 `healthFacade`，不含 `syncClock`），再定向放开可见性，避免过度暴露。
+
+# 2026-08-04 18:45 — 阶段 5 收尾：目录迁移后的门禁路径维护与最终验证
+
+## 采纳内容
+- 同步 `tools/` 全部 `check-*.sh` 因目录迁移（java→kotlin、login→auth/screens、ui→core、ios Login→Auth、ets resources→core/resources）失效的硬编码路径，覆盖 check-resources、check-resource-maintainability、check-health-navigation、check-ui-previews、check-account-profile-regressions、check-health-card-* 等脚本。
+- [STRUCT-002] `check-health-navigation.sh` 按新导航结构重写断言：health 路由断言迁移到 `health/navigation/HealthRoute.kt`/`HealthNavGraph.kt`，iOS 断言迁移到 `Health/Navigation/HealthNavigation.swift`（AuthCoordinator 只断言 `healthDestination` 转发），HarmonyOS 断言改为 `AuthRoutes.health.DETAIL/EDITOR` 分组与 `AuthRoutes.health.EDITOR` 调用。
+- [RES-MAINT-004] `resource-inventory.json` 与 `check-resource-maintainability.sh` 的 Token 排除路径同步到新位置（android `core/theme|resources`、iOS `Core/Resources|Auth/Components`、HarmonyOS `core/resources|auth/components`）。
+
+## 人工审查点
+- 门禁脚本硬编码的路径/结构期望是「结构回归契约」，目录迁移与导航重构后必须同步，否则门禁会误报；历史归档（docs/worklog、docs/archive）不回改。
+- 本环境无 `ripgrep`（`check-health-navigation.sh`/`check-ui-previews.sh` 依赖 `rg`），无法本地执行这两个脚本；已用 `grep` 逐条等价验证改写后的断言（15 项全 PASS）。
+- `docs/reference/注册登陆模块介绍.md` 可信哈希不一致为既有失败（历史轮次已记录），本轮未触碰。
+
+## 验证结果
+- `./tools/check-resources.sh`：23 个认证键三端对齐，通过（修复前因 iOS/Harmony 资源路径失效而 FAIL）。
+- `./tools/check-resource-maintainability.sh`：54 图/2 Raw/305 键，三端直连色债务 0，通过（修复前 Token 排除路径失效而 FAIL）。
+- `./tools/check-sdd.sh` 通过；`git diff --check` 无冲突标记；`./tools/check-docs.sh` 仅剩既有参考文档哈希失败。
+- 关键新路径逐条 `[ -f ]` 确认存在；common/Android/iOS/HarmonyOS 构建在本轮各阶段均通过。
+
+## 人工修正点
+- 误将「资源门禁失败」当作新引入问题排查，实为目录迁移后排除路径失效的存量债务；定位到 `debtExclusions` 与脚本内 `expected_color_token_exclusions` 双处需同步，只改 JSON 仍会红灯。
+- `check-ui-previews.sh` 的页面清单在 java→kotlin 后又被 login→auth 遗漏，补做第二轮 sed；校验时用 `cd tools` 后相对路径导致 `[ -f ]` 误报 MISSING，回到仓库根复验确认文件均在。
+
+# 2026-08-04 19:40 — 阶段 6：common 内部按职责子包划分
+
+## 采纳内容
+- [STRUCT-010] `com.example.demo.common.auth` 与 `.health` 各拆 7 个子包：`model/rules/store/usecase/repository/mock/facade`；共 37 个文件 `git mv`，package 声明同步更新。
+- [STRUCT-010] 用符号→新包映射脚本重写 190 处 import 与 20 处全限定引用；补齐跨子包缺失 import；清理 36 处误加的函数 import（`text` 等被单词匹配误判）；修正 4 处旧平铺包残留 import（`toProfileCountryCode` 等扩展函数）。
+- 三端目录（auth/health 的 data/viewmodel/screens/...）与 common 子包（model/rules/store/usecase/repository/mock/facade）形成语义映射。
+
+## 人工审查点
+- `MockResult`/`MockError`/`SessionResumeResult` 保留在 `auth.model`（STRUCT-006 结论），health 对 auth 的 `MockError`/`AuthRepository` 依赖为既有认证门禁设计。
+- `HealthDashboardStore.kt` 内的 `HealthDashboardStateDataSource` 接口与 `InMemoryHealthDashboardStateDataSource` 同文件保留在 `health.store`，未强行拆文件。
+- Swift/KNOI 类名不变，`provider.ets` 在拆分前后 git diff 为空。
+
+## 验证结果
+- `./gradlew :common:check` 全绿（compileAndroid 先无错，跨子包缺 import 由编译器清单逐类补齐）。
+- Android `assembleDebug` 通过（先因误加 internal `text` import 与旧平铺包 `toProfileCountryCode` import 红灯，清理后转绿）。
+- iOS `build-shared-xcframework.sh` + `xcodebuild` 通过；HarmonyOS `build-shared-harmony.sh` + `hvigorw assembleApp` 通过。
+
+## 人工修正点
+- import 重写脚本必须用 `re.MULTILINE` 才能让 `^` 匹配每行；扩展函数（`fun Receiver.name`）捕获的是函数名而非 receiver 类型，否则会把 `fun String.jsonEscaped()` 误记为符号 `String` 并产生 `import ...mock.String` 污染。
+- 单词匹配自动补 import 会产生误导入：`Text(text=...)` 里的 `text` 被当成 common 函数引用，误加 internal 函数 import；需要「按实际函数调用 `name(`/`::name` 判定」二次清理。
+- 跨包同名符号（`toDomain`/`toProtoMessage`）不能单映射，需跳过自动导入并按调用方精确手工补齐。

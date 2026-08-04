@@ -1,9 +1,9 @@
 package com.example.demo.health.data
 
 import android.content.Context
-import com.example.demo.common.health.HealthDashboardSnapshot
-import com.example.demo.common.health.HealthDashboardStateDataSource
-import com.example.demo.common.health.JsonHealthDashboardStateDataSource
+import com.example.demo.common.health.model.HealthDashboardSnapshot
+import com.example.demo.common.health.store.HealthDashboardStateDataSource
+import com.example.demo.common.health.repository.JsonHealthDashboardStateDataSource
 
 /** SharedPreferences 是训练项目的本地 mock 存储；key 中包含 userId 以隔离不同账号。 */
 class AndroidHealthDashboardStateDataSource(context: Context) : HealthDashboardStateDataSource {

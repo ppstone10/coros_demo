@@ -2,7 +2,7 @@ package com.example.demo.health
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.demo.common.health.LocalizedTextSpec
+import com.example.demo.common.health.model.LocalizedTextSpec
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith

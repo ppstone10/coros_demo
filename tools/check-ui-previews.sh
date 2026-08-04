@@ -21,41 +21,41 @@ android_pages=(
   androidApp/src/main/kotlin/com/example/demo/home/MainTabsScreen.kt
   androidApp/src/main/kotlin/com/example/demo/home/ExplorePlaceholderScreen.kt
   androidApp/src/main/kotlin/com/example/demo/home/RecordsPlaceholderScreen.kt
-  androidApp/src/main/kotlin/com/example/demo/login/entrance/EntranceScreen.kt
-  androidApp/src/main/kotlin/com/example/demo/login/login/LoginPageScreen.kt
-  androidApp/src/main/kotlin/com/example/demo/login/register/PhoneRegisterScreen.kt
-  androidApp/src/main/kotlin/com/example/demo/login/register/EmailRegisterScreen.kt
-  androidApp/src/main/kotlin/com/example/demo/login/verify/VerifyCodeScreen.kt
-  androidApp/src/main/kotlin/com/example/demo/login/password/ForgotPasswordScreen.kt
-  androidApp/src/main/kotlin/com/example/demo/login/password/PasswordSetupScreen.kt
-  androidApp/src/main/kotlin/com/example/demo/login/password/ResetPasswordScreen.kt
-  androidApp/src/main/kotlin/com/example/demo/login/profile/ProfileCompletionScreen.kt
-  androidApp/src/main/kotlin/com/example/demo/login/profile/PersonalProfileEditScreen.kt
-  androidApp/src/main/kotlin/com/example/demo/login/legal/LegalDocumentScreen.kt
-  androidApp/src/main/kotlin/com/example/demo/login/signedin/SignedInScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/auth/screens/entrance/EntranceScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/auth/screens/LoginPageScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/auth/screens/register/PhoneRegisterScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/auth/screens/register/EmailRegisterScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/auth/screens/verify/VerifyCodeScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/auth/screens/password/ForgotPasswordScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/auth/screens/password/PasswordSetupScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/auth/screens/password/ResetPasswordScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/auth/screens/profile/ProfileCompletionScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/auth/screens/profile/PersonalProfileEditScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/auth/screens/legal/LegalDocumentScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/auth/screens/signedin/SignedInScreen.kt
 )
 
 ios_pages=(
   iosApp/iosApp/ContentView.swift
-  iosApp/iosApp/Account/AccountView.swift
+  iosApp/iosApp/Home/Account/AccountView.swift
   iosApp/iosApp/Home/MainTabsView.swift
   iosApp/iosApp/Home/ExplorePlaceholderView.swift
   iosApp/iosApp/Home/RecordsPlaceholderView.swift
-  iosApp/iosApp/Health/HealthDashboardView.swift
+  iosApp/iosApp/Health/Views/HealthDashboardView.swift
   iosApp/iosApp/Health/Editor/HealthCardEditor.swift
   iosApp/iosApp/Health/Editor/NormalDataEditor.swift
   iosApp/iosApp/Health/Detail/HealthDetailView.swift
-  iosApp/iosApp/Login/Views/EntranceView.swift
-  iosApp/iosApp/Login/Views/LoginPageView.swift
-  iosApp/iosApp/Login/Views/PhoneRegisterView.swift
-  iosApp/iosApp/Login/Views/EmailRegisterView.swift
-  iosApp/iosApp/Login/Views/VerifyCodeView.swift
-  iosApp/iosApp/Login/Views/ForgotPasswordView.swift
-  iosApp/iosApp/Login/Views/PasswordSetupView.swift
-  iosApp/iosApp/Login/Views/ResetPasswordView.swift
-  iosApp/iosApp/Login/Views/ProfileCompletionView.swift
-  iosApp/iosApp/Login/Views/LegalDocumentView.swift
-  iosApp/iosApp/Login/Views/SignedInView.swift
+  iosApp/iosApp/Auth/Views/EntranceView.swift
+  iosApp/iosApp/Auth/Views/LoginPageView.swift
+  iosApp/iosApp/Auth/Views/PhoneRegisterView.swift
+  iosApp/iosApp/Auth/Views/EmailRegisterView.swift
+  iosApp/iosApp/Auth/Views/VerifyCodeView.swift
+  iosApp/iosApp/Auth/Views/ForgotPasswordView.swift
+  iosApp/iosApp/Auth/Views/PasswordSetupView.swift
+  iosApp/iosApp/Auth/Views/ResetPasswordView.swift
+  iosApp/iosApp/Auth/Views/ProfileCompletionView.swift
+  iosApp/iosApp/Auth/Views/LegalDocumentView.swift
+  iosApp/iosApp/Auth/Views/SignedInView.swift
 )
 
 harmony_pages=(
@@ -101,8 +101,8 @@ done < <(rg -n '^[[:space:]]*@Preview' harmonyApp/entry/src/main/ets -g '*.ets' 
 
 require_pattern common/src/commonMain/kotlin/com/example/demo/common/health/HealthPreviewFixtures.kt 'object HealthPreviewFixtures' 'shared preview fixture missing'
 require_pattern androidApp/src/main/kotlin/com/example/demo/health/HealthDashboardScreen.kt 'HealthPreviewFixtures' 'Android preview must consume shared fixture'
-require_pattern iosApp/iosApp/Health/HealthDashboardViewModel.swift 'previewState: HealthState' 'iOS typed preview adapter missing'
-require_pattern iosApp/iosApp/Health/HealthDashboardView.swift 'HealthPreviewFixtures' 'iOS preview must consume shared fixture'
+require_pattern iosApp/iosApp/Health/ViewModel/HealthDashboardViewModel.swift 'previewState: HealthState' 'iOS typed preview adapter missing'
+require_pattern iosApp/iosApp/Health/Views/HealthDashboardView.swift 'HealthPreviewFixtures' 'iOS preview must consume shared fixture'
 require_pattern harmony-kmp-bridge/src/ohosArm64Main/kotlin/com/example/demo/harmony/bridge/HarmonyLoginService.kt 'previewHealthSnapshot' 'HarmonyOS preview JSON bridge missing'
 require_pattern harmonyApp/entry/src/main/ets/health/HealthDashboardViewModel.ets 'loadPreview' 'HarmonyOS preview mapper missing'
 require_pattern harmonyApp/entry/src/main/ets/health/HealthDashboardViewModel.ets 'applyPreviewFallback' 'HarmonyOS design-host fallback missing'
@@ -146,23 +146,23 @@ if rg -q 'getService|loadPreview|aboutToAppear' harmonyApp/entry/src/main/ets/pr
   failures=$((failures + 1))
 fi
 
-require_pattern harmonyApp/entry/src/main/ets/login/HarmonyServiceProvider.ets 'installHarmonyService' 'HarmonyOS runtime service installation boundary missing'
-if rg -q '@kuiklybase/knoi|knoi/provider' harmonyApp/entry/src/main/ets/login/HarmonyServiceProvider.ets; then
+require_pattern harmonyApp/entry/src/main/ets/auth/HarmonyServiceProvider.ets 'installHarmonyService' 'HarmonyOS runtime service installation boundary missing'
+if rg -q '@kuiklybase/knoi|knoi/provider' harmonyApp/entry/src/main/ets/auth/HarmonyServiceProvider.ets; then
   echo 'FAIL: HarmonyServiceProvider must remain native-module-free for Preview'
   failures=$((failures + 1))
 fi
-if rg -q 'KnoiLoginAdapter' harmonyApp/entry/src/main/ets/login/LoginLogicProvider.ets; then
+if rg -q 'KnoiLoginAdapter' harmonyApp/entry/src/main/ets/auth/LoginLogicProvider.ets; then
   echo 'FAIL: LoginLogicProvider statically imports the native adapter'
   failures=$((failures + 1))
 fi
-if rg -q '^const[[:space:]]+loginViewModel:.*new LoginViewModel' harmonyApp/entry/src/main/ets/login/LoginViewModelProvider.ets; then
+if rg -q '^const[[:space:]]+loginViewModel:.*new LoginViewModel' harmonyApp/entry/src/main/ets/auth/LoginViewModelProvider.ets; then
   echo 'FAIL: LoginViewModelProvider eagerly creates a module-level ViewModel'
   failures=$((failures + 1))
 fi
 
 while IFS= read -r native_file; do
   case "$native_file" in
-    harmonyApp/entry/src/main/ets/entryability/EntryAbility.ets|harmonyApp/entry/src/main/ets/knoi/provider.ets|harmonyApp/entry/src/main/ets/login/KnoiHarmonyServiceAdapter.ets) ;;
+    harmonyApp/entry/src/main/ets/entryability/EntryAbility.ets|harmonyApp/entry/src/main/ets/knoi/provider.ets|harmonyApp/entry/src/main/ets/auth/KnoiHarmonyServiceAdapter.ets) ;;
     *)
       echo "FAIL: native KNOI import escaped runtime composition root ($native_file)"
       failures=$((failures + 1))

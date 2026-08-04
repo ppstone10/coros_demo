@@ -380,18 +380,18 @@
   ],
   "debtExclusions": {
     "androidDirectColors": [
-      "androidApp/src/main/java/com/example/demo/ui/resources/AppColors.kt",
-      "androidApp/src/main/java/com/example/demo/ui/theme/Color.kt",
-      "androidApp/src/main/java/com/example/demo/ui/theme/Theme.kt"
+      "androidApp/src/main/kotlin/com/example/demo/core/resources/AppColors.kt",
+      "androidApp/src/main/kotlin/com/example/demo/core/theme/Color.kt",
+      "androidApp/src/main/kotlin/com/example/demo/core/theme/Theme.kt"
     ],
     "iosDirectColors": [
-      "iosApp/iosApp/Login/Components/AuthColors.swift",
-      "iosApp/iosApp/Resources/AppResources.swift"
+      "iosApp/iosApp/Auth/Components/AuthColors.swift",
+      "iosApp/iosApp/Core/Resources/AppResources.swift"
     ],
     "harmonyDirectColors": [
       "harmonyApp/entry/src/main/ets/pages/DebugStatePage.ets",
-      "harmonyApp/entry/src/main/ets/login/components/AuthColors.ets",
-      "harmonyApp/entry/src/main/ets/resources/AppResources.ets"
+      "harmonyApp/entry/src/main/ets/auth/components/AuthColors.ets",
+      "harmonyApp/entry/src/main/ets/core/resources/AppResources.ets"
     ],
     "harmonyHanLiterals": [
       "harmonyApp/entry/src/main/ets/pages/DebugStatePage.ets"

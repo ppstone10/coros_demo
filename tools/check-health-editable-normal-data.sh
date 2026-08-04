@@ -75,36 +75,36 @@ require_text "common/src/commonMain/kotlin/com/example/demo/common/health/Health
 require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardVisuals.kt" \
   "highlightedBodyRegions = bodyHighlightRegions"
 
-require_text "androidApp/src/main/java/com/example/demo/navigation/AuthRoute.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/auth/navigation/AuthRoute.kt" \
   "NormalDataEditorRoute"
-require_text "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "delay(1_500.milliseconds)"
-require_text "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "viewModel.normalEditForm(section)"
-require_text "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "OutlinedTextFieldDefaults.colors"
-require_text "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "RepeatGroupEditor"
-require_text "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "ChoiceSelectionDialog"
-require_text "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "stringResource(R.string.common_save)"
-require_absent "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_absent "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "% field.options.size"
-require_text "androidApp/src/main/java/com/example/demo/ui/resources/AppImages.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/core/resources/AppImages.kt" \
   "ChoiceChevron = AppImageAsset(R.drawable.right_more)"
-require_text "androidApp/src/main/java/com/example/demo/ui/resources/AppImages.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/core/resources/AppImages.kt" \
   "ChoiceCheck = AppImageAsset(R.drawable.ic_profile_check)"
-require_text "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "AppImages.Health.ChoiceChevron"
-require_text "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "AppImages.Health.ChoiceCheck"
-require_absent "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_absent "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "Text(\"⌄\""
-require_absent "androidApp/src/main/java/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_absent "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "Text(\"✓\""
 
-require_text "iosApp/iosApp/Login/AuthCoordinator.swift" \
+require_text "iosApp/iosApp/Auth/AuthCoordinator.swift" \
   "NormalDataEditorOverview"
 require_text "iosApp/iosApp/Health/Editor/NormalDataEditor.swift" \
   "1_500_000_000"
@@ -118,9 +118,9 @@ require_text "iosApp/iosApp/Health/Editor/NormalDataEditor.swift" \
   "AppColors.Health.addAction"
 require_absent "iosApp/iosApp/Health/Editor/NormalDataEditor.swift" \
   "Picker("
-require_text "iosApp/iosApp/Resources/AppResources.swift" \
+require_text "iosApp/iosApp/Core/Resources/AppResources.swift" \
   "static let choiceChevron = \"right_more\""
-require_text "iosApp/iosApp/Resources/AppResources.swift" \
+require_text "iosApp/iosApp/Core/Resources/AppResources.swift" \
   "static let choiceCheck = \"ic_profile_check\""
 require_text "iosApp/iosApp/Health/Editor/NormalDataEditor.swift" \
   "Image(AppImages.Health.choiceChevron)"
@@ -132,14 +132,14 @@ require_absent "iosApp/iosApp/Health/Editor/NormalDataEditor.swift" \
   "systemName: \"checkmark\""
 require_text "iosApp/iosApp/Health/Components/Visuals/BodyView.swift" \
   "bodyRegionLayer"
-require_text "iosApp/iosApp/Resources/AppResources.swift" \
+require_text "iosApp/iosApp/Core/Resources/AppResources.swift" \
   "static let bodyMuscleRegions:"
 require_absent "iosApp/iosApp/Health/Components/Visuals/BodyView.swift" \
   "muscleMarker"
 require_absent "iosApp/iosApp/Health/Components/Visuals/BodyView.swift" \
   "muscleNames"
 
-require_text "harmonyApp/entry/src/main/ets/login/AuthRoutes.ets" \
+require_text "harmonyApp/entry/src/main/ets/auth/AuthRoutes.ets" \
   "NORMAL_DATA_EDITOR"
 require_text "harmonyApp/entry/src/main/ets/pages/NormalDataEditorPage.ets" \
   "normalHealthEditFormJson(section)"
@@ -153,9 +153,9 @@ require_text "harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets" \
   "AppColors.ADD_ACTION"
 require_absent "harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets" \
   "Select("
-require_text "harmonyApp/entry/src/main/ets/resources/AppResources.ets" \
+require_text "harmonyApp/entry/src/main/ets/core/resources/AppResources.ets" \
   "static choiceChevron(): Resource { return \$r('app.media.right_more'); }"
-require_text "harmonyApp/entry/src/main/ets/resources/AppResources.ets" \
+require_text "harmonyApp/entry/src/main/ets/core/resources/AppResources.ets" \
   "static choiceCheck(): Resource { return \$r('app.media.ic_profile_check'); }"
 require_text "harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets" \
   "Image(AppImages.choiceChevron())"
@@ -167,7 +167,7 @@ require_absent "harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets" \
   "Text('✓')"
 require_text "harmonyApp/entry/src/main/ets/health/components/visuals/BodyManagementVisualComp.ets" \
   "BodyRegionLayer"
-require_text "harmonyApp/entry/src/main/ets/resources/AppResources.ets" \
+require_text "harmonyApp/entry/src/main/ets/core/resources/AppResources.ets" \
   "static bodyMuscleRegion(region: string): Resource"
 require_absent "harmonyApp/entry/src/main/ets/health/components/visuals/BodyManagementVisualComp.ets" \
   "MuscleMarker"
@@ -176,13 +176,13 @@ require_absent "harmonyApp/entry/src/main/ets/health/components/visuals/BodyMana
 require_text "harmonyApp/entry/src/main/ets/health/components/visuals/HrvAssessmentVisualComp.ets" \
   ".height(24)"
 
-require_text "androidApp/src/main/java/com/example/demo/health/components/visuals/BodyVisual.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/health/components/visuals/BodyVisual.kt" \
   "BodyRegionLayer"
-require_text "androidApp/src/main/java/com/example/demo/ui/resources/AppImages.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/core/resources/AppImages.kt" \
   "val BodyMuscleRegions = mapOf("
-require_absent "androidApp/src/main/java/com/example/demo/health/components/visuals/BodyVisual.kt" \
+require_absent "androidApp/src/main/kotlin/com/example/demo/health/components/visuals/BodyVisual.kt" \
   "MuscleMarker"
-require_absent "androidApp/src/main/java/com/example/demo/health/components/visuals/BodyVisual.kt" \
+require_absent "androidApp/src/main/kotlin/com/example/demo/health/components/visuals/BodyVisual.kt" \
   "selectedNames"
 
 body_assets=(
@@ -215,8 +215,8 @@ for asset in "${body_assets[@]}"; do
   require_text "tools/resource-inventory.json" "\"${asset}\""
 done
 
-android_localization="androidApp/src/main/java/com/example/demo/health/HealthLocalization.kt"
-harmony_localization="harmonyApp/entry/src/main/ets/resources/HealthLocalization.ets"
+android_localization="androidApp/src/main/kotlin/com/example/demo/health/HealthLocalization.kt"
+harmony_localization="harmonyApp/entry/src/main/ets/core/resources/HealthLocalization.ets"
 while IFS= read -r key; do
   require_text "$android_localization" "\"${key}\" -> R.string.${key}"
   require_text "$harmony_localization" "case '${key}': return \$r('app.string.${key}');"

@@ -6,7 +6,7 @@ import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.example.demo.R
-import com.example.demo.common.login.MeasurementSystem
+import com.example.demo.common.auth.model.MeasurementSystem
 import java.io.File
 import java.io.FileOutputStream
 @Composable
