@@ -926,3 +926,253 @@
 - import 重写脚本必须用 `re.MULTILINE` 才能让 `^` 匹配每行；扩展函数（`fun Receiver.name`）捕获的是函数名而非 receiver 类型，否则会把 `fun String.jsonEscaped()` 误记为符号 `String` 并产生 `import ...mock.String` 污染。
 - 单词匹配自动补 import 会产生误导入：`Text(text=...)` 里的 `text` 被当成 common 函数引用，误加 internal 函数 import；需要「按实际函数调用 `name(`/`::name` 判定」二次清理。
 - 跨包同名符号（`toDomain`/`toProtoMessage`）不能单映射，需跳过自动导入并按调用方精确手工补齐。
+
+# 2026-08-05 11:03 — Mock 服务器改造启动：新增 MSRV Spec 与边界文档更新
+
+## 采纳内容
+- [MSRV] 新增 `spec/mock-server-api-spec.md`：定义三端 HTTP 接入 mock 服务器的目标、非目标、边界与约束、接口清单（认证逐接口 10 项 + 健康整文档 3 项）、13 条行为规范（`MSRV-001`~`MSRV-013`）与验收标准。
+- [MSRV-001~013] 在 `spec/TRACE.md` 新增「mock-server-api-spec.md 追溯」表格，13 条映射全部以 `⏳` 预留（测试/实现写为“待补”），符合 SDD-003 预留规则。
+- [MSRV-002][MSRV-008] 确定架构边界：HTTP 只位于三端平台层远程数据源（HarmonyOS 走 ArkTS 侧 `ohos.net.http` 并复用既有 KNOI snapshot 入口），`commonMain` 不放网络客户端且保持同步数据源接口不变；`ohos_arm64` 无法编译 ktor 等常规 Kotlin/Native 库。
+- [MSRV-005] 明确 HTTP 状态码映射到既有 `MockError` 语义，网络不可达时新增网络类错误枚举。
+- [MSRV-012] 种子账号（`13107012029`/`2232591785@qq.com`/`123456`）与 5 个健康场景模板由服务器提供，客户端不再本地生成权威数据。
+- 更新边界文档：AGENTS.md「项目边界」增加 mock server 与 HTTP 平台层约束；README.md「关键边界」同步；`auth-mock-spec.md` §1/§2 允许本仓库 `mock-server/` 而仍禁止真实服务；`spec/README.md` 索引新增本 Spec。
+
+## 人工审查点
+- [MSRV] mock server 技术栈最终选择（建议 Node.js + Express）与落盘目录需负责人确认后进入实现轮。
+- [MSRV-006] 冷启动会话校验粒度：本地 TTL + 惰性校验 vs 每次打 `GET /api/auth/session`，待业务确认。
+- [MSRV-010] 三端数据一致的同步口径为“服务器权威 + 刷新拉取”，非实时推送，需业务接受。
+- [MSRV-008] HarmonyOS 无在线设备，最终三端联调需设备/模拟器人工验收。
+
+## 验证结果
+- [MSRV] `./tools/check-sdd.sh` 通过（框架校验全绿）。
+- [MSRV] `./tools/check-docs.sh` 仅剩既有 `docs/reference/注册登陆模块介绍.md` 可信哈希失败（历史轮次已记录，本轮未触碰）。
+- [MSRV] `git status`/`git diff` 人工核对仅修改 5 个文档文件（新增 1 Spec、预留 TRACE、AGENTS.md/README.md/auth-mock-spec.md/spec-README.md 边界），无代码改动。
+
+## 人工修正点
+- 暂无明确人工修正点；本轮为纯 Spec/文档轮，测试与实现尚未编写，TRACE 13 条保持 `⏳`，按 MSRV 实现顺序（mock server → 三端远程数据源 → 缓存与会话 → 联调）进入后续轮。
+
+## 下轮交接
+- **已完成**：`spec/mock-server-api-spec.md` 已采纳；TRACE 预留 13 条 `⏳`；AGENTS.md/README/auth-mock-spec/spec-README 边界已更新；SDD 门禁通过。
+- **未完成 / 阻塞项**：mock server 工程未创建（技术栈与落盘目录待人工确认）；三端远程数据源、缓存降级、会话懒校验均未实现。
+- **下轮起步建议**：先读 `spec/mock-server-api-spec.md` 与 TRACE「mock-server-api-spec.md 追溯」；确认技术栈后先实现 mock server 与契约测试（MSRV-001/003/004/012），测试红灯 → 实现转绿 → 更新 TRACE。
+
+# 2026-08-05 11:19 — Mock 服务器工程实现：Node.js + Express 与契约测试转绿
+
+## 采纳内容
+- [MSRV] 技术栈确认：用户选择 brew 安装 Node.js + Express（本机原无 Node，已安装 v26.6.0/npm 11.18.0）。
+- [MSRV-001/003/004/012] 新增 `mock-server/` 工程：`package.json`（express 4.22.2）、`src/store.js`（内存 + `data/` JSON 落盘、种子账号/区域/验证码、密码哈希 `mock:` 约定、健康快照按 userId 隔离）、`src/app.js`（Express 全部路由与错误映射）、`src/server.js`（启动入口，PORT/HOST 可配）、`README.md`、`.gitignore`（排除 node_modules/data）。
+- [MSRV-001/003/004/012] 契约测试 `test/contract.test.js` 17 条：种子登录、健康空态 EMPTY_DATA、regions、注册/重复注册/密码错误/账号不存在/验证码错误/更新资料/改密/重置/登出/注销级联、健康 PUT/GET 读回与 userId 隔离、场景接口、重置恢复。
+- [MSRV-005] 服务端错误映射已落地：HTTP 状态 → `{ error: { code, message } }`（400/401/404/409/500），代码沿用 proto 错误名（`ACCOUNT_NOT_FOUND`/`PASSWORD_INCORRECT`/`AUTH_REQUIRED` 等）。
+- [MSRV-013] `.gitignore` 排除 `data/`，测试以 `setPersistEnabled(false)` 保持 hermetic，不落盘。
+- [MSRV] 边界文档补充 README 目录结构加入 `mock-server/`。
+
+## 人工审查点
+- [MSRV-006] 冷启动会话校验粒度仍待业务确认（本地 TTL + 惰性校验 vs 每次打 `GET /api/auth/session`）；服务端 `GET /api/auth/session?userId=` 已按惰性语义提供。
+- [MSRV-010] 三端数据一致靠服务器权威 + 刷新拉取，非实时推送，需业务接受。
+- [MSRV-008] HarmonyOS 无在线设备，三端联调（含 KNOI 契约 diff）需设备/模拟器人工验收。
+- [MSRV-002/005] 三端远程数据源与客户端错误映射、`MockError` 网络错误枚举尚未实现，属后续轮。
+
+## 验证结果
+- [MSRV-004] 先写契约测试并运行红灯：`Cannot find module '../src/app'`（实现缺失），确认测试能捕获缺失行为。
+- [MSRV-001/003/004/012] 实现后 `cd mock-server && npm test`：17/17 通过（`node --test test/contract.test.js`）。
+- [MSRV-001] 手工启动 `PORT=3199 node src/server.js`，curl 验证 `/api/auth/regions` 返回 CN/US、`/api/auth/login` 返回 `mock-user-default` 会话、未知路由返回 404 JSON。
+- [MSRV-013] 测试后 `data/` 目录未被创建（hermetic），`git check-ignore` 确认 node_modules/data 被忽略。
+- [SDD-009] `./tools/check-sdd.sh` 通过；`./tools/check-docs.sh` 仍仅剩既有 `docs/reference/注册登陆模块介绍.md` 可信哈希失败（历史轮次已记录，本轮未触碰）。
+
+## 人工修正点
+- 暂无明确人工修正点；`test/contract.test.js` 的 `before` 中 `resetStore()` 保证每条用例基于干净种子，`setPersistEnabled(false)` 避免测试写盘。
+
+## 下轮交接
+- **已完成**：`mock-server/` 工程（Node.js + Express）可独立启动；17 条契约测试通过；TRACE 中 MSRV-001/003/004/012/013 标记 `✅`（013 仅服务端侧，三端门禁扫描待后续）。
+- **未完成 / 阻塞项**：三端远程数据源（MSRV-002/007/008）、缓存降级与会话惰性校验（MSRV-005/006/009）、三端错误提示与联调验收（MSRV-010/011）均未实现。
+- **下轮起步建议**：先读 `spec/mock-server-api-spec.md` 与 TRACE「mock-server-api-spec.md 追溯」中仍 `⏳` 的行；实现顺序建议 Android 远程数据源打通全链路（MSRV-002/007）→ iOS（URLSession + 队列）→ HarmonyOS（ArkTS 侧 `ohos.net.http` + 复用 KNOI snapshot 入口，MSRV-008）→ 缓存与会话（MSRV-005/006/009）。
+
+# 2026-08-05 11:54 — Android 远程数据源实现：服务端补接口 + Remote 数据源 + 契约测试转绿
+
+## 采纳内容
+- [MSRV-003] 服务端新增 `POST /api/auth/verify-code/check` 与 `GET /api/auth/account?account=`（UX 预检查接口，对应 `verifyCode`/`hasAccount`），契约测试增至 19 条全部通过；Spec 接口清单同步补充。
+- [MSRV-002][MSRV-003][MSRV-004][MSRV-007] 新增 Android 平台层远程数据源：`core/network/MockServerHttpClient`（HttpURLConnection，同步阻塞 + 后台 executor + 超时）、`core/network/MockServerConfig`（base URL，模拟器 `10.0.2.2:3000`）、`auth/data/RemoteAuthRepository`（实现 `AuthRepository`，逐接口 HTTP + 本地会话/验证码缓存 + 冷启动 TTL 懒校验）、`health/data/RemoteHealthDashboardStateDataSource`（GET/PUT 整份快照，本地缓存兜底）。
+- [MSRV-002][MSRV-007] `LoginViewModel.createRemote(context)` 工厂接线；`rememberLoginViewModel()` 切到 `createRemote`（生产走 mock server，Preview 仍用 `LoginViewModel()` fake）；`AndroidManifest.xml` 加 INTERNET 权限 + `network_security_config.xml`（10.0.2.2/localhost/127.0.0.1 明文）。
+- [MSRV-005] Android 客户端错误映射：服务端错误 JSON `{error:{code,message}}` 经 `MockErrorMessage.toMockError()` 映射到既有 `MockError`；`MockServerHttpClient` 超时/网络失败返回状态 -1，客户端回退 `PersistFailed`。
+- [MSRV-009] Android 缓存兜底：Remote 健康源以 `AndroidHealthDashboardStateDataSource` 为本地缓存，网络失败回退本地；Remote 认证源以 `AndroidAuthStoreDataSource` 保存会话。
+
+## 人工审查点
+- [MSRV-006] 冷启动懒校验粒度仍待业务确认：Android 已落地本地 TTL + 冷启动恢复，`GET /api/auth/session?userId=` 懒调用尚未接入，TRACE 记为 ⚠️。
+- [MSRV-005] 网络不可达的专用枚举（如 `NetworkUnavailable`）与三端错误文案尚未落地，当前映射为 `PersistFailed`，TRACE 记为 ⚠️。
+- [MSRV-010] 三端数据一致靠服务器权威 + 刷新拉取，非实时推送，需业务接受；交叉验收需服务器运行 + 多端登录。
+- [MSRV-008] HarmonyOS 仍走 ArkTS 侧 HTTP（`ohos.net.http` + 复用 KNOI snapshot 入口），未开始实现，无在线设备待验收。
+
+## 验证结果
+- [MSRV-003] `cd mock-server && npm test`：19/19 契约测试通过（新增 verify-code/check 与 account 预检查 2 条）。
+- [MSRV-001/003/004/005] 先写 `RemoteAuthRepositoryTest`（12 条，JDK HttpServer 桩）并运行红灯（缺模块编译失败），实现后 `./gradlew :androidApp:testDebugUnitTest --tests 'com.example.demo.auth.data.RemoteAuthRepositoryTest'` 通过；期间修复 regions 解析（parseObjectArray 直接传 body）与登出后注销需重新登录两处测试/实现问题。
+- [MSRV-002][MSRV-007] `./gradlew :androidApp:testDebugUnitTest`（全量）、`:androidApp:assembleDebug`、`:androidApp:lintDebug`、`:common:check` 全部通过。
+- [MSRV-003] 手工启动 `PORT=3210 node src/server.js`，curl 验证 `/api/auth/verify-code/check` 返回 `{"ok":true}`、`/api/auth/account?account=` 返回 `{"exists":true/false}`，验证后清理 `data/`。
+
+## 人工修正点
+- [MSRV-003] `availableRegions` 初版对 `optionalArray` 返回内容重新包裹导致 JSON 结构错误，改为 `AuthJson.parseObjectArray(response.body, "regions")` 直接解析。
+- [MSRV-003] `logoutAndDeleteAccountSucceed` 测试初版登出后直接注销（`deleteCurrentAccount` 需活跃会话），改为登出后重新登录再注销，符合服务端语义。
+
+## 下轮交接
+- **已完成**：服务端 2 个 UX 预检查接口 + 19 条契约测试；Android 远程认证/健康数据源 + base URL 配置 + 工厂接线 + Manifest/网络安全配置；Android 12 条远程数据源测试、全量单测、assembleDebug、lintDebug、common:check 全绿。
+- **未完成 / 阻塞项**：iOS（URLSession + 队列）、HarmonyOS（ArkTS `ohos.net.http` + KNOI snapshot 入口）远程数据源未实现；网络错误专用枚举/文案、会话懒校验调用、三端交叉验收未落地。
+- **下轮起步建议**：先读 `spec/mock-server-api-spec.md` 与 TRACE「mock-server-api-spec.md 追溯」；实现顺序建议 iOS 远程数据源（参照 Android `RemoteAuthRepository`/`RemoteHealthDashboardStateDataSource` 的同步接口 + HTTP 下沉模式）→ HarmonyOS（MSRV-008，重点验证 `ohos.net.http` 与既有 KNOI snapshot 入口契约零变化）→ 缓存兜底与错误文案（MSRV-005/009/011）→ 三端联调验收（MSRV-010）。
+
+# 2026-08-05 13:46 — iOS 与 HarmonyOS 远程数据源：Swift 注入 URLSession + ArkTS 快照同步
+
+## 采纳内容
+- [MSRV-002][MSRV-003][MSRV-004][MSRV-007] iOS 平台层远程数据源落地：`commonMain` 新增 `LoginFacadeFactory.createPersistent(authRepository:)`；`iosMain` 新增 `IosRemoteAuthRepository`（实现 `AuthRepository`，复用 common `MockAuthStoreJson`/`AuthJson`/`toMockError` 解析）、`IosRemoteHealthDashboardStateDataSource`、`IosHttpResponse` + `IosHttpTransport`（HTTP 传输由 Swift 注入闭包，符合既有 `loadJson/saveJson` 注入模式）、`IosMockServerConfig`（base URL）。
+- [MSRV-002][MSRV-007] iOS `SharedLoginAdapter` 改为远端：`IosMockServerConfig.shared.baseUrl` 注入 `http://localhost:3000`，Swift 用 `URLSession` + `DispatchSemaphore` 实现同步 HTTP transport，经 `LoginFacadeFactory().createPersistent(authRepository:)` 与 `HealthFacadeFactory().createPersistent(authRepository:stateDataSource:)` 接线。
+- [MSRV-008] 服务端新增 4 个 HarmonyOS 快照同步端点：`GET/PUT /api/sync/auth`（按 userId 作用域）、`GET/PUT /api/sync/health`（整集合），`store.js` 增加 `verifyCodesForAccount`/`allHealthSnapshots`/`replaceAllHealthSnapshots`；Spec 接口清单补充快照同步小节。
+- [MSRV-008][MSRV-009][MSRV-007] HarmonyOS ArkTS 侧落地：`MockServerSync.ets`（`@ohos.net.http` 的 GET/PUT + `syncFromServer`/`syncToServer`，失败不阻断、沿用本地缓存）；`StorePersister.ets` 启动时拉取服务器权威快照、保存后异步推送；`module.json5` 增加 `ohos.permission.INTERNET`。
+
+## 人工审查点
+- [MSRV-008] 本环境无 DevEco/hvigor，HarmonyOS 的 ArkTS 构建、`provider.ets` KNOI 契约 diff 与设备联调均未执行，TRACE 记为 ⚠️；需在 DevEco 环境按 `docs/development-workflow.md` 验证。
+- [MSRV-006] 冷启动懒校验调用尚未接入三端（本地 TTL 已落地），TRACE 记为 ⚠️。
+- [MSRV-005] 网络不可达的专用枚举与三端错误文案未落地，当前映射 `PersistFailed`，TRACE 记为 ⚠️。
+- [MSRV-010] 三端交叉验收需服务器运行 + 多端登录，TRACE 保持 ⏳。
+- [MSRV-007] iOS 真机/模拟器需与服务器同一局域网；HarmonyOS `MOCK_SERVER_BASE_URL` 默认 `10.0.2.2`（模拟器），真机需改局域网 IP。
+
+## 验证结果
+- [MSRV-002][MSRV-008] `cd mock-server && npm test`：21/21 契约测试通过（新增 `MSRV-008: 认证 store 快照可按 userId 拉取与提交`、`MSRV-008: 健康快照集合可整体拉取与提交`）。
+- [MSRV-002][MSRV-003][MSRV-004] iOS 编译验证：`./gradlew :common:compileKotlinIosSimulatorArm64` 通过；`./gradlew :common:linkDebugFrameworkIosSimulatorArm64` 生成 Shared.framework 且 `Shared.h` 暴露 `IosRemoteAuthRepository`/`IosRemoteHealthDashboardStateDataSource`/`IosHttpResponse`/`IosMockServerConfig`；`xcodebuild -scheme IOSDemo -sdk iphonesimulator build` 通过（期间修复 `IosMockServerConfig` 在 Swift 中须用 `.shared` 引用）。
+- [MSRV-002] `./gradlew :common:check` 通过（含既有 common 测试）；`./tools/check-sdd.sh` 通过。
+- [MSRV-008] 曾尝试 Kotlin/Native `NSURLSession` cinterop 实现 HTTP 客户端，因 Foundation 属性名解析不稳定（`HTTPMethod`/`HTTPBody` 无法解析）而放弃，改为“Swift 注入 transport 闭包”，与项目既有 `loadJson/saveJson` 注入模式一致且编译稳定。
+
+## 人工修正点
+- [MSRV-007] iOS `IosMockServerConfig` 是 Kotlin `object`，Swift 必须用 `IosMockServerConfig.shared.baseUrl` 而非 `IosMockServerConfig.baseUrl`，否则编译报 "instance member cannot be used on type"。
+- [MSRV-008] Kotlin/Native 直接调 `NSURLSession` cinterop 不可行（属性名不稳定），iOS 网络必须由 Swift 层实现并通过闭包注入，避免在 iosMain 依赖具体平台网络 API 名。
+
+## 下轮交接
+- **已完成**：三端远程数据源全部落地——Android（OkHttp 式 HttpURLConnection + executor）、iOS（Swift URLSession 闭包注入 iosMain 逻辑）、HarmonyOS（ArkTS `ohos.net.http` + KNOI snapshot 入口）；服务端 21 条契约测试、common 全量测试、iOS xcodebuild、Android assembleDebug/lintDebug 通过；HarmonyOS 代码已写但本环境无法构建。
+- **未完成 / 阻塞项**：HarmonyOS 构建验证（需 DevEco）；三端会话懒校验接入（MSRV-006）；网络错误专用枚举/文案（MSRV-005）；三端交叉验收（MSRV-010）。
+- **下轮起步建议**：在 DevEco 环境执行 HarmonyOS 构建并确认 `provider.ets` 无契约 diff（`./tools/build-shared-harmony.sh` + `hvigorw assembleApp`）；随后补 MSRV-005 网络错误枚举/三端文案与 MSRV-006 懒校验调用，最后按 MSRV-010 做三端同账号交叉验收。
+
+# 2026-08-05 15:40 — 四问题修复：同步注册丢失、TTL 失效、Choice 不刷新、头像存真实内容
+
+## 采纳内容
+- [MSRV-014] mock-server `PUT /api/sync/auth` 从"仅处理 accounts[0]"改为遍历全部账号 upsert，会话按 userId 匹配且 `isValid` 才保存；`buildUserId` 改为与 common `LocalMockAuthRepository` 完全一致的 Int32 环绕算法，消除 JS 科学计数法（`mock-user-4.09e+35`）导致的查询不匹配。
+- [MSRV-006] Android `RemoteAuthRepository` 增加 `nowEpochMs` 构造参数并在 `LoginViewModel.createRemote` 注入 `System.currentTimeMillis()`，修复远端路径 TTL 永不失效；Harmony `MockServerSync.syncFromServer` 增加本地登录态权威保护——本地会话已被 TTL/登出清除时，服务器同步不把持久会话"复活"。
+- [MSRV-015] 头像改为保存真实内容：Android `toAvatarDataUri/decodeAvatarDataUri`（base64 data URI），`ProfileAvatar`/`ProfileSummaryAvatar` 解码展示；iOS `ProfileImageStore.save` 返回 data URI、`image(at:)` 解码 data URI 与旧 key/文件回退；Harmony `avatarToDataUri`（fs 读字节 + Base64Helper）与新增 `AvatarImage.ets`（PixelMap 解码），`ProfileAvatarComponent`/`AccountOverviewComp` 接入。
+- [MSRV] 鸿蒙 `NormalDataSectionPage` Choice 选中后不刷新：`ForEach` key 由稳定 `field.id` 改为 `fieldForEachKey`——Choice 行 key 含 `value`（选中变化强制重建刷新显示），TextInput 保持稳定 id 防焦点丢失。
+
+## 人工审查点
+- [MSRV-015] Harmony 头像相关代码（`@ohos.file.fs`/`@ohos.util`/`@ohos.multimedia.image`、`Base64Helper.encodeToStringSync/decodeSync`、`ImageSource.createPixelMap`）本环境无 DevEco/hvigor 无法编译，需在 DevEco 验证；API 12 签名按标准用法编写。
+- [MSRV-014] `/api/sync/auth` 遍历 upsert 后，旧单账号行为不变；多账号推送会逐条覆盖服务器对应 userId 账号。
+- [MSRV-006] Harmony TTL 保护依赖 `exportStoreSnapshot` 中 `currentSession.isValid` 的本地语义，需在真机验证"退出 10s 后冷启动退出登录"。
+
+## 验证结果
+- [MSRV-014] `cd mock-server && npm test`：22/22 通过（新增 `注册新账号经 sync/auth 持久化` 先因 accounts[0] 之外丢失红灯，遍历 upsert + buildUserId 修复后转绿）。
+- [MSRV-006] `./gradlew :androidApp:testDebugUnitTest --tests 'com.example.demo.auth.data.RemoteAuthRepositoryTest'`：14/14 通过（新增 `sessionExpiresAfterBackgroundTtlWhenClockAdvances`、`sessionSurvivesBackgroundWithinTtl`；初版测试误在 pause 后调用 resume 复位 TTL 而红灯，修正测试流程后通过）。
+- [MSRV-015] `./gradlew :androidApp:assembleDebug :androidApp:lintDebug :common:check` 通过；iOS `xcodebuild -scheme IOSDemo` 通过。
+- [SDD-009] `./tools/check-sdd.sh`、`./tools/check-resource-maintainability.sh` 通过；`check-docs.sh` 仅剩既有 `注册登陆模块介绍.md` 哈希失败（历史遗留）。
+
+## 人工修正点
+- [MSRV-006] TTL 测试初版在 `pauseSession()` 后调用了 `resumeSessionInSameProcess()`，该调用会把 `expireAtEpochMs` 复位为 0（永不失效），导致断言失败；测试修正为 pause 后直接推进时钟做冷启动校验，另加"未超 TTL 暖恢复保持活跃"用例。
+- [MSRV-015] Harmony `ProfileCompletionPage` 的本地 `decodeAvatarDataUri` 与 `AvatarImage.ets` 重复，改为统一导入共享组件中的实现，避免双份逻辑漂移。
+
+## 下轮交接
+- **已完成**：四问题全部处理——同步注册持久化（MSRV-014）、远端会话 TTL（MSRV-006）、鸿蒙 Choice 刷新、三端头像真实内容（MSRV-015）。Android/iOS/common/服务端均编译与测试通过；鸿蒙代码完成但本环境无法构建。
+- **未完成 / 阻塞项**：HarmonyOS DevEco 构建验证（头像 fs/util/image API、Choice key 改动、TTL 保护）；MSRV-005 网络错误枚举/文案；MSRV-010 三端交叉验收。
+- **下轮起步建议**：在 DevEco 执行 `./tools/build-shared-harmony.sh` + `hvigorw assembleApp` 验证鸿蒙头像/Choice/TTL 三处改动并跑回归；随后做 MSRV-010 三端同账号交叉验收（重点：头像跨设备可见、注册后 data 落盘、退出 10s 后冷启动退出登录）。
+
+# 2026-08-05 16:04 — 头像保存完善与鸿蒙 MockServerSync serverStore 编译错误修复
+
+## 采纳内容
+- [MSRV-015] 修复头像"原图原始字节直接 base64 + mime 标错"问题：Android `scaleToAvatar`（512px 上限）+ JPEG 85 统一编码，`ByteArray.toAvatarDataUri` 先解码缩放、失败回退原始字节；移除冗余的私有文件写入（data URI 自包含）；iOS `ProfileImageStore.downscaledJPEG` 解码→缩放→JPEG 85；Harmony `avatarToDataUri` 改为 `image.createImageSource → createPixelMap → scalePixelMap → ImagePacker packing('image/jpeg') → base64` 的异步流程，新增 `AvatarImage.scalePixelMap`/`AVATAR_MAX_DIMENSION`。
+- [MSRV-008] 修复 `MockServerSync.ets` ArkTS 编译错误：`SyncAuthResponse.store` 类型由 `Record<string, Object>` 改为 `SyncAuthStore`，去掉 `as SyncAuthStore` 强转；`merged` 对象字面量改为显式类型标注 + 具名字段（不用对象展开 + `currentSession: null`），`currentSession` 置 `undefined`（JSON 序列化省略字段）。
+
+## 人工审查点
+- [MSRV-015] Harmony 头像重编码（`ImagePacker.packing`、`pixelMap.scaleSync`、`getImageInfoSync`）与 `fs`/`util` API 本环境无 DevEco/hvigor 无法编译，需 DevEco 验证签名与行为；若 `scaleSync` 不可用可改 `createPixelMap` 的 `desiredSize` 重采样。
+- [MSRV-015] mock server `express.json({ limit: '2mb' })` 对 512px JPEG（约 50–100KB base64）足够；旧 769KB 测试数据已删除。
+
+## 验证结果
+- [MSRV-015] 诊断确认旧 data URI 内容为 PNG 魔数却标 `image/jpeg`（`iVBORw0KGgo` 前缀），原图 769KB 直接 base64；python 生成 8×8 PNG 验证 data URI 提取解码 magic bytes 正确（`\x89PNG`）。
+- [MSRV-015] Android `:androidApp:assembleDebug`/`:androidApp:lintDebug`、`:common:check` 通过；iOS `xcodebuild -scheme IOSDemo` 通过；mock server 22/22 契约测试通过；`./tools/check-sdd.sh` 通过。
+- [MSRV-008] `MockServerSync.ets` 改动为静态类型修正，逻辑不变；本环境无法编译 ArkTS，编译验证待 DevEco。
+
+## 人工修正点
+- [MSRV-015] 初版 `ByteArray.toAvatarDataUri` 在上一轮被误删，本轮回补并加入解码缩放失败回退原始字节；`Bitmap.scaleToAvatar` 返回原对象时不再误 `recycle()`。
+- [MSRV-015] mock server data 中残留的旧 769KB base64 头像已 `rm` 清理，避免用户误以为新实现仍有体积问题。
+
+## 下轮交接
+- **已完成**：头像三端统一"缩放 512px + JPEG + base64 data URI"内容契约；鸿蒙 MockServerSync serverStore ArkTS 编译错误修复；清理旧测试数据。
+- **未完成 / 阻塞项**：HarmonyOS DevEco 构建验证（头像 `ImagePacker`/`scaleSync`、`MockServerSync` 类型修正、Choice key、TTL 保护）；MSRV-005 网络错误枚举/文案；MSRV-010 三端交叉验收。
+- **下轮起步建议**：在 DevEco 执行 `./tools/build-shared-harmony.sh` + `hvigorw assembleApp`，重点验证头像选择→保存→跨端展示链路；随后做 MSRV-010 三端同账号交叉验收（头像跨设备可见、注册后 data 落盘、退出 10s 后冷启动退出登录）。
+
+# 2026-08-05 16:45 — 头像改为 mock server 文件存储（方案 A）：三端上传/URL 展示
+
+## 采纳内容
+- [MSRV-015] 按用户选择方案 A 重做头像：mock server 新增 `GET/PUT/DELETE /api/avatar/:userId`，图片二进制落盘 `data/avatars/{userId}.jpg`；`avatarUri` 统一存相对路径 `/api/avatar/{userId}`，各端用自身 base URL 拼 URL 展示。彻底废弃 base64 data URI。
+- [MSRV-015] 契约测试新增 3 条：头像 PUT→GET 二进制一致、注销账号级联删除头像文件、未知用户上传返回 `ACCOUNT_NOT_FOUND`；mock server 25/25 通过。
+- [MSRV-015] Android：`MockServerHttpClient` 新增 `putBinary/getBinary`；`ProfileEditHelpers` 重写为 `uploadAvatarFromUri/uploadAvatarBitmap/resolveAvatarBitmap`（服务器路径下载），删除 data URI 逻辑；两个 Screen 选图回调改为上传得相对路径。
+- [MSRV-015] iOS：`ProfileImageStore.save` 改为 async URLSession PUT 缩放 JPEG，返回相对路径；`image(at:)` 支持 `/api/avatar/` 下载；ProfileCompletionView/AccountView 调用点改为 `await`。
+- [MSRV-015] Harmony：`AvatarImage.ets` 重写为 URL 展示 + `uploadAvatarToServer`（读文件字节 PUT 到服务器，不做不可验证的 image 重编码）；`LoginLogicAdapter`/`KnoiLoginAdapter`/`PreviewLoginAdapter`/`LoginViewModel` 新增 `currentUserId()`；`ProfileCompletionPage` 移除 `image`/`util`/`fs`/base64 逻辑，`pickAvatarFromAlbum` 上传并存相对路径，`ProfileAvatarComponent` 用 `MOCK_SERVER_BASE_URL + avatarUri` 展示。
+
+## 人工审查点
+- [MSRV-015] Harmony 的 `AvatarImage.ets` 导入 `MOCK_SERVER_BASE_URL` 与 `http`/`fs`（页面 import 图会触达 native，Preview 若报错需按 UI-PREVIEW-008 分离纯 ArkTS 契约）。
+- [MSRV-015] 头像文件不经 store JSON 同步，仅在服务器落盘；注销账号会级联删除文件，但登出不删（保留头像跨端可复用）。
+- [MSRV-015] iOS `image(at:)` 对服务器路径是同步下载（信号量阻塞），本地 mock 快可接受，真机远端网络下建议后续改异步。
+
+## 验证结果
+- [MSRV-015] `cd mock-server && npm test`：25/25 通过（新增 3 条头像文件契约测试）。
+- [MSRV-015] `./gradlew :common:check :androidApp:assembleDebug :androidApp:lintDebug :androidApp:testDebugUnitTest` 全部通过；iOS `xcodebuild -scheme IOSDemo` 通过（期间修复 `avatarServerPath(userId:)` 缺标签、`IosMockServerConfig` 需 `import Shared`）。
+- [SDD-009] `./tools/check-sdd.sh` 通过；`./tools/check-resource-maintainability.sh` 通过；`check-docs.sh` 仅剩既有 `注册登陆模块介绍.md` 哈希失败（历史遗留）。
+
+## 人工修正点
+- [MSRV-015] iOS 初版 `avatarServerPath(userId)` 调用漏标签，Swift 强制标签导致编译错误，改为 `avatarServerPath(userId:)`。
+- [MSRV-015] Harmony `AvatarImage.ets` 初版用 `image.createImageSource().then` 写法（同步 API 被当 Promise）且 `scalePixelMap`/`AVATAR_MAX_DIMENSION` 在 ProfileCompletionPage 残留 import；已重写为直接 URL 展示 + 纯字节上传，移除不可验证的 image 重编码。
+
+## 下轮交接
+- **已完成**：方案 A 头像文件存储落地——mock server 头像端点 + 契约测试、三端上传/URL 展示、Harmony `currentUserId()` 链路。Android/iOS/common/服务端编译与测试通过。
+- **未完成 / 阻塞项**：HarmonyOS DevEco 构建验证（AvatarImage URL 展示、uploadAvatarToServer、currentUserId 链路、Choice key、TTL 保护）；MSRV-005 网络错误枚举/文案；MSRV-010 三端交叉验收。
+- **下轮起步建议**：在 DevEco 执行 `./tools/build-shared-harmony.sh` + `hvigorw assembleApp` 验证头像/Choice/TTL；随后 MSRV-010 三端同账号交叉验收（重点：选头像→上传→跨端可见、注册后 data 落盘、退出 10s 后冷启动退出登录）。
+
+# 2026-08-05 17:27 — 鸿蒙无法读取服务器数据却会修改 data：快照同步改为按用户合并
+
+## 采纳内容
+- [MSRV-008-SYNC] 定位根因：鸿蒙 `syncToServer` 把本地 store **整份** PUT `/api/sync/health`，服务器用 `replaceAllHealthSnapshots` 整体替换 → 鸿蒙本地只有自己/空数据时清空 Android/iOS 健康快照；`/api/sync/auth` 遍历 upsert 全部账号也会污染账号库。`syncFromServer` 在未登录（`currentUserIdOf` 为空）时发空 userId 查询并拿空 store 覆盖本地，导致"读不到"。
+- [MSRV-008-SYNC] 服务器 `PUT /api/sync/health` 改为逐条 `saveHealthSnapshot`（按 userId upsert，保留其他用户）；`PUT /api/sync/auth` 只处理 `currentSession.userId` 对应账号，不再遍历覆盖其他账号。
+- [MSRV-008-SYNC] 鸿蒙 `syncToServer` 只提交当前 userId：auth 只发该用户账号+会话，health 只发该用户快照；`syncFromServer` 未登录（无有效 userId）跳过 auth 拉取，且服务器无该用户账号时保留本地登录态（首次本地注册不被空 store 覆盖）；健康始终全量拉取合并。
+- [MSRV-008-SYNC] `KnoiLoginAdapter.submit` 登录成功后主动 `syncFromServer` 拉服务器权威数据，使鸿蒙能看到 Android/iOS 写入的资料/健康。
+
+## 人工审查点
+- [MSRV-008-SYNC] HarmonyOS `MOCK_SERVER_BASE_URL` 默认 `10.0.2.2`（Android 模拟器约定）；鸿蒙模拟器/真机需按环境改为宿主机局域网 IP，否则网络请求失败（本环境无鸿蒙设备无法实测）。
+- [MSRV-008-SYNC] 鸿蒙 `submit` 成功后 `syncFromServer` 是网络请求，UI 有短暂等待；若失败沿用本地缓存不阻断。
+- [MSRV-008-SYNC] 服务器 `PUT /api/sync/auth` 现只处理当前会话用户；若鸿蒙退出登录（无会话）提交 store，不会更新任何账号（符合"不污染他人"）。
+
+## 验证结果
+- [MSRV-008-SYNC] `cd mock-server && npm test`：27/27 通过（新增 `同步健康快照按 userId 合并，不覆盖其他用户`、`认证 store 同步只更新当前会话用户，不覆盖其他账号` 2 条；先因 replaceAll 覆盖红、改 merge 后绿）。
+- [MSRV-008-SYNC] 端到端脚本验证：A 用户写健康 → 鸿蒙 sync 提交 → B 用户数据保留（`B still exists: 200 ['STRESS']`）；A 数据为鸿蒙最新提交（`['SLEEP']`）。
+- [MSRV-008-SYNC] `./gradlew :common:check :androidApp:assembleDebug :androidApp:lintDebug` 通过；`./tools/check-sdd.sh` 通过；`check-docs.sh` 仅剩既有 `注册登陆模块介绍.md` 哈希失败。
+
+## 人工修正点
+- [MSRV-008-SYNC] 测试中 register 需要先请求 verify-code（初始 resetStore 后验证码清空导致注册 400），补充 verify-code 请求后通过。
+- [MSRV-008-SYNC] 鸿蒙 `syncFromServer` 初版在服务器无该用户账号时仍 `restoreStoreSnapshot(空)` 覆盖本地，新增 `hasServerAccount` 守卫保留本地登录态。
+
+## 下轮交接
+- **已完成**：三端数据互通问题修复——服务器 sync 端点按用户合并，鸿蒙只提交/按需拉取当前用户，登录成功主动拉取服务器权威数据。服务端 27 契约测试 + 端到端脚本 + common/Android 构建通过。
+- **未完成 / 阻塞项**：HarmonyOS DevEco 构建验证（`MockServerSync` merge 逻辑、`submit` 后 syncFromServer、头像、Choice、TTL）；`MOCK_SERVER_BASE_URL` 需按鸿蒙环境配置；MSRV-010 三端交叉验收。
+- **下轮起步建议**：DevEco 构建鸿蒙并验证"Android 改数据 → 鸿蒙登录/刷新可见 → 鸿蒙改数据不覆盖 Android"完整链路；随后 MSRV-010 三端同账号交叉验收。
+
+# 2026-08-05 17:43 — mock server 数据按端口隔离（修复多实例互相覆盖）
+
+## 采纳内容
+- [MSRV-007-PORT] mock server 数据按端口隔离：`store.js` 新增 `configureDataFile(name)`，`server.js` 启动时按 `PORT` 派生数据文件名 `mock-server-store-{PORT}.json`（可用 `DATA_FILE` 覆盖）；契约测试改用独立 `mock-server-store-test.json` 且 `setPersistEnabled(false)`，绝不触碰运行时实例数据。
+- [MSRV-007-PORT] 说明鸿蒙交互模型差异根因（KNOI 桥同步 + ohos_arm64 无网络库 → HTTP 只能在 ArkTS 侧 + snapshot 入口，天然快照同步），并按用户要求实施端口隔离。
+
+## 人工审查点
+- [MSRV-007-PORT] 已运行的旧实例若曾使用默认 `mock-server-store.json`，升级后新实例读写 `mock-server-store-{PORT}.json`，旧数据不自动迁移；如需保留需手工改名（Demo 阶段可接受）。
+- [MSRV-007-PORT] 鸿蒙 `MOCK_SERVER_BASE_URL` 默认 `10.0.2.2`（Android 模拟器约定），鸿蒙模拟器/真机需按环境改为宿主机局域网 IP。
+
+## 验证结果
+- [MSRV-007-PORT] `cd mock-server && npm test`：27/27 通过。
+- [MSRV-007-PORT] 双实例脚本验证：3000/3001 各自生成独立文件 `mock-server-store-3000.json`/`-3001.json`，各自注册账号后 grep 计数为 3/0（本端口账号 3 处、他端口账号 0 处），确认互不覆盖。
+- [MSRV-007-PORT] `./tools/check-sdd.sh` 通过；`check-docs.sh` 仅剩既有 `注册登陆模块介绍.md` 哈希失败（历史遗留）。
+
+## 人工修正点
+- 暂无明确人工修正点；旧 `mock-server-store.json` 若需保留数据可改名 `mock-server-store-3000.json` 迁移。
+
+## 下轮交接
+- **已完成**：mock server 数据按端口隔离，多实例（含测试）互不覆盖；`README`/Spec/TRACE 更新。
+- **未完成 / 阻塞项**：HarmonyOS DevEco 构建验证（快照 merge、`submit` 后 syncFromServer、头像、Choice、TTL）；`MOCK_SERVER_BASE_URL` 按鸿蒙环境配置；MSRV-010 三端交叉验收。
+- **下轮起步建议**：DevEco 构建鸿蒙验证三端互通链路；随后 MSRV-010 交叉验收。提醒：我这边后续验证会使用独立测试文件，不再删除你的 `data/` 运行时数据。

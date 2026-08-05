@@ -239,9 +239,13 @@ struct PersonalProfileEditView: View {
             guard let item else { return }
             Task {
                 guard let data = try? await item.loadTransferable(type: Data.self) else { return }
+                let userId = viewModel.state.currentSession?.userId ?? ""
+                let path = await ProfileImageStore.save(data, userId: userId)
                 await MainActor.run {
                     avatarData = data
-                    draft.avatarUri = ProfileImageStore.save(data, userId: viewModel.state.currentSession?.userId ?? "")
+                    if let path {
+                        draft.avatarUri = path
+                    }
                 }
             }
         }

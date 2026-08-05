@@ -184,10 +184,14 @@ struct ProfileCompletionView: View {
             guard let newValue else { return }
             Task {
                 let data = try? await newValue.loadTransferable(type: Data.self)
-                await MainActor.run {
-                    avatarData = data
-                    if let data {
-                        draft.avatarUri = ProfileImageStore.save(data, userId: viewModel.state.currentSession?.userId ?? "")
+                if let data {
+                    let userId = viewModel.state.currentSession?.userId ?? ""
+                    let path = await ProfileImageStore.save(data, userId: userId)
+                    await MainActor.run {
+                        avatarData = data
+                        if let path {
+                            draft.avatarUri = path
+                        }
                     }
                 }
             }

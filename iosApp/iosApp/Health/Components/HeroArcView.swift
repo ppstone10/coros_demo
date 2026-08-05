@@ -38,13 +38,13 @@ struct HeroArcView: View {
     private func metric(icon: String, value: String, unit: String, color: Color) -> some View {
         VStack(spacing: 3) {
             Image(icon).resizable().renderingMode(.template).scaledToFit().foregroundStyle(color).frame(width: 22, height: 22)
-            Text(value).font(.system(size: 28)).foregroundStyle(.white)
+            Text(value).font(.system(size: 26)).foregroundStyle(.white)
             Text(unit).font(.system(size: AppTypography.caption)).foregroundStyle(AppColors.Health.metricUnit)
         }.frame(width: 82)
     }
 }
 
 #Preview {
-    HeroArcView(steps: 8243, calories: 312, minutes: 45)
+    HeroArcView(steps: 99999, calories: 9999, minutes: 999)
         .preferredColorScheme(.dark)
 }

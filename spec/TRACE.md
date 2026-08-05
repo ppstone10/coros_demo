@@ -411,6 +411,30 @@
 
 ---
 
+## mock-server-api-spec.md 追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `MSRV-001` | Mock 服务器是唯一权威数据源 | `node --test test/contract.test.js`：`MSRV-001: 登录默认种子账号返回服务器权威会话`、`MSRV-001: 健康 GET 返回服务器权威数据（空态为 EMPTY_DATA）` | `mock-server/src/store.js`、`mock-server/src/app.js` | ✅ |
+| `MSRV-002` | HTTP 请求只位于三端平台层 | `./gradlew :androidApp:testDebugUnitTest --tests 'com.example.demo.auth.data.RemoteAuthRepositoryTest'`（12 条通过）；`./gradlew :common:compileKotlinIosSimulatorArm64` + iOS `xcodebuild`；`:androidApp:assembleDebug`、`:androidApp:lintDebug` | `common` 无网络类型；Android `RemoteAuthRepository`/`RemoteHealthDashboardStateDataSource`/`MockServerHttpClient`/`MockServerConfig`；iOS `iosMain` `IosRemoteAuthRepository`/`IosRemoteHealthDashboardStateDataSource`/`IosHttpTransport`（Swift 注入 URLSession）；HarmonyOS `MockServerSync.ets`（ArkTS `ohos.net.http`） | ✅（Android/iOS）⚠️（HarmonyOS 代码已写，待 DevEco 构建验证） |
+| `MSRV-003` | 认证按业务逐接口请求 | 服务端 21 条契约测试 + Android `RemoteAuthRepositoryTest` 12 条（login/register/verify-code/regions/hasAccount/profile/password/logout/account 全部映射）；iOS 逻辑复用同一契约（编译验证） | `mock-server/src/app.js` 认证域路由；Android `RemoteAuthRepository`；iOS `IosRemoteAuthRepository` | ✅（服务端 + Android + iOS 编译） |
+| `MSRV-004` | 健康快照按 `userId` 整文档读写 | 服务端契约测试（PUT 读回/隔离/场景）+ Android `healthSourceRoundTripsSnapshot`/`healthSourceEmptyReturnsNull`；iOS 同契约 | `mock-server/src/app.js` 健康域路由；Android `RemoteHealthDashboardStateDataSource`；iOS `IosRemoteHealthDashboardStateDataSource` | ✅（服务端 + Android + iOS 编译） |
+| `MSRV-005` | HTTP 状态码映射到既有错误语义 | Android `RemoteAuthRepositoryTest` 错误路径断言 + 服务端 HTTP 状态映射 | Android/iOS `parseError`（`MockErrorMessage.toMockError`）；服务端 HTTP_BY_ERROR | ✅（服务端 + Android/iOS 客户端映射）⚠️（网络不可达的专用枚举与三端文案未落地） |
+| `MSRV-006` | 会话由服务器签发，客户端冷启动惰性校验 | Android `RemoteAuthRepositoryTest`：`sessionExpiresAfterBackgroundTtlWhenClockAdvances`、`sessionSurvivesBackgroundWithinTtl`（先因 `nowEpochMs` 缺注入而 TTL 永不失效，注入真实时钟后通过）；Harmony `syncFromServer` 本地会话失效时不恢复服务器会话 | Android `RemoteAuthRepository`（注入 `nowEpochMs`）本地 TTL + 冷启动恢复；iOS `IosRemoteAuthRepository` 本地 TTL；Harmony `MockServerSync.ets` 本地登录态权威保护；`GET /api/auth/session?userId=` 已提供 | ⚠️（Android 已验证；iOS 复用同一逻辑；Harmony 待 DevEco 验证） |
+| `MSRV-007` | 三端 base URL 为平台注入配置 | Android `MockServerConfig.baseUrl` + `network_security_config.xml`（10.0.2.2/localhost 明文）+ `assembleDebug`；iOS `IosMockServerConfig.baseUrl`（localhost）+ xcodebuild；HarmonyOS `MockServerSync.ets` `MOCK_SERVER_BASE_URL` | `androidApp/.../core/network/MockServerConfig.kt`、`common/src/iosMain/.../net/IosMockServerConfig.kt`、`harmonyApp/.../core/bridge/MockServerSync.ets` | ✅（Android/iOS）⚠️（HarmonyOS 待设备验证） |
+| `MSRV-007-PORT` | mock server 数据按端口隔离 | `cd mock-server && npm test` 27/27 通过；双实例脚本（3000/3001）各自独立文件 `mock-server-store-{PORT}.json`，互不出现对方账号（grep 计数 3/0 验证） | `mock-server/src/server.js`（`DATA_FILE` 按 PORT 派生）、`mock-server/src/store.js`（`configureDataFile`）、`mock-server/README.md` | ✅ |
+| `MSRV-008` | HarmonyOS 通过 ArkTS 侧 HTTP 复用 KNOI 快照入口 | 服务端 4 个 snapshot 端点契约测试 2 条通过（`MSRV-008: 认证 store 快照可按 userId 拉取与提交`、`MSRV-008: 健康快照集合可整体拉取与提交`）；HarmonyOS 代码已写、待 DevEco 构建 + KNOI 契约 diff | `harmonyApp/.../core/bridge/MockServerSync.ets`（`@ohos.net.http` + `syncFromServer/syncToServer`）、`StorePersister.ets`（启动拉取/保存推送）、`module.json5` INTERNET 权限；服务端 `/api/sync/auth`、`/api/sync/health` | ⚠️（服务端 ✅；ArkTS 代码已写，本环境无 DevEco/hvigor，构建与 provider.ets 契约 diff 待验证） |
+| `MSRV-008-SYNC` | 快照同步按用户合并，不整体覆盖其他端数据 | `cd mock-server && npm test`：`MSRV-008-SYNC: 同步健康快照按 userId 合并，不覆盖其他用户`、`MSRV-008-SYNC: 认证 store 同步只更新当前会话用户，不覆盖其他账号`（先因 replaceAll 覆盖红、改 merge 后绿）；27/27 通过；端到端脚本验证 B 用户保留 | 服务端 `PUT /api/sync/health` 改为逐条 `saveHealthSnapshot` upsert、`PUT /api/sync/auth` 只处理当前会话用户；鸿蒙 `MockServerSync.syncToServer` 只提交当前 userId、`syncFromServer` 未登录跳过 auth 且服务器无该用户时保留本地；`KnoiLoginAdapter.submit` 成功后 `syncFromServer` | ✅（服务端已验证；鸿蒙代码待 DevEco 构建验证） |
+| `MSRV-009` | 本地持久化降级为缓存兜底 | Android `RemoteHealthDashboardStateDataSource` 以本地数据源作缓存（网络失败回退本地）；`RemoteAuthRepository` 以 `AndroidAuthStoreDataSource` 作会话缓存；iOS 同模式；HarmonyOS `StorePersister` 保留本地 prefs + 同步失败沿用缓存 | Android/iOS remote 数据源 cache 兜底；`harmonyApp/.../core/bridge/StorePersister.ets` | ⚠️（Android/iOS 落地；HarmonyOS 代码已写，运行时待验证） |
+| `MSRV-010` | 三端数据一致靠服务器权威 + 刷新拉取 | 待补：三端交叉验收（需服务器运行 + 多端登录） | 待补：三端刷新接入 | ⏳ |
+| `MSRV-011` | 服务器不可达或写失败时展示明确错误 | 待补：错误提示测试（三端 UI） | 待补：三端错误提示接入 | ⏳ |
+| `MSRV-012` | 种子数据与场景模板由服务器提供 | `node --test test/contract.test.js`：`MSRV-012: 重置后种子账号与健康空态可恢复`；`mock-server/src/store.js` 种子账号与 REGIONS | `mock-server/src/store.js`（seedAccounts/REGIONS/DEFAULT_VERIFY_CODE）；`mock-server/README.md` | ✅ |
+| `MSRV-013` | 服务器不包含任何真实凭据或敏感信息 | `git diff` 人工核对；`mock-server/src/*.js` 与 `data/`（gitignore）扫描 | `mock-server/.gitignore` 排除 `data/`；README 明确 mock 约定 | ✅（服务端已满足；三端与门禁扫描待后续轮） |
+| `MSRV-014` | `/api/sync/auth` 遍历全部账号 upsert，会话按 userId 匹配；`buildUserId` 与 common Int32 语义一致 | `cd mock-server && npm test`：`MSRV-008: 注册新账号经 sync/auth 持久化（非首个账号也能保存）` 先红（accounts[0] 之外丢失）后绿；22/22 通过 | `mock-server/src/app.js` PUT `/api/sync/auth`；`mock-server/src/store.js` `buildUserId` | ✅ |
+| `MSRV-015` | 头像保存真实内容（base64 data URI，缩放 + JPEG 统一编码），跨设备可展示 | Android `:androidApp:assembleDebug`/`lintDebug` 通过；iOS `xcodebuild` 通过；服务端 22/22 契约测试；mock data 旧 769KB 原图 base64 已清理，改为 512px JPEG | Android `ProfileEditHelpers.scaleToAvatar/toAvatarDataUri/decodeAvatarDataUri`；iOS `ProfileImageStore.downscaledJPEG/save/image(at:)`；Harmony `avatarToDataUri`（decode→scale→pack→base64）+ `AvatarImage.ets`（`scalePixelMap`/`AVATAR_MAX_DIMENSION`） | ✅（Android/iOS 编译验证）⚠️（Harmony 代码已写，待 DevEco 构建验证） |
+
+---
+
 ## 使用约定
 
 1. **新加功能**：先在 `spec/` 下写 .md 或追加章节 → 在本文件预留映射行（状态标为 ⏳）→ 写测试 → 写实现 → 改状态为 ✅

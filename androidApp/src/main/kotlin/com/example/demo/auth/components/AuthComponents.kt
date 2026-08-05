@@ -95,7 +95,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @Composable
 fun rememberLoginViewModel(): LoginViewModel {
     val context = LocalContext.current.applicationContext
-    return remember(context) { LoginViewModel.create(context) }
+    return remember(context) { LoginViewModel.createRemote(context) }
 }
 
 fun Context.findActivity(): Activity? {

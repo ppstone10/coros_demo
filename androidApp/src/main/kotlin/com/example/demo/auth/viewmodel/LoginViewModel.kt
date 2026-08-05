@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.demo.auth.data.AndroidAuthStoreDataSource
+import com.example.demo.auth.data.RemoteAuthRepository
 import com.example.demo.common.auth.model.AuthMode
 import com.example.demo.common.auth.model.LoginAction
 import com.example.demo.common.auth.model.LoginEffect
@@ -18,7 +19,10 @@ import com.example.demo.common.auth.model.MockVerifyCodeState
 import com.example.demo.common.auth.model.UserProfile
 import com.example.demo.common.health.store.HealthStore
 import com.example.demo.common.health.store.InMemoryHealthDashboardStateDataSource
+import com.example.demo.core.network.MockServerConfig
+import com.example.demo.core.network.MockServerHttpClient
 import com.example.demo.health.data.AndroidHealthDashboardStateDataSource
+import com.example.demo.health.data.RemoteHealthDashboardStateDataSource
 
 class LoginViewModel(
     private val store: LoginStore = LoginStore.createFake(),
@@ -254,6 +258,33 @@ class LoginViewModel(
                 nowEpochMs = { System.currentTimeMillis() }
             )
             val healthDataSource = AndroidHealthDashboardStateDataSource(context.applicationContext)
+            val healthStore = HealthStore(repository, healthDataSource)
+            return LoginViewModel(
+                store = LoginStore.create(
+                    authRepository = repository,
+                    onDeleteUserData = healthStore::clear
+                ),
+                healthStore = healthStore
+            )
+        }
+
+        /** 远端 mock server 数据源：HTTP 请求位于平台层，本地仅作会话缓存（MSRV-002/003/007）。 */
+        fun createRemote(context: Context): LoginViewModel {
+            val http = MockServerHttpClient(
+                baseUrl = MockServerConfig.baseUrl,
+                timeoutSeconds = MockServerConfig.DefaultTimeoutSeconds
+            )
+            val sessionCache = AndroidAuthStoreDataSource(context.applicationContext)
+            val repository = RemoteAuthRepository(
+                http = http,
+                cache = sessionCache,
+                sessionTtlMs = LocalMockAuthRepository.SessionTtlMs,
+                nowEpochMs = { System.currentTimeMillis() }
+            )
+            val healthDataSource = RemoteHealthDashboardStateDataSource(
+                http = http,
+                cache = AndroidHealthDashboardStateDataSource(context.applicationContext)
+            )
             val healthStore = HealthStore(repository, healthDataSource)
             return LoginViewModel(
                 store = LoginStore.create(

@@ -19,6 +19,7 @@ demo/
 ├── iosApp/                       # iOS SwiftUI 原生应用
 ├── harmony-kmp-bridge/           # 独立 KNOI/Kotlin → HarmonyOS bridge
 ├── harmonyApp/                   # HarmonyOS ArkTS + ArkUI 原生应用
+├── mock-server/                  # 三端共享的 Mock HTTP 服务器（Node.js + Express）
 ├── spec/                         # SDD 规格、模板和 TRACE
 ├── docs/                         # 当前文档、参考资料、历史归档与完整 worklog
 ├── contract/analytics/           # 三端埋点事件契约
@@ -34,7 +35,7 @@ demo/
 └── TEST_REPORT.md                # 当前测试报告
 ```
 
-五个实现目录是：`common/`、`androidApp/`、`iosApp/`、`harmony-kmp-bridge/`、`harmonyApp/`。其余目录分别承担规格、文档、契约、设计源或构建职责，不参与业务实现。
+五个实现目录是：`common/`、`androidApp/`、`iosApp/`、`harmony-kmp-bridge/`、`harmonyApp/`。`mock-server/` 是独立于构建链路的 Mock HTTP 服务器工程（Node.js + Express，契约见 `spec/mock-server-api-spec.md`）。其余目录分别承担规格、文档、契约、设计源或构建职责，不参与业务实现。
 
 ## SDD 开发入口
 
@@ -67,8 +68,8 @@ HarmonyOS：用 DevEco Studio 打开 `harmonyApp/`。更新共享业务或 bridg
 
 ## 关键边界
 
-- `common/src/commonMain` 不使用 Android、Apple、HarmonyOS SDK 或 UI 类型。
-- 所有账号、健康和状态数据均为本地 mock，不接入真实服务器或真实协议。
+- `common/src/commonMain` 不使用 Android、Apple、HarmonyOS SDK 或 UI 类型，也不使用 HTTP 客户端；HTTP 只位于三端平台层远程数据源或 ArkTS 侧。
+- 所有账号、健康和状态数据均为本地 mock 或本仓库 `mock-server/` 的 mock 接口，不接入真实服务器、真实协议或真实凭据。
 - mock 与持久化字段先由 `common/src/commonMain/proto/` 下的 `.proto` 定义。
 - 平台 UI 只负责展示、交互、导航和平台能力；共享业务规则放在 `common`。
 - `docs/worklog/` 是完整历史归档：只允许新增归档文件，不修改或删除既有文件。

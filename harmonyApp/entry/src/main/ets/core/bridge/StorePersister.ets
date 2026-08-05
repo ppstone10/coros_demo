@@ -1,6 +1,7 @@
 import hilog from '@ohos.hilog';
 import preferences from '@ohos.data.preferences';
 import { getService, HarmonyLoginServiceContract } from './HarmonyServiceProvider';
+import { syncFromServer, syncToServer } from './MockServerSync';
 
 const PREFERENCES_NAME = 'mock_auth_store';
 const KEY_STORE_JSON = 'store_json';
@@ -24,6 +25,8 @@ export async function initPersistence(context: Context): Promise<void> {
     if (healthJson.length > 0) {
       getService().restoreHealthSnapshot(healthJson);
     }
+    // MSRV-008：启动时从 mock 服务器拉取权威快照（失败沿用本地缓存）
+    await syncFromServer(getService());
     hilog.info(0x0001, 'demo_persist', 'initPersistence completed');
   } catch (error) {
     prefsInstance = null;
@@ -45,6 +48,10 @@ export function saveStoreSnapshot(service?: HarmonyLoginServiceContract): boolea
     const healthJson = svc.exportHealthSnapshot();
     prefsInstance.putSync(KEY_HEALTH_JSON, healthJson);
     prefsInstance.flushSync();
+    // MSRV-008：写操作成功后异步提交到服务器，失败保留本地缓存待补偿
+    syncToServer(svc).catch(() => {
+      hilog.warn(0x0001, 'demo_persist', 'syncToServer skipped');
+    });
     return true;
   } catch (error) {
     hilog.error(0x0001, 'demo_persist', 'persist failed: ' + JSON.stringify(error));

@@ -85,8 +85,35 @@ protocol SharedLoginAdapterProtocol {
 
 final class SharedLoginAdapter: SharedLoginAdapterProtocol {
     private static let storeKey = "training_auth_mock_store"
+    /// MSRV-007：iOS 模拟器访问宿主机 mock server 使用 localhost。
+    private static let baseUrl = "http://localhost:3000"
     private let facade: LoginFacade
     let healthFacade: HealthFacade
+
+    /// MSRV-002：Swift 平台层用 URLSession 实现同步 HTTP，通过信号量等待结果。
+    private static func httpRequest(method: String, path: String, json: String?) -> IosHttpResponse {
+        guard let url = URL(string: baseUrl + path) else {
+            return IosHttpResponse(status: -1, body: "")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.timeoutInterval = 5
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let json = json {
+            request.httpBody = json.data(using: .utf8)
+        }
+        let semaphore = DispatchSemaphore(value: 0)
+        var status = -1
+        var body = ""
+        let task = URLSession.shared.dataTask(with: request) { data, response, _ in
+            status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            body = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+            semaphore.signal()
+        }
+        task.resume()
+        _ = semaphore.wait(timeout: .now() + 5)
+        return IosHttpResponse(status: Int32(status), body: body)
+    }
 
     init() {
         let defaults = UserDefaults.standard
@@ -98,13 +125,6 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
                 return true
             }
         )
-        self.facade = LoginFacadeFactory().createPersistent(
-            loadJson: { defaults.string(forKey: Self.storeKey) },
-            saveJson: { json in
-                defaults.set(json, forKey: Self.storeKey)
-                return KotlinBoolean(bool: defaults.synchronize())
-            }
-        )
         let authDataSource = JsonAuthStoreDataSource(
             loadJson: { defaults.string(forKey: Self.storeKey) },
             saveJson: { json in
@@ -112,13 +132,24 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
                 return KotlinBoolean(bool: defaults.synchronize())
             }
         )
-        let repository = LocalMockAuthRepository(
-            dataSource: authDataSource,
-            nowEpochMs: { KotlinLong(value: Int64(Date().timeIntervalSince1970 * 1_000)) }
+        // MSRV-002/007：HTTP 传输由 Swift 注入（URLSession），common/iosMain 只保留业务逻辑。
+        IosMockServerConfig.shared.baseUrl = Self.baseUrl
+        let transport = { (method: String, path: String, json: String?) -> IosHttpResponse in
+            Self.httpRequest(method: method, path: path, json: json)
+        }
+        let repository = IosRemoteAuthRepository(
+            http: transport,
+            cache: authDataSource,
+            sessionTtlMs: Int64(LocalMockAuthRepository.companion.SessionTtlMs)
+        )
+        self.facade = LoginFacadeFactory().createPersistent(authRepository: repository)
+        let remoteHealthStore = IosRemoteHealthDashboardStateDataSource(
+            http: transport,
+            cache: healthStore
         )
         self.healthFacade = HealthFacadeFactory().createPersistent(
             authRepository: repository,
-            stateDataSource: healthStore
+            stateDataSource: remoteHealthStore
         )
         syncClock()
         facade.restoreSession()

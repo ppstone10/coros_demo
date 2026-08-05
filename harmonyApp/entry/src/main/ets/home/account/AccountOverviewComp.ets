@@ -1,6 +1,7 @@
 import { LoginState } from '../../auth/logic/LoginState';
 import { AppColors, AppTypography, AppSpacing } from '../../core/resources/AppResources';
 import { localizedAuthMessage } from '../../core/resources/AuthLocalization';
+import { AvatarImage } from './AvatarImage';
 
 @Component
 export struct AccountOverviewComp {
@@ -33,7 +34,7 @@ export struct AccountOverviewComp {
 
         Row() {
           if (this.profileAvatarUri.length > 0) {
-            Image(this.profileAvatarUri).width(58).height(58).borderRadius(29).clip(true).objectFit(ImageFit.Cover)
+            AvatarImage({ avatarUri: this.profileAvatarUri, avatarSize: 58 })
           } else {
             Stack({ alignContent: Alignment.Center }) {
               Text(this.displayName.substring(0, Math.min(1, this.displayName.length)).toUpperCase())

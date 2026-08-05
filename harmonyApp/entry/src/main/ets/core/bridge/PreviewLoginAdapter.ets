@@ -90,6 +90,8 @@ export class PreviewLoginAdapter implements LoginLogicAdapter {
   profileDefaultUsername(_account: string): string { return 'COROS user'; }
   profileDefaultPhone(account: string): string { return this.isPhoneAccountValid(account) ? account : ''; }
   profileDefaultEmail(account: string): string { return this.isEmailAccountValid(account) ? account : ''; }
+
+  currentUserId(): string { return 'preview-user'; }
   deleteCurrentAccount(): string { this.logout(); return ''; }
   clearSessionSilently(): void { this.state.currentSession = null; this.state.isLoggedIn = false; }
   consumeEffect(): LoginEffect | null { const current = this.effect; this.effect = null; return current; }

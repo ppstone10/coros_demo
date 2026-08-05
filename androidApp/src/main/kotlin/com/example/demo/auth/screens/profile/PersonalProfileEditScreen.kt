@@ -106,12 +106,14 @@ fun PersonalProfileEditScreen(
     val imagePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        if (uri != null) avatarUri = copyAvatarToPrivateFile(context, uri)
+        val userId = viewModel.state.currentSession?.userId
+        if (uri != null && userId != null) avatarUri = uploadAvatarFromUri(context, uri, userId)
     }
     val cameraPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
-        if (bitmap != null) avatarUri = saveAvatarBitmap(context, bitmap)
+        val userId = viewModel.state.currentSession?.userId
+        if (bitmap != null && userId != null) avatarUri = uploadAvatarBitmap(bitmap, userId)
     }
     val profile = savedProfile.copy(
         avatarUri = avatarUri,

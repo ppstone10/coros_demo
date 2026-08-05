@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import Shared
 
 enum AppLanguage: String, CaseIterable, Identifiable {
     case simplifiedChinese = "zh-Hans"
@@ -258,26 +259,83 @@ enum AppImages {
 }
 
 enum ProfileImageStore {
-    private static let userDefaultsPrefix = "profile_avatar_data_"
+    /// 头像缩放后的最大边长（像素）。控制上传体积。
+    private static let maxDimension: CGFloat = 512
 
-    /// Key used to look up the avatar data for a given userId.
-    private static func storageKey(_ userId: String) -> String {
-        "\(userDefaultsPrefix)\(userId)"
+    /// 头像在 mock server 的相对路径（MSRV-015：真实图片文件 + URL 展示）。
+    static func avatarServerPath(userId: String) -> String {
+        "/api/avatar/\(userId)"
     }
 
-    static func save(_ data: Data, userId: String) -> String? {
-        let key = storageKey(userId)
-        UserDefaults.standard.set(data, forKey: key)
-        return key
+    /// 上传头像：缩放 → JPEG → PUT 到 mock server；返回相对路径；失败返回 nil。
+    static func save(_ data: Data, userId: String) async -> String? {
+        let jpegData = downscaledJPEG(from: data) ?? data
+        let path = avatarServerPath(userId: userId)
+        guard let url = URL(string: "\(IosMockServerConfig.shared.baseUrl)\(path)") else { return nil }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jpegData
+        request.timeoutInterval = 5
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) {
+                return path
+            }
+            return nil
+        } catch {
+            return nil
+        }
     }
 
+    private static func downscaledJPEG(from data: Data) -> Data? {
+        guard let image = UIImage(data: data) else { return nil }
+        let size = image.size
+        let longest = max(size.width, size.height)
+        guard longest > maxDimension else {
+            return image.jpegData(compressionQuality: 0.85)
+        }
+        let scale = maxDimension / longest
+        let newSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        let scaled = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+        return scaled.jpegData(compressionQuality: 0.85)
+    }
+
+    /// 从 avatarUri 解析 UIImage：服务器相对路径 → 下载解码；旧格式（data URI / key / 文件）回退。
     static func image(at key: String?) -> UIImage? {
         guard let key, !key.isEmpty else { return nil }
-        if key.hasPrefix(userDefaultsPrefix) {
+        if key.hasPrefix("/api/avatar/") {
+            guard let url = URL(string: "\(IosMockServerConfig.shared.baseUrl)\(key)") else { return nil }
+            let semaphore = DispatchSemaphore(value: 0)
+            var result: UIImage? = nil
+            URLSession.shared.dataTask(with: url) { data, response, _ in
+                if let data, let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) {
+                    result = UIImage(data: data)
+                }
+                semaphore.signal()
+            }.resume()
+            _ = semaphore.wait(timeout: .now() + 5)
+            return result
+        }
+        if key.hasPrefix("data:image") {
+            if let data = dataURIData(key) {
+                return UIImage(data: data)
+            }
+        }
+        if key.hasPrefix("profile_avatar_data_") {
             guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
             return UIImage(data: data)
         }
         return UIImage(contentsOfFile: key)
+    }
+
+    private static func dataURIData(_ dataUri: String) -> Data? {
+        guard let comma = dataUri.firstIndex(of: ",") else { return nil }
+        let base64 = String(dataUri[dataUri.index(after: comma)...])
+        return Data(base64Encoded: base64)
     }
 }
 

@@ -1,6 +1,8 @@
 import promptAction from '@ohos.promptAction';
 import photoAccessHelper from '@ohos.file.photoAccessHelper';
 import router from '@ohos.router';
+import { uploadAvatarToServer } from '../home/account/AvatarImage';
+import { MOCK_SERVER_BASE_URL } from '../core/bridge/MockServerSync';
 import {
   LoginEffect,
   LoginEffectType,
@@ -546,8 +548,8 @@ struct ProfileAvatarComponent {
 
   build() {
     Stack({ alignContent: Alignment.Center }) {
-      if (this.avatarUri.length > 0) {
-        Image(this.avatarUri)
+      if (this.avatarUri.length > 0 && this.avatarUri.startsWith('/api/avatar/')) {
+        Image(MOCK_SERVER_BASE_URL + this.avatarUri)
           .width('100%')
           .height('100%')
           .objectFit(ImageFit.Cover)
@@ -1458,7 +1460,15 @@ struct ProfileCompletionPage {
       let photoPicker = new photoAccessHelper.PhotoViewPicker();
       photoPicker.select(photoSelectOptions).then((result: photoAccessHelper.PhotoSelectResult) => {
         if (result.photoUris.length > 0) {
-          this.profileAvatarUri = result.photoUris[0];
+          const uri: string = result.photoUris[0];
+          const userId: string = this.viewModel.currentUserId();
+          uploadAvatarToServer(uri, userId).then((path: string) => {
+            if (path.length > 0) {
+              this.profileAvatarUri = path;
+            } else {
+              this.showMessage('profile_avatar_selection_failed');
+            }
+          });
         }
       }).catch((error: Error) => {
         console.error(`pickAvatarFromAlbum failed: ${JSON.stringify(error)}`);

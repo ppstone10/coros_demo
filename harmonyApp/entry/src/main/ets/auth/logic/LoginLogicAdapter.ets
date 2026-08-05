@@ -37,6 +37,8 @@ export interface LoginLogicAdapter {
   resetPassword(account: string, newPassword: string): string;
   changePassword(account: string, oldPassword: string, newPassword: string): string;
   submitProfile(avatarUri: string, username: string, birthDate: string, heightCm: number, weightKg: number, measurementSystem: string, phone: string, email: string, countryRegion: string, gender: string): void;
+  /** 当前登录用户的稳定 userId（头像上传等需要，MSRV-015）。 */
+  currentUserId(): string;
   profileDefaultUsername(account: string): string;
   profileDefaultPhone(account: string): string;
   profileDefaultEmail(account: string): string;

@@ -18,6 +18,8 @@ Figma 2031 健康首页的数据可视化与三端专用卡片规范见 `health-
 
 健康模块完整领域数据、多用户快照与三端私有存储规范见 `health-dashboard-persistence.md`。
 
+Mock HTTP 服务器接口契约与三端 HTTP 接入规范见 `mock-server-api-spec.md`。
+
 `AGENTS.md` 是 AI 自动入口，`spec/sdd-workflow.md` 是完整流程规范；`SESSION_START.md` 仅是便携摘要，不单独发明规则。
 
 ## 生命周期

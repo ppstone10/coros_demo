@@ -8,6 +8,7 @@ import {
 } from '../../auth/logic/LoginState';
 import { LoginLogicAdapter } from '../../auth/logic/LoginLogicAdapter';
 import { saveStoreSnapshot } from './StorePersister';
+import { syncFromServer } from './MockServerSync';
 import { getService, HarmonyLoginServiceContract } from './HarmonyServiceProvider';
 
 interface AuthSessionPayload {
@@ -25,6 +26,14 @@ interface AuthSessionPayload {
   email?: string;
   countryRegion?: string;
   gender?: string;
+}
+
+interface CurrentUserSessionPayload {
+  userId?: string;
+}
+
+interface CurrentUserPayload {
+  currentSession?: CurrentUserSessionPayload;
 }
 
 interface LoginStatePayload {
@@ -146,6 +155,11 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
       hilog.info(0x0001, 'demo_persist', 'store after submit: ' + storeAfter);
       this.refreshState();
       this.persistSnapshot();
+      // 登录成功后拉取服务器权威数据（账号资料/健康），使鸿蒙与 Android/iOS 互通（MSRV-008-SYNC）
+      if (this.state.currentSession !== null && this.state.currentSession.isValid) {
+        await syncFromServer(this.harmonyLoginService);
+        this.refreshState();
+      }
     } catch (error) {
       this.state.errorMessage = 'auth_submit_failed';
       hilog.error(0x0001, 'demo_persist', 'submit failed');
@@ -274,6 +288,16 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
   profileDefaultUsername(account: string): string { return this.harmonyLoginService.profileDefaultUsername(account); }
   profileDefaultPhone(account: string): string { return this.harmonyLoginService.profileDefaultPhone(account); }
   profileDefaultEmail(account: string): string { return this.harmonyLoginService.profileDefaultEmail(account); }
+
+  currentUserId(): string {
+    try {
+      const snapshot: string = this.harmonyLoginService.exportStoreSnapshot();
+      const parsed: CurrentUserPayload = JSON.parse(snapshot) as CurrentUserPayload;
+      return parsed.currentSession?.userId ?? '';
+    } catch (e) {
+      return '';
+    }
+  }
 
   deleteCurrentAccount(): string {
     let message: string = this.harmonyLoginService.deleteCurrentAccount();

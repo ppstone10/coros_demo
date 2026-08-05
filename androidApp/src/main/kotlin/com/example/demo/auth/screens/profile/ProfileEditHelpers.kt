@@ -2,13 +2,16 @@ package com.example.demo.auth.screens.profile
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.example.demo.R
 import com.example.demo.common.auth.model.MeasurementSystem
-import java.io.File
-import java.io.FileOutputStream
+import com.example.demo.core.network.MockServerConfig
+import com.example.demo.core.network.MockServerHttpClient
+import java.io.ByteArrayOutputStream
+
 @Composable
 internal fun MeasurementSystem.displayText(): String {
     return when (this) {
@@ -34,20 +37,85 @@ internal fun parseBirthDate(value: String): Triple<Int, Int, Int> {
     )
 }
 
-internal fun saveAvatarBitmap(context: Context, bitmap: Bitmap): String {
-    val directory = File(context.filesDir, "profile_avatars").also { it.mkdirs() }
-    val file = File(directory, "avatar_${System.currentTimeMillis()}.jpg")
-    FileOutputStream(file).use { output ->
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)
-    }
-    return Uri.fromFile(file).toString()
+/** 头像缩放后的最大边长（像素）。控制上传体积。 */
+private const val AVATAR_MAX_DIMENSION = 512
+
+/** 头像文件在服务器上的相对路径前缀；avatarUri 只存相对路径，各端自行拼 base URL（MSRV-015）。 */
+internal fun avatarServerPath(userId: String): String = "/api/avatar/$userId"
+
+/**
+ * 选择相册头像：读取 → 缩放 → JPEG → 上传到 mock server。
+ * 返回相对路径 `/api/avatar/{userId}`；失败返回 null。
+ */
+internal fun uploadAvatarFromUri(context: Context, uri: Uri, userId: String): String? {
+    val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return null
+    return uploadAvatarBytes(bytes, userId)
 }
 
-internal fun copyAvatarToPrivateFile(context: Context, uri: Uri): String {
-    val directory = File(context.filesDir, "profile_avatars").also { it.mkdirs() }
-    val file = File(directory, "avatar_${System.currentTimeMillis()}.jpg")
-    context.contentResolver.openInputStream(uri)?.use { input ->
-        FileOutputStream(file).use { output -> input.copyTo(output) }
+/** 拍摄头像：缩放 → JPEG → 上传到 mock server；返回相对路径；失败返回 null。 */
+internal fun uploadAvatarBitmap(bitmap: Bitmap, userId: String): String? {
+    val scaled = bitmap.scaleToAvatar()
+    val output = ByteArrayOutputStream()
+    scaled.compress(Bitmap.CompressFormat.JPEG, 85, output)
+    if (scaled !== bitmap) scaled.recycle()
+    return uploadAvatarBytes(output.toByteArray(), userId)
+}
+
+/** 上传头像字节到 mock server；成功返回相对路径，失败返回 null。 */
+internal fun uploadAvatarBytes(bytes: ByteArray, userId: String): String? {
+    val http = MockServerHttpClient(MockServerConfig.baseUrl)
+    return try {
+        val status = http.putBinary(avatarServerPath(userId), bytes)
+        if (status in 200..299) avatarServerPath(userId) else null
+    } finally {
+        http.shutdown()
     }
-    return Uri.fromFile(file).toString()
+}
+
+/** 按最大边长缩放；若已不超限则返回原对象。 */
+internal fun Bitmap.scaleToAvatar(maxDimension: Int = AVATAR_MAX_DIMENSION): Bitmap {
+    val width = width
+    val height = height
+    val longest = maxOf(width, height)
+    if (longest <= maxDimension) return this
+    val scale = maxDimension.toFloat() / longest
+    val newWidth = (width * scale).toInt().coerceAtLeast(1)
+    val newHeight = (height * scale).toInt().coerceAtLeast(1)
+    return Bitmap.createScaledBitmap(this, newWidth, newHeight, true)
+}
+
+/**
+ * 从 avatarUri 解析头像 Bitmap：
+ * - `/api/avatar/...`（服务器相对路径）→ 从 mock server 下载解码
+ * - 其他旧格式（data URI / 本地文件路径）→ 回退本地解析
+ */
+internal fun resolveAvatarBitmap(avatarUri: String?): Bitmap? {
+    if (avatarUri.isNullOrBlank()) return null
+    if (avatarUri.startsWith("/api/avatar/")) {
+        val http = MockServerHttpClient(MockServerConfig.baseUrl)
+        return try {
+            val response = http.getBinary(avatarUri)
+            if (response.status in 200..299) {
+                BitmapFactory.decodeByteArray(response.bytes, 0, response.bytes.size)
+            } else {
+                null
+            }
+        } finally {
+            http.shutdown()
+        }
+    }
+    if (avatarUri.startsWith("data:image")) {
+        val comma = avatarUri.indexOf(',')
+        if (comma < 0) return null
+        val base64 = avatarUri.substring(comma + 1)
+        return runCatching {
+            BitmapFactory.decodeByteArray(
+                android.util.Base64.decode(base64, android.util.Base64.NO_WRAP),
+                0, 0, null
+            )
+        }.getOrNull()
+    }
+    return runCatching {
+        BitmapFactory.decodeFile(Uri.parse(avatarUri).path)
+    }.getOrNull()
 }

@@ -133,7 +133,7 @@ struct NormalDataSectionPage {
             ListItem() {
               this.EditField(field)
             }
-          }, (field: NormalEditField) => field.id)
+          }, (field: NormalEditField) => this.fieldForEachKey(field))
           ForEach(this.repeatGroups, (group: NormalEditRepeatGroup) => {
             ListItem() {
               this.RepeatGroupEditor(group)
@@ -227,7 +227,7 @@ struct NormalDataSectionPage {
           .width('100%')
           ForEach(this.groupFields(group.id, rowIndex), (field: NormalEditField) => {
             this.EditField(field)
-          }, (field: NormalEditField) => field.id)
+          }, (field: NormalEditField) => this.fieldForEachKey(field))
         }
         .width('100%')
         .padding(12)
@@ -355,6 +355,15 @@ struct NormalDataSectionPage {
 
   private fieldLabel(field: NormalEditField): string {
     return this.localized(field.labelKey, field.labelArguments || []);
+  }
+
+  private fieldForEachKey(field: NormalEditField): string {
+    // Choice 行 key 含选中值：选择变化时强制重建以刷新显示（Choice 非输入框，无焦点问题）。
+    // 其余（TextInput）保持稳定 id，避免输入时重建导致焦点丢失。
+    if (field.type === 'Choice') {
+      return `${field.id}:${field.value}`;
+    }
+    return field.id;
   }
 
   private standaloneFields(): NormalEditField[] {

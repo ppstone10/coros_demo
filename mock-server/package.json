@@ -1,0 +1,17 @@
+{
+  "name": "coros-demo-mock-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Demo 项目三端共享的 Mock HTTP 服务器（见 spec/mock-server-api-spec.md）",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/contract.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.22.2"
+  }
+}

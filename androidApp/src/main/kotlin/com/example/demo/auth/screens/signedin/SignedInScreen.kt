@@ -1,6 +1,6 @@
 package com.example.demo.auth.screens.signedin
 
-import android.widget.ImageView
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -23,24 +23,25 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.net.toUri
 import com.example.demo.R
 import com.example.demo.common.auth.model.toProfileCountryCode
 import com.example.demo.auth.viewmodel.LoginViewModel
+import com.example.demo.auth.screens.profile.resolveAvatarBitmap
 import com.example.demo.auth.components.CorosButtonRed
 import com.example.demo.auth.components.CorosWhite
 import com.example.demo.auth.components.ErrorText
@@ -210,16 +211,22 @@ private fun ProfileSummaryAvatar(avatarUri: String?, username: String) {
                 fontWeight = FontWeight.Medium
             )
         } else {
-            val context = LocalContext.current
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = {
-                    ImageView(context).apply {
-                        scaleType = ImageView.ScaleType.CENTER_CROP
-                    }
-                },
-                update = { imageView -> imageView.setImageURI(avatarUri.toUri()) }
-            )
+            val bitmap = remember(avatarUri) { resolveAvatarBitmap(avatarUri) }
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = username.take(1).uppercase(),
+                    color = CorosWhite,
+                    fontSize = 23.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }

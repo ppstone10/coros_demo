@@ -6,7 +6,8 @@
 
 - 架构为 KMP 共享业务层 + Android Compose / iOS SwiftUI / HarmonyOS ArkUI 原生 UI。
 - `common/src/commonMain` 只放平台无关模型、规则、状态与数据访问抽象，不放平台 API 或 UI 类型。
-- 所有业务与认证数据只使用本地 mock；禁止写入真实服务地址、协议、token、密钥、账号或用户数据。
+- 所有业务与认证数据只使用本地 mock 或本仓库 `mock-server/` 提供的 mock 接口（见 `spec/mock-server-api-spec.md`）；禁止写入真实服务地址、协议、token、密钥、账号或用户数据。
+- HTTP 请求只位于三端平台层（Android/iOS/HarmonyOS 远程数据源或 ArkTS 侧），`commonMain` 不放网络客户端；`common` 保持同步数据源接口不变。
 - mock 和持久化数据结构先由 `.proto` 定义；JSON 只能作为受 protobuf 字段契约约束的存储映射。
 - `docs/worklog/` 是只追加历史归档；不得修改、覆盖或删除既有日志文件。
 - `docs/reference/` 和 `docs/archive/` 保存完整知识与阶段历史；不得仅因内容重复或阶段过时而直接删除，调整前先建立迁移映射并确认正文已保留。

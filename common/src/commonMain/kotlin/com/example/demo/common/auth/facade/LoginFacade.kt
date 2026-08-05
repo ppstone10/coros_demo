@@ -11,6 +11,7 @@ import com.example.demo.common.auth.model.UserGender
 import com.example.demo.common.auth.model.UserProfile
 import com.example.demo.common.auth.rules.LoginRules
 import com.example.demo.common.auth.store.LoginStore
+import com.example.demo.common.auth.repository.AuthRepository
 
 /**
  * @warning 此文件为 iOS/HarmonyOS 暴露的跨语言门面，方法列表与 [LoginRules] 保持同步。
@@ -289,5 +290,12 @@ class LoginFacadeFactory {
         val dataSource = JsonAuthStoreDataSource(loadJson, saveJson)
         val repository = LocalMockAuthRepository(dataSource)
         return LoginFacade(LoginStore.create(repository))
+    }
+
+    /** iOS 平台层远程数据源入口：由 iOS 注入 [AuthRepository] 实现（MSRV-002/003）。 */
+    fun createPersistent(
+        authRepository: AuthRepository
+    ): LoginFacade {
+        return LoginFacade(LoginStore.create(authRepository))
     }
 }

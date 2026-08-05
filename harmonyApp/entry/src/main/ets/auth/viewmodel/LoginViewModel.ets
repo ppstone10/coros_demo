@@ -135,6 +135,8 @@ export class LoginViewModel {
   }
 
   profileDefaultUsername(account: string): string { return this.adapter.profileDefaultUsername(account); }
+
+  currentUserId(): string { return this.adapter.currentUserId(); }
   profileDefaultPhone(account: string): string { return this.adapter.profileDefaultPhone(account); }
   profileDefaultEmail(account: string): string { return this.adapter.profileDefaultEmail(account); }
 
