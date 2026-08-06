@@ -8,7 +8,7 @@ import {
 } from '../../auth/logic/LoginState';
 import { LoginLogicAdapter } from '../../auth/logic/LoginLogicAdapter';
 import { saveStoreSnapshot } from './StorePersister';
-import { syncFromServer } from './MockServerSync';
+import { syncHealthFromServer } from './MockServerSync';
 import { getService, HarmonyLoginServiceContract } from './HarmonyServiceProvider';
 
 interface AuthSessionPayload {
@@ -155,9 +155,10 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
       hilog.info(0x0001, 'demo_persist', 'store after submit: ' + storeAfter);
       this.refreshState();
       this.persistSnapshot();
-      // 登录成功后拉取服务器权威数据（账号资料/健康），使鸿蒙与 Android/iOS 互通（MSRV-008-SYNC）
+      // 登录成功后拉取服务器健康数据，使鸿蒙与 Android/iOS 互通（MSRV-008-SYNC）。
+      // 注意：只同步健康，不同步 auth——auth 拉取会重建 facade 丢失 AuthSucceeded effect。
       if (this.state.currentSession !== null && this.state.currentSession.isValid) {
-        await syncFromServer(this.harmonyLoginService);
+        await syncHealthFromServer(this.harmonyLoginService);
         this.refreshState();
       }
     } catch (error) {

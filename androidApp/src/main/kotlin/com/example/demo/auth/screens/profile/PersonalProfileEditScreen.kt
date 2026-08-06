@@ -80,6 +80,7 @@ fun PersonalProfileEditScreen(
     var avatarUri by rememberSaveable(savedProfile.avatarUri) {
         mutableStateOf(savedProfile.avatarUri)
     }
+    var avatarRevision by remember { mutableStateOf(0) }
     var username by rememberSaveable(savedProfile.username) {
         mutableStateOf(savedProfile.username)
     }
@@ -107,13 +108,19 @@ fun PersonalProfileEditScreen(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         val userId = viewModel.state.currentSession?.userId
-        if (uri != null && userId != null) avatarUri = uploadAvatarFromUri(context, uri, userId)
+        if (uri != null && userId != null) {
+            avatarUri = uploadAvatarFromUri(context, uri, userId)
+            avatarRevision++
+        }
     }
     val cameraPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
         val userId = viewModel.state.currentSession?.userId
-        if (bitmap != null && userId != null) avatarUri = uploadAvatarBitmap(bitmap, userId)
+        if (bitmap != null && userId != null) {
+            avatarUri = uploadAvatarBitmap(bitmap, userId)
+            avatarRevision++
+        }
     }
     val profile = savedProfile.copy(
         avatarUri = avatarUri,
@@ -139,6 +146,7 @@ fun PersonalProfileEditScreen(
                 if (localError == null) onSaved()
             },
             onAvatarClick = { showAvatarSheet = true },
+            avatarRevision = avatarRevision,
             usernameEditing = usernameEditing,
             onUsernameEditClick = { usernameEditing = true },
             onUsernameChange = { username = it.take(20) },
@@ -224,6 +232,7 @@ private fun PersonalProfileEditContent(
     onBack: () -> Unit,
     onSave: () -> Unit,
     onAvatarClick: () -> Unit,
+    avatarRevision: Int,
     usernameEditing: Boolean,
     onUsernameEditClick: () -> Unit,
     onUsernameChange: (String) -> Unit,
@@ -286,7 +295,8 @@ private fun PersonalProfileEditContent(
             ProfileAvatar(
                 avatarUri = profile.avatarUri,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
-                onClick = onAvatarClick
+                onClick = onAvatarClick,
+                revision = avatarRevision
             )
             Spacer(Modifier.height(28.dp))
             EditableNameRow(
@@ -448,6 +458,7 @@ private fun PersonalProfileEditScreenPreview() {
             onBack = {},
             onSave = {},
             onAvatarClick = {},
+            avatarRevision = 0,
             usernameEditing = false,
             onUsernameEditClick = {},
             onUsernameChange = {},

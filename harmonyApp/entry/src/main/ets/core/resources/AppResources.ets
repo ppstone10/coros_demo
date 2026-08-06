@@ -80,7 +80,7 @@ export class AppTypography {
   static readonly EDITOR_ROW: number = 15;
   static readonly CARD_TITLE: number = 16;
   static readonly SECTION_TITLE: number = 19;
-  static readonly HERO_TITLE: number = 28;
+  static readonly HERO_TITLE: number = 26;
 }
 
 export class AppSpacing {

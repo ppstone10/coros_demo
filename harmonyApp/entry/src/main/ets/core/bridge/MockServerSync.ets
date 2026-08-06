@@ -126,6 +126,8 @@ function request(method: http.RequestMethod, url: string, body?: string): Promis
 export async function syncFromServer(service?: HarmonyLoginServiceContract): Promise<boolean> {
   const svc: HarmonyLoginServiceContract = service ?? getService();
   try {
+    await syncHealthFromServer(svc);
+
     const localStore: string = svc.exportStoreSnapshot();
     const localValid: boolean = thisHasValidSession(localStore);
     const currentUserId: string = currentUserIdOf(localStore);
@@ -156,17 +158,31 @@ export async function syncFromServer(service?: HarmonyLoginServiceContract): Pro
         }
       }
     }
+    hilog.info(0x0001, TAG, 'syncFromServer completed');
+    return true;
+  } catch (error) {
+    hilog.warn(0x0001, TAG, 'syncFromServer skipped: ' + JSON.stringify(error));
+    return false;
+  }
+}
 
+/**
+ * 仅同步健康快照（不重建 auth facade，不丢 pendingEffect）。
+ * 用于登录/注册成功后拉取服务器健康数据，避免覆盖刚注册的 AuthSucceeded effect。
+ */
+export async function syncHealthFromServer(service?: HarmonyLoginServiceContract): Promise<boolean> {
+  const svc: HarmonyLoginServiceContract = service ?? getService();
+  try {
     const healthBody = await request(http.RequestMethod.GET, `${MOCK_SERVER_BASE_URL}/api/sync/health`);
     const health: SyncHealthResponse = JSON.parse(healthBody) as SyncHealthResponse;
     if (health.snapshots) {
       const payload: SyncHealthRequestPayload = { snapshots: health.snapshots };
       svc.restoreHealthSnapshot(JSON.stringify(payload));
     }
-    hilog.info(0x0001, TAG, 'syncFromServer completed');
+    hilog.info(0x0001, TAG, 'syncHealthFromServer completed');
     return true;
   } catch (error) {
-    hilog.warn(0x0001, TAG, 'syncFromServer skipped: ' + JSON.stringify(error));
+    hilog.warn(0x0001, TAG, 'syncHealthFromServer skipped: ' + JSON.stringify(error));
     return false;
   }
 }

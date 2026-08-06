@@ -1176,3 +1176,30 @@
 - **已完成**：mock server 数据按端口隔离，多实例（含测试）互不覆盖；`README`/Spec/TRACE 更新。
 - **未完成 / 阻塞项**：HarmonyOS DevEco 构建验证（快照 merge、`submit` 后 syncFromServer、头像、Choice、TTL）；`MOCK_SERVER_BASE_URL` 按鸿蒙环境配置；MSRV-010 三端交叉验收。
 - **下轮起步建议**：DevEco 构建鸿蒙验证三端互通链路；随后 MSRV-010 交叉验收。提醒：我这边后续验证会使用独立测试文件，不再删除你的 `data/` 运行时数据。
+
+# 2026-08-06 09:20 — 修复 Android 头像异步显示/编辑刷新与鸿蒙注册后不跳转资料完善
+
+## 采纳内容
+- [MSRV-015] Android 头像显示改为异步：新增 `AvatarImage`/`AvatarImageWithRevision` composable（`LaunchedEffect` + `Dispatchers.IO` 后台下载，不再主线程同步阻塞）；`ProfileAvatar`/`ProfileSummaryAvatar` 复用；修复"信息完善界面选完照片显示慢"（主线程被网络阻塞）。
+- [MSRV-015] Android 编辑页切换头像后不刷新：上传成功后 `avatarUri` 仍是同一相对路径，`remember(avatarUri)` key 不变导致缓存旧图；新增 `avatarRevision` 递增计数，`ProfileAvatar` 增加 `revision` 参数，`AvatarImageWithRevision` 以 `avatarUri#revision` 为 key 强制重载。
+- [MSRV-008-SYNC] 鸿蒙注册成功后无法跳转资料完善：根因是 `KnoiLoginAdapter.submit` 在注册成功后 `await syncFromServer`，而 `syncFromServer` 调 `restoreStoreSnapshot` 会**重建 LoginFacade**，丢弃 `AuthSucceeded` pendingEffect，导致 `consumeEffect()` 返回 null 无法跳转。
+- [MSRV-008-SYNC] 修复：`MockServerSync` 拆出 `syncHealthFromServer`（只同步健康快照，不碰 auth facade）；`KnoiLoginAdapter.submit` 登录/注册成功后改调 `syncHealthFromServer`，保留 `AuthSucceeded` effect；`StorePersister.initPersistence` 启动仍用 `syncFromServer`（无 pending effect，安全）。
+
+## 人工审查点
+- [MSRV-015] Android 头像异步下载在 `LaunchedEffect` 中，弱网时短暂显示占位；无本地磁盘缓存（仅内存），离开页面再进入会重新下载，Demo 可接受。
+- [MSRV-008-SYNC] 鸿蒙注册后 `syncHealthFromServer` 只拉健康，不拉服务器资料（此时服务器本无该新账号）；资料保存由 `ProfileCompletionPage` 提交后经 `syncToServer` 推送。
+- [MSRV-008-SYNC] 本环境无 DevEco/hvigor，鸿蒙改动（`syncHealthFromServer`、`submit` 调用调整）需 DevEco 构建验证跳转。
+
+## 验证结果
+- [MSRV-015] `./gradlew :androidApp:assembleDebug :androidApp:lintDebug :androidApp:testDebugUnitTest :common:check` 全部通过（编译期修复 `size` import、Preview 缺 `avatarRevision`、SignedInScreen 缺 `AvatarImage` import）。
+- [MSRV-008-SYNC] 静态核对引用一致：`StorePersister` 用 `syncFromServer`（启动）、`KnoiLoginAdapter` 用 `syncHealthFromServer`（登录/注册成功）。
+- [SDD-009] `cd mock-server && npm test` 27/27 通过；`./tools/check-sdd.sh` 通过。
+
+## 人工修正点
+- [MSRV-015] `AvatarImage.kt` 初版缺 `Modifier.size` 导入（`androidx.compose.foundation.layout.size`），编译红灯；`PersonalProfileEditScreen` Preview 缺 `avatarRevision` 参数；SignedInScreen 缺 `AvatarImage` import——均已补齐。
+- [MSRV-008-SYNC] 初版在 `submit` 成功后调 `syncFromServer` 全量同步，导致注册 effect 丢失；改为 `syncHealthFromServer` 只同步健康后解决。
+
+## 下轮交接
+- **已完成**：Android 头像异步显示 + 编辑页 revision 刷新；鸿蒙注册后跳转修复（`syncHealthFromServer` 不重建 facade）。
+- **未完成 / 阻塞项**：HarmonyOS DevEco 构建验证（注册跳转、`syncHealthFromServer`、头像/Choice/TTL）；`MOCK_SERVER_BASE_URL` 按鸿蒙环境配置；MSRV-010 三端交叉验收。
+- **下轮起步建议**：DevEco 构建鸿蒙，重点验证"注册 → 自动跳资料完善 → 保存 → 健康互通"与 Android/iOS 头像跨端；随后 MSRV-010 交叉验收。
