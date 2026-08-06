@@ -10,7 +10,8 @@ import com.example.demo.common.auth.rules.LoginRules
 class LoginUseCase(
     private val authRepository: AuthRepository
 ) {
-    fun execute(account: String, password: String): LoginResult {
+    /** force=true 表示用户已在二次确认中同意挤下线其他设备（MSRV-016）。 */
+    fun execute(account: String, password: String, force: Boolean = false): LoginResult {
         val normalizedAccount = account.trim()
 
         if (normalizedAccount.isBlank()) {
@@ -37,7 +38,8 @@ class LoginUseCase(
         return authRepository.login(
             LoginRequestDto(
                 account = normalizedAccount,
-                password = password
+                password = password,
+                force = force
             )
         )
     }

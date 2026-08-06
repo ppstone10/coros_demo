@@ -14,6 +14,8 @@ export interface LoginLogicAdapter {
   setRegion(value: string): void;
   submit(): Promise<void>;
   logout(): void;
+  confirmKickedDialog(): void;
+  checkSessionOnForeground(): void;
   requestVerifyCode(account: string): string;
   requestResentVerifyCode(account: string): string;
   verifyCode(account: string, code: string): string;

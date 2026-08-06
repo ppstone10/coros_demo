@@ -18,15 +18,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * 头像显示组件：异步后台下载 + 内存缓存。
- * - key 由 `avatarUri + revision` 组成：上传新图后递增 revision，强制重新下载。
- * - 下载在 Dispatchers.IO 进行，不在主线程阻塞（修复"选完照片显示慢"）。
- * - 空 avatarUri 时显示占位（fallback 内容由调用方通过 [placeholder] 提供）。
+ * 头像显示组件：本地缓存优先 + 后台补下载。
+ * - 组合时先用本地缓存同步赋值（`resolveAvatarCached`），命中即即时显示，无占位闪烁；
+ * - 缓存未命中（首次）在 Dispatchers.IO 下载并写缓存；
+ * - key 由 `avatarUri + revision` 组成：上传新图后递增 revision，强制重新加载。
  */
 @Composable
 internal fun AvatarImage(
@@ -35,11 +36,14 @@ internal fun AvatarImage(
     modifier: Modifier = Modifier,
     placeholder: @Composable (() -> Unit)? = null
 ) {
-    var bitmap by remember(avatarUri) { mutableStateOf<Bitmap?>(null) }
+    val context = LocalContext.current
+    var bitmap by remember(avatarUri) { mutableStateOf(resolveAvatarCached(avatarUri, context)) }
 
     LaunchedEffect(avatarUri) {
-        bitmap = if (avatarUri.isNullOrBlank()) null else withContext(Dispatchers.IO) {
-            resolveAvatarBitmap(avatarUri)
+        if (bitmap == null && !avatarUri.isNullOrBlank()) {
+            bitmap = withContext(Dispatchers.IO) {
+                resolveAvatarBitmap(avatarUri, context)
+            }
         }
     }
 
@@ -67,6 +71,7 @@ internal fun AvatarImage(
  * 头像在编辑页使用：带 revision，上传成功后递增 revision 触发重载。
  * 用法：在持有 avatarUri 的可组合内 `var avatarRevision by remember { mutableStateOf(0) }`，
  * 上传成功后将 avatarRevision++，并传入本组件。
+ * [overrideBitmap] 用于"选图后未保存"的本地预览（信息修改界面），非空时优先展示。
  */
 @Composable
 internal fun AvatarImageWithRevision(
@@ -74,17 +79,22 @@ internal fun AvatarImageWithRevision(
     revision: Int,
     size: Dp,
     modifier: Modifier = Modifier,
-    placeholder: @Composable (() -> Unit)? = null
+    placeholder: @Composable (() -> Unit)? = null,
+    overrideBitmap: Bitmap? = null
 ) {
     val key = "$avatarUri#$revision"
-    var bitmap by remember(key) { mutableStateOf<Bitmap?>(null) }
+    val context = LocalContext.current
+    var bitmap by remember(key) { mutableStateOf(overrideBitmap ?: resolveAvatarCached(avatarUri, context)) }
 
     LaunchedEffect(key) {
-        bitmap = if (avatarUri.isNullOrBlank()) null else withContext(Dispatchers.IO) {
-            resolveAvatarBitmap(avatarUri)
+        if (overrideBitmap == null && bitmap == null && !avatarUri.isNullOrBlank()) {
+            bitmap = withContext(Dispatchers.IO) {
+                resolveAvatarBitmap(avatarUri, context)
+            }
         }
     }
 
+    val display = overrideBitmap ?: bitmap
     Box(
         modifier = modifier
             .size(size)
@@ -92,9 +102,9 @@ internal fun AvatarImageWithRevision(
             .background(androidx.compose.ui.graphics.Color.Transparent),
         contentAlignment = Alignment.Center
     ) {
-        if (bitmap != null) {
+        if (display != null) {
             Image(
-                bitmap = bitmap!!.asImageBitmap(),
+                bitmap = display.asImageBitmap(),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop

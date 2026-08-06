@@ -5,9 +5,11 @@ import { getService, HarmonyLoginServiceContract } from './HarmonyServiceProvide
 const TAG = 'demo_mock_sync';
 
 /**
- * Mock 服务器地址配置（MSRV-007）。模拟器/真机访问宿主机需与服务器同一局域网。
+ * Mock 服务器地址配置（MSRV-007）。
+ * 注意：鸿蒙真机/模拟器不能使用 Android 模拟器的 10.0.2.2，必须填宿主机在局域网中的 IP
+ * （与 mock server 同一网段，例如 192.168.x.x）。运行前按本机局域网 IP 修改。
  */
-export const MOCK_SERVER_BASE_URL: string = 'http://10.0.2.2:3000';
+export const MOCK_SERVER_BASE_URL: string = 'http://192.168.33.204:3000';
 
 interface SyncAuthResponse {
   store?: SyncAuthStore;
@@ -83,6 +85,49 @@ function thisHasValidSession(storeSnapshot: string): boolean {
   }
 }
 
+function parseStorePayload(storeSnapshot: string): StoreSnapshotPayload {
+  try {
+    return JSON.parse(storeSnapshot) as StoreSnapshotPayload;
+  } catch (e) {
+    return {};
+  }
+}
+
+/**
+ * 合并本地与服务器 auth store：账号按 userId 去重（服务器优先），会话以本地有效会话为准
+ * （服务器无效会话不清本地登录态）。避免"整体替换"丢失种子账号/其他账号，导致
+ * 后续登录其他服务器账号时报"账号不存在"。
+ */
+function mergeAuthStores(localJson: string, serverStore: SyncAuthStore): SyncAuthStore {
+  const local = parseStorePayload(localJson);
+  const byId: Map<string, AccountPayload> = new Map();
+  (local.accounts ?? []).forEach((a) => {
+    const item = a as AccountPayload;
+    if (item && item.userId) byId.set(item.userId, item);
+  });
+  (serverStore.accounts ?? []).forEach((a) => {
+    const item = a as AccountPayload;
+    if (item && item.userId) byId.set(item.userId, item);
+  });
+  const accounts: Object[] = Array.from(byId.values());
+  const localSession = local.currentSession;
+  const session: SessionPayload | undefined =
+    localSession && localSession.isValid ? localSession : undefined;
+  return {
+    accounts,
+    currentSession: session,
+    verifyCodes: serverStore.verifyCodes ?? [],
+    defaultAccountsInitialized: true,
+  };
+}
+
+/** MSRV-019：sync 请求收到 SESSION_EXPIRED_ELSEWHERE 时回调（由登录 adapter 注册，清会话并跳登录页）。 */
+let sessionKickedHandler: (() => void) | null = null;
+
+export function setSessionKickedHandler(handler: (() => void) | null): void {
+  sessionKickedHandler = handler;
+}
+
 function request(method: http.RequestMethod, url: string, body?: string): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const httpRequest = http.createHttp();
@@ -108,6 +153,10 @@ function request(method: http.RequestMethod, url: string, body?: string): Promis
           const result: string = data.result as string;
           resolve(result);
         } else {
+          const result: string = data.result as string;
+          if (result.indexOf('SESSION_EXPIRED_ELSEWHERE') >= 0 && sessionKickedHandler) {
+            sessionKickedHandler();
+          }
           hilog.error(0x0001, TAG, 'http status ' + code + ' url ' + url);
           reject(new Error('http status ' + code));
         }
@@ -118,8 +167,8 @@ function request(method: http.RequestMethod, url: string, body?: string): Promis
 
 /**
  * 从服务器拉取权威 store/health 快照并同步给 KMP（MSRV-008）。
- * - 本地有有效会话（已登录）时拉取认证 store；
- * - 未登录时跳过认证拉取（避免空 userId 查询与空 store 覆盖本地）；
+ * - 未登录时也拉取全部账号（登录发现），供本地登录预检查找到服务器账号；
+ * - 已登录时按 userId 拉取并与本地合并（保留种子账号/其他账号，不整体替换）；
  * - 健康快照始终全量拉取合并。
  * 失败不阻断启动：沿用本地缓存。
  */
@@ -132,30 +181,32 @@ export async function syncFromServer(service?: HarmonyLoginServiceContract): Pro
     const localValid: boolean = thisHasValidSession(localStore);
     const currentUserId: string = currentUserIdOf(localStore);
 
-    if (localValid && currentUserId.length > 0) {
-      const authBody = await request(
-        http.RequestMethod.GET,
-        `${MOCK_SERVER_BASE_URL}/api/sync/auth?userId=${encodeURIComponent(currentUserId)}`
-      );
-      const auth: SyncAuthResponse = JSON.parse(authBody) as SyncAuthResponse;
-      if (auth.store) {
-        const serverStore: SyncAuthStore = auth.store;
-        const hasServerAccount = serverStore.accounts !== undefined &&
-          serverStore.accounts.length > 0;
-        // 服务器尚无该用户账号（鸿蒙首次本地注册）时不覆盖本地登录态
-        if (hasServerAccount) {
-          if (serverStore.currentSession !== undefined && !serverStore.currentSession.isValid) {
-            // 服务器会话已失效：仅同步账号数据，不恢复会话
-            const merged: SyncAuthStore = {
-              accounts: serverStore.accounts,
-              verifyCodes: serverStore.verifyCodes,
-              currentSession: undefined
-            };
-            svc.restoreStoreSnapshot(JSON.stringify(merged));
-          } else {
-            svc.restoreStoreSnapshot(JSON.stringify(serverStore));
-          }
-        }
+    if (!localValid || currentUserId.length === 0) {
+      // 未登录：拉取账号列表合并进本地，使登录预检查能发现服务器账号（MSRV-016/018）。
+      // 用 mergeAccounts（不重建 facade），避免清空登录页已输入的账号/密码。
+      const accountsBody = await request(http.RequestMethod.GET, `${MOCK_SERVER_BASE_URL}/api/sync/auth`);
+      const accountsResp = JSON.parse(accountsBody) as SyncAuthResponse;
+      if (accountsResp.store && Array.isArray(accountsResp.store.accounts)) {
+        const merged = mergeAuthStores(localStore, accountsResp.store);
+        svc.mergeAccounts(JSON.stringify(merged));
+      }
+      hilog.info(0x0001, TAG, 'syncFromServer (account discovery) completed');
+      return true;
+    }
+
+    const authBody = await request(
+      http.RequestMethod.GET,
+      `${MOCK_SERVER_BASE_URL}/api/sync/auth?userId=${encodeURIComponent(currentUserId)}`
+    );
+    const auth: SyncAuthResponse = JSON.parse(authBody) as SyncAuthResponse;
+    if (auth.store) {
+      const serverStore: SyncAuthStore = auth.store;
+      const hasServerAccount = serverStore.accounts !== undefined &&
+        serverStore.accounts.length > 0;
+      if (hasServerAccount) {
+        // 合并（不整体替换），保留本地种子账号与其他账号
+        const merged = mergeAuthStores(localStore, serverStore);
+        svc.restoreStoreSnapshot(JSON.stringify(merged));
       }
     }
     hilog.info(0x0001, TAG, 'syncFromServer completed');

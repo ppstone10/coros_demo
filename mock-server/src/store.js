@@ -1,28 +1,58 @@
 const fs = require('fs');
 const path = require('path');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
-const AVATAR_DIR = path.join(DATA_DIR, 'avatars');
+// 数据根目录（可被 setDataRoot 覆盖，测试用临时目录）
+let dataRoot = path.join(__dirname, '..', 'data');
+// 端口/实例目录名：data/{dirName}/accounts.json、data/{dirName}/health/、data/{dirName}/avatars/
+let dirName = '3000';
+let DATA_DIR = path.join(dataRoot, dirName);
 
-// 默认数据文件名；按端口隔离时由 configureDataFile 覆盖，避免多实例互相覆盖。
-let dataFileName = 'mock-server-store.json';
-let DATA_FILE = path.join(DATA_DIR, dataFileName);
+function recomputeDir() {
+  DATA_DIR = path.join(dataRoot, dirName);
+}
 
-/** 配置数据文件名（不含路径），用于按端口隔离不同实例的持久化。 */
-function configureDataFile(name) {
-  dataFileName = name;
-  DATA_FILE = path.join(DATA_DIR, name);
-  return DATA_FILE;
+/** 覆盖数据根目录（测试隔离用）。 */
+function setDataRoot(root) {
+  dataRoot = root;
+  recomputeDir();
+  return DATA_DIR;
+}
+
+/** 配置数据目录名（按端口隔离，MSRV-020）。 */
+function configureDataDir(name) {
+  dirName = String(name);
+  recomputeDir();
+  return DATA_DIR;
+}
+
+function accountsFile() {
+  return path.join(DATA_DIR, 'accounts.json');
+}
+
+function healthDir() {
+  return path.join(DATA_DIR, 'health');
+}
+
+function healthFile(userId) {
+  return path.join(healthDir(), `${userId}.json`);
+}
+
+function avatarDir() {
+  return path.join(DATA_DIR, 'avatars');
 }
 
 function avatarPath(userId) {
-  return path.join(AVATAR_DIR, `${userId}.jpg`);
+  return path.join(avatarDir(), `${userId}.jpg`);
+}
+
+/** 旧版单文件位置：data/mock-server-store-{PORT}.json（迁移用）。 */
+function legacyFile() {
+  return path.join(dataRoot, `mock-server-store-${dirName}.json`);
 }
 
 function saveAvatar(userId, buffer) {
   try {
-    if (!fs.existsSync(AVATAR_DIR)) fs.mkdirSync(AVATAR_DIR, { recursive: true });
-    fs.writeFileSync(avatarPath(userId), buffer);
+    atomicWriteBuffer(avatarPath(userId), buffer);
     return true;
   } catch (e) {
     return false;
@@ -108,14 +138,14 @@ function seedAccounts() {
 function seedStore() {
   return {
     accounts: seedAccounts(),
-    currentSession: null,
+    sessions: {}, // per-account 会话集合（MSRV-017）
     verifyCodes: [],
     defaultAccountsInitialized: true,
-    healthSnapshots: {},
   };
 }
 
 let store = seedStore();
+let healthCache = {}; // 健康快照内存权威（MSRV-020）
 let persistEnabled = true;
 
 function setPersistEnabled(enabled) {
@@ -124,34 +154,108 @@ function setPersistEnabled(enabled) {
 
 function resetStore() {
   store = seedStore();
+  healthCache = {};
   return store;
 }
 
-function loadFromDisk() {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, 'utf8');
-      const parsed = JSON.parse(raw);
-      if (parsed && Array.isArray(parsed.accounts)) {
-        store = { ...seedStore(), ...parsed, healthSnapshots: parsed.healthSnapshots || {} };
-        return true;
-      }
-    }
-  } catch (e) {
-    // 损坏或缺失时回退种子
-  }
-  return false;
+/** 原子落盘：先写临时文件再 rename（MSRV-021）。 */
+function atomicWrite(filePath, data) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const tmp = `${filePath}.tmp`;
+  fs.writeFileSync(tmp, data, 'utf8');
+  fs.renameSync(tmp, filePath);
 }
 
-function persist() {
+function atomicWriteBuffer(filePath, buffer) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const tmp = `${filePath}.tmp`;
+  fs.writeFileSync(tmp, buffer);
+  fs.renameSync(tmp, filePath);
+}
+
+function persistAccounts() {
   if (!persistEnabled) return true;
   try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2), 'utf8');
+    atomicWrite(accountsFile(), JSON.stringify(store, null, 2));
     return true;
   } catch (e) {
     return false;
   }
+}
+
+function loadHealthFromDisk() {
+  healthCache = {};
+  const dir = healthDir();
+  if (!fs.existsSync(dir)) return;
+  for (const file of fs.readdirSync(dir)) {
+    if (!file.endsWith('.json')) continue;
+    const userId = file.slice(0, -'.json'.length);
+    try {
+      const parsed = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+      if (parsed && parsed.userId === userId) healthCache[userId] = parsed;
+    } catch (e) {
+      // 损坏的单用户文件跳过，不阻塞启动
+    }
+  }
+}
+
+/** 旧单文件一次性迁移到新布局（MSRV-020）。 */
+function migrateFromLegacy() {
+  try {
+    const legacy = legacyFile();
+    const parsed = JSON.parse(fs.readFileSync(legacy, 'utf8'));
+    if (!parsed || !Array.isArray(parsed.accounts)) return false;
+    const sessions = {};
+    const oldSession = parsed.currentSession;
+    if (oldSession && oldSession.userId) {
+      sessions[oldSession.userId] = {
+        ...oldSession,
+        deviceId: oldSession.deviceId || 'device-default',
+        deviceName: oldSession.deviceName || '其他设备',
+      };
+    }
+    store = {
+      accounts: parsed.accounts || [],
+      sessions,
+      verifyCodes: parsed.verifyCodes || [],
+      defaultAccountsInitialized: true,
+    };
+    healthCache = {};
+    const oldSnapshots = parsed.healthSnapshots || {};
+    for (const [userId, snapshot] of Object.entries(oldSnapshots)) {
+      if (!snapshot || !userId) continue;
+      healthCache[userId] = snapshot;
+      atomicWrite(healthFile(userId), JSON.stringify(snapshot));
+    }
+    persistAccounts();
+    fs.unlinkSync(legacy);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function loadFromDisk() {
+  try {
+    if (fs.existsSync(accountsFile())) {
+      const raw = fs.readFileSync(accountsFile(), 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.accounts)) {
+        store = { ...seedStore(), ...parsed };
+        store.sessions = parsed.sessions || {};
+        loadHealthFromDisk();
+        return true;
+      }
+    }
+    if (fs.existsSync(legacyFile())) {
+      if (migrateFromLegacy()) return true;
+    }
+  } catch (e) {
+    // 损坏或缺失时回退种子
+  }
+  store = seedStore();
+  loadHealthFromDisk();
+  return false;
 }
 
 function findAccountByAccount(account) {
@@ -163,27 +267,30 @@ function findAccountByUserId(userId) {
   return store.accounts.find((a) => a.userId === userId);
 }
 
+/** 全部账号（鸿蒙未登录时的登录发现用）。 */
+function allAccounts() {
+  return store.accounts;
+}
+
 function addAccount(account) {
   store.accounts.push(account);
-  return persist();
+  return persistAccounts();
 }
 
 function updateAccount(userId, patch) {
   const idx = store.accounts.findIndex((a) => a.userId === userId);
   if (idx < 0) return false;
   store.accounts[idx] = { ...store.accounts[idx], ...patch };
-  return persist();
+  return persistAccounts();
 }
 
 function deleteAccount(userId) {
   store.accounts = store.accounts.filter((a) => a.userId !== userId);
-  if (store.currentSession && store.currentSession.userId === userId) {
-    store.currentSession = null;
-  }
+  delete store.sessions[userId];
   store.verifyCodes = store.verifyCodes.filter((c) => c.account !== userId);
-  delete store.healthSnapshots[userId];
+  deleteHealthSnapshot(userId);
   deleteAvatar(userId);
-  return persist();
+  return persistAccounts();
 }
 
 function findVerifyCode(account) {
@@ -205,53 +312,82 @@ function saveVerifyCode(codeState) {
     (c) => c.account.toLowerCase() !== codeState.account.toLowerCase()
   );
   store.verifyCodes.push(codeState);
-  return persist();
+  return persistAccounts();
 }
 
-function getSession() {
-  const session = store.currentSession;
-  if (!session) return null;
-  return session;
+// ---- 会话（per-account 集合，MSRV-016/017）----
+
+function getSession(userId) {
+  return store.sessions[userId] || null;
 }
 
 function saveSession(session) {
-  store.currentSession = session;
-  return persist();
+  store.sessions[session.userId] = session;
+  return persistAccounts();
 }
 
-function clearSession() {
-  store.currentSession = null;
-  return persist();
+/** 使某账号会话失效（被顶号），保留记录供审计。 */
+function invalidateSession(userId, nowEpochMs) {
+  const current = store.sessions[userId];
+  if (!current) return true;
+  store.sessions[userId] = { ...current, isValid: false, invalidatedAtEpochMs: nowEpochMs };
+  return persistAccounts();
 }
+
+function clearSession(userId) {
+  delete store.sessions[userId];
+  return persistAccounts();
+}
+
+/**
+ * 会话状态判定：返回 { session } 或 { error }。
+ * - 无会话 -> AUTH_REQUIRED
+ * - 会话已失效 -> SESSION_EXPIRED_ELSEWHERE
+ * - 提供 deviceId 且不匹配 -> SESSION_EXPIRED_ELSEWHERE（活跃设备在别处）
+ */
+function sessionStatus(userId, deviceId) {
+  const session = store.sessions[userId];
+  if (!session) return { error: 'AUTH_REQUIRED' };
+  if (session.isValid !== true) return { error: 'SESSION_EXPIRED_ELSEWHERE' };
+  if (deviceId && session.deviceId !== deviceId) return { error: 'SESSION_EXPIRED_ELSEWHERE' };
+  return { session };
+}
+
+// ---- 健康快照（每账号一文件，MSRV-020）----
 
 function getHealthSnapshot(userId) {
-  return store.healthSnapshots[userId] || null;
-}
-
-function allHealthSnapshots() {
-  return Object.values(store.healthSnapshots);
-}
-
-function replaceAllHealthSnapshots(snapshots) {
-  store.healthSnapshots = {};
-  snapshots.forEach((snapshot) => {
-    if (snapshot && snapshot.userId) store.healthSnapshots[snapshot.userId] = snapshot;
-  });
-  return persist();
+  return healthCache[userId] || null;
 }
 
 function saveHealthSnapshot(snapshot) {
-  store.healthSnapshots[snapshot.userId] = snapshot;
-  return persist();
+  healthCache[snapshot.userId] = snapshot;
+  if (!persistEnabled) return true;
+  try {
+    atomicWrite(healthFile(snapshot.userId), JSON.stringify(snapshot));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function allHealthSnapshots() {
+  return Object.values(healthCache);
 }
 
 function deleteHealthSnapshot(userId) {
-  delete store.healthSnapshots[userId];
-  return persist();
+  delete healthCache[userId];
+  if (!persistEnabled) return true;
+  try {
+    const file = healthFile(userId);
+    if (fs.existsSync(file)) fs.unlinkSync(file);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 module.exports = {
-  DATA_FILE,
+  DATA_DIR,
   DEFAULT_ACCOUNT,
   DEFAULT_EMAIL_ACCOUNT,
   DEFAULT_PASSWORD,
@@ -262,12 +398,14 @@ module.exports = {
   hashMockPassword,
   buildUserId,
   isAccountFormatValid,
+  setDataRoot,
+  configureDataDir,
   resetStore,
   setPersistEnabled,
-  configureDataFile,
   loadFromDisk,
   findAccountByAccount,
   findAccountByUserId,
+  allAccounts,
   addAccount,
   updateAccount,
   deleteAccount,
@@ -276,10 +414,11 @@ module.exports = {
   saveVerifyCode,
   getSession,
   saveSession,
+  invalidateSession,
   clearSession,
+  sessionStatus,
   getHealthSnapshot,
   allHealthSnapshots,
-  replaceAllHealthSnapshots,
   saveHealthSnapshot,
   deleteHealthSnapshot,
   saveAvatar,

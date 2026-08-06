@@ -11,7 +11,19 @@ export interface HarmonyLoginService {
 
    restoreStoreSnapshot(json: string): boolean;
 
+   mergeAccounts(json: string): boolean;
+
    submit(): void;
+
+   confirmForceLogin(): void;
+
+   cancelForceLogin(): void;
+
+   onSessionKicked(): void;
+
+   confirmKickedDialog(): void;
+
+   checkSessionOnForeground(): void;
 
    logout(): void;
 

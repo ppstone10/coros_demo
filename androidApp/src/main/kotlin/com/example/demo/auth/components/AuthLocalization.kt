@@ -19,6 +19,8 @@ private fun authMessageResourceId(key: String): Int? = when (key) {
     AuthMessageKeys.ErrorCorruptedData -> R.string.auth_error_corrupted_data
     AuthMessageKeys.ErrorPersistFailed -> R.string.auth_error_persist_failed
     AuthMessageKeys.ErrorRegionRequired -> R.string.auth_error_region_required
+    AuthMessageKeys.ErrorSessionActiveElsewhere -> R.string.auth_error_session_active_elsewhere
+    AuthMessageKeys.ErrorSessionExpiredElsewhere -> R.string.auth_error_session_expired_elsewhere
     AuthMessageKeys.ValidationAccountRequired -> R.string.auth_validation_account_required
     AuthMessageKeys.ValidationPasswordRequired -> R.string.auth_validation_password_required
     AuthMessageKeys.ValidationPasswordLength -> R.string.auth_validation_password_length

@@ -31,6 +31,13 @@ internal object HarmonyLoginJson {
             appendJsonBoolean("isLoggedIn", state.isLoggedIn)
             append(',')
             appendJsonField("errorMessage", state.errorMessage.orEmpty())
+            append(',')
+            appendJsonBoolean("confirmForceLogin", state.confirmForceLogin)
+            append(',')
+            append("\"forceLoginActiveDevice\":")
+            append(activeDeviceSnapshot(state.forceLoginActiveDevice))
+            append(',')
+            appendJsonBoolean("kickedDialogShown", state.kickedDialogShown)
             append('}')
         }
     }
@@ -63,6 +70,15 @@ internal object HarmonyLoginJson {
             LoginEffect.LoggedOut -> """{"type":"LoggedOut"}"""
             LoginEffect.AccountDeleted -> """{"type":"AccountDeleted"}"""
             LoginEffect.SessionExpired -> """{"type":"SessionExpired","message":"登录已过期"}"""
+            LoginEffect.SessionKicked -> """{"type":"SessionKicked","message":"该账号已在其他设备登录，请重新登录"}"""
+            is LoginEffect.ShowForceLoginDialog -> buildString {
+                append('{')
+                appendJsonField("type", "ShowForceLoginDialog")
+                append(',')
+                append("\"activeDevice\":")
+                append(activeDeviceSnapshot(effect.activeDevice))
+                append('}')
+            }
             is LoginEffect.ShowMessage -> buildString {
                 append('{')
                 appendJsonField("type", "ShowMessage")
@@ -91,6 +107,17 @@ internal object HarmonyLoginJson {
 
     fun isStoreSnapshotRoundTripStable(json: String): Boolean {
         return MockAuthStoreJson.isRoundTripStable(json)
+    }
+
+    private fun activeDeviceSnapshot(device: com.example.demo.common.auth.model.ActiveDeviceInfo?): String {
+        if (device == null) return "null"
+        return buildString {
+            append('{')
+            appendJsonField("deviceId", device.deviceId)
+            append(',')
+            appendJsonField("deviceName", device.deviceName)
+            append('}')
+        }
     }
 
     private fun sessionSnapshot(session: AuthSession?): String {

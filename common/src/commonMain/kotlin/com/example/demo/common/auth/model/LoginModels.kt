@@ -4,7 +4,12 @@ import com.example.demo.common.health.model.HealthMessageKeys
 
 data class LoginRequestDto(
     val account: String,
-    val password: String
+    val password: String,
+    /** 单设备登录（MSRV-016）：平台层填充并持久化的设备标识；空值由仓库回填。 */
+    val deviceId: String = "",
+    val deviceName: String = "",
+    /** 二次确认后置真：顶掉其他设备会话。 */
+    val force: Boolean = false
 )
 
 data class RegisterRequestDto(
@@ -74,6 +79,12 @@ data class MockAccount(
     val profile: UserProfile? = null
 )
 
+/** 二次确认弹窗展示的"上一台登录设备"信息（MSRV-016）。 */
+data class ActiveDeviceInfo(
+    val deviceId: String,
+    val deviceName: String
+)
+
 data class MockAuthSession(
     val userId: String = "",
     val account: String = "",
@@ -137,6 +148,7 @@ sealed interface SessionResumeResult {
     data class Active(val session: AuthSession) : SessionResumeResult
     data object NoSession : SessionResumeResult
     data object Expired : SessionResumeResult
+    data object KickedElsewhere : SessionResumeResult
     data class Failure(val error: MockError) : SessionResumeResult
 }
 
@@ -153,6 +165,8 @@ enum class MockError(val code: String, val message: String) {
     CorruptedData("AUTH_CORRUPTED_DATA", AuthMessageKeys.ErrorCorruptedData),
     PersistFailed("AUTH_PERSIST_FAILED", AuthMessageKeys.ErrorPersistFailed),
     RegionRequired("AUTH_REGION_REQUIRED", AuthMessageKeys.ErrorRegionRequired),
+    SessionActiveElsewhere("SESSION_ACTIVE_ELSEWHERE", AuthMessageKeys.ErrorSessionActiveElsewhere),
+    SessionExpiredElsewhere("SESSION_EXPIRED_ELSEWHERE", AuthMessageKeys.ErrorSessionExpiredElsewhere),
     MinimumCardsRequired("HEALTH_MINIMUM_CARDS", HealthMessageKeys.ErrorMinimumCardsRequired)
 }
 
@@ -170,6 +184,8 @@ fun MockError.toProtoMessage() = MockErrorMessage(
         MockError.VerifyCodeExpired -> "VERIFY_CODE_EXPIRED"
         MockError.PersistFailed -> "PERSIST_FAILED"
         MockError.RegionRequired -> "REGION_REQUIRED"
+        MockError.SessionActiveElsewhere -> "SESSION_ACTIVE_ELSEWHERE"
+        MockError.SessionExpiredElsewhere -> "SESSION_EXPIRED_ELSEWHERE"
         MockError.NewPasswordSameAsOld -> "NEW_PASSWORD_SAME_AS_OLD"
         MockError.EmptyData -> "EMPTY_DATA"
         MockError.CorruptedData -> "CORRUPTED_DATA"
@@ -211,7 +227,12 @@ data class LoginState(
     val currentSession: AuthSession? = null,
     val isLoading: Boolean = false,
     val isLoggedIn: Boolean = currentSession?.isValid == true,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    /** 二次确认（MSRV-016）：非 force 登录遇异地会话时置真，UI 弹"挤下线"确认。 */
+    val confirmForceLogin: Boolean = false,
+    val forceLoginActiveDevice: ActiveDeviceInfo? = null,
+    /** 被顶（MSRV-019）：本设备会话被其他设备挤下时置真，UI 弹"仅确认"弹窗后回登录页。 */
+    val kickedDialogShown: Boolean = false
 ) {
     val account: String
         get() = username
@@ -237,6 +258,9 @@ sealed interface LoginAction {
     data object LogoutClicked : LoginAction
     data object ExpireSessionClicked : LoginAction
     data object RestoreSession : LoginAction
+    data object ConfirmForceLogin : LoginAction
+    data object CancelForceLogin : LoginAction
+    data object KickedDialogConfirmed : LoginAction
     data object EffectConsumed : LoginAction
 }
 
@@ -254,12 +278,17 @@ sealed interface LoginEffect {
     data object LoggedOut : LoginEffect
     data object AccountDeleted : LoginEffect
     data object SessionExpired : LoginEffect
+    data object SessionKicked : LoginEffect
+    data class ShowForceLoginDialog(val activeDevice: ActiveDeviceInfo?) : LoginEffect
     data class ShowMessage(val message: String) : LoginEffect
 }
 
 sealed interface LoginResult {
     data class Success(val session: AuthSession) : LoginResult
     data class Failure(val code: String, val message: String) : LoginResult
+
+    /** 非 force 登录遇该账号在其他设备的有效会话（MSRV-016），触发二次确认。 */
+    data class SessionActiveElsewhere(val activeDevice: ActiveDeviceInfo?) : LoginResult
 }
 
 fun MockAuthSession.toDomainOrNull(): AuthSession? {

@@ -12,6 +12,8 @@ export function localizedAuthMessage(message: string): ResourceStr {
     case 'auth_error_corrupted_data': return $r('app.string.auth_error_corrupted_data');
     case 'auth_error_persist_failed': return $r('app.string.auth_error_persist_failed');
     case 'auth_error_region_required': return $r('app.string.auth_error_region_required');
+    case 'auth_error_session_active_elsewhere': return $r('app.string.auth_error_session_active_elsewhere');
+    case 'auth_error_session_expired_elsewhere': return $r('app.string.auth_error_session_expired_elsewhere');
     case 'auth_validation_account_required': return $r('app.string.auth_validation_account_required');
     case 'auth_validation_password_required': return $r('app.string.auth_validation_password_required');
     case 'auth_validation_password_length': return $r('app.string.auth_validation_password_length');

@@ -19,6 +19,8 @@ import com.example.demo.common.auth.model.MockVerifyCodeState
 import com.example.demo.common.auth.model.UserProfile
 import com.example.demo.common.health.store.HealthStore
 import com.example.demo.common.health.store.InMemoryHealthDashboardStateDataSource
+import com.example.demo.core.network.AndroidDeviceId
+import com.example.demo.core.network.AvatarStore
 import com.example.demo.core.network.MockServerConfig
 import com.example.demo.core.network.MockServerHttpClient
 import com.example.demo.health.data.AndroidHealthDashboardStateDataSource
@@ -245,6 +247,33 @@ class LoginViewModel(
         effect = null
     }
 
+    fun onForceLoginConfirm() {
+        dispatch(LoginAction.ConfirmForceLogin)
+    }
+
+    fun onForceLoginCancel() {
+        dispatch(LoginAction.CancelForceLogin)
+    }
+
+    /** MSRV-019：健康数据源检测到被顶时回调，弹出确认弹窗。 */
+    fun onSessionKicked() {
+        store.onSessionKicked()
+        state = store.state
+        effect = store.consumeEffect()
+    }
+
+    /** MSRV-019：被顶弹窗确认，清会话并回登录页。 */
+    fun onKickedDialogConfirmed() {
+        dispatch(LoginAction.KickedDialogConfirmed)
+    }
+
+    /** MSRV-019：前台周期性会话校验（被顶即弹窗）。 */
+    fun checkSessionOnForeground() {
+        store.checkSessionOnForeground()
+        state = store.state
+        effect = store.consumeEffect()
+    }
+
     private fun dispatch(action: LoginAction) {
         store.dispatch(action)
         state = store.state
@@ -259,10 +288,15 @@ class LoginViewModel(
             )
             val healthDataSource = AndroidHealthDashboardStateDataSource(context.applicationContext)
             val healthStore = HealthStore(repository, healthDataSource)
+            val appContext = context.applicationContext
             return LoginViewModel(
                 store = LoginStore.create(
                     authRepository = repository,
-                    onDeleteUserData = healthStore::clear
+                    onDeleteUserData = { userId ->
+                        val ok = healthStore.clear(userId)
+                        AvatarStore.clear(appContext)
+                        ok
+                    }
                 ),
                 healthStore = healthStore
             )
@@ -270,29 +304,38 @@ class LoginViewModel(
 
         /** 远端 mock server 数据源：HTTP 请求位于平台层，本地仅作会话缓存（MSRV-002/003/007）。 */
         fun createRemote(context: Context): LoginViewModel {
+            val deviceId = AndroidDeviceId.get(context)
             val http = MockServerHttpClient(
                 baseUrl = MockServerConfig.baseUrl,
-                timeoutSeconds = MockServerConfig.DefaultTimeoutSeconds
+                timeoutSeconds = MockServerConfig.DefaultTimeoutSeconds,
+                deviceId = deviceId
             )
             val sessionCache = AndroidAuthStoreDataSource(context.applicationContext)
             val repository = RemoteAuthRepository(
                 http = http,
                 cache = sessionCache,
                 sessionTtlMs = LocalMockAuthRepository.SessionTtlMs,
+                deviceIdProvider = { deviceId },
                 nowEpochMs = { System.currentTimeMillis() }
             )
-            val healthDataSource = RemoteHealthDashboardStateDataSource(
-                http = http,
-                cache = AndroidHealthDashboardStateDataSource(context.applicationContext)
-            )
+            val healthCache = AndroidHealthDashboardStateDataSource(context.applicationContext)
+            val healthDataSource = RemoteHealthDashboardStateDataSource(http, healthCache)
             val healthStore = HealthStore(repository, healthDataSource)
-            return LoginViewModel(
+            val appContext = context.applicationContext
+            val viewModel = LoginViewModel(
                 store = LoginStore.create(
                     authRepository = repository,
-                    onDeleteUserData = healthStore::clear
+                    onDeleteUserData = { userId ->
+                        val ok = healthStore.clear(userId)
+                        AvatarStore.clear(appContext)
+                        ok
+                    }
                 ),
                 healthStore = healthStore
             )
+            // MSRV-019：健康读写被顶时清会话并跳登录页
+            healthDataSource.onSessionKicked = viewModel::onSessionKicked
+            return viewModel
         }
     }
 }

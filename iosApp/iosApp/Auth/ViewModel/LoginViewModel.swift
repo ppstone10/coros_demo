@@ -7,6 +7,7 @@ final class LoginViewModel: ObservableObject {
     @Published private(set) var state: LoginState
     @Published var toastMessage: String?
     @Published private(set) var effectTrigger = 0
+    @Published private(set) var avatarRevision = 0
     private var pendingEffect: LoginEffect?
 
     let adapter: SharedLoginAdapterProtocol
@@ -237,6 +238,37 @@ final class LoginViewModel: ObservableObject {
     func submit() {
         adapter.submit()
         refresh()
+    }
+
+    /// MSRV-016：二次确认弹窗状态与动作。
+    var confirmForceLogin: Bool { state.confirmForceLogin }
+
+    func confirmForceLoginTapped() {
+        adapter.confirmForceLogin()
+        refresh()
+    }
+
+    func cancelForceLogin() {
+        adapter.cancelForceLogin()
+        refresh()
+    }
+
+    /// MSRV-019：被顶弹窗状态与确认。
+    var kickedDialogShown: Bool { state.kickedDialogShown }
+
+    func confirmKickedDialogTapped() {
+        adapter.confirmKickedDialog()
+        refresh()
+    }
+
+    func checkSessionOnForeground() {
+        adapter.checkSessionOnForeground()
+        refresh()
+    }
+
+    /// MSRV-015：头像保存成功后递增版本号，通知视图强制重新读取内部目录当前头像。
+    func notifyAvatarSaved() {
+        avatarRevision += 1
     }
 
     func logout() {

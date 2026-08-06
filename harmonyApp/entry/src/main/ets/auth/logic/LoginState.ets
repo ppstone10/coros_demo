@@ -31,6 +31,8 @@ export class LoginState {
   isLoading: boolean = false;
   isLoggedIn: boolean = false;
   errorMessage: string = '';
+  confirmForceLogin: boolean = false;
+  kickedDialogShown: boolean = false;
 }
 
 export enum LoginActionType {
@@ -62,7 +64,9 @@ export enum LoginEffectType {
   LoggedOut,
   AccountDeleted,
   SessionExpired,
-  ShowMessage
+  SessionKicked,
+  ShowMessage,
+  ShowForceLoginDialog
 }
 
 export class LoginEffect {

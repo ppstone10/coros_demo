@@ -58,6 +58,8 @@ struct SignedInPage {
   private releaseShouldRefresh: boolean = false;
   private isAtScrollTop: boolean = true;
   @State showDeleteDialog: boolean = false;
+  @State showKickedDialog: boolean = false;
+  private foregroundTimer: number = -1;
   @State localError: string = '';
   @State sessionAccount: string = '';
   @State displayName: string = '';
@@ -110,6 +112,19 @@ struct SignedInPage {
     }
     this.appliedHealthCardsVersion = this.healthCardsVersion;
     this.syncState();
+    this.syncKickedDialogState();
+    // MSRV-019：前台周期性会话校验，被顶即弹窗（3s 间隔）
+    this.foregroundTimer = setInterval(() => {
+      this.viewModel.checkSessionOnForeground();
+      this.syncKickedDialogState();
+    }, 3000);
+  }
+
+  aboutToDisappear(): void {
+    if (this.foregroundTimer >= 0) {
+      clearInterval(this.foregroundTimer);
+      this.foregroundTimer = -1;
+    }
   }
 
   onPageShow(): void {
@@ -118,6 +133,13 @@ struct SignedInPage {
       this.appliedHealthCardsVersion = this.healthCardsVersion;
     }
     this.syncState();
+    this.syncKickedDialogState();
+  }
+
+  private syncKickedDialogState(): void {
+    if (this.viewModel.state.kickedDialogShown) {
+      this.showKickedDialog = true;
+    }
   }
 
   onBackPress(): boolean {
@@ -188,6 +210,9 @@ struct SignedInPage {
 
       if (this.showDeleteDialog) {
         this.DeleteAccountDialog();
+      }
+      if (this.showKickedDialog) {
+        this.KickedDialog();
       }
       if (this.showLanguageDialog) {
         this.LanguageDialog();
@@ -456,6 +481,28 @@ struct SignedInPage {
             .layoutWeight(1).height(44).borderRadius(8).backgroundColor(AppColors.ACTION)
             .onClick(() => { this.confirmDeleteAccount(); })
         }
+      }
+      .padding({ left: 24, right: 24, top: 22, bottom: 22 })
+      .backgroundColor(AppColors.ACCOUNT_DIALOG).borderRadius(12).margin({ left: 42, right: 42 })
+      Blank().layoutWeight(1)
+    }
+    .width('100%').height('100%').backgroundColor(AppColors.OVERLAY_62)
+  }
+
+  @Builder
+  KickedDialog() {
+    Column() {
+      Blank().layoutWeight(1)
+      Column({ space: 24 }) {
+        Text($r('app.string.auth_error_session_expired_elsewhere'))
+          .fontSize(18).fontColor(AppColors.WHITE).textAlign(TextAlign.Center)
+        Button($r('app.string.common_confirm'), { type: ButtonType.Normal })
+          .fontSize(16).fontColor(AppColors.WHITE)
+          .layoutWeight(1).height(44).borderRadius(8).backgroundColor(AppColors.ACTION)
+          .onClick(() => {
+            this.showKickedDialog = false;
+            this.viewModel.confirmKickedDialog();
+          })
       }
       .padding({ left: 24, right: 24, top: 22, bottom: 22 })
       .backgroundColor(AppColors.ACCOUNT_DIALOG).borderRadius(12).margin({ left: 42, right: 42 })

@@ -10,11 +10,17 @@ export class KnoiHarmonyServiceAdapter implements HarmonyLoginServiceContract {
   stateSnapshot(): string { return this.service.stateSnapshot(); }
   exportStoreSnapshot(): string { return this.service.exportStoreSnapshot(); }
   restoreStoreSnapshot(json: string): boolean { return this.service.restoreStoreSnapshot(json); }
+  mergeAccounts(json: string): boolean { return this.service.mergeAccounts(json); }
   submit(): void { this.service.submit(); }
   logout(): void { this.service.logout(); }
   clearSessionSilently(): void { this.service.clearSessionSilently(); }
   pauseSession(): void { this.service.pauseSession(); }
   resumeSessionInSameProcess(): void { this.service.resumeSessionInSameProcess(); }
+  onSessionKicked(): void { this.service.onSessionKicked(); }
+  confirmForceLogin(): void { this.service.confirmForceLogin(); }
+  cancelForceLogin(): void { this.service.cancelForceLogin(); }
+  confirmKickedDialog(): void { this.service.confirmKickedDialog(); }
+  checkSessionOnForeground(): void { this.service.checkSessionOnForeground(); }
   healthScenarioDescriptorsJson(): string { return this.service.healthScenarioDescriptorsJson(); }
   healthEditableSectionsJson(): string { return this.service.healthEditableSectionsJson(); }
   normalHealthEditFormJson(sectionName: string): string { return this.service.normalHealthEditFormJson(sectionName); }

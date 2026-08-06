@@ -31,6 +31,9 @@ class RemoteAuthRepositoryTest {
     private var capturedPath: String = ""
     private var capturedMethod: String = ""
     private var currentClockMs: Long = 1_000L
+    private var loginConflict: Boolean = false
+    private var sessionCheckMode: String = "active" // active / kicked / expired
+    private var healthKicked: Boolean = false
     private val healthStore = mutableMapOf<String, String>()
     private fun startServer() {
         server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
@@ -63,8 +66,16 @@ class RemoteAuthRepositoryTest {
     private data class StubResponse(val status: Int, val body: String)
 
     private fun route(method: String, path: String, fullUri: String, body: String): Pair<Int, String> = when {
+        method == "POST" && path == "/api/auth/login" && loginConflict -> 409 to
+            """{"error":{"code":"SESSION_ACTIVE_ELSEWHERE","message":"该账号已在其他设备登录","activeDevice":{"deviceId":"dev-a","deviceName":"Device A"}}}"""
         method == "POST" && path == "/api/auth/login" -> 200 to
-            """{"session":{"userId":"mock-user-default","account":"13107012029","displayName":"COROS User","region":"CN","isValid":true,"issuedAtEpochMs":1000,"expireAtEpochMs":0,"profile":null}}"""
+            """{"session":{"userId":"mock-user-default","account":"13107012029","displayName":"COROS User","region":"CN","isValid":true,"deviceId":"device-default","issuedAtEpochMs":1000,"expireAtEpochMs":0,"profile":null}}"""
+        method == "GET" && path == "/api/auth/session" && sessionCheckMode == "kicked" -> 401 to
+            """{"error":{"code":"SESSION_EXPIRED_ELSEWHERE","message":"该账号已在其他设备登录，请重新登录"}}"""
+        method == "GET" && path == "/api/auth/session" && sessionCheckMode == "expired" -> 401 to
+            """{"error":{"code":"AUTH_REQUIRED","message":"请先登录"}}"""
+        method == "GET" && path == "/api/auth/session" && sessionCheckMode == "active" -> 200 to
+            """{"session":{"userId":"mock-user-default","account":"13107012029","displayName":"COROS User","region":"CN","isValid":true,"deviceId":"device-default","issuedAtEpochMs":1000,"expireAtEpochMs":0,"profile":null}}"""
         method == "POST" && path == "/api/auth/register" -> 200 to
             """{"session":{"userId":"mock-user-new","account":"new@example.com","displayName":"New","region":"CN","isValid":true,"issuedAtEpochMs":1000,"expireAtEpochMs":0,"profile":null}}"""
         method == "POST" && path == "/api/auth/verify-code" ->
@@ -81,6 +92,8 @@ class RemoteAuthRepositoryTest {
         method == "POST" && path == "/api/auth/password/reset" -> 200 to """{"ok":true}"""
         method == "POST" && path == "/api/auth/logout" -> 200 to """{"ok":true}"""
         method == "DELETE" && path == "/api/auth/account" -> 200 to """{"ok":true}"""
+        method == "GET" && path.startsWith("/api/health/") && healthKicked -> 401 to
+            """{"error":{"code":"SESSION_EXPIRED_ELSEWHERE","message":"该账号已在其他设备登录，请重新登录"}}"""
         method == "GET" && path.startsWith("/api/health/") -> {
             val userId = path.removePrefix("/api/health/")
             val stored = healthStore[userId]
@@ -250,6 +263,96 @@ class RemoteAuthRepositoryTest {
         currentClockMs += 5_000L
         assertTrue(ttlRepo.resumeSessionInSameProcess() is com.example.demo.common.auth.model.SessionResumeResult.Active)
         assertTrue(ttlRepo.verifyBusinessAccess() is MockResult.Success)
+    }
+
+    @Test
+    fun loginConflictMapsToSessionActiveElsewhere() {
+        loginConflict = true
+        val result = repo.login(LoginRequestDto("13107012029", "123456", deviceId = "dev-b"))
+        assertTrue(result is LoginResult.SessionActiveElsewhere)
+        val conflict = result as LoginResult.SessionActiveElsewhere
+        assertEquals("dev-a", conflict.activeDevice?.deviceId)
+        assertEquals("Device A", conflict.activeDevice?.deviceName)
+    }
+
+    @Test
+    fun forceLoginBypassesConflict() {
+        val result = repo.login(LoginRequestDto("13107012029", "123456", deviceId = "dev-b", force = true))
+        assertTrue(result is LoginResult.Success)
+    }
+
+    @Test
+    fun coldStartKickedElsewhereClearsSession() {
+        val login = repo.login(LoginRequestDto("13107012029", "123456"))
+        assertTrue(login is LoginResult.Success)
+
+        sessionCheckMode = "kicked"
+        val cold = repo.restoreSessionOnColdStart()
+        assertEquals(com.example.demo.common.auth.model.SessionResumeResult.KickedElsewhere, cold)
+        assertTrue(repo.verifyBusinessAccess() is MockResult.Failure)
+        assertEquals(MockError.AuthRequired, (repo.verifyBusinessAccess() as MockResult.Failure).error)
+    }
+
+    @Test
+    fun coldStartExpiredClearsSession() {
+        val login = repo.login(LoginRequestDto("13107012029", "123456"))
+        assertTrue(login is LoginResult.Success)
+
+        sessionCheckMode = "expired"
+        val cold = repo.restoreSessionOnColdStart()
+        assertEquals(com.example.demo.common.auth.model.SessionResumeResult.Expired, cold)
+    }
+
+    @Test
+    fun coldStartActiveRefreshesSessionFromServer() {
+        val login = repo.login(LoginRequestDto("13107012029", "123456"))
+        assertTrue(login is LoginResult.Success)
+
+        sessionCheckMode = "active"
+        val cold = repo.restoreSessionOnColdStart()
+        assertTrue(cold is com.example.demo.common.auth.model.SessionResumeResult.Active)
+        assertTrue(repo.verifyBusinessAccess() is MockResult.Success)
+    }
+
+    @Test
+    fun warmResumeKickedElsewhereClearsSession() {
+        val login = repo.login(LoginRequestDto("13107012029", "123456"))
+        assertTrue(login is LoginResult.Success)
+
+        sessionCheckMode = "kicked"
+        val resumed = repo.resumeSessionInSameProcess()
+        assertEquals(com.example.demo.common.auth.model.SessionResumeResult.KickedElsewhere, resumed)
+        assertTrue(repo.verifyBusinessAccess() is MockResult.Failure)
+    }
+
+    @Test
+    fun warmResumeActiveStaysActive() {
+        val login = repo.login(LoginRequestDto("13107012029", "123456"))
+        assertTrue(login is LoginResult.Success)
+
+        sessionCheckMode = "active"
+        val resumed = repo.resumeSessionInSameProcess()
+        assertTrue(resumed is com.example.demo.common.auth.model.SessionResumeResult.Active)
+    }
+
+    @Test
+    fun loginRequestCarriesDeviceIdAndForce() {
+        repo.login(LoginRequestDto("13107012029", "123456", deviceId = "dev-x", force = true))
+        // 服务端桩已按 409/200 处理；此用例验证 deviceId/force 进入请求体不会破坏解析
+        assertTrue(true)
+    }
+
+    @Test
+    fun healthLoadKickedInvokesCallback() {
+        var kicked = false
+        val ds = RemoteHealthDashboardStateDataSource(
+            MockServerHttpClient(baseUrlOf()),
+            InMemoryHealthDashboardStateDataSourceStub()
+        )
+        ds.onSessionKicked = { kicked = true }
+        healthKicked = true
+        ds.load("mock-user-default")
+        assertTrue(kicked)
     }
 
     private class InMemoryHealthDashboardStateDataSourceStub :

@@ -3,9 +3,12 @@ package com.example.demo.auth.navigation
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -13,6 +16,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.Lifecycle
@@ -27,6 +31,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.demo.R
 import com.example.demo.auth.components.CorosBlack
+import com.example.demo.core.network.AndroidDeviceId
+import com.example.demo.core.network.AvatarStore
 import com.example.demo.common.auth.model.AuthMode
 import com.example.demo.common.auth.model.LoginEffect
 import com.example.demo.common.auth.model.PostLoginRoute
@@ -52,7 +58,14 @@ import com.example.demo.health.navigation.healthNavGraph
 import com.example.demo.health.viewmodel.HealthDashboardViewModel
 import com.example.demo.auth.screens.profile.PersonalProfileEditScreen
 import com.example.demo.auth.screens.verify.VerifyCodeScreen
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.milliseconds
+
+/** MSRV-019：前台会话校验间隔（被顶时最迟该时长后弹窗）。 */
+private const val ForegroundSessionCheckIntervalMs = 3_000L
 
 private enum class NavOperation {
     Push, Pop, ReplaceTop, ResetTo, ResetKeepingEntranceAndPush
@@ -89,6 +102,7 @@ fun AuthNavGraph() {
     val coroutineScope = rememberCoroutineScope()
     val view = LocalView.current
     val resources = LocalResources.current
+    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -122,6 +136,16 @@ fun AuthNavGraph() {
         when (val effect = viewModel.effect) {
             is LoginEffect.AuthSucceeded -> {
                 healthViewModel.staleForNewAccount()
+                // MSRV-015：登录/切换账号后，用服务器头像覆盖内部目录的当前头像（异步，不阻塞导航）
+                coroutineScope.launch {
+                    withContext(Dispatchers.IO) {
+                        AvatarStore.refreshFromServer(
+                            context,
+                            effect.session.profile?.avatarUri,
+                            AndroidDeviceId.get(context)
+                        )
+                    }
+                }
                 val destination = when (effect.nextRoute) {
                     PostLoginRoute.SignedIn -> SignedInRoute
                     PostLoginRoute.ProfileCompletion -> ProfileCompletionRoute
@@ -158,8 +182,17 @@ fun AuthNavGraph() {
                 snackbarHostState.showSnackbar(resources.getString(R.string.auth_session_expired))
                 viewModel.onEffectConsumed()
             }
+            LoginEffect.SessionKicked -> {
+                // MSRV-019：被顶弹窗已提示，确认后静默回登录页（不再弹错误提示）
+                navController.navigateWithOperation(LoginRoute, NavOperation.ResetKeepingEntranceAndPush)
+                viewModel.onEffectConsumed()
+            }
             is LoginEffect.ShowMessage -> {
                 snackbarHostState.showSnackbar(resources.localizedAuthMessage(effect.message).orEmpty())
+                viewModel.onEffectConsumed()
+            }
+            is LoginEffect.ShowForceLoginDialog -> {
+                // 弹窗由 state.confirmForceLogin 驱动（本文件的 AlertDialog），这里只消费 effect
                 viewModel.onEffectConsumed()
             }
             null -> {}
@@ -364,5 +397,67 @@ fun AuthNavGraph() {
                 )
             }
         }
+
+        if (viewModel.state.confirmForceLogin) {
+            ForceLoginConfirmDialog(
+                onConfirm = viewModel::onForceLoginConfirm,
+                onDismiss = viewModel::onForceLoginCancel
+            )
+        }
+
+        // MSRV-019：前台周期性会话校验，被顶即弹窗（弹窗显示期间暂停校验）
+        LaunchedEffect(viewModel.state.isLoggedIn, viewModel.state.kickedDialogShown) {
+            if (!viewModel.state.isLoggedIn) return@LaunchedEffect
+            while (true) {
+                delay(ForegroundSessionCheckIntervalMs.milliseconds)
+                if (!viewModel.state.kickedDialogShown) {
+                    viewModel.checkSessionOnForeground()
+                }
+            }
+        }
+
+        if (viewModel.state.kickedDialogShown) {
+            KickedDialog(onConfirm = viewModel::onKickedDialogConfirmed)
+        }
     }
+}
+
+/** MSRV-016：二次确认"该账号已在其他设备登录，继续将挤下线对方"。 */
+@Composable
+private fun ForceLoginConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val resources = LocalResources.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = { Text(resources.getString(R.string.auth_force_login_confirm_body)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(resources.getString(R.string.common_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(resources.getString(R.string.common_cancel))
+            }
+        }
+    )
+}
+
+/** MSRV-019：被顶弹窗——仅确认按钮，确认后回登录页。 */
+@Composable
+private fun KickedDialog(
+    onConfirm: () -> Unit
+) {
+    val resources = LocalResources.current
+    AlertDialog(
+        onDismissRequest = {},
+        text = { Text(resources.getString(R.string.auth_error_session_expired_elsewhere)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(resources.getString(R.string.common_confirm))
+            }
+        }
+    )
 }

@@ -1,6 +1,7 @@
 package com.example.demo.auth.screens.profile
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -29,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,7 +62,11 @@ import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.countryDisplayName
 import com.example.demo.core.resources.AppImage
 import com.example.demo.core.resources.AppImages
+import com.example.demo.core.network.AndroidDeviceId
 import com.example.demo.core.theme.DemoTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private enum class PersonalProfilePicker {
     BirthDate,
@@ -81,6 +87,8 @@ fun PersonalProfileEditScreen(
         mutableStateOf(savedProfile.avatarUri)
     }
     var avatarRevision by remember { mutableStateOf(0) }
+    var pendingAvatarBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var pendingAvatarBytes by remember { mutableStateOf<ByteArray?>(null) }
     var username by rememberSaveable(savedProfile.username) {
         mutableStateOf(savedProfile.username)
     }
@@ -104,13 +112,27 @@ fun PersonalProfileEditScreen(
     var usernameEditing by rememberSaveable { mutableStateOf(false) }
     var localError by rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val imagePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         val userId = viewModel.state.currentSession?.userId
         if (uri != null && userId != null) {
-            avatarUri = uploadAvatarFromUri(context, uri, userId)
-            avatarRevision++
+            // MSRV-015：信息修改页选图仅生成本地预览，保存时才上传服务器并覆盖内部目录
+            scope.launch {
+                val result = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                        val scaled = bytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.scaleToAvatar() }
+                        if (bytes != null && scaled != null) bytes to scaled else null
+                    }.getOrNull()
+                }
+                if (result != null) {
+                    pendingAvatarBytes = result.first
+                    pendingAvatarBitmap = result.second
+                    localError = null
+                }
+            }
         }
     }
     val cameraPicker = rememberLauncherForActivityResult(
@@ -118,8 +140,15 @@ fun PersonalProfileEditScreen(
     ) { bitmap: Bitmap? ->
         val userId = viewModel.state.currentSession?.userId
         if (bitmap != null && userId != null) {
-            avatarUri = uploadAvatarBitmap(bitmap, userId)
-            avatarRevision++
+            // MSRV-015：信息修改页仅生成本地预览，保存时才上传
+            scope.launch {
+                val scaled = withContext(Dispatchers.IO) { bitmap.scaleToAvatar() }
+                val output = java.io.ByteArrayOutputStream()
+                scaled.compress(Bitmap.CompressFormat.JPEG, 85, output)
+                pendingAvatarBitmap = scaled
+                pendingAvatarBytes = output.toByteArray()
+                localError = null
+            }
         }
     }
     val profile = savedProfile.copy(
@@ -131,7 +160,7 @@ fun PersonalProfileEditScreen(
         weightKg = weightKg,
         countryRegion = countryRegion
     )
-    val hasChanges = profile != savedProfile
+    val hasChanges = profile != savedProfile || pendingAvatarBitmap != null
 
     BackHandler(onBack = onBack)
 
@@ -142,11 +171,41 @@ fun PersonalProfileEditScreen(
             saveEnabled = hasChanges && viewModel.canSubmitProfile(profile),
             onBack = onBack,
             onSave = {
-                localError = viewModel.updateProfileMessage(profile)
-                if (localError == null) onSaved()
+                // MSRV-015：信息修改页保存时才上传头像并覆盖内部目录，再保存资料
+                scope.launch {
+                    val userId = viewModel.state.currentSession?.userId
+                    if (userId != null) {
+                        val bytes = pendingAvatarBytes
+                        if (bytes != null) {
+                            val path = withContext(Dispatchers.IO) {
+                                uploadAvatarBytes(bytes, userId, AndroidDeviceId.get(context), context)
+                            }
+                            if (path == null) {
+                                localError = null
+                                return@launch
+                            }
+                            avatarUri = path
+                            avatarRevision++
+                            pendingAvatarBitmap = null
+                            pendingAvatarBytes = null
+                        }
+                    }
+                    val updatedProfile = savedProfile.copy(
+                        avatarUri = avatarUri,
+                        username = username,
+                        gender = gender,
+                        birthDate = birthDate,
+                        heightCm = heightCm,
+                        weightKg = weightKg,
+                        countryRegion = countryRegion
+                    )
+                    localError = viewModel.updateProfileMessage(updatedProfile)
+                    if (localError == null) onSaved()
+                }
             },
             onAvatarClick = { showAvatarSheet = true },
             avatarRevision = avatarRevision,
+            previewAvatar = pendingAvatarBitmap,
             usernameEditing = usernameEditing,
             onUsernameEditClick = { usernameEditing = true },
             onUsernameChange = { username = it.take(20) },
@@ -233,6 +292,7 @@ private fun PersonalProfileEditContent(
     onSave: () -> Unit,
     onAvatarClick: () -> Unit,
     avatarRevision: Int,
+    previewAvatar: Bitmap?,
     usernameEditing: Boolean,
     onUsernameEditClick: () -> Unit,
     onUsernameChange: (String) -> Unit,
@@ -296,7 +356,8 @@ private fun PersonalProfileEditContent(
                 avatarUri = profile.avatarUri,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 onClick = onAvatarClick,
-                revision = avatarRevision
+                revision = avatarRevision,
+                previewBitmap = previewAvatar
             )
             Spacer(Modifier.height(28.dp))
             EditableNameRow(
@@ -459,6 +520,7 @@ private fun PersonalProfileEditScreenPreview() {
             onSave = {},
             onAvatarClick = {},
             avatarRevision = 0,
+            previewAvatar = null,
             usernameEditing = false,
             onUsernameEditClick = {},
             onUsernameChange = {},

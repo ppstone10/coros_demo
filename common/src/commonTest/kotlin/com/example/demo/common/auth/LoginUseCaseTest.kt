@@ -2,11 +2,15 @@ package com.example.demo.common.auth
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import com.example.demo.common.auth.mock.LocalMockAuthRepository
 import com.example.demo.common.auth.mock.MockAuthStoreJson
+import com.example.demo.common.auth.model.ActiveDeviceInfo
+import com.example.demo.common.auth.model.AuthRegion
 import com.example.demo.common.auth.model.AuthSession
 import com.example.demo.common.auth.model.LoginAction
 import com.example.demo.common.auth.model.LoginEffect
@@ -17,6 +21,7 @@ import com.example.demo.common.auth.model.MockAuthSession
 import com.example.demo.common.auth.model.MockAuthStore
 import com.example.demo.common.auth.model.MockError
 import com.example.demo.common.auth.model.MockResult
+import com.example.demo.common.auth.model.MockVerifyCodeState
 import com.example.demo.common.auth.model.PostLoginRoute
 import com.example.demo.common.auth.model.RegisterRequestDto
 import com.example.demo.common.auth.model.SessionResumeResult
@@ -722,5 +727,162 @@ class LoginUseCaseTest {
             region = "CN",
             displayName = "Mock User"
         )
+    }
+
+    // ---- MSRV-016：二次确认（SessionActiveElsewhere → force 重登） ----
+
+    @Test
+    fun loginConflictSetsConfirmFlagAndEffect() {
+        val store = LoginStore(FakeConflictRepository())
+        store.dispatch(LoginAction.UsernameChanged("13107012029"))
+        store.dispatch(LoginAction.PasswordChanged("123456"))
+        store.dispatch(LoginAction.SubmitClicked)
+
+        assertTrue(store.state.confirmForceLogin)
+        assertEquals("13107012029", store.state.username)
+        val effect = store.consumeEffect()
+        val dialog = assertIs<LoginEffect.ShowForceLoginDialog>(effect)
+        assertEquals("dev-a", dialog.activeDevice?.deviceId)
+        assertEquals("Device A", dialog.activeDevice?.deviceName)
+    }
+
+    @Test
+    fun confirmForceLoginSucceedsAndClearsConfirmFlag() {
+        val store = LoginStore(FakeConflictRepository())
+        store.dispatch(LoginAction.UsernameChanged("13107012029"))
+        store.dispatch(LoginAction.PasswordChanged("123456"))
+        store.dispatch(LoginAction.SubmitClicked)
+        assertTrue(store.state.confirmForceLogin)
+        store.consumeEffect()
+
+        store.dispatch(LoginAction.ConfirmForceLogin)
+
+        assertTrue(store.state.isLoggedIn)
+        assertFalse(store.state.confirmForceLogin)
+        val effect = store.consumeEffect()
+        assertIs<LoginEffect.AuthSucceeded>(effect)
+    }
+
+    @Test
+    fun cancelForceLoginClearsConfirmFlag() {
+        val store = LoginStore(FakeConflictRepository())
+        store.dispatch(LoginAction.UsernameChanged("13107012029"))
+        store.dispatch(LoginAction.PasswordChanged("123456"))
+        store.dispatch(LoginAction.SubmitClicked)
+        store.consumeEffect()
+        assertTrue(store.state.confirmForceLogin)
+
+        store.dispatch(LoginAction.CancelForceLogin)
+        assertFalse(store.state.confirmForceLogin)
+        assertFalse(store.state.isLoggedIn)
+    }
+
+    @Test
+    fun kickedElsewhereOnRestoreShowsDialogThenConfirmNavigates() {
+        val store = LoginStore(FakeKickedRepository())
+        store.restoreSessionOnColdStart()
+        // 弹窗：会话未清、无 effect、错误文案不落到登录页
+        assertTrue(store.state.kickedDialogShown)
+        assertTrue(store.state.isLoggedIn)
+        assertNull(store.state.errorMessage)
+        assertNull(store.consumeEffect())
+
+        store.dispatch(LoginAction.KickedDialogConfirmed)
+        assertFalse(store.state.kickedDialogShown)
+        assertFalse(store.state.isLoggedIn)
+        assertNull(store.state.errorMessage)
+        assertIs<LoginEffect.SessionKicked>(store.consumeEffect())
+    }
+
+    @Test
+    fun updateProfileKickedElsewhereShowsDialogThenConfirmClearsSession() {
+        val store = LoginStore(FakeKickedWriteRepository())
+        val result = store.updateProfile(
+            UserProfile(
+                username = "X",
+                birthDate = "2000-01-01",
+                heightCm = 178,
+                weightKg = 70.0,
+                gender = UserGender.Male
+            )
+        )
+        assertTrue(result is MockResult.Failure)
+        assertEquals(MockError.SessionExpiredElsewhere, result.error)
+        // 弹窗：会话暂未清
+        assertTrue(store.state.kickedDialogShown)
+        assertNull(store.state.errorMessage)
+        assertNull(store.consumeEffect())
+
+        store.dispatch(LoginAction.KickedDialogConfirmed)
+        assertFalse(store.state.kickedDialogShown)
+        assertFalse(store.state.isLoggedIn)
+        assertNull(store.state.currentSession)
+        assertIs<LoginEffect.SessionKicked>(store.consumeEffect())
+    }
+
+    /** 普通登录返回异地会话冲突，force 登录成功（MSRV-016）。 */
+    private open class FakeConflictRepository : AuthRepository {
+        override fun login(request: LoginRequestDto): LoginResult {
+            return if (request.force) {
+                LoginResult.Success(session("mock-user-default"))
+            } else {
+                LoginResult.SessionActiveElsewhere(ActiveDeviceInfo("dev-a", "Device A"))
+            }
+        }
+
+        override fun availableRegions(): List<AuthRegion> = emptyList()
+        override fun hasAccount(account: String): Boolean = true
+        override fun requestVerifyCode(account: String, code: String): MockResult<MockVerifyCodeState> =
+            MockResult.Success(MockVerifyCodeState(account, code, 0L))
+        override fun verifyCode(account: String, code: String): MockResult<Unit> = MockResult.Success(Unit)
+        override fun verifyCodeRemainingSeconds(account: String): Int = 0
+        override fun setCurrentTimeEpochMs(value: Long) = Unit
+        override fun currentSession(): AuthSession? = null
+        override fun requireSession(): AuthSession = session("mock-user-default")
+        override fun saveSession(session: AuthSession): MockResult<AuthSession> = MockResult.Success(session)
+        override fun saveProfile(profile: UserProfile): MockResult<AuthSession> = MockResult.Success(session("mock-user-default"))
+        override fun clearSession(): MockResult<Unit> = MockResult.Success(Unit)
+        override fun markSessionExpired(): MockResult<Unit> = MockResult.Success(Unit)
+        override fun pauseSession(): MockResult<Unit> = MockResult.Success(Unit)
+        override fun restoreSessionOnColdStart(): SessionResumeResult = SessionResumeResult.NoSession
+        override fun resumeSessionInSameProcess(): SessionResumeResult = SessionResumeResult.NoSession
+        override fun resumeSession(): SessionResumeResult = SessionResumeResult.NoSession
+        override fun changePassword(account: String, oldPassword: String, newPassword: String): MockResult<Unit> =
+            MockResult.Success(Unit)
+        override fun resetPassword(account: String, newPassword: String): MockResult<Unit> =
+            MockResult.Success(Unit)
+        override fun deleteCurrentAccount(): MockResult<Unit> = MockResult.Success(Unit)
+        override fun register(request: RegisterRequestDto): LoginResult =
+            LoginResult.Success(session("mock-user-new"))
+        override fun verifyBusinessAccess(): MockResult<AuthSession> =
+            MockResult.Failure(MockError.AuthRequired)
+
+        private fun session(userId: String) = AuthSession(
+            userId = userId,
+            account = "13107012029",
+            displayName = null,
+            region = "CN",
+            isValid = true
+        )
+    }
+
+    /** 冷启动恢复时发现被顶（MSRV-019）。 */
+    private class FakeKickedRepository : FakeConflictRepository() {
+        override fun currentSession(): AuthSession? = AuthSession(
+            userId = "mock-user-default",
+            account = "13107012029",
+            displayName = null,
+            region = "CN",
+            isValid = true
+        )
+
+        override fun restoreSessionOnColdStart(): SessionResumeResult = SessionResumeResult.KickedElsewhere
+        override fun resumeSession(): SessionResumeResult = SessionResumeResult.KickedElsewhere
+    }
+
+    /** 写操作被顶：saveProfile 返回 SESSION_EXPIRED_ELSEWHERE（MSRV-019）。 */
+    private class FakeKickedWriteRepository : FakeConflictRepository() {
+        override fun saveProfile(profile: UserProfile): MockResult<AuthSession> =
+            MockResult.Failure(MockError.SessionExpiredElsewhere)
     }
 }

@@ -267,7 +267,29 @@ enum ProfileImageStore {
         "/api/avatar/\(userId)"
     }
 
-    /// 上传头像：缩放 → JPEG → PUT 到 mock server；返回相对路径；失败返回 nil。
+    /// 当前账号头像本地文件：Documents/avatar_current.jpg（MSRV-015 即时显示）。
+    private static var currentURL: URL {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("avatar_current.jpg")
+    }
+
+    private static func currentImage() -> UIImage? {
+        let url = currentURL
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return UIImage(contentsOfFile: url.path)
+    }
+
+    private static func writeCurrent(_ data: Data) {
+        try? data.write(to: currentURL)
+    }
+
+    /// 删除当前头像本地文件（注销账号）。
+    static func deleteCache() {
+        try? FileManager.default.removeItem(at: currentURL)
+    }
+
+    /// 上传头像：缩放 → JPEG → PUT 到 mock server；成功后覆盖当前头像本地文件；返回相对路径；失败返回 nil。
     static func save(_ data: Data, userId: String) async -> String? {
         let jpegData = downscaledJPEG(from: data) ?? data
         let path = avatarServerPath(userId: userId)
@@ -275,17 +297,35 @@ enum ProfileImageStore {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+        request.setValue(IosMockServerConfig.shared.deviceId, forHTTPHeaderField: "X-Device-Id")
         request.httpBody = jpegData
         request.timeoutInterval = 5
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
             if let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) {
+                writeCurrent(jpegData)
                 return path
             }
             return nil
         } catch {
             return nil
         }
+    }
+
+    /// 登录/切换账号后刷新当前头像：清除旧的，再按 avatarUri 从服务器拉取覆盖。
+    static func refreshFromServer(avatarUri: String?) {
+        clearCurrent()
+        guard let avatarUri, avatarUri.hasPrefix("/api/avatar/"),
+              let url = URL(string: "\(IosMockServerConfig.shared.baseUrl)\(avatarUri)") else { return }
+        URLSession.shared.dataTask(with: url) { data, response, _ in
+            if let data, let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) {
+                writeCurrent(data)
+            }
+        }.resume()
+    }
+
+    private static func clearCurrent() {
+        try? FileManager.default.removeItem(at: currentURL)
     }
 
     private static func downscaledJPEG(from data: Data) -> Data? {
@@ -304,15 +344,19 @@ enum ProfileImageStore {
         return scaled.jpegData(compressionQuality: 0.85)
     }
 
-    /// 从 avatarUri 解析 UIImage：服务器相对路径 → 下载解码；旧格式（data URI / key / 文件）回退。
+    /// 从 avatarUri 解析 UIImage：服务器相对路径 → 当前头像本地文件优先，未命中再下载并覆盖；旧格式回退。
     static func image(at key: String?) -> UIImage? {
         guard let key, !key.isEmpty else { return nil }
         if key.hasPrefix("/api/avatar/") {
+            if let cached = currentImage() {
+                return cached
+            }
             guard let url = URL(string: "\(IosMockServerConfig.shared.baseUrl)\(key)") else { return nil }
             let semaphore = DispatchSemaphore(value: 0)
             var result: UIImage? = nil
             URLSession.shared.dataTask(with: url) { data, response, _ in
                 if let data, let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) {
+                    writeCurrent(data)
                     result = UIImage(data: data)
                 }
                 semaphore.signal()

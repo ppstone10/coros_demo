@@ -47,9 +47,49 @@ open class HarmonyLoginService {
         }
     }
 
+    /**
+     * 仅合并账号到 store，不重建 facade（MSRV-016/018 登录发现用）。
+     * 重建 facade 会清空已输入的账号/密码，登录提交前不得调用 [restoreStoreSnapshot]。
+     */
+    fun mergeAccounts(json: String): Boolean {
+        if (json.isBlank()) return false
+        return try {
+            val store = HarmonyLoginJson.parseStoreSnapshot(json)
+            dataSource.replaceStore(store)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     fun submit() {
         syncClock()
         facade.submit()
+    }
+
+    fun confirmForceLogin() {
+        syncClock()
+        facade.confirmForceLogin()
+    }
+
+    fun cancelForceLogin() {
+        facade.cancelForceLogin()
+    }
+
+    /** MSRV-019：sync 请求检测到被顶时清会话并触发跳登录页。 */
+    fun onSessionKicked() {
+        facade.onSessionKicked()
+    }
+
+    /** MSRV-019：被顶弹窗确认，清会话并回登录页。 */
+    fun confirmKickedDialog() {
+        facade.confirmKickedDialog()
+    }
+
+    /** MSRV-019：前台周期性会话校验。 */
+    fun checkSessionOnForeground() {
+        syncClock()
+        facade.checkSessionOnForeground()
     }
 
     fun logout() {

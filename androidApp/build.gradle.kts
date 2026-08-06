@@ -70,3 +70,9 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
+
+// 单元测试使用 JDK 内置的 jdk.httpserver（com.sun.net.httpserver，RemoteAuthRepositoryTest 内嵌 HTTP server）。
+// Gradle 默认能解析，这里显式 add-modules 供部分 IDE 的测试源码集解析消除红波浪线，对构建无害。
+tasks.withType<Test> {
+    jvmArgs("--add-modules", "jdk.httpserver")
+}

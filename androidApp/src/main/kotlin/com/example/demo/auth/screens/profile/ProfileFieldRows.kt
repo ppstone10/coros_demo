@@ -1,5 +1,6 @@
 package com.example.demo.auth.screens.profile
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -44,7 +45,8 @@ internal fun ProfileAvatar(
     avatarUri: String?,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
-    revision: Int = 0
+    revision: Int = 0,
+    previewBitmap: Bitmap? = null
 ) {
     Box(
         modifier = modifier
@@ -58,6 +60,7 @@ internal fun ProfileAvatar(
             avatarUri = avatarUri,
             revision = revision,
             size = 76.dp,
+            overrideBitmap = previewBitmap,
             placeholder = {
                 AppImage(
                     asset = AppImages.Profile.Camera,

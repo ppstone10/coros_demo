@@ -191,6 +191,7 @@ struct ProfileCompletionView: View {
                         avatarData = data
                         if let path {
                             draft.avatarUri = path
+                            viewModel.notifyAvatarSaved()
                         }
                     }
                 }

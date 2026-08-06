@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,7 +50,11 @@ import com.example.demo.auth.components.CorosWhite
 import com.example.demo.auth.components.ErrorText
 import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.countryDisplayName
+import com.example.demo.core.network.AndroidDeviceId
 import com.example.demo.core.theme.DemoTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 private enum class ProfilePicker {
     BirthDate,
     Height,
@@ -97,6 +102,7 @@ fun ProfileCompletionScreen(
     var showAvatarSheet by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
     fun openPicker(next: ProfilePicker) {
         focusManager.clearFocus(force = true)
         picker = next
@@ -104,13 +110,21 @@ fun ProfileCompletionScreen(
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         val userId = state.currentSession?.userId
         if (uri != null && userId != null) {
-            avatarUri = uploadAvatarFromUri(context, uri, userId)
+            scope.launch {
+                val path = withContext(Dispatchers.IO) { uploadAvatarFromUri(context, uri, userId) }
+                if (path != null) avatarUri = path
+            }
         }
     }
     val cameraPicker = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap: Bitmap? ->
         val userId = state.currentSession?.userId
         if (bitmap != null && userId != null) {
-            avatarUri = uploadAvatarBitmap(bitmap, userId)
+            scope.launch {
+                val path = withContext(Dispatchers.IO) {
+                    uploadAvatarBitmap(bitmap, userId, AndroidDeviceId.get(context), context)
+                }
+                if (path != null) avatarUri = path
+            }
         }
     }
 

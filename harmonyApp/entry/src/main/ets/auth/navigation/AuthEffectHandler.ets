@@ -34,6 +34,13 @@ export function handleAuthEffect(effect: LoginEffect): void {
       navigate(NavOperation.ResetKeepingEntranceAndPush, AuthRoutes.auth.LOGIN);
       showToast('auth_session_expired');
       break;
+    case LoginEffectType.SessionKicked:
+      // MSRV-019：被顶弹窗已提示，确认后静默回登录页
+      navigate(NavOperation.ResetKeepingEntranceAndPush, AuthRoutes.auth.LOGIN);
+      break;
+    case LoginEffectType.ShowForceLoginDialog:
+      // 二次确认弹窗由页面按 state.confirmForceLogin 渲染，effect 仅驱动
+      break;
     case LoginEffectType.ShowMessage:
       showToast(effect.message);
       break;

@@ -6,7 +6,7 @@
 - 状态：已采纳
 - 负责人：实习培训项目
 - 关联需求：README.md「关键边界」；`auth-mock-spec.md`；`health-dashboard-persistence.md`
-- 最后更新：2026-08-05
+- 最后更新：2026-08-06
 
 ## 目标
 
@@ -53,12 +53,13 @@
 
 | 名称 | 类型/结构 | 来源 | 生命周期 | 约束 |
 |------|-----------|------|----------|------|
-| 账号库 | `MockAuthStore.accounts` | mock server | 服务器进程内 + JSON 落盘 | 按 `userId` 唯一；JSON 遵循 `auth_mock.proto` 契约 |
-| 会话 | `AuthSession`（mock token） | mock server 登录/注册签发 | 服务器持有 + 客户端本地缓存 TTL | 客户端冷启动懒校验，不强制每次启动打网络 |
+| 账号库 | `MockAuthStore.accounts` | mock server | 服务器进程内 + `data/{PORT}/accounts.json` | 按 `userId` 唯一；JSON 遵循 `auth_mock.proto` 契约（`MSRV-020`） |
+| 会话 | `AuthSession`（mock token，含 `deviceId`/`deviceName`） | mock server 登录/注册签发 | 服务器持有 per-account 会话集合 + 客户端本地缓存 TTL | 单账号单设备（微信模式顶号 `MSRV-016`）；多账号并存 `MSRV-017`；客户端冷启动懒校验 `MSRV-019` |
 | 验证码 | `MockVerifyCodeState` | mock server 生成 | 服务器短时持有，60s TTL | 沿用固定验证码 `1234`/`4321` |
-| 健康快照 | `HealthDashboardSnapshot` | mock server（按 `userId`） | 服务器持有 + 客户端本地缓存 | JSON 遵循 `health_dashboard_mock.proto` 契约 |
+| 健康快照 | `HealthDashboardSnapshot` | mock server（按 `userId`） | 服务器持有 + `data/{PORT}/health/{userId}.json` 每账号一文件（`MSRV-020`）+ 客户端本地缓存 | JSON 遵循 `health_dashboard_mock.proto` 契约 |
+| 数据文件目录 | 账号库单文件 + 健康数据目录 + 头像目录 | mock server | `data/{PORT}/` 目录级端口隔离（`MSRV-020`） | 启动时旧单文件一次性迁移；写操作原子落盘（`MSRV-021`） |
 | base URL | 字符串 | 各端 debug 配置 | 进程内注入 | 平台层注入，不写入 `commonMain` |
-| 错误码 | `MockError` / HTTP 状态码 | mock server + 客户端映射 | 每次请求 | HTTP 状态码映射到既有 `MockError` 语义 |
+| 错误码 | `MockError` / HTTP 状态码 | mock server + 客户端映射 | 每次请求 | HTTP 状态码映射到既有 `MockError` 语义；`SESSION_ACTIVE_ELSEWHERE`/`SESSION_EXPIRED_ELSEWHERE` 为 `MSRV-016` 新增 |
 
 ### 接口清单
 
@@ -70,10 +71,10 @@
 | POST | `/api/auth/verify-code` | 发送验证码（服务器生成/存储） | `requestVerifyCode()` |
 | POST | `/api/auth/verify-code/check` | 校验验证码（注册前 UX 预检查） | `verifyCode()` |
 | GET | `/api/auth/account?account=` | 判断账号是否已存在（UX 预检查） | `hasAccount()` |
-| POST | `/api/auth/register` | 注册 | `register()` |
-| POST | `/api/auth/login` | 登录，签发会话 | `login()` |
-| GET | `/api/auth/session` | 冷启动懒校验会话 | `restoreSessionOnColdStart()` |
-| POST | `/api/auth/logout` | 登出 | `clearSession()` |
+| POST | `/api/auth/register` | 注册，签发会话（body 含 `deviceId`/`deviceName`） | `register()` |
+| POST | `/api/auth/login` | 登录签发会话；`deviceId`+`force` 实现单设备顶号（body 含 `deviceId`/`deviceName`/`force`） | `login()` |
+| GET | `/api/auth/session?userId=&deviceId=` | 冷启动懒校验会话（被顶返回 `SESSION_EXPIRED_ELSEWHERE`） | `restoreSessionOnColdStart()` |
+| POST | `/api/auth/logout` | 登出（按 body `userId`+`deviceId` 作用域化，只清本账号） | `clearSession()` |
 | PUT | `/api/auth/profile` | 更新资料 | `saveProfile()` |
 | POST | `/api/auth/password/change` | 修改密码 | `changePassword()` |
 | POST | `/api/auth/password/reset` | 重置密码 | `resetPassword()` |
@@ -147,12 +148,12 @@ HarmonyOS 快照同步接口（MSRV-008：ArkTS 侧经 `ohos.net.http` 读写整
 - Then：base URL 从平台配置注入（Android `10.0.2.2`、iOS `localhost`、HarmonyOS 局域网地址），不写入 `commonMain`
 - 异常/边界：未配置或非法地址时明确报错，不静默使用默认地址
 
-### `MSRV-007-PORT`：mock server 数据按端口隔离
+### `MSRV-007-PORT`：mock server 数据按端口目录隔离
 
 - Given：同一台机器可能同时运行多个 mock server 实例（不同端口）
 - When：实例启动
-- Then：每个端口实例使用独立持久化文件 `data/mock-server-store-{PORT}.json`（可用 `DATA_FILE` 覆盖），互不覆盖其他实例数据
-- 异常/边界：未指定 PORT 时默认 3000；测试与运行时实例使用不同数据文件，绝不互相污染
+- Then：每个端口实例使用独立数据目录 `data/{PORT}/`（`accounts.json` + `health/` + `avatars/`，`DATA_DIR` 可覆盖数据根目录），互不覆盖其他实例数据（`MSRV-020`）
+- 异常/边界：未指定 PORT 时默认 3000；测试与运行时实例使用不同数据目录，绝不互相污染
 
 ### `MSRV-008`：HarmonyOS 通过 ArkTS 侧 HTTP 复用 KNOI 快照入口
 
@@ -223,9 +224,57 @@ mock server 头像接口：
 
 | 方法 | 路径 | 作用 |
 |---|---|---|
-| PUT | `/api/avatar/:userId` | 上传头像图片二进制（缩放后 JPEG），落盘 `data/avatars/{userId}.jpg` |
+| PUT | `/api/avatar/:userId` | 上传头像图片二进制（缩放后 JPEG），落盘 `data/{PORT}/avatars/{userId}.jpg` |
 | GET | `/api/avatar/:userId` | 拉取头像图片二进制 |
 | DELETE | `/api/avatar/:userId` | 删除头像文件（注销账号级联） |
+
+### `MSRV-016`：单账号单设备登录（微信模式顶号 + 二次确认）
+
+- Given：某账号已在一台设备登录（存在**有效会话**，含该设备的 `deviceId`）
+- When：另一台设备以同一账号发起登录（body 带 `deviceId`，且 `force` 未置真）
+- Then：服务器**不顶掉现有会话**，返回 HTTP 409 `{ "error": { "code": "SESSION_ACTIVE_ELSEWHERE", "message": "<文案>", "activeDevice": { "deviceId": ..., "deviceName": ... } } }`；客户端据此弹二次确认"该账号已在其他设备登录，继续将挤下线对方"
+- When：用户确认后，客户端以 `force: true` 重发登录
+- Then：服务器将该账号旧会话标记失效（记录 `invalidatedAtEpochMs`），签发新会话并返回 `{ "session": ... }`
+- When：被顶设备此后发起任何需要认证的请求（含懒校验 `GET /api/auth/session`）
+- Then：返回 HTTP 401 `{ "error": { "code": "SESSION_EXPIRED_ELSEWHERE", ... } }`；客户端清本地会话、提示"该账号已在其他设备登录，请重新登录"并回登录页
+- 异常/边界：同一设备重复登录（相同 `deviceId`）不触发冲突，直接刷新会话；`activeDevice.deviceName` 缺失时服务端用默认文案；`force` 登录在对方已登出（无有效会话）时也直接成功，不报错
+
+### `MSRV-017`：多账号并存（per-account 会话）
+
+- Given：多个账号各自在不同设备在线
+- When：任一端发起认证或健康操作
+- Then：会话按 `userId` 隔离为集合，不同账号会话**互不影响**；登出/被顶只作用于本账号
+- 异常/边界：`POST /api/auth/logout` 按 body `userId`+`deviceId` 作用域化；注销账号时删除该账号会话与健康数据文件
+
+### `MSRV-018`：数据接口会话校验
+
+- Given：客户端访问健康快照、头像或快照同步接口
+- When：请求携带的目标 `userId` 存在**有效会话**且匹配请求方 `deviceId`
+- Then：允许读写
+- When：目标 `userId` 无会话或会话被顶/不匹配请求方设备
+- Then：返回 401（无会话 `AUTH_REQUIRED`；被顶/异地在线 `SESSION_EXPIRED_ELSEWHERE`）
+- 异常/边界：`GET/PUT /api/health/:userId`、`PUT/DELETE /api/avatar/:userId`、`GET/PUT /api/sync/auth|health` 严格校验（会话 + 设备匹配）；`GET /api/avatar/:userId` 因原生图片加载器无法携带设备标识，仅要求该用户存在有效会话（设备匹配可省略）；健康读操作必须持有本人有效会话，杜绝凭可预测 userId 越权读写
+- 登录发现例外（HarmonyOS）：`GET /api/sync/auth` **不带 `userId`** 时返回全部账号（含 mock passwordHash，供鸿蒙"未登录"本地登录预检查发现服务器账号），不要求会话；这是鸿蒙快照同步模型（本地校验登录）的必要边界，仅限 mock 服务器
+
+### `MSRV-019`：会话懒校验三端落地
+
+- Given：客户端冷启动或从后台回到前台，且本地存在会话
+- When：触发 `GET /api/auth/session?userId=&deviceId=`
+- Then：按响应区分三态——有效（`{ session }`）、TTL 过期（`AUTH_REQUIRED`，走既有 `SessionExpired` 流程）、被顶（`SESSION_EXPIRED_ELSEWHERE`，走 `MSRV-016` 被顶流程）
+- 异常/边界：网络不可达时沿用本地 TTL 语义回退本地会话，不阻断启动（本地为登录态兜底权威）
+
+### `MSRV-020`：存储拆分（账号库 + 健康数据目录）
+
+- Given：mock server 启动或写入
+- Then：数据按端口目录组织 `data/{PORT}/accounts.json`（`accounts`/`sessions`/`verifyCodes`/种子标记）+ `data/{PORT}/health/{userId}.json`（每账号一个健康快照文件，缺失视为空快照）+ `data/{PORT}/avatars/{userId}.jpg`
+- 异常/边界：启动时若新布局缺失但旧单文件 `data/mock-server-store-{PORT}.json` 存在，则**一次性迁移**（accounts/verifyCodes 迁入账号库，旧 `currentSession` 迁为 sessions 集合首条，`healthSnapshots` 逐个拆成健康文件）后删除旧文件；`DATA_DIR` 环境变量覆盖数据根目录
+
+### `MSRV-021`：原子落盘
+
+- Given：任一次持久化写操作（账号库、健康快照、头像）
+- When：写入
+- Then：先写同目录临时文件，再 `rename` 原子替换目标文件；目标文件任意时刻为完整旧版或完整新版，进程中途崩溃不产生半写状态
+- 异常/边界：rename 前临时文件失败不破坏既有文件；测试用独立数据目录且 `setPersistEnabled(false)` 保证 hermetic
 
 ## 测试要求
 
@@ -235,7 +284,7 @@ mock server 头像接口：
 | `MSRV-002` | 三端构建 + 结构门禁 | `commonMain` 无网络类型，三端远程数据源就位 |
 | `MSRV-003` | 认证逐接口契约测试（注册/登录/验证码/改密/重置/资料/注销） | 每接口成功与错误路径返回预期 |
 | `MSRV-004` | 健康快照 GET/PUT 契约测试 + 多用户隔离测试 | 按 `userId` 读写隔离正确 |
-| `MSRV-005` | 错误映射测试 | HTTP 状态码 → `MockError` 映射正确 |
+| `MSRV-005` | 错误映射测试 | HTTP 状态码 → `MockError` 映射正确；新增 `SESSION_ACTIVE_ELSEWHERE`/`SESSION_EXPIRED_ELSEWHERE` 映射 |
 | `MSRV-006` | 会话签发与懒校验测试 | 登录签发、冷启动懒校验、失效映射正确 |
 | `MSRV-007` | 三端 base URL 注入验证 | 各端使用各自配置地址 |
 | `MSRV-008` | HarmonyOS 构建 + KNOI 契约 diff | provider.ets 无契约变化，HTTP 在 ArkTS 侧 |
@@ -244,8 +293,14 @@ mock server 头像接口：
 | `MSRV-011` | 错误提示测试 | 网络/写失败时提示语义正确 |
 | `MSRV-012` | 服务器种子测试 | 种子账号与场景可重置恢复 |
 | `MSRV-013` | 代码审查 + 门禁扫描 | 无真实凭据落库 |
+| `MSRV-016` | 契约测试：非 force 登录遇有效异地会话返回 409 `SESSION_ACTIVE_ELSEWHERE` 且不顶号；`force` 登录顶号；被顶设备请求返回 401 `SESSION_EXPIRED_ELSEWHERE`；同 deviceId 重复登录不冲突 | 顶号链路三态（冲突→确认→被顶）语义正确 |
+| `MSRV-017` | 契约测试：两个账号分别登录并存；登出只清本账号；`sessions` 为按 userId 集合 | 多账号互不影响 |
+| `MSRV-018` | 契约测试：健康/头像/sync 无会话或设备不匹配返回 401；有本人有效会话可读写 | 数据接口鉴权正确，杜绝越权 |
+| `MSRV-019` | 三端人工验收（真机/模拟器） | 冷启动/回前台校验会话，被顶即提示 |
+| `MSRV-020` | 契约测试：写入后账号库与健康文件按新布局落盘；旧单文件启动时迁移成功 | 存储拆分与迁移正确 |
+| `MSRV-021` | 契约测试 + 代码审查 | 写操作均走临时文件 + rename；中途崩溃不产生半写目标文件 |
 
-实现顺序建议：先实现 mock server 与契约测试（MSRV-001/003/004/012）→ 三端远程数据源（MSRV-002/007/008）→ 缓存与会话（MSRV-005/006/009）→ 联调验收（MSRV-010/011/013）。每步按 SDD 流程：先写测试红灯，再实现转绿，更新 TRACE。
+实现顺序建议：先实现 mock server 与契约测试（MSRV-001/003/004/012）→ 三端远程数据源（MSRV-002/007/008）→ 缓存与会话（MSRV-005/006/009）→ 联调验收（MSRV-010/011/013）→ 单设备/多账号/数据接口鉴权/存储拆分（MSRV-016/017/018/020/021）→ 三端懒校验与二次确认 UI（MSRV-019，可单平台标记为债务）。每步按 SDD 流程：先写测试红灯，再实现转绿，更新 TRACE。
 
 ## 验收标准
 
@@ -255,6 +310,9 @@ mock server 头像接口：
 - [ ] `commonMain` 无网络依赖，既有 common 测试不受影响。
 - [ ] 本地缓存降级为兜底，断网可展示旧数据并提示。
 - [ ] 会话失效/网络错误映射到既有语义与三端文案。
+- [ ] 单账号单设备（微信模式顶号 + 二次确认）与多账号并存语义落地，被顶端收到明确错误与提示。
+- [ ] 健康/头像/sync 数据接口均校验会话，杜绝凭可预测 userId 越权读写。
+- [ ] 存储拆分为账号库 + 健康数据目录，旧单文件可一键迁移；所有写操作原子落盘。
 - [ ] KNOI 桥契约无变化，HarmonyOS 走 ArkTS 侧 HTTP。
 - [ ] 无真实凭据/地址/token 落库。
 - [ ] `spec/TRACE.md` 完成 MSRV 映射并记录真实验证证据。
@@ -263,6 +321,6 @@ mock server 头像接口：
 ## 待人工确认
 
 - mock server 技术栈最终选择（建议 Node.js + Express；如需 Python/Java 请负责人确认）。
-- 会话校验粒度：冷启动是否每次打 `GET /api/auth/session`，还是仅本地 TTL + 写操作时校验。
-- HarmonyOS 开发环境无在线设备，最终三端联调需在设备/模拟器人工验收。
+- 会话校验粒度：已定——冷启动/回前台打 `GET /api/auth/session`（`MSRV-019` 选项 B），写操作前也校验。
+- HarmonyOS 开发环境无在线设备，最终三端联调需在设备/模拟器人工验收；HarmonyOS 侧 `MSRV-019` 与二次确认 UI 本环境无法构建，按单平台债务跟踪。
 - 服务器落盘目录（`.gitignore` 内 mock 数据文件）与重置方式需在实现轮明确。

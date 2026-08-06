@@ -58,6 +58,10 @@ protocol SharedLoginAdapterProtocol {
     func clearSessionSilently()
     func pauseSession()
     func resumeSession()
+    func confirmForceLogin()
+    func cancelForceLogin()
+    func confirmKickedDialog()
+    func checkSessionOnForeground()
     func consumeEffect() -> LoginEffect?
     func healthState() -> HealthState?
     func loadHealth()
@@ -87,6 +91,16 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
     private static let storeKey = "training_auth_mock_store"
     /// MSRV-007：iOS 模拟器访问宿主机 mock server 使用 localhost。
     private static let baseUrl = "http://localhost:3000"
+    /// MSRV-016/019：设备标识，首次生成并持久化；同一账号同一设备重复登录视为同设备。
+    private static let deviceIdKey = "demo_device_id"
+    private static var deviceId: String {
+        if let existing = UserDefaults.standard.string(forKey: deviceIdKey), !existing.isEmpty {
+            return existing
+        }
+        let generated = "ios-" + UUID().uuidString.lowercased()
+        UserDefaults.standard.set(generated, forKey: deviceIdKey)
+        return generated
+    }
     private let facade: LoginFacade
     let healthFacade: HealthFacade
 
@@ -99,6 +113,7 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
         request.httpMethod = method
         request.timeoutInterval = 5
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(IosMockServerConfig.shared.deviceId, forHTTPHeaderField: "X-Device-Id")
         if let json = json {
             request.httpBody = json.data(using: .utf8)
         }
@@ -134,13 +149,15 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
         )
         // MSRV-002/007：HTTP 传输由 Swift 注入（URLSession），common/iosMain 只保留业务逻辑。
         IosMockServerConfig.shared.baseUrl = Self.baseUrl
+        IosMockServerConfig.shared.deviceId = Self.deviceId
         let transport = { (method: String, path: String, json: String?) -> IosHttpResponse in
             Self.httpRequest(method: method, path: path, json: json)
         }
         let repository = IosRemoteAuthRepository(
             http: transport,
             cache: authDataSource,
-            sessionTtlMs: Int64(LocalMockAuthRepository.companion.SessionTtlMs)
+            sessionTtlMs: Int64(LocalMockAuthRepository.companion.SessionTtlMs),
+            deviceIdProvider: { IosMockServerConfig.shared.deviceId }
         )
         self.facade = LoginFacadeFactory().createPersistent(authRepository: repository)
         let remoteHealthStore = IosRemoteHealthDashboardStateDataSource(
@@ -151,6 +168,10 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
             authRepository: repository,
             stateDataSource: remoteHealthStore
         )
+        // MSRV-019：健康读写被顶时清会话并回登录页（self 已完整初始化后再捕获）
+        remoteHealthStore.onSessionKicked = { [weak self] in
+            self?.facade.onSessionKicked()
+        }
         syncClock()
         facade.restoreSession()
     }
@@ -332,9 +353,11 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
     }
 
     func deleteCurrentAccount() -> String? {
-        if let userId = facade.state.currentSession?.userId,
-           !healthFacade.clearUserData(userId: userId) {
-            return "auth_error_persist_failed"
+        if let userId = facade.state.currentSession?.userId {
+            if !healthFacade.clearUserData(userId: userId) {
+                return "auth_error_persist_failed"
+            }
+            ProfileImageStore.deleteCache()
         }
         return facade.deleteCurrentAccount()
     }
@@ -342,6 +365,24 @@ final class SharedLoginAdapter: SharedLoginAdapterProtocol {
     func submit() {
         syncClock()
         facade.submit()
+    }
+
+    func confirmForceLogin() {
+        syncClock()
+        facade.confirmForceLogin()
+    }
+
+    func cancelForceLogin() {
+        facade.cancelForceLogin()
+    }
+
+    func confirmKickedDialog() {
+        facade.confirmKickedDialog()
+    }
+
+    func checkSessionOnForeground() {
+        syncClock()
+        facade.checkSessionOnForeground()
     }
 
     func logout() {

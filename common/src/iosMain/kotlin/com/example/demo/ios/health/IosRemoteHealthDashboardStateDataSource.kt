@@ -16,8 +16,14 @@ class IosRemoteHealthDashboardStateDataSource(
     private val cache: HealthDashboardStateDataSource
 ) : HealthDashboardStateDataSource {
 
+    /** MSRV-019：服务器返回"已被其他设备登录"时回调，触发清会话并回登录页。 */
+    var onSessionKicked: (() -> Unit)? = null
+
     override fun load(userId: String): HealthDashboardSnapshot? {
         val response = http("GET", "/api/health/$userId", null)
+        if (response.status == 401 && response.body.contains("SESSION_EXPIRED_ELSEWHERE")) {
+            onSessionKicked?.invoke()
+        }
         return when {
             response.status in 200..299 -> {
                 val snapshotJson = AuthJson.optionalObject(response.body, "snapshot")
@@ -35,6 +41,9 @@ class IosRemoteHealthDashboardStateDataSource(
         val body = runCatching { MockHealthDashboardStoreJson.encode(snapshot) }
             .getOrNull() ?: return false
         val response = http("PUT", "/api/health/${snapshot.userId}", body)
+        if (response.status == 401 && response.body.contains("SESSION_EXPIRED_ELSEWHERE")) {
+            onSessionKicked?.invoke()
+        }
         if (response.status !in 200..299) return false
         return cache.save(snapshot)
     }

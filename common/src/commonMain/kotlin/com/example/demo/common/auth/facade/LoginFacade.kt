@@ -241,6 +241,30 @@ class LoginFacade(
         store.dispatch(LoginAction.SubmitClicked)
     }
 
+    /** 二次确认通过：以 force 重新登录顶号（MSRV-016）。 */
+    fun confirmForceLogin() {
+        store.dispatch(LoginAction.ConfirmForceLogin)
+    }
+
+    fun cancelForceLogin() {
+        store.dispatch(LoginAction.CancelForceLogin)
+    }
+
+    /** MSRV-019：检测到被顶时弹出确认弹窗（健康数据源等平台层回调）。 */
+    fun onSessionKicked() {
+        store.onSessionKicked()
+    }
+
+    /** MSRV-019：被顶弹窗确认，清会话并回登录页。 */
+    fun confirmKickedDialog() {
+        store.dispatch(LoginAction.KickedDialogConfirmed)
+    }
+
+    /** MSRV-019：前台周期性会话校验（被顶即弹窗）。 */
+    fun checkSessionOnForeground() {
+        store.checkSessionOnForeground()
+    }
+
     fun logout() {
         store.dispatch(LoginAction.LogoutClicked)
     }

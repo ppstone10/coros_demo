@@ -8,7 +8,7 @@ import {
 } from '../../auth/logic/LoginState';
 import { LoginLogicAdapter } from '../../auth/logic/LoginLogicAdapter';
 import { saveStoreSnapshot } from './StorePersister';
-import { syncHealthFromServer } from './MockServerSync';
+import { syncFromServer, syncHealthFromServer, setSessionKickedHandler } from './MockServerSync';
 import { getService, HarmonyLoginServiceContract } from './HarmonyServiceProvider';
 
 interface AuthSessionPayload {
@@ -47,6 +47,8 @@ interface LoginStatePayload {
   isLoading: boolean;
   isLoggedIn: boolean;
   errorMessage: string;
+  confirmForceLogin: boolean;
+  kickedDialogShown: boolean;
 }
 
 interface LoginEffectPayload {
@@ -63,6 +65,15 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
 
   constructor() {
     this.refreshState();
+    // MSRV-019：sync 请求被顶时清会话并回登录页
+    setSessionKickedHandler(() => this.handleSessionKicked());
+  }
+
+  /** MSRV-019：服务器返回 SESSION_EXPIRED_ELSEWHERE 时清会话，effect 交由 UI 消费跳登录页。 */
+  private handleSessionKicked(): void {
+    this.harmonyLoginService.onSessionKicked();
+    this.refreshState();
+    this.persistSnapshot();
   }
 
   loadHealthDashboard(): Record<string, Object> | null {
@@ -150,6 +161,25 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
   async submit(): Promise<void> {
     hilog.info(0x0001, 'demo_persist', 'KnoiLoginAdapter.submit() called');
     try {
+      // MSRV-016/018：登录/注册前先做账号发现同步，避免本地 store 缺账号导致"账号不存在"。
+      // 捕获当前输入并回写：mergeAccounts 不重建 facade，但兜底防止未来重建清空字段。
+      const typedMode: AuthMode = this.state.mode;
+      const typedAccount: string = this.state.username;
+      const typedPassword: string = this.state.password;
+      const typedVerifyCode: string = this.state.verifyCode;
+      const typedDisplayName: string = this.state.displayName;
+      const typedRegion: string = this.state.selectedRegion;
+      await syncFromServer(this.harmonyLoginService);
+      if (typedMode === AuthMode.Register) {
+        this.harmonyLoginService.setRegisterMode();
+      } else {
+        this.harmonyLoginService.setLoginMode();
+      }
+      this.harmonyLoginService.setUsername(typedAccount);
+      this.harmonyLoginService.setPassword(typedPassword);
+      this.harmonyLoginService.setVerifyCode(typedVerifyCode);
+      this.harmonyLoginService.setDisplayName(typedDisplayName);
+      this.harmonyLoginService.setRegion(typedRegion);
       this.harmonyLoginService.submit();
       const storeAfter: string = this.harmonyLoginService.exportStoreSnapshot();
       hilog.info(0x0001, 'demo_persist', 'store after submit: ' + storeAfter);
@@ -313,6 +343,19 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     this.persistSnapshot();
   }
 
+  /** MSRV-019：被顶弹窗确认，清会话并回登录页。 */
+  confirmKickedDialog(): void {
+    this.harmonyLoginService.confirmKickedDialog();
+    this.refreshState();
+    this.persistSnapshot();
+  }
+
+  /** MSRV-019：前台周期性会话校验，被顶即弹窗。 */
+  checkSessionOnForeground(): void {
+    this.harmonyLoginService.checkSessionOnForeground();
+    this.refreshState();
+  }
+
   consumeEffect(): LoginEffect | null {
     let snapshot: string = this.harmonyLoginService.consumeEffectSnapshot();
     let payload: LoginEffectPayload = this.parseEffectPayload(snapshot);
@@ -341,6 +384,10 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
       effect.type = LoginEffectType.AccountDeleted;
     } else if (payload.type === 'SessionExpired') {
       effect.type = LoginEffectType.SessionExpired;
+    } else if (payload.type === 'SessionKicked') {
+      effect.type = LoginEffectType.SessionKicked;
+    } else if (payload.type === 'ShowForceLoginDialog') {
+      effect.type = LoginEffectType.ShowForceLoginDialog;
     } else {
       effect.type = LoginEffectType.ShowMessage;
     }
@@ -379,7 +426,9 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
         currentSession: null,
         isLoading: false,
         isLoggedIn: false,
-        errorMessage: 'auth_submit_failed'
+        errorMessage: 'auth_submit_failed',
+        confirmForceLogin: false,
+        kickedDialogShown: false
       };
       return fallback;
     }
@@ -423,6 +472,8 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     state.isLoading = payload.isLoading;
     state.isLoggedIn = payload.isLoggedIn;
     state.errorMessage = payload.errorMessage;
+    state.confirmForceLogin = payload.confirmForceLogin === undefined ? false : payload.confirmForceLogin;
+    state.kickedDialogShown = payload.kickedDialogShown === undefined ? false : payload.kickedDialogShown;
     return state;
   }
 
@@ -462,6 +513,8 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     snapshot.isLoading = source.isLoading;
     snapshot.isLoggedIn = source.isLoggedIn;
     snapshot.errorMessage = source.errorMessage;
+    snapshot.confirmForceLogin = source.confirmForceLogin;
+    snapshot.kickedDialogShown = source.kickedDialogShown;
     return snapshot;
   }
 

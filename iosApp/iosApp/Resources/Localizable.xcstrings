@@ -612,6 +612,57 @@
         }
       }
     },
+    "auth_error_session_active_elsewhere" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This account is already signed in on another device"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "该账号已在其他设备登录"
+          }
+        }
+      }
+    },
+    "auth_error_session_expired_elsewhere" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This account is already signed in on another device. Please sign in again"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "该账号已在其他设备登录，请重新登录"
+          }
+        }
+      }
+    },
+    "auth_force_login_confirm_body" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This account is already signed in on another device. Continue will sign out the other device. Do you want to continue?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "该账号已在其他设备登录，继续将挤下线对方，是否继续？"
+          }
+        }
+      }
+    },
     "auth_error_verify_code_expired" : {
       "extractionState" : "stale",
       "localizations" : {

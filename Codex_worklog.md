@@ -1203,3 +1203,342 @@
 - **已完成**：Android 头像异步显示 + 编辑页 revision 刷新；鸿蒙注册后跳转修复（`syncHealthFromServer` 不重建 facade）。
 - **未完成 / 阻塞项**：HarmonyOS DevEco 构建验证（注册跳转、`syncHealthFromServer`、头像/Choice/TTL）；`MOCK_SERVER_BASE_URL` 按鸿蒙环境配置；MSRV-010 三端交叉验收。
 - **下轮起步建议**：DevEco 构建鸿蒙，重点验证"注册 → 自动跳资料完善 → 保存 → 健康互通"与 Android/iOS 头像跨端；随后 MSRV-010 交叉验收。
+
+# 2026-08-06 13:40 — mock-server 单设备登录/多账号并存/数据接口鉴权/存储拆分与原子落盘
+
+## 采纳内容
+- [MSRV-016] 单账号单设备登录（微信模式顶号 + 二次确认）：`store.js` 全局 `currentSession` 改为 per-account `sessions` 集合；`login/register` body 增加 `deviceId`/`deviceName`/`force`；非 force 登录遇有效异地会话返回 409 `SESSION_ACTIVE_ELSEWHERE`（含 `activeDevice`），force 登录顶掉旧会话，被顶设备请求返回 401 `SESSION_EXPIRED_ELSEWHERE`。未携带 deviceId 统一 `device-default` 向后兼容。
+- [MSRV-017] 多账号并存：`sessions` 按 userId 隔离；`logout` 按 body `userId`+`deviceId` 作用域化只清本账号。
+- [MSRV-018] 数据接口会话校验：`GET/PUT /api/health/:userId`、`PUT/DELETE /api/avatar/:userId`、`GET/PUT /api/sync/auth|health` 均需本人有效会话（`requireSession`，设备不匹配或会话失效返回 401）；`GET /api/avatar/:userId` 因图片加载器无法带设备头仅校验会话有效性。
+- [MSRV-020] 存储拆分：`data/{PORT}/accounts.json`（accounts+sessions+verifyCodes）+ `data/{PORT}/health/{userId}.json`（每账号一文件，缺失=空快照）+ `data/{PORT}/avatars/{userId}.jpg`；`configureDataDir/setDataRoot` 支持端口目录与测试临时根；旧单文件 `mock-server-store-{PORT}.json` 启动时一次性迁移后删除。
+- [MSRV-021] 原子落盘：`atomicWrite/atomicWriteBuffer` 统一"临时文件 + rename"，崩溃不产生半写文件。
+
+## 人工审查点
+- [MSRV-016] 会话被顶只在"下次请求"时发现（mock 无推送）；`force` 登录在对方已登出时也直接成功（幂等）。deviceId 缺失统一 `device-default`，两台旧客户端会被视为同一设备而不触发冲突——属于向后兼容降级，三端接入真实 deviceId 后生效。
+- [MSRV-018] 头像 GET 为适配原生图片加载器放宽为"仅校验会话有效"；健康/sync 严格设备匹配。
+- [MSRV-020] 跨文件无事务：健康文件懒创建（缺失=空快照），注销级联删账号/会话/健康文件/头像；迁移只认"新布局缺失且旧文件存在"。
+
+## 验证结果
+- [MSRV-016/017/018/020/021] `cd mock-server && npm test`：43/43 通过（原 27 条更新 + 新增 MSRV-016/017/018 契约测试 10 条 + store 层 5 条）；`node --check` 三文件语法通过。
+- [MSRV-020] 真实启动冒烟：临时 `DATA_DIR` + 旧单文件启动，自动迁移为 `{PORT}/accounts.json` + `health/*.json`，旧文件删除；登录签发会话带 deviceId。
+- [SDD-009] Spec（MSRV-016~021、MSRV-007-PORT、MSRV-018 边界）与 TRACE 已更新；README 同步。
+
+## 人工修正点
+- [MSRV-018] 初版契约测试依赖共享服务器状态导致顺序脆弱：MSRV-016/017/018 各测试开头补 `resetStore()` 保证隔离；`MSRV-015 注销头像`、`MSRV-003 注销健康` 改为断言 401（会话一并删除）而非 404。
+- [MSRV-003] 种子密码在改密/重置测试后改变导致后续用例失败：`重置密码` 测试末尾恢复密码 `123456`。
+- [MSRV-017] `register` 会先按默认 device 签发会话，后续用不同 deviceId 登录会误触 409：测试中 `register` 显式传 `deviceId`。
+
+## 下轮交接
+- **已完成**：mock-server 服务端单设备登录（二次确认 + 顶号）、多账号并存、健康/头像/sync 会话校验、存储拆分与原子落盘、旧文件迁移；契约测试 43/43 绿。
+- **未完成 / 阻塞项**：三端客户端接入（MSRV-019 冷启动/回前台懒校验 + 二次确认 UI + deviceId 持久化 + `X-Device-Id` 携带），HarmonyOS 因本环境无 DevEco 无法构建；Android/iOS 远程数据源需接入 `GET /api/auth/session` 与 `SESSION_ACTIVE_ELSEWHERE`/`SESSION_EXPIRED_ELSEWHERE` 映射。
+- **下轮起步建议**：先 Android（`RemoteAuthRepository` + deviceId + 错误映射 + 懒校验），iOS 镜像实现，HarmonyOS 在 DevEco 环境下完成 sync 路径会话校验；随后 MSRV-010 三端交叉验收。提醒：勿 `rm -rf data/`，运行时旧数据会在下次启动自动迁移。
+
+# 2026-08-06 14:02 — Android 客户端接入单设备登录/二次确认/被顶懒校验
+
+## 采纳内容
+- [MSRV-016] common `LoginResult` 新增 `SessionActiveElsewhere(activeDevice)`；`LoginRequestDto` 增 `deviceId/deviceName/force`（默认值，向后兼容）；`LoginStore` 处理冲突——`state.confirmForceLogin=true` + `LoginEffect.ShowForceLoginDialog`，`ConfirmForceLogin` 以 `force` 重登、`CancelForceLogin` 清除；`LoginFacade` 暴露 `confirmForceLogin/cancelForceLogin`。
+- [MSRV-016/018] `MockError` 新增 `SessionActiveElsewhere`/`SessionExpiredElsewhere`（含 `AuthMessageKeys` 三端资源）；`SessionResumeResult` 新增 `KickedElsewhere`。
+- [MSRV-019] Android/iOS `restoreSessionOnColdStart` 冷启动打 `GET /api/auth/session`：被顶→`KickedElsewhere` 清会话，失效→`Expired`，200 不改本地缓存（避免覆盖 pauseSession 的本地 TTL）。
+- [MSRV-016] Android 平台：`AndroidDeviceId`（SharedPreferences 持久化 UUID）+ `MockServerHttpClient` 全请求携带 `X-Device-Id` + `RemoteAuthRepository` 409 冲突解析与 `force` 传递；`AuthNavGraph` 二次确认 AlertDialog（`auth_force_login_confirm_body` 三端资源）；头像上传 `uploadAvatarBitmap` 带 deviceId。
+- [MSRV-016] iOS 镜像（best effort）：`IosMockServerConfig.deviceId` + Swift `httpRequest` 携带 `X-Device-Id` + `SharedLoginAdapter` confirm/cancel + `LoginPageView` `.alert`；`HarmonyLoginJson` 桥快照含 `confirmForceLogin`/`ShowForceLoginDialog`，`HarmonyLoginService` 暴露 confirm/cancel。
+
+## 人工审查点
+- [MSRV-019] 懒校验 200 分支刻意不写回本地缓存：服务端会话 `expireAtEpochMs=0` 会冲掉 `pauseSession` 设置的本地 TTL，破坏后台挂起语义（初版刷新导致 `sessionExpiresAfterBackgroundTtlWhenClockAdvances` 红灯，已改为只检测被顶/失效）。
+- [MSRV-016] 未携带 deviceId 的旧客户端统一 `device-default`，两台旧客户端会被视为同设备而不触发冲突——向后兼容降级。
+- [MSRV-018] 头像 GET 因原生图片加载器无法携带设备头，服务端放宽为"仅校验会话有效"；写操作严格校验。
+- [MSRV-019] Harmony 侧新增桥方法（confirm/cancel）与快照字段会改变 provider.ets 契约，需 DevEco 下重建验证；本环境无法构建 Harmony。
+
+## 验证结果
+- [MSRV-016] `./gradlew :common:check` 全绿（`LoginUseCaseTest` 新增 `loginConflictSetsConfirmFlagAndEffect`/`confirmForceLoginSucceedsAndClearsConfirmFlag`/`cancelForceLoginClearsConfirmFlag`/`kickedElsewhereOnRestoreEmitsSessionExpiredWithMessage`）。
+- [MSRV-016/019] `./gradlew :androidApp:testDebugUnitTest` 全绿（`RemoteAuthRepositoryTest` 新增 `loginConflictMapsToSessionActiveElsewhere`/`forceLoginBypassesConflict`/`coldStartKickedElsewhereClearsSession`/`coldStartExpiredClearsSession`/`coldStartActiveRefreshesSessionFromServer`）。
+- [MSRV-016/018] `./gradlew :androidApp:assembleDebug :androidApp:lintDebug` 通过；`cd mock-server && npm test` 43/43。
+- 资源：三端新增 `auth_error_session_active_elsewhere`/`auth_error_session_expired_elsewhere`/`auth_force_login_confirm_body` 键（中英）。
+
+## 人工修正点
+- [MSRV-019] 初版懒校验 200 分支用服务器会话覆盖本地缓存，导致暂停 TTL 被清零、TTL 过期测试红灯；改为 200 不写本地缓存。
+- [MSRV-016] `IosMockServerConfig.shared.deviceId` 在 Kotlin 侧应为 `IosMockServerConfig.deviceId`（`.shared` 仅 Swift 互操作），初版编译红灯已修。
+- [MSRV-016] `FakeConflictRepository` 被子类继承需声明 `open`。
+- [MSRV-016] `check-resources.sh` 共享键路径指向重构前 `auth/AuthMessageKeys.kt`（HEAD 同样失败），为既有门禁陈旧路径，本轮新增键已按门禁意图在三端一致。
+
+## 下轮交接
+- **已完成**：服务端单设备/多账号/数据鉴权/存储拆分/原子落盘（43 契约测试绿）；Android 客户端 deviceId/懒校验/二次确认弹窗/被顶处理（common+app 测试全绿）。
+- **未完成 / 阻塞项**：iOS SwiftUI 二次确认弹窗与懒校验需 xcodebuild 验证（代码已写）；HarmonyOS 桥方法/快照字段改变 provider.ets 契约，需 DevEco 重建并实现 ArkTS 弹窗与 sync 会话校验；三端真机/模拟器联调（MSRV-010/019）。
+- **下轮起步建议**：先 `xcodebuild` 验证 iOS，再在 DevEco 环境重建 Harmony bridge（provider.ets diff）并接入 ArkTS 二次确认与 sync 校验；随后三端交叉验收。提醒：运行时旧数据会在 mock-server 下次启动自动迁移到 `data/{PORT}/`。
+
+# 2026-08-06 14:25 — 修正 iOS Swift 编译错误与鸿蒙 mock server 接入地址
+
+## 采纳内容
+- [MSRV-016] 修正 iOS `LoginViewModel` 名称冲突：`confirmForceLogin` 属性（`state.confirmForceLogin`）与同名方法冲突（Swift 不允许属性/方法同名）→ 方法改名 `confirmForceLoginTapped()`，`LoginPageView` 确认按钮同步；`cancelForceLogin()` 无冲突保留。
+- [MSRV-016/019] 修正 Swift 调用 `IosRemoteAuthRepository` 缺参：KMP 构造默认参数不映射到 Swift，Swift 必须显式传 `deviceIdProvider: { IosMockServerConfig.shared.deviceId }`。
+- [MSRV-007] 修正鸿蒙连不上 mock server：`MOCK_SERVER_BASE_URL` 由 Android 模拟器专用 `http://10.0.2.2:3000` 改为宿主机局域网 IP `http://192.168.33.204:3000`（本机 en0），并加注释说明"鸿蒙真机/模拟器不能用 10.0.2.2，需按本机局域网 IP 修改"；`mock-server/README.md` 三端 base URL 小节补充鸿蒙用法。
+
+## 人工审查点
+- [MSRV-016] iOS 二次确认弹窗（`LoginPageView` `.alert`）与 Kotlin `LoginState.confirmForceLogin` 通过 KMP 导出直接绑定；KMP 默认参数不导出到 Swift，所有构造调用需显式传参。
+- [MSRV-007] 鸿蒙接入地址依赖宿主机局域网 IP（DHCP 可能变化），已用注释与 README 明确"运行前按本机 IP 修改"；`MOCK_SERVER_BASE_URL` 仍是平台层硬编码单点配置（MSRV-007 语义内可接受，未做构建期注入）。
+- Harmony 侧桥方法/快照字段（confirm/cancel、ShowForceLoginDialog）会改变 provider.ets 契约，仍需 DevEco 重建验证。
+
+## 验证结果
+- [MSRV-016/019] iOS `xcodebuild -project iosApp/iosApp.xcodeproj -scheme IOSDemo -destination 'generic/platform=iOS Simulator' -configuration Debug build`：**BUILD SUCCEEDED**（KMP framework 经 `embedAndSignAppleFrameworkForXcode` 重建 + Swift 全量编译通过）。
+- [MSRV-016] `./gradlew :common:check :androidApp:testDebugUnitTest :androidApp:assembleDebug` 此前已绿；本轮未改 common/Android 代码。
+- 文档：TRACE（MSRV-016/017/018/019/007）更新。
+
+## 人工修正点
+- [MSRV-016] `LoginViewModel` 属性与同名方法冲突（iOS 编译报 "Invalid redeclaration"）→ 方法改名 `confirmForceLoginTapped()`。
+- [MSRV-016] Swift 调 `IosRemoteAuthRepository` 缺 `deviceIdProvider` 参数（KMP 默认参数不导出）→ 显式传 `{ IosMockServerConfig.shared.deviceId }`。
+- [MSRV-007] 鸿蒙连不上：`10.0.2.2` 是 Android 模拟器专用，鸿蒙改用宿主机局域网 IP。
+
+## 下轮交接
+- **已完成**：iOS Swift 编译修复并通过 xcodebuild；鸿蒙 base URL 改为局域网 IP（本机 `192.168.33.204`）。
+- **未完成 / 阻塞项**：HarmonyOS 侧仍需 DevEco 环境——重建 KNOI bridge（provider.ets diff）、实现 ArkTS 二次确认弹窗与 sync 路径会话校验、真机/模拟器验证局域网连通性；三端交叉验收（MSRV-010/019）。
+- **下轮起步建议**：在 DevEco 打开 harmonyApp，先确认 `MOCK_SERVER_BASE_URL` 指向可达的宿主机 IP（必要时改回本机当前局域网 IP），再重建 bridge 验证 provider.ets；随后实现鸿蒙弹窗与 sync 校验。
+
+# 2026-08-06 14:36 — 修复鸿蒙登录"账号不存在"与旧登录端被顶无提示
+
+## 采纳内容
+- [MSRV-016/018] 修复鸿蒙登录默认账号报"账号不存在"：根因是鸿蒙登录走 `LocalMockAuthRepository` **本地校验**，而 `syncFromServer` 未登录时跳过 auth 拉取、已登录时 `restoreStoreSnapshot` 整体替换为"当前用户单个账号"，种子/其他账号被丢弃，本地 store 缺账号即报 ACCOUNT_NOT_FOUND。
+- [MSRV-016/018] 修复：服务端 `GET /api/sync/auth` 不带 `userId` 时返回全部账号（含 mock passwordHash，供鸿蒙本地登录校验），`store.allAccounts()` 提供；鸿蒙 `syncFromServer` 改为**合并**（`mergeAuthStores` 按 userId 去重、服务器优先、会话以本地有效为准）——未登录时拉全部账号、已登录时按 userId 拉取并与本地合并，不再整体替换。
+- [MSRV-019] 修复旧登录端被顶无提示：Android/iOS `resumeSessionInSameProcess`（回前台暖恢复）补上 `GET /api/auth/session` 懒校验（抽取 `checkSessionRemotely` 助手，冷启动/暖恢复共用），被顶返回 `KickedElsewhere`。
+- [MSRV-019] `LoginStore` 写路径被顶处理：`updateProfile`/`deleteCurrentAccount` 遇 `SessionExpiredElsewhere` 触发 `applyKicked`（清会话 + `LoginEffect.SessionExpired` + 错误文案），引导旧登录端跳登录页。
+
+## 人工审查点
+- [MSRV-016/018] sync/auth 不带 userId 返回全部账号是鸿蒙快照同步模型（本地校验登录）的必要边界，已在 Spec MSRV-018 记录为"登录发现例外"，仅限 mock 服务器。
+- [MSRV-019] 被顶提示时机仍是"下次请求/回前台"（mock 无推送）；健康读操作的数据源仍是 Boolean/缓存兜底接口，健康写路径暂不单独触发被顶导航（回前台校验已覆盖主要场景）。
+- 鸿蒙侧改动（`MockServerSync.ets`、`mergeAuthStores`）需 DevEco 构建验证。
+
+## 验证结果
+- [MSRV-016/018] `cd mock-server && npm test` 44/44（新增 `MSRV-018: sync/auth 不带 userId 返回全部账号`）。
+- [MSRV-019] `./gradlew :common:check` 全绿（`LoginUseCaseTest` 41 条，新增 `updateProfileKickedElsewhereClearsSessionAndNavigates`）；`:androidApp:testDebugUnitTest` 全绿（`RemoteAuthRepositoryTest` 新增 `warmResumeKickedElsewhereClearsSession`/`warmResumeActiveStaysActive`）；`:androidApp:assembleDebug`/`lintDebug` 通过。
+- 文档：TRACE/TEST_REPORT 测试计数同步（LoginUseCaseTest 41、合计 117、common 128）；Spec MSRV-018 边界补充。
+
+## 人工修正点
+- [MSRV-019] `LoginUseCaseTest` 新增用例 `weightKg` 误传 Int（应为 Double）编译红灯 → 改 `70.0`；`assertNull` 缺 import → 补。
+- [MSRV-016] `restoreStoreSnapshot` 整体替换导致种子账号丢失是核心缺陷，改为 `mergeAuthStores` 合并。
+
+## 下轮交接
+- **已完成**：鸿蒙登录发现（sync/auth 无 userId 全量账号 + 合并）；Android/iOS 暖恢复与写路径被顶检测与跳转；服务端/客户端测试全绿。
+- **未完成 / 阻塞项**：鸿蒙侧需 DevEco 构建验证（`MockServerSync.ets` 合并逻辑、provider.ets 契约、真机连 mock server）；健康写路径被顶单独导航未做（债务）；三端交叉验收（MSRV-010/019）。
+- **下轮起步建议**：DevEco 环境重建鸿蒙并验证"未登录登录默认账号成功 + 已登录账号从其他端被顶后回前台提示并回登录页"；随后补健康写路径被顶检测或接受回前台校验覆盖。
+
+# 2026-08-06 15:03 — 统一修复头像显示/上传、旧端被顶、鸿蒙账号发现
+
+## 采纳内容
+- [MSRV-018] 头像显示修复（安卓旧/新头像均不显示）：根因是 `resolveAvatarBitmap` 默认客户端带 `X-Device-Id: device-default`，服务端头像 GET 做设备匹配 → 401。改为服务端头像 GET **完全忽略设备匹配、仅校验会话有效**（`store.sessionStatus(userId, null)`），新增契约测试 `MSRV-015: 头像 GET 忽略设备匹配，仅要求会话有效`。
+- [MSRV-018] iOS 头像不写入修复：`ProfileImageStore.save`（上传 PUT）补 `X-Device-Id` 头（`IosMockServerConfig.shared.deviceId`）。
+- [MSRV-019] 旧端被顶检测补齐：Android/iOS `RemoteHealthDashboardStateDataSource.onSessionKicked` 回调（load/save 遇 `SESSION_EXPIRED_ELSEWHERE` 触发）→ `LoginStore.onSessionKicked()`（`applyKicked`：清会话 + `SessionExpired` effect 跳登录页）；`LoginViewModel.createRemote` 与 `SharedLoginAdapter.init` 接线。
+- [MSRV-019] `LoginStore` 新增公开 `onSessionKicked()`，`LoginFacade` 暴露；`updateProfile/deleteCurrentAccount` 遇被顶触发 `applyKicked`。
+- [MSRV-016/018] 鸿蒙：`KnoiLoginAdapter.submit` 登录前 `await syncFromServer`（消除"登录先于账号发现"竞态）；`MockServerSync.request` 检测 `SESSION_EXPIRED_ELSEWHERE` 触发 `onSessionKicked` 回调（清会话跳登录页）；`HarmonyLoginService`/契约/适配器新增 `onSessionKicked/confirmForceLogin/cancelForceLogin`。
+
+## 人工审查点
+- [MSRV-018] 头像 GET 忽略设备匹配只针对**读**（展示场景，图片加载器无法带设备头）；写操作（PUT/DELETE）保持严格会话+设备校验，越权写仍被拒。
+- [MSRV-019] 被顶即时性仍受"无推送"限制：健康读/写、auth 写、冷启动/回前台均会检测；空闲前台不做轮询（维持 MSRV-006 懒校验语义）。
+- [MSRV-016] 鸿蒙新增桥方法会改变 provider.ets，需 DevEco 重建生成；本环境无法构建 Harmony。
+
+## 验证结果
+- [MSRV-018] `cd mock-server && npm test` 45/45（新增头像 GET 忽略设备匹配）。
+- [MSRV-019] `./gradlew :common:check` 全绿（`LoginUseCaseTest` 41 条（含 `updateProfileKickedElsewhereClearsSessionAndNavigates`））；`:androidApp:testDebugUnitTest` 全绿（`RemoteAuthRepositoryTest` 新增 `warmResumeKickedElsewhereClearsSession`/`warmResumeActiveStaysActive`/`healthLoadKickedInvokesCallback`）；`:androidApp:assembleDebug`/`lintDebug` 通过。
+- [MSRV-018/019] iOS `xcodebuild`（Simulator Debug）BUILD SUCCEEDED（修复 `onSessionKicked` 闭包在 `healthFacade` 初始化前捕获 self 的编译错误）。
+
+## 人工修正点
+- [MSRV-019] Swift `onSessionKicked` 闭包在 `self.healthFacade` 赋值前捕获 self → 编译错误；移到所有存储属性初始化之后。
+- [MSRV-018] 头像 GET 最初"设备头缺失才宽松"被 Android 默认头破坏；改为完全忽略设备。
+
+## 下轮交接
+- **已完成**：头像显示（安卓）+ 头像上传（iOS）+ 旧端被顶检测（Android/iOS 健康读写、auth 写、冷/暖恢复）+ 鸿蒙账号发现与 sync 被顶钩子（代码）。
+- **未完成 / 阻塞项**：Harmony 需 DevEco 重建（provider.ets 生成、ArkTS 二次确认弹窗、sync 被顶跳转、真机连 mock server）；三端交叉验收（MSRV-010/019）。
+- **下轮起步建议**：DevEco 环境重建鸿蒙后验证：默认账号登录成功、被顶后 sync 请求触发回登录页、头像上传/显示；随后三端交叉联调。提醒：运行时 mock server 需重启为新代码，鸿蒙 `MOCK_SERVER_BASE_URL` 需指向可达宿主机 IP。
+
+# 2026-08-06 15:38 — 被顶确认弹窗/前台监听/安卓英文文案/鸿蒙登录跳转修复
+
+## 采纳内容
+- [MSRV-019] 被顶交互改为"确认弹窗"：`LoginState` 新增 `kickedDialogShown`；`LoginAction.KickedDialogConfirmed`；`LoginEffect.SessionKicked`（静默回登录页）。被顶检测（冷/暖恢复、健康回调、updateProfile/deleteCurrentAccount 写路径）只 `showKickedDialog`（弹窗，不清会话、不设错误文案），确认后 `confirmKickedDialog` 清会话 + `SessionKicked` 跳登录页，登录页不再显示被顶提示。
+- [MSRV-019] 前台监听：Android `AuthNavGraph`/iOS `AuthCoordinator` 每 15s `checkSessionOnForeground()`（弹窗显示期间暂停）；`applySessionResumeResult` NoSession 在被顶弹窗显示时忽略，避免提前导航。
+- [MSRV-019] 修复被顶检测误登出对方设备：`checkSessionRemotely` 原调用 `clearSession()`（会 POST logout 清掉服务器该账号会话）→ 改为 `clearLocalSessionOnly()` 仅清本地缓存。
+- [MSRV-019] Android 被顶弹窗用 `auth_error_session_expired_elsewhere` 本地化资源（不再显示语义键英文原文）；iOS 用 `.alert` 持久弹窗替代一闪而过的 toast。
+- [MSRV-016/019] 鸿蒙：`KnoiLoginAdapter.submit` 登录前 `await syncFromServer` 引入的网络延迟暴露了"登录页未 await dispatch"竞态 → `LoginFormPage.submitLogin` 改为 `await` dispatch 后再消费 effect；补 `SessionKicked`/`ShowForceLoginDialog` effect 分支、`kickedDialogShown` 状态、`confirmKickedDialog`/`checkSessionOnForeground` 桥方法与 `SignedInPage` 被顶弹窗 + 前台定时器。
+
+## 人工审查点
+- [MSRV-019] 被顶弹窗仅确认按钮、不可点外部关闭；确认后才清会话并回登录页；被顶消息在弹窗内展示，登录页不重复提示。
+- [MSRV-019] 前台监听间隔 15s（MSRV-006 懒校验语义下可接受的折中，未引入轮询到写/读路径）；弹窗显示期间暂停校验避免 NoSession 干扰。
+- 鸿蒙侧改动（effect 分支、状态字段、桥方法、`SignedInPage` 弹窗/定时器）需 DevEco 重建验证；本环境无法构建。
+
+## 验证结果
+- [MSRV-019] `./gradlew :common:check` 全绿（`LoginUseCaseTest` 41 条，`kickedElsewhereOnRestoreShowsDialogThenConfirmNavigates`/`updateProfileKickedElsewhereShowsDialogThenConfirmClearsSession` 改为弹窗→确认语义）；`:androidApp:testDebugUnitTest`/`assembleDebug`/`lintDebug` 通过；iOS `xcodebuild`（Simulator Debug）BUILD SUCCEEDED；`cd mock-server && npm test` 45/45。
+
+## 人工修正点
+- [MSRV-019] `checkSessionRemotely` 误用 `clearSession()`（带服务器 logout）会把顶号方也登出 → 改 `clearLocalSessionOnly()`。
+- [MSRV-019] 旧测试断言"被顶即清会话+SessionExpired"不符新弹窗语义 → 更新为"弹窗→确认→SessionKicked"。
+- [MSRV-016] 鸿蒙登录不跳转：`LoginFormPage.submitLogin` 未 await `dispatch`（异步 submit 未完成就消费 effect）；`PasswordSetupPage` 已 await，仅登录页有此竞态。
+
+## 下轮交接
+- **已完成**：被顶确认弹窗（三端状态/effect/桥）、前台周期监听（Android/iOS）、安卓本地化文案、鸿蒙登录跳转 await 修复、被顶检测不再误登出对方。
+- **未完成 / 阻塞项**：Harmony 需 DevEco 重建验证（登录跳转、被顶弹窗、前台定时器、provider.ets 契约）；三端交叉验收（MSRV-010/019）。
+- **下轮起步建议**：DevEco 重建鸿蒙，验证登录跳转与被顶弹窗；随后三端真机/模拟器联调被顶全链路（新端顶号 → 旧端前台 15s 内弹窗 → 确认回登录页）。
+
+# 2026-08-06 15:41 — 修复安卓被顶英文文案（AuthLocalization 映射缺失）
+
+## 采纳内容
+- [MSRV-005] 安卓被顶提示显示英文原始语义键的根因：`AuthLocalization.kt` 的 `authMessageResourceId` 硬编码映射缺了新增的 `auth_error_session_active_elsewhere`/`auth_error_session_expired_elsewhere`，`localizedAuthMessage` 找不到资源 ID 时回退返回原始键（英文）。已补上两条映射；被顶弹窗本身直接用 `R.string.auth_error_session_expired_elsewhere`，与映射无关。
+
+## 人工审查点
+- [MSRV-005] Android 语义键本地化走 `AuthLocalization.kt` 硬编码映射（非自动）；新增 `auth_*` 键必须同步该映射，否则回退显示原始键（英文）。iOS 用 xcstrings 查找、Harmony 用 `AuthLocalization.ets` 映射（均已含新键）。
+
+## 验证结果
+- [MSRV-005] `./gradlew :common:check :androidApp:testDebugUnitTest :androidApp:assembleDebug :androidApp:lintDebug` 全绿；`cd mock-server && npm test` 45/45；iOS `xcodebuild`（Simulator Debug）此前已通过。
+
+## 人工修正点
+- [MSRV-005] `AuthLocalization.kt` 漏配新键映射 → 补充。
+
+## 下轮交接
+- **已完成**：被顶确认弹窗/前台监听/安卓本地化映射补齐/鸿蒙登录跳转 await 修复。
+- **未完成 / 阻塞项**：Harmony DevEco 重建验证（登录跳转、被顶弹窗、前台定时器、provider.ets）；三端交叉验收。
+
+# 2026-08-06 16:03 — 前台会话轮询间隔降至 3s + 鸿蒙 LoginStatePayload 兜底对象补字段
+
+## 采纳内容
+- [MSRV-019] 前台会话校验轮询间隔 15s → 3s（Android `ForegroundSessionCheckIntervalMs=3000`、iOS `Task.sleep(3s)`、Harmony `setInterval(3000)`），使被顶弹窗延迟降到 ≤3s（暂用方案 1，长轮询方案 2 留待后续）。
+- [MSRV-019] 修复鸿蒙 `KnoiLoginAdapter.ets` 编译错误：`LoginStatePayload` 接口新增必填 `confirmForceLogin`/`kickedDialogShown` 后，`parseStatePayload` catch 兜底对象字面量缺这两个字段 → ArkTS 类型检查报错；补 `false` 默认值。
+
+## 人工审查点
+- [MSRV-019] 3s 轮询每在线设备约 20 请求/分钟，mock 本地无负担；弹窗显示期间暂停校验逻辑不变。
+- [MSRV-019] ArkTS 接口新增必填字段时，所有实现该接口的对象字面量（含 catch 兜底）必须同步补字段，否则 ArkTSCheck 报缺失属性。
+
+## 验证结果
+- `./gradlew :common:check :androidApp:testDebugUnitTest :androidApp:assembleDebug` 全绿；iOS `xcodebuild`（Simulator Debug）BUILD SUCCEEDED；`cd mock-server && npm test` 45/45（本轮未改服务端）。
+
+## 人工修正点
+- [MSRV-019] `parseStatePayload` 兜底对象缺新必填字段 → 补 `confirmForceLogin: false, kickedDialogShown: false`。
+
+## 下轮交接
+- **已完成**：被顶弹窗/前台 3s 监听/安卓本地化/鸿蒙登录 await 修复/鸿蒙类型错误修复。
+- **未完成 / 阻塞项**：长轮询方案 2（MSRV-022 建议）未实施；Harmony 需 DevEco 重建验证；三端交叉验收。
+
+# 2026-08-06 16:11 — 修复鸿蒙登录清空输入提示"请输入账号密码"
+
+## 采纳内容
+- [MSRV-016] 根因：`KnoiLoginAdapter.submit()` 开头 `await syncFromServer()`，而 `syncFromServer` 未登录分支调用 `restoreStoreSnapshot` → `HarmonyLoginService.restoreStoreSnapshot` 内 `facade = createFacade(...)` **重建 LoginFacade**，新 facade 的账号/密码/验证码/区域被清空；随后 `submit()` 在新 facade 上校验空输入 → "请输入账号密码"，并清空界面字段。
+- [MSRV-016] 修复：新增桥方法 `HarmonyLoginService.mergeAccounts(json)`（仅 `dataSource.replaceStore`，**不重建 facade**，不丢登录页输入）；`syncFromServer` 未登录分支改用 `mergeAccounts`；`KnoiLoginAdapter.submit` 捕获并回写模式/账号/密码/验证码/显示名/区域（兜底防未来重建）。
+- [MSRV-016] 该缺陷同时影响登录与注册（共用 `submit()`），一并修复。
+
+## 人工审查点
+- [MSRV-016] `restoreStoreSnapshot` 仍保留用于启动/换号全量恢复（重建 facade 是预期行为）；登录提交前**绝不**调用它，只调用不重建的 `mergeAccounts`。
+- [MSRV-016] `mergeAccounts` 与 facade 共用同一 `MemoryAuthStoreDataSource` 实例，replaceStore 后既有 facade 的 `loadStore()` 立即可见新账号。
+
+## 验证结果
+- `./gradlew compileKotlinOhosArm64`（harmony-kmp-bridge）**BUILD SUCCESSFUL**，KSP 生成的 `ServiceProvider.kt` 已含 `mergeAccounts` 等新桥方法；`./gradlew :common:check :androidApp:testDebugUnitTest :androidApp:assembleDebug` 全绿；iOS `xcodebuild` 此前已通过；mock-server 45/45（本轮未改服务端）。
+
+## 人工修正点
+- [MSRV-016] submit 内 `syncFromServer` 重建 facade 清空输入 → 改为不重建的 `mergeAccounts` + 凭据回写。
+
+## 下轮交接
+- **已完成**：鸿蒙登录/注册提交前不再因账号发现重建 facade 而清空输入。
+- **未完成 / 阻塞项**：鸿蒙 ArkTS 侧需 DevEco 全量构建验证（`mergeAccounts` provider 生效、登录/注册跳转、被顶弹窗、前台 3s 监听）；三端交叉验收。
+
+# 2026-08-06 16:35 — 修复 iOS 前台被挤 + 三端头像本地缓存即时显示
+
+## 采纳内容
+- [MSRV-019] 修复 iOS 前台被挤不生效：根因是 `.task` 闭包在**创建时捕获 `scenePhase` 快照**，若启动瞬间非 `.active` 则循环内 `scenePhase == .active` 恒为 false → 前台检查永不触发。移除循环内的 scenePhase 判断，并在 `onChange(scenePhase)` 回前台时立即 `checkSessionOnForeground()`。
+- [MSRV-015] Android 头像本地缓存：新增 `LocalAvatarCache`（`files/avatars/{userId}.jpg`）；`resolveAvatarBitmap(avatarUri, context)` 优先读缓存、未命中下载并写缓存；`AvatarImage`/`AvatarImageWithRevision` 组合时先用 `resolveAvatarCached` 同步读缓存（即时显示、无占位闪烁）；上传成功后立即写缓存；注销账号清理缓存。
+- [MSRV-015] Android 头像上传改异步：选择/拍摄后 `scope.launch(Dispatchers.IO)` 上传，主线程不阻塞（修复保存按钮无响应的冻结问题）；成功后更新 avatarUri + revision（从缓存即时显示新头像）。
+- [MSRV-015] iOS 头像本地缓存：`ProfileImageStore` 新增 `Documents/avatars/{userId}.jpg` 缓存，`image(at:)` 优先读缓存、未命中下载写缓存，`save` 成功后写缓存，注销清理。
+
+## 人工审查点
+- [MSRV-015] 缓存按 userId 分文件：登录/换账号互不干扰；仅注销账号时删除（登出保留以便重登即时显示）。
+- [MSRV-015] 组合时同步解码缓存位图在 main 线程（512px JPEG 约毫秒级），换取"零闪烁"体验，可接受。
+- [MSRV-019] iOS `.task` 内不再依赖 scenePhase 快照，回前台由 `onChange` 触发即时检查 + 3s 周期兜底。
+
+## 验证结果
+- `./gradlew :common:check :androidApp:testDebugUnitTest :androidApp:assembleDebug :androidApp:lintDebug` 全绿；iOS `xcodebuild`（Simulator Debug）BUILD SUCCEEDED；`cd mock-server && npm test` 45/45（本轮未改服务端）。
+
+## 人工修正点
+- [MSRV-019] `.task` 捕获 scenePhase 快照导致 iOS 前台检查永不触发 → 去除该判断 + onChange 补即时检查。
+- [MSRV-015] `PersonalProfileEditScreen` 缺 `LaunchedEffect` import 编译红灯 → 补。
+
+## 下轮交接
+- **已完成**：iOS 前台被挤修复；Android/iOS 头像本地缓存（即时显示、上传即覆盖、无占位闪烁、上传不阻塞主线程）。
+- **未完成 / 阻塞项**：Harmony 侧头像缓存未做（ArkTS 本地文件需 DevEco 验证，可后续按同样思路 `filesDir/avatars/{userId}.jpg`）；Harmony 整体需 DevEco 重建验证；三端交叉验收。
+
+# 2026-08-06 16:50 — 完善鸿蒙端全部界面 Preview（getService 预览兜底 + 富数据健康 fixture）
+
+## 采纳内容
+- [UI-PREVIEW-010] `HarmonyServiceProvider.getService()` 未安装 native service 时不再抛错，改为返回 `PreviewHarmonyService`（no-op 实现全部契约方法，页面在 DevEco Previewer 下可正常组合渲染、交互退化为空操作）。
+- [UI-PREVIEW-009] Preview 服务的 `loadHealthSnapshot/previewHealthSnapshot/refreshHealthSnapshot` 返回富数据健康快照 fixture（12 张卡片，视觉数据复用 `preview/VisualPreviewData`），健康首页 Preview 显示真实卡片数据而非空壳。
+- 审计：16 个生产页面（登录/注册/找回/资料/健康页等）均已有 `@Preview`+`@Entry`，且静态 import 图不触达 knoi/provider（仅 EntryAbility/KnoiHarmonyServiceAdapter 触达，为运行时组合根）；`DebugStatePage` 为 spec 明确排除的调试页。认证页走 `getLoginViewModel()`→默认 `PreviewLoginAdapter`（纯 ArkTS）；健康编辑器页走 `getService()`（现为 Preview 兜底）。
+
+## 人工审查点
+- [UI-PREVIEW-010] `getService()` 运行时仍由 EntryAbility 安装真服务；Preview 下返回 no-op，符合"Preview 缺少 native service 时页面仍可组合"。
+- [UI-PREVIEW-009] fixture 的 title/summary 键复用既有资源名；视觉 caption 键取自 VisualPreviewData，个别键若资源缺失会在预览显示键文本（不影响布局调整）。
+- 本环境无 hvigor/DevEco，ArkTS 改动需在 DevEco 全量构建验证。
+
+## 验证结果
+- 静态审计：16 个生产页面均有 `@Preview`；页面 import 图仅含纯契约（`getService`/`getLoginViewModel`），不触达 knoi/provider；`preview/` 目录 4 个组件宿主 + 12 个视觉预览（拆两个文件，符合单文件 ≤10 预览限制）。
+- `./tools/check-ui-previews.sh` 依赖 `rg`（本机未安装 ripgrep）无法运行，属环境问题非门禁失败。
+- 本轮未改 common/Android/iOS/mock-server 逻辑，此前验证仍有效。
+
+## 人工修正点
+- [UI-PREVIEW-010] `getService()` 由"抛错"改为"返回 Preview no-op"，避免 Previewer 下页面崩溃。
+
+## 下轮交接
+- **已完成**：鸿蒙全部生产页面 Preview 可渲染（认证页空表单、健康页富数据卡片）；Preview 兜底服务与富数据 fixture。
+- **未完成 / 阻塞项**：需 DevEco 全量构建 + 逐个页面打开 Preview 验证渲染（尤其健康页 12 卡、认证表单）；若 Preview 仍受 EntryAbility native 初始化影响，需在 `initKnoiBridge` 加 Preview 环境守卫。
+
+# 2026-08-06 17:19 — 头像本地单文件化：登录覆盖/完善即存/修改保存才存/显示读本地
+
+## 采纳内容
+- [MSRV-015] 内部目录只保存**一份当前账号头像**：Android `AvatarStore`（`files/avatar_current.jpg`）、iOS `ProfileImageStore`（`Documents/avatar_current.jpg`），替代按 userId 分文件缓存。
+- [MSRV-015] 登录/切换账号：`AvatarStore.refreshFromServer(context, avatarUri, deviceId)` / iOS `ProfileImageStore.refreshFromServer(avatarUri:)` 先清除旧头像，再用服务器头像覆盖内部目录（Android AuthSucceeded 分支异步执行；iOS AuthCoordinator AuthSucceeded 调用）。
+- [MSRV-015] 信息完善界面：选图即上传服务器 + 覆盖内部目录（Android ProfileCompletionScreen / iOS ProfileCompletionView 现状保留）。
+- [MSRV-015] 信息修改界面：选图仅生成本地预览（Android `pendingAvatarBitmap/bytes` 或 iOS `avatarData`），**保存时才上传 + 覆盖内部目录 + 保存资料**（Android `PersonalProfileEditScreen` onSave 异步上传；iOS `AccountView.save` 上传后再提交；`hasChanges` 计入未上传的本地选图，保存按钮可用）。
+- [MSRV-015] 显示一律读内部目录：`resolveAvatarCached/resolveAvatarBitmap` 与 iOS `image(at:)` 先读当前文件，未命中再下载并覆盖；组合时同步读当前文件避免占位闪烁。
+- 注销账号：`AvatarStore.clear` / iOS `ProfileImageStore.deleteCache()`（去 userId 参数）。
+
+## 人工审查点
+- [MSRV-015] 单文件切换账号依赖 AuthSucceeded 时清除旧头像再拉新账号头像，避免显示上一账号头像；拉取期间短暂占位可接受。
+- [MSRV-015] iOS `AccountView.save` 上传失败时保留 `avatarData`，不会用旧头像误保存。
+- 本环境无 DevEco，鸿蒙头像缓存未随本轮改动（按同一思路后续做 ArkTS `filesDir/avatar_current.jpg`）。
+
+## 验证结果
+- `./gradlew :common:check :androidApp:testDebugUnitTest :androidApp:assembleDebug :androidApp:lintDebug` 全绿；iOS `xcodebuild`（Simulator Debug）BUILD SUCCEEDED；`cd mock-server && npm test` 45/45。
+
+## 人工修正点
+- [MSRV-015] Android 编译红灯：AuthNavGraph 缺 `LocalContext`、PersonalProfileEditScreen 缺 `BitmapFactory`、ProfileFieldRows 缺 `Bitmap`、Preview 调用缺 `previewAvatar` → 补 import 与参数。
+
+## 下轮交接
+- **已完成**：Android/iOS 头像单文件化（登录覆盖、完善即存、修改保存才存、显示读本地即时刷新）。
+- **未完成 / 阻塞项**：鸿蒙头像本地单文件（需 DevEco）；三端真机/模拟器联调确认头像全链路。
+
+# 2026-08-06 17:35 — 修复 iOS「我」页换头像后不更新（头像版本号强制刷新）
+
+## 采纳内容
+- [MSRV-015] 根因：主「我」页 `AccountAvatar(path: draft.avatarUri, ...)` 的 `path` 换头像后不变（相对路径 `/api/avatar/{userId}` 恒定），SwiftUI 判定 `AccountAvatar` 结构体相等而跳过 body 重渲染，`ProfileImageStore.image(at:)` 不再被调用 → 显示旧文件内容。
+- [MSRV-015] 修复：iOS `LoginViewModel` 新增 `@Published avatarRevision`；头像保存成功后 `notifyAvatarSaved()` 递增（信息完善页选图上传后、信息修改页保存上传后均调用）；主「我」页 `AccountAvatar` 加 `.id("account-avatar-\(viewModel.avatarRevision)")`，版本号变化时强制重建并重新读取内部目录当前头像。
+
+## 人工审查点
+- [MSRV-015] 版本号只在头像文件真正写入后递增，避免误触发；显示仍读内部目录单文件（即时）。
+- Android 端头像由 `avatarRevision` 状态 + `AvatarImageWithRevision` 的 key 驱动刷新，无此问题。
+
+## 验证结果
+- iOS `xcodebuild`（Simulator Debug）BUILD SUCCEEDED；本轮未改 common/Android/mock-server，此前验证仍有效。
+
+## 人工修正点
+- [MSRV-015] SwiftUI 结构体相等跳过 body 是根因；用 `.id(avatarRevision)` 强制重建而非依赖输入相等性。
+
+## 下轮交接
+- **已完成**：iOS「我」页换头像即时刷新。
+- **未完成 / 阻塞项**：鸿蒙头像本地单文件与版本刷新（需 DevEco）；三端联调。
+
+# 2026-08-06 18:08 — 单元测试显式 add-modules jdk.httpserver（消除 IDE 误报）
+
+## 采纳内容
+- androidApp/build.gradle.kts 测试任务加 `jvmArgs("--add-modules", "jdk.httpserver")`：`RemoteAuthRepositoryTest` 用 JDK 内置 `com.sun.net.httpserver`，Gradle 本可解析，显式声明供部分 IDE 测试源码集解析，消除"Unresolved reference"红波浪线，对构建无害。
+
+## 人工审查点
+- 该模块是 JDK 内置（JBR 21），非第三方依赖；Gradle 编译/运行本就通过，此改动仅为 IDE 兜底。
+
+## 验证结果
+- `./gradlew :androidApp:testDebugUnitTest :androidApp:assembleDebug` BUILD SUCCESSFUL；`./tools/check-sdd.sh` 通过。
+
+## 人工修正点
+- 无。
+
+## 下轮交接
+- 无阻塞；若个别 IDE 版本仍报错，改 Project SDK 为 JDK 21 后再看。

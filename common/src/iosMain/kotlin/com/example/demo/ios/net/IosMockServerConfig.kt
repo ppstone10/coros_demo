@@ -1,11 +1,14 @@
 package com.example.demo.ios.net
 
 /**
- * iOS 平台层 Mock 服务器地址配置（MSRV-007）。
+ * iOS 平台层 Mock 服务器地址与设备标识配置（MSRV-007/016）。
  * iOS 模拟器访问宿主机使用 localhost；真机按需覆盖 baseUrl。
+ * deviceId 由 Swift 侧生成并持久化，用于单设备登录与会话校验。
  */
 object IosMockServerConfig {
     var baseUrl: String = "http://localhost:3000"
+
+    var deviceId: String = "device-default"
 
     const val DefaultTimeoutSeconds = 5L
 }

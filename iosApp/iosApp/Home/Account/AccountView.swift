@@ -36,6 +36,7 @@ struct AccountView: View {
                 } label: {
                     HStack(spacing: 14) {
                         AccountAvatar(path: draft.avatarUri, username: username)
+                            .id("account-avatar-\(viewModel.avatarRevision)")
                         VStack(alignment: .leading, spacing: 5) {
                             Text(username).font(.system(size: 19)).foregroundStyle(.white)
                             Text(session?.account ?? "").font(.system(size: 12)).foregroundStyle(AppColors.Account.muted).lineLimit(1)
@@ -237,16 +238,10 @@ struct PersonalProfileEditView: View {
         .sheet(item: $activePicker) { EditProfilePickerSheet(picker: $0, draft: $draft) }
         .onChange(of: selectedPhoto) { _, item in
             guard let item else { return }
+            // MSRV-015：信息修改页选图仅存本地预览（avatarData），保存时才上传
             Task {
                 guard let data = try? await item.loadTransferable(type: Data.self) else { return }
-                let userId = viewModel.state.currentSession?.userId ?? ""
-                let path = await ProfileImageStore.save(data, userId: userId)
-                await MainActor.run {
-                    avatarData = data
-                    if let path {
-                        draft.avatarUri = path
-                    }
-                }
+                await MainActor.run { avatarData = data }
             }
         }
     }
@@ -272,8 +267,19 @@ struct PersonalProfileEditView: View {
 
     private func save() {
         guard canSave else { return }
-        if viewModel.submitInlineProfile(draft) == nil {
-            onClose()
+        Task { @MainActor in
+            // MSRV-015：信息修改页保存时才上传头像并覆盖内部目录
+            if let data = avatarData {
+                let userId = viewModel.state.currentSession?.userId ?? ""
+                if let path = await ProfileImageStore.save(data, userId: userId) {
+                    draft.avatarUri = path
+                    avatarData = nil
+                    viewModel.notifyAvatarSaved()
+                }
+            }
+            if viewModel.submitInlineProfile(draft) == nil {
+                onClose()
+            }
         }
     }
 }

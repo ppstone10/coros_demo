@@ -8,10 +8,12 @@ import java.util.concurrent.TimeUnit
 /**
  * 极简同步 HTTP 客户端：把网络 I/O 放到独立工作线程，同步阻塞等待结果。
  * 仅供 Android 平台层远程数据源使用；common 不感知本类。
+ * 所有请求携带 `X-Device-Id`（MSRV-016/018），供服务端做单设备/会话校验。
  */
 class MockServerHttpClient(
     private val baseUrl: String,
-    private val timeoutSeconds: Int = 5
+    private val timeoutSeconds: Int = 5,
+    private val deviceId: String = "device-default"
 ) {
     private val executor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "mock-server-http").apply { isDaemon = true }
@@ -35,6 +37,7 @@ class MockServerHttpClient(
                 connection.connectTimeout = timeoutSeconds * 1000
                 connection.readTimeout = timeoutSeconds * 1000
                 connection.setRequestProperty("Content-Type", contentType)
+                connection.setRequestProperty("X-Device-Id", deviceId)
                 connection.doOutput = true
                 connection.outputStream.use { it.write(bytes) }
                 connection.responseCode
@@ -58,6 +61,7 @@ class MockServerHttpClient(
                 connection.requestMethod = "GET"
                 connection.connectTimeout = timeoutSeconds * 1000
                 connection.readTimeout = timeoutSeconds * 1000
+                connection.setRequestProperty("X-Device-Id", deviceId)
                 val status = connection.responseCode
                 val stream = if (status in 200..299) connection.inputStream else connection.errorStream
                 val bytes = stream?.use { it.readBytes() } ?: ByteArray(0)
@@ -82,6 +86,7 @@ class MockServerHttpClient(
                 connection.connectTimeout = timeoutSeconds * 1000
                 connection.readTimeout = timeoutSeconds * 1000
                 connection.setRequestProperty("Content-Type", "application/json")
+                connection.setRequestProperty("X-Device-Id", deviceId)
                 if (json != null) {
                     connection.doOutput = true
                     connection.outputStream.use { it.write(json.toByteArray(Charsets.UTF_8)) }

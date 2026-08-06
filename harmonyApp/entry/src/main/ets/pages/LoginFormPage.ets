@@ -221,11 +221,11 @@ struct LoginFormPage {
       this.termsPromptShown = true;
       return;
     }
-    this.viewModel.dispatch({
+    await this.viewModel.dispatch({
       type: LoginActionType.ModeChanged, mode: AuthMode.Login, username: '', password: '',
       verifyCode: '', displayName: '', region: 'CN'
     });
-    this.viewModel.dispatch({
+    await this.viewModel.dispatch({
       type: LoginActionType.SubmitClicked, mode: AuthMode.Login, username: '', password: '',
       verifyCode: '', displayName: '', region: 'CN'
     });

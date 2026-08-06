@@ -2,6 +2,7 @@ package com.example.demo.auth.data
 
 import com.example.demo.common.auth.mock.AuthJson
 import com.example.demo.common.auth.mock.MockAuthStoreJson
+import com.example.demo.common.auth.model.ActiveDeviceInfo
 import com.example.demo.common.auth.model.AuthRegion
 import com.example.demo.common.auth.model.AuthSession
 import com.example.demo.common.auth.model.LoginRequestDto
@@ -27,12 +28,14 @@ import com.example.demo.core.network.MockServerHttpClient
 /**
  * Android 平台层远程认证数据源（MSRV-002/003）。
  * 实现与本地 [AuthRepository] 相同的同步接口，内部通过 HTTP 访问 mock server。
- * 会话与会话生命周期（TTL/冷启动懒校验）按 MSRV-006 由本地缓存承载。
+ * 会话与会话生命周期（TTL/冷启动懒校验）按 MSRV-006/019 由本地缓存承载，冷启动打
+ * `GET /api/auth/session` 发现被顶（MSRV-016/019）。
  */
 class RemoteAuthRepository(
     private val http: MockServerHttpClient,
     private val cache: AuthStoreDataSource,
     private val sessionTtlMs: Long = 10 * 1000L,
+    private val deviceIdProvider: () -> String = { "device-default" },
     nowEpochMs: () -> Long = { 0L }
 ) : AuthRepository {
     private var nowEpochMs: () -> Long = nowEpochMs
@@ -152,40 +155,72 @@ class RemoteAuthRepository(
     }
 
     override fun restoreSessionOnColdStart(): SessionResumeResult {
-        val store = loadStore()
-        val session = store.currentSession?.toDomainOrNull() ?: return SessionResumeResult.NoSession
-        if (!session.isValid) {
+        val session = loadStore().currentSession?.toDomainOrNull() ?: return SessionResumeResult.NoSession
+        checkSessionRemotely(session.userId)?.let { return it }
+
+        val sessionAfter = loadStore().currentSession?.toDomainOrNull()
+            ?: return SessionResumeResult.NoSession
+        if (!sessionAfter.isValid) {
             return when (clearSession()) {
                 is MockResult.Success -> SessionResumeResult.Expired
                 is MockResult.Failure -> SessionResumeResult.Failure(MockError.PersistFailed)
             }
         }
-        if (session.expireAtEpochMs > 0L && session.expireAtEpochMs <= nowEpochMs()) {
+        if (sessionAfter.expireAtEpochMs > 0L && sessionAfter.expireAtEpochMs <= nowEpochMs()) {
             return when (clearSession()) {
                 is MockResult.Success -> SessionResumeResult.Expired
                 is MockResult.Failure -> SessionResumeResult.Failure(MockError.PersistFailed)
             }
         }
-        if (session.expireAtEpochMs == 0L) return SessionResumeResult.Active(session)
-        val active = session.copy(expireAtEpochMs = 0L)
-        cache.save(store.copy(currentSession = active.toMockSession()))
+        if (sessionAfter.expireAtEpochMs == 0L) return SessionResumeResult.Active(sessionAfter)
+        val active = sessionAfter.copy(expireAtEpochMs = 0L)
+        cache.save(loadStore().copy(currentSession = active.toMockSession()))
         return SessionResumeResult.Active(active)
     }
 
     override fun resumeSessionInSameProcess(): SessionResumeResult {
-        val store = loadStore()
-        val session = store.currentSession?.toDomainOrNull()
+        val session = loadStore().currentSession?.toDomainOrNull()
             ?: return SessionResumeResult.NoSession
-        if (!session.isValid) {
+        // MSRV-019：暖恢复也打服务器懒校验，回前台即发现被顶
+        checkSessionRemotely(session.userId)?.let { return it }
+
+        val store = loadStore()
+        val sessionAfter = store.currentSession?.toDomainOrNull()
+            ?: return SessionResumeResult.NoSession
+        if (!sessionAfter.isValid) {
             return when (clearSession()) {
                 is MockResult.Success -> SessionResumeResult.Expired
                 is MockResult.Failure -> SessionResumeResult.Failure(MockError.PersistFailed)
             }
         }
-        if (session.expireAtEpochMs == 0L) return SessionResumeResult.Active(session)
-        val active = session.copy(expireAtEpochMs = 0L)
+        if (sessionAfter.expireAtEpochMs == 0L) return SessionResumeResult.Active(sessionAfter)
+        val active = sessionAfter.copy(expireAtEpochMs = 0L)
         cache.save(store.copy(currentSession = active.toMockSession()))
         return SessionResumeResult.Active(active)
+    }
+
+    /**
+     * MSRV-019：打 `GET /api/auth/session` 懒校验。被顶返回 `KickedElsewhere`、失效返回 `Expired`
+     * （均只清本地缓存，不发 logout，避免把其他设备的会话也清掉）；200 或网络失败返回 null。
+     */
+    private fun checkSessionRemotely(userId: String): SessionResumeResult? {
+        val check = http.get("/api/auth/session?userId=${userId.urlEncoded()}")
+        return when {
+            check.status == 401 && check.body.contains("SESSION_EXPIRED_ELSEWHERE") -> {
+                clearLocalSessionOnly()
+                SessionResumeResult.KickedElsewhere
+            }
+            check.status == 401 && check.body.contains("AUTH_REQUIRED") -> {
+                clearLocalSessionOnly()
+                SessionResumeResult.Expired
+            }
+            else -> null
+        }
+    }
+
+    /** 仅清本地会话缓存，不向服务器发 logout。 */
+    private fun clearLocalSessionOnly() {
+        cache.save(loadStore().copy(currentSession = null))
     }
 
     override fun resumeSession(): SessionResumeResult = restoreSessionOnColdStart()
@@ -221,9 +256,10 @@ class RemoteAuthRepository(
     }
 
     override fun register(request: RegisterRequestDto): LoginResult {
+        val deviceId = deviceIdProvider()
         val response = http.post(
             "/api/auth/register",
-            """{"account":${request.account.jsonString()},"password":${request.password.jsonString()},"verifyCode":${request.verifyCode.jsonString()},"region":${request.region.jsonString()},"displayName":${request.displayName?.jsonString() ?: "null"}}"""
+            """{"account":${request.account.jsonString()},"password":${request.password.jsonString()},"verifyCode":${request.verifyCode.jsonString()},"region":${request.region.jsonString()},"displayName":${request.displayName?.jsonString() ?: "null"},"deviceId":${deviceId.jsonString()}}"""
         )
         if (response.status in 200..299) {
             val session = parseSession(response.body)
@@ -236,10 +272,15 @@ class RemoteAuthRepository(
     }
 
     override fun login(request: LoginRequestDto): LoginResult {
+        val deviceId = request.deviceId.ifBlank { deviceIdProvider() }
         val response = http.post(
             "/api/auth/login",
-            """{"account":${request.account.jsonString()},"password":${request.password.jsonString()}}"""
+            """{"account":${request.account.jsonString()},"password":${request.password.jsonString()},"deviceId":${deviceId.jsonString()},"force":${request.force}}"""
         )
+        // MSRV-016：非 force 登录遇异地会话 -> 触发二次确认
+        if (response.status == 409 && response.body.contains("SESSION_ACTIVE_ELSEWHERE")) {
+            return LoginResult.SessionActiveElsewhere(parseActiveDevice(response.body))
+        }
         if (response.status in 200..299) {
             val session = parseSession(response.body)
                 ?: return MockError.CorruptedData.toLoginFailure()
@@ -281,6 +322,15 @@ class RemoteAuthRepository(
         val code = AuthJson.optionalString(errorJson, "code").orEmpty()
         val message = AuthJson.optionalString(errorJson, "message").orEmpty()
         return MockErrorMessage(code, message).toMockError() ?: MockError.PersistFailed
+    }
+
+    private fun parseActiveDevice(json: String): ActiveDeviceInfo? {
+        val errorJson = AuthJson.optionalObject(json, "error") ?: return null
+        val active = AuthJson.optionalObject(errorJson, "activeDevice") ?: return null
+        return ActiveDeviceInfo(
+            deviceId = AuthJson.optionalString(active, "deviceId").orEmpty(),
+            deviceName = AuthJson.optionalString(active, "deviceName").orEmpty()
+        )
     }
 
     private fun MockError.failure(): MockResult.Failure {

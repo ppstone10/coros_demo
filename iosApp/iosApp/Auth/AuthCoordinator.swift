@@ -135,6 +135,27 @@ struct AuthCoordinator: View {
                 set: { if !$0 { viewModel.toastMessage = nil } }
             )
         ))
+        .alert(
+            appLocalized("auth_error_session_expired_elsewhere"),
+            isPresented: Binding(
+                get: { viewModel.kickedDialogShown },
+                set: { _ in }
+            )
+        ) {
+            Button(appLocalized("common_confirm")) {
+                viewModel.confirmKickedDialogTapped()
+            }
+        }
+        .task {
+            // MSRV-019：前台周期性会话校验，被顶即弹窗（弹窗显示期间暂停）。
+            // 注意：不要在闭包里捕获 scenePhase（.task 创建时快照，启动瞬间可能非 active 导致永不检查）。
+            while !Task.isCancelled {
+                if viewModel.state.isLoggedIn && !viewModel.kickedDialogShown {
+                    viewModel.checkSessionOnForeground()
+                }
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+            }
+        }
         .onChange(of: viewModel.effectTrigger) { _ in
             guard let effect = viewModel.consumeEffect() else { return }
             handleNavigation(effect, viewModel: viewModel, healthViewModel: healthViewModel, router: router)
@@ -144,6 +165,8 @@ struct AuthCoordinator: View {
                 viewModel.pauseSession()
             } else if phase == .active {
                 viewModel.resumeSession()
+                // MSRV-019：回前台立即检查一次，被顶即弹窗
+                viewModel.checkSessionOnForeground()
             }
         }
         .onAppear {
@@ -176,6 +199,8 @@ private func handleNavigation(_ effect: LoginEffect, viewModel: LoginViewModel, 
         let destination: AuthRoute = effect.isNextRouteSignedIn ? .signedIn : .profileCompletion
         router.resetTo(destination)
         viewModel.toastMessage = appLocalized(effect.mode == .register_ ? "auth_register_success" : "auth_login_success")
+        // MSRV-015：登录/切换账号后用服务器头像覆盖内部目录当前头像
+        ProfileImageStore.refreshFromServer(avatarUri: effect.session.profile?.avatarUri)
     case _ as LoginEffectNavigateHome:
         router.resetTo(.signedIn)
         viewModel.toastMessage = appLocalized("auth_login_success")
@@ -192,6 +217,9 @@ private func handleNavigation(_ effect: LoginEffect, viewModel: LoginViewModel, 
     case _ as LoginEffectSessionExpired:
         router.resetKeepingEntranceAndPush(.login)
         viewModel.toastMessage = appLocalized("auth_session_expired")
+    case _ as LoginEffectSessionKicked:
+        // MSRV-019：被顶弹窗已提示，确认后静默回登录页
+        router.resetKeepingEntranceAndPush(.login)
     case let effect as LoginEffectShowMessage:
         viewModel.toastMessage = effect.message
     default:

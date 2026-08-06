@@ -118,6 +118,16 @@ export class LoginViewModel {
     return this.adapter.hasAccount(account);
   }
 
+  /** MSRV-019：被顶弹窗确认，清会话并回登录页。 */
+  confirmKickedDialog(): void {
+    this.adapter.confirmKickedDialog();
+  }
+
+  /** MSRV-019：前台周期性会话校验，被顶即弹窗。 */
+  checkSessionOnForeground(): void {
+    this.adapter.checkSessionOnForeground();
+  }
+
   resetPasswordMessage(account: string, newPassword: string): string {
     return this.adapter.resetPassword(account, newPassword);
   }

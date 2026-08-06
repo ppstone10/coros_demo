@@ -65,6 +65,22 @@ struct LoginPageView: View {
             }
             if showUnavailable { UnavailableFeatureDialog(onDismiss: { showUnavailable = false }) }
         }
+        .alert(
+            appLocalized("auth_error_session_active_elsewhere"),
+            isPresented: Binding(
+                get: { viewModel.confirmForceLogin },
+                set: { if !$0 { viewModel.cancelForceLogin() } }
+            )
+        ) {
+            Button(appLocalized("common_cancel"), role: .cancel) {
+                viewModel.cancelForceLogin()
+            }
+            Button(appLocalized("common_confirm")) {
+                viewModel.confirmForceLoginTapped()
+            }
+        } message: {
+            Text(appLocalized("auth_force_login_confirm_body"))
+        }
     }
 
     private var canLogin: Bool {
