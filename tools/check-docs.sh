@@ -109,7 +109,7 @@ restored_documents=(
   "docs/reference/ios_harmonyos_app_resource_management_guide.md|048496338f303f1959569cfe4e57e96c543ed53404a093f040621180f4811c14"
   "docs/reference/kmp-boundary.md|fde21ba9737f954d35a4264fed54309ac0972053c4eeff8c6240ace225543b7b"
   "docs/reference/ios-integration.md|99fce2e763b165992685652c7338fe2901bec0fa08e62b6183823313eb0d9448"
-  "docs/reference/注册登陆模块介绍.md|56b5213221cd08331a344ffa8cf4a8c5589de94820dc39865216afc8e88d2c7e"
+  "docs/reference/注册登陆模块介绍.md|cd6f02a77d1cd7bd11002eced77272812b531f2799444540ca4104114f694d04"
   "docs/archive/harmonyos-kmp/harmonyos-plan.md|12852aca97f239f5f9b8ff4dc5dee8211becf2453fdb7ed6d274aababcd854fd"
   "docs/archive/harmonyos-kmp/harmonyos-kmp-experiment.md|c915524ebdc7e4ca38a88f9a1e639f20bce39f1fb5f9989174aa14d3e8ae1867"
   "docs/archive/harmonyos-kmp/experimental/harmony-kmp/README.md|b8f094a58a996a6b524c20fa783084599e5889dd3d939291c95bfeabd977e4fc"

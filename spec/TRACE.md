@@ -216,15 +216,15 @@
 
 | 测试类 | 测试数 | 所属 Spec |
 |--------|--------|-----------|
-| `LoginRulesTest.kt` | 8 | auth-mock-spec §7, §8, §9；RES-LOC-001 |
-| `LoginUseCaseTest.kt` | 41 | auth-mock-spec §14；AUTH-SESSION-001~002；AUTH-PROFILE-DEFAULT-001；MSRV-016 |
+| `LoginRulesTest.kt` | 9 | auth-mock-spec §7, §8, §9；RES-LOC-001 |
+| `LoginUseCaseTest.kt` | 42 | auth-mock-spec §14；AUTH-SESSION-001~002；AUTH-PROFILE-DEFAULT-001；MSRV-016、MSRV-019 |
 | `BusinessMockDataSourceTest.kt` | 4 | auth-mock-spec §10, §11, §14 |
 | `HealthDashboardUseCaseTest.kt` | 47 | health-dashboard-cards 测试要求；HLTH-EMPTY-001；HLTH-CONTRACT-001~002；HLTH-SCENARIO-001；RES-MAINT-008；HLTH-VIS-001~003、027~032、042、044、046；HLTH-PERSIST-001~007 |
 | `EditableHealthDataTest.kt` | 16 | HLTH-EDIT-001~005、008、011~013、017~018、020、022~024 |
 | `HealthPreviewFixturesTest.kt` | 1 | UI-PREVIEW-001 |
-| **合计** | **117** | 业务需求映射测试 |
+| **合计** | **119** | 业务需求映射测试 |
 | `HealthStoreTest.kt` | 11 | HLTH-MVI-001~004、HLTH-MVI-010；HLTH-VIS-042 |
-| **common 全部合计** | **128** | 含 Health MVI 架构测试 |
+| **common 全部合计** | **130** | 含 Health MVI 架构测试 |
 | `SessionLifecycleCoordinatorTest.kt` | 2 | AUTH-SESSION-003（Android JVM） |
 
 ---
@@ -453,6 +453,67 @@
 | `HARM-008` | KNOI staging 槽位生命周期 | 结构门禁（桥暴露 5 个 staging 方法 + wrapper 存在）；代码审查；`ohosArm64Binaries` 构建通过、provider.ets diff 仅 5 个新增方法 | `HarmonyRemoteAuthRepository`（`by` 委托本地 + 覆盖 login/register/resume/restore 消费后清空）；`HarmonyLoginService.stageServerLoginResult/stageForceLogin/stageServerError/stageSessionExpired/clearStaged` | ✅（构建 + 代码审查） |
 | `HARM-009` | 被顶后不可用服务器会话"复活"登录态 | 代码审查（wrapper 仅在 staging 时短路，其余委托本地；本地为登录态权威）；`assembleApp` 通过 | `HarmonyRemoteAuthRepository` 委托路径不自动恢复服务器会话 | ✅（代码审查 + 构建） |
 | `HARM-010` | 被顶/二次确认弹窗样式与导航 | `LoginUseCaseTest.successfulLoginClearsStaleKickedDialogState`（先红后绿）；结构门禁（KickedDialog 确认消费 SessionKicked effect、弹窗固定宽度 300、`kickNotified` 守卫）；`assembleApp` 通过 | `SignedInPage.KickedDialog`/`LoginFormPage.ForceLoginDialog` 居中紧凑卡片；确认后 `consumeEffect` + `handleAuthEffect(SessionKicked)`；`LoginStore` 成功分支复位 `kickedDialogShown`；`MockServerSync.kickNotified`/`resetKickNotified` | ✅（测试 + 构建）⚠️（设备交互验收） |
+
+---
+
+## 2026-08-07 完善轮追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `STRUCT-003` | 完成 Android health 组件包迁移（`com.example.demo.health` → `components/visuals`/`components`/`editor`/`detail`），清除 39 处 `_root_ide_package_` IDE 占位符 | `./gradlew :androidApp:assembleDebug`、`:androidApp:testDebugUnitTest`、`:common:check` 通过；全仓 grep `_root_ide_package_` 计数为 0；`git diff --check` | Android `health/components/**`、`health/editor/CardEditor.kt`、`health/detail/DetailPlaceholder.kt`、`health/navigation/HealthNavGraph.kt`、`health/screens/HealthDashboardScreen.kt`；补 `com.example.demo.health.localizedHealthText` 与 components 内部符号 import | ✅ |
+| `STRUCT-004` | 拆分可追溯，不留孤儿代码（含测试类 import 同步） | `:androidApp:testDebugUnitTest` 通过；health 目录重复 import 扫描为 0 | `DashboardVisualMathTest.kt`、`PullToRefreshStateTest.kt` 同步新包 import | ✅ |
+| `DOC-008` | 测试事实同步：`LoginUseCaseTest` 41→42、共享业务合计 117→118、common 全部合计 128→129 | `./tools/check-docs.sh` 原 5 项失败全部转绿 | `TEST_REPORT.md`（计数表/合计段/测试明细新增 `successfulLoginClearsStaleKickedDialogState`）、`spec/TRACE.md` 测试总览 | ✅ |
+| `DOC-010/012` | 恢复文档可信哈希同步：`docs/reference/注册登陆模块介绍.md` 在 1c39257 正常演进后，门禁仍持旧哈希 | `./tools/check-docs.sh` 通过；`bash -n tools/check-docs.sh` 语法通过 | `tools/check-docs.sh` 可信哈希更新为 `cd6f02a7…`（与 HEAD 一致） | ✅ |
+
+**本轮说明**：`check-health-navigation.sh`、`check-health-editable-normal-data.sh` 等 10 个健康专项门禁在 HEAD（本轮改动前）即已失败（STRUCT-001/010 文件拆分后脚本断言仍引用旧路径），且本机未安装 `rg`；与本轮改动无关，作为历史债务记录，待人工决策是否纳入修复轮。
+
+### 长链 FQN 清理追溯
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `STRUCT-004` / `RES-MAINT-004` | 消除代码内冗余的全限定链式引用（如 `androidx.compose.foundation.layout.Arrangement.spacedBy`），改用 import + 短名 | `./gradlew :common:check :androidApp:assembleDebug :androidApp:testDebugUnitTest` 通过；`harmony-kmp-bridge` `:compileKotlinOhosArm64` 通过；全仓代码位 FQN 扫描计数为 0；`./tools/check-sdd.sh`、`./tools/check-docs.sh` 通过 | Android 主代码 `AvatarImage.kt`/`AuthComponents.kt`/`HealthGridVisual.kt`/`LoadVisual.kt`；测试 `RemoteAuthRepositoryTest.kt`/`HealthDashboardUseCaseTest.kt`/`EditableHealthDataTest.kt`；bridge `HarmonyLoginJson.kt`，共 18 处 FQN 替换为 import + 短名 | ✅ |
+
+### 健康专项门禁债务修复追溯（2026-08-07）
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `STRUCT-010` | 类别 B：脚本断言路径同步到 STRUCT-010/002/007 拆分后的文件位置（common 子包 `model/rules/store/mock`、`health/navigation`、`HarmonyHealthSnapshotJson/Bridge`） | 9 个 `check-health-*.sh` 全部转绿 | `check-health-editable-normal-data.sh`（14→0）、`check-health-cross-scenario-editing.sh`（6→0）、`check-health-hrv-segments-and-harmony-save.sh`（8→0）、`check-health-card-adaptive-layout.sh`（4→0）、`check-health-dashboard-runtime-states.sh`（5→0）；另同步 `check-resources.sh`、`check-ui-previews.sh` 同类陈旧路径 | ✅ |
+| `HLTH-EDIT-024/025` | 类别 C：断言文本与重构后等价实现对齐（多行 dispatch、`<Name>View` 命名、独立 Visual 组件、`vp2px` 几何抽取到 `HealthVisualHelpers`、ForEach key 抽到 `fieldForEachKey`、保存改 `saveNormalHealthEditFormResultJson`） | `check-health-card-style-decoupling.sh`（3→0）、`check-health-cross-platform-parity.sh`（20→0）、`check-health-card-fidelity.sh`（17→0）、`check-health-input-focus-and-account-refresh.sh`（1→0） | 对应 4 个脚本断言更新 | ✅ |
+| `HLTH-VIS-039` | 修复真实回退：`MetricComp` 顶部指标模板色（`ImageRenderMode.Template` + `fillColor(iconColor)`）在目录对齐重构中丢失，按 Spec 恢复并让 `SignedInPage` 传入 `AppColors.STEPS/CALORIES/ACTIVE` | `check-health-cross-platform-parity.sh` 模板色 3 项断言转绿 | `harmonyApp/.../health/components/MetricComp.ets`、`harmonyApp/.../pages/SignedInPage.ets` | ✅（ArkTS 编译待 DevEco 环境复验） |
+| `RES-MAINT-002` | 类别 D：三端共享图标一致性，以 Android/iOS 为正确源 | `check-health-card-fidelity.sh` 三张 PNG 哈希断言转绿 | `harmonyApp/.../media/{steps_icon,icon_calories,sport_time_icon}.png` 同步为 iOS 版本 | ✅ |
+| `SDD-009` | 门禁全绿 | 12 个 `check-health-*.sh` 全部 0 FAIL；`check-resources.sh`、`check-ui-previews.sh` 通过；`:common:check`、`:androidApp:assembleDebug`、`:androidApp:testDebugUnitTest`、`check-sdd.sh`、`check-docs.sh`、`git diff --check` 通过 | 本轮 tools/ 与 HarmonyOS UI 变更 | ✅ |
+
+**遗留如实记录**：`check-resource-maintainability.sh` 4 项失败（`commonHanLiterals` 5、`androidHanLiterals` 4、`harmonyHanLiterals` 3、`androidDirectColors` 2）在 HEAD 即存在；前 3 类全部命中**注释内的中文**（KDoc/`//`），剥离注释后计数为 0，属门禁未排除注释的误报；`androidDirectColors` 2 处为 `AvatarImage.kt` 的 `Color.Transparent`（真实直接色，非本轮引入）。待人工决策是否修复。另：本机无 DevEco/hvigorw，`MetricComp.ets`/`SignedInPage.ets` 改动未做 ArkTS 编译验证。
+
+### 资源债务与图标一致性收尾追溯（2026-08-07）
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `RES-MAINT-004` | 修复 `check-resource-maintainability.sh` 误报：`count_matches` 先剥离 `/* */` 与 `//` 注释（含字符串内 `//` 保护）再匹配硬编码文案/直接色 | `./tools/check-resource-maintainability.sh` 通过：`androidHanLiterals=0, iosHanLiterals=0, harmonyHanLiterals=0, commonHanLiterals=0, androidDirectColors=0, iosDirectColors=0, harmonyDirectColors=0`（确认无隐藏真实债务） | `tools/check-resource-maintainability.sh` 新增 `strip_comments` | ✅ |
+| `RES-MAINT-004` | `AvatarImage.kt` 2 处 `Color.Transparent` 直接色改成语义 Token | `:androidApp:assembleDebug`、`:androidApp:testDebugUnitTest` 通过 | `AvatarImage.kt` 用 `AppColors.Core.Transparent`（Token 已存在 `AppColors.kt:11`），移除未用 `Color` import | ✅ |
+| `HLTH-VIS-039` / `RES-MAINT-002` | 三端指标图标一致性采用**方案 A（统一模板着色）**：三端源文件已一致（steps/sport 纯白、calories 蓝，仅 alpha 决定形状）；三端渲染期着色代码齐备（Android `ColorFilter.tint`、iOS `.renderingMode(.template)+foregroundStyle`、Harmony `MetricComp` `.renderMode(Template)+fillColor`），语义色三端一致（绿 `#00DF7B`/黄 `#FFC928`/紫 `#D72BCC`） | 12 个 `check-health-*.sh` 与 `check-resources.sh` 通过；Android/iOS 构建通过 | 代码已齐；Harmony 需 DevEco 重建验证 | ✅（Harmony 构建待 DevEco 复验） |
+| `SDD-009` | 全部自动化门禁归零 | 20 个 `tools/*.sh` 全部 0 FAIL；`:common:check`、`:androidApp:assembleDebug`、`:androidApp:testDebugUnitTest` 通过 | 本轮变更 | ✅ |
+
+**说明**：三端指标图标源文件保持现状（含蓝色 `icon_calories`），不做预着色烘焙——模板着色仅使用 alpha 通道，源色不影响最终 tint 结果；若 Harmony 重建后模板色仍不生效，再回退方案 B（预着色文件，需同时重编 Android WebP，本机 `sips` 不支持写 WebP）。
+
+### 2026-08-07 收尾轮追溯（图标预着色 / MSRV-011 / 大文件拆分）
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `HLTH-VIS-039` | **图标方案定案为预着色文件**：鸿蒙模板着色不可用，改为生成绿 `#00DF7B`/黄 `#FFC928`/紫 `#D72BCC` 预着色 PNG，三端字节一致（Android `drawable-nodpi/*.png` 替换 WebP、iOS imageset、Harmony media）；移除三端渲染期着色（Android `ColorFilter.tint`、iOS `.renderingMode(.template)+foregroundStyle`、Harmony `MetricComp` `renderMode+fillColor`），文件即颜色来源 | `check-health-cross-platform-parity.sh` MetricComp 断言改为"直接渲染 + 拒绝 renderMode"并转绿；`:androidApp:assembleDebug`、iOS `xcodebuild` 通过 | 预着色 PNG 由脚本生成；`ArcAndMetrics.kt`、`HeroArcView.swift`、`MetricComp.ets`、`SignedInPage.ets` 去着色；`check-health-cross-platform-parity.sh` 断言更新 | ✅（Harmony 构建待 DevEco） |
+| `MSRV-011` | 服务不可达/写失败提示"服务器连接失败"：common 新增 `MockError.NetworkUnavailable`（`AUTH_NETWORK_UNAVAILABLE`/`auth_error_network_unavailable`，proto `NETWORK_UNAVAILABLE=13`）；Android/iOS `parseError` 网络失败（status -1）映射；Harmony `NETWORK_ERROR`→`NETWORK_UNAVAILABLE`；健康 `HealthDashboardStateDataSource.save` 改为 `MockResult<Unit>`（区分网络/持久化失败），远程数据源 status -1→`NetworkUnavailable` | `LoginRulesTest.networkUnavailableMapsToStableMessageKey`；`:common:check`、`:androidApp:testDebugUnitTest`、bridge `:compileKotlinOhosArm64` 通过；`check-resources.sh` 26 键对齐 | `auth_mock.proto`、`LoginModels.kt`、`AuthMessageKeys.kt`、Android/iOS `parseError`、`MockServerSync.ets`、`HealthDashboardStore.kt` 接口+7 调用点、三端资源（`auth_error_network_unavailable`）与解析器 | ✅ |
+| `STRUCT-003` | 大文件拆分（纯机械、公开符号不变）：Android `AuthComponents.kt`787→4 文件、`NormalDataEditor.kt`577→3 文件；iOS `AuthComponents.swift`608→4、`NormalDataEditor.swift`519→3、`HealthDashboardView.swift`491→3（pbxproj 登记 7 新文件）；Harmony `AuthComponents.ets`475→4、`SignedInPage.ets`620→2、`NormalDataSectionPage.ets`475→2、`ProfileCompletionPage.ets`1611→4 | Android `:androidApp:assembleDebug :androidApp:testDebugUnitTest`、iOS `xcodebuild`（含新增 `#Preview`）通过；全部门禁 0 FAIL | 23 个新文件；门禁路径/断言随拆分同步（`check-health-*`、`check-ui-previews.sh` 补 6 个 iOS `#Preview`、`check-health-editable-normal-data.sh` 指向 `NormalDataEditorFields/Sections`）；TEST_REPORT/TRACE 计数更新（LoginRulesTest 9，合计 119，common 130） | ✅（Android/iOS 构建验证；Harmony ArkTS 待 DevEco） |
+| `SDD-009` | 门禁全绿 | 20 个 `tools/*.sh` 0 FAIL；`mock-server` 46/46；`:common:check`、Android、iOS、bridge 构建通过 | 本轮全部变更 | ✅ |
+
+**用户已确认的历史验收项**（2026-08-07）：1.1 健康首页三端视觉（卡片/下拉刷新/HRV 与静息心率指针重叠/体重滑轮/周计划日期切换）、1.2 鸿蒙互顶二次确认、1.3 鸿蒙头像全链路、1.4 会话懒校验（冷启动/回前台）均已确认实现，不再作为待验收项。
+
+### 鸿蒙信息修改页未保存头像回写修复追溯（2026-08-07）
+
+| Spec ID | 规范 | 测试/验证 | 实现/文档 | 状态 |
+|---------|------|-----------|-----------|------|
+| `MSRV-015` | 鸿蒙信息修改页选图后仅本页预览，未保存返回时"我"页等仍显示旧头像；保存时才写缓存并上传（对齐 Android `pendingAvatarBitmap`/iOS 本地预览方案） | 根因：editMode 选图即 `writeAvatarCache` 写入共享缓存文件 `avatar_current.jpg`（"我"页 `AvatarImage` 同读该文件）→ 未保存即回写。`tools/check-account-profile-regressions.sh` 新增断言（`pendingAvatarBase64` 内存预览、保存时 `uploadAvatarBytesToServer(bytes, userId)`、`pendingAvatarBytes = new Uint8Array(0)`）并转绿；全部门禁 0 FAIL | `AvatarImage.ets` 新增 `pendingAvatarBase64` prop 优先预览 + 导出 `avatarBytesToBase64`；`ProfileCompletionAvatar.ets` 透传；`ProfileCompletionPage.ets` 选图仅存 `pendingAvatarBase64/pendingAvatarBytes`（内存态），保存时提交并清空 | ✅（ArkTS 逻辑；编译与真机交互待 DevEco 复核） |
+
+**HarmonyOS 说明**：本机无 DevEco/hvigorw，本轮 Harmony ArkTS 改动（MetricComp/SignedInPage 去着色、4 个大文件拆分与 import 全仓同步、`@Builder`→`@Component` 的弹窗/编辑行改造）未做 ArkTS 编译与真机交互验证，需在 DevEco 环境 `hvigorw assembleApp` 复核。
 
 ---
 

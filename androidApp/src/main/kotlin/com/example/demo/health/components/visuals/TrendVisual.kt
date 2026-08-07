@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components.visuals
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Column
@@ -17,6 +17,11 @@ import androidx.compose.ui.unit.sp
 import com.example.demo.common.health.model.HealthCardType
 import com.example.demo.common.health.model.HealthCardVisualData
 import com.example.demo.core.resources.AppColors
+import com.example.demo.health.components.OverviewRow
+import com.example.demo.health.components.UnitText
+import com.example.demo.health.components.ValueText
+import com.example.demo.health.components.normalizedHeartRateInterval
+import com.example.demo.health.localizedHealthText
 import kotlin.math.max
 @Composable
 fun TrendVisual(type: HealthCardType, v: HealthCardVisualData) {
@@ -24,8 +29,14 @@ fun TrendVisual(type: HealthCardType, v: HealthCardVisualData) {
         left = {
             Column {
                 Row(verticalAlignment = Alignment.Bottom) {
-                    ValueText(v.primaryValue, 32)
-                    UnitText(v.primaryUnit, 20)
+                    ValueText(
+                        v.primaryValue,
+                        32
+                    )
+                    UnitText(
+                        v.primaryUnit,
+                        20
+                    )
                 }
                 v.caption?.let {
                     Text(

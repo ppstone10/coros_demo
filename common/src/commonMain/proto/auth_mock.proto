@@ -28,6 +28,7 @@ enum MockErrorCode {
   NEW_PASSWORD_SAME_AS_OLD = 10;
   EMPTY_DATA = 11;
   CORRUPTED_DATA = 12;
+  NETWORK_UNAVAILABLE = 13;
 }
 
 message MockErrorMessage {

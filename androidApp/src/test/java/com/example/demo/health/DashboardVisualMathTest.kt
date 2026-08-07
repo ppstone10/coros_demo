@@ -4,6 +4,13 @@ import com.example.demo.common.health.model.HealthCardVisualData
 import com.example.demo.common.health.model.HealthCardVisualKind
 import com.example.demo.common.health.model.LocalizedTextSpec
 import com.example.demo.common.health.model.WeeklyDayPlan
+import com.example.demo.health.components.abilityNeedleAngleDegrees
+import com.example.demo.health.components.calorieArcProgress
+import com.example.demo.health.components.circularArcDiameter
+import com.example.demo.health.components.clampedVisualProgress
+import com.example.demo.health.components.normalizedHeartRateInterval
+import com.example.demo.health.components.rangeMarkerVerticalBounds
+import com.example.demo.health.components.weeklyVisualForSelectedDay
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

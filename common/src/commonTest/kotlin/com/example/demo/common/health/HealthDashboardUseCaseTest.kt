@@ -8,6 +8,7 @@ import com.example.demo.common.auth.model.LoginResult
 import com.example.demo.common.auth.model.MockError
 import com.example.demo.common.auth.model.MockResult
 import com.example.demo.common.auth.usecase.RegisterUseCase
+import com.example.demo.common.auth.store.LoginStore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -544,7 +545,7 @@ class HealthDashboardUseCaseTest {
         val healthStore = HealthDashboardStore(repository, persistence)
         assertIs<MockResult.Success<PersistedDashboard>>(healthStore.load())
 
-        val loginStore = com.example.demo.common.auth.store.LoginStore(
+        val loginStore = LoginStore(
             authRepository = repository,
             onDeleteUserData = healthStore::clear
         )

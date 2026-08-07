@@ -5,12 +5,14 @@ import com.example.demo.common.auth.model.MockError
 import com.example.demo.common.auth.model.LoginRequestDto
 import com.example.demo.common.auth.model.LoginResult
 import com.example.demo.common.auth.model.RegisterRequestDto
+import com.example.demo.common.auth.model.SessionResumeResult
 import com.example.demo.common.auth.model.UserProfile
 import com.example.demo.common.auth.model.UserGender
 import com.example.demo.common.auth.model.MeasurementSystem
 import com.example.demo.common.auth.repository.InMemoryAuthStoreDataSource
 import com.example.demo.core.network.MockServerHttpClient
 import com.example.demo.health.data.RemoteHealthDashboardStateDataSource
+import com.example.demo.common.health.store.HealthDashboardStateDataSource
 import com.example.demo.common.health.model.HealthDashboardSnapshot
 import com.example.demo.common.health.model.HealthMockScenario
 import com.sun.net.httpserver.HttpServer
@@ -207,7 +209,7 @@ class RemoteAuthRepositoryTest {
     fun healthSourceRoundTripsSnapshot() {
         val snapshot = HealthDashboardSnapshot(userId = "mock-user-default")
         val saved = healthSource.save(snapshot)
-        assertTrue(saved)
+        assertTrue(saved is MockResult.Success)
 
         val loaded = healthSource.load("mock-user-default")
         assertEquals("mock-user-default", loaded?.userId)
@@ -244,7 +246,7 @@ class RemoteAuthRepositoryTest {
         // 模拟进入后台 10s 后冷启动：本地 TTL 判定过期
         currentClockMs += 10_000L
         val cold = ttlRepo.restoreSessionOnColdStart()
-        assertEquals(com.example.demo.common.auth.model.SessionResumeResult.Expired, cold)
+        assertEquals(SessionResumeResult.Expired, cold)
         assertTrue(ttlRepo.verifyBusinessAccess() is MockResult.Failure)
     }
 
@@ -261,7 +263,7 @@ class RemoteAuthRepositoryTest {
 
         // 未超过 TTL 的暖恢复仍保持活跃
         currentClockMs += 5_000L
-        assertTrue(ttlRepo.resumeSessionInSameProcess() is com.example.demo.common.auth.model.SessionResumeResult.Active)
+        assertTrue(ttlRepo.resumeSessionInSameProcess() is SessionResumeResult.Active)
         assertTrue(ttlRepo.verifyBusinessAccess() is MockResult.Success)
     }
 
@@ -288,7 +290,7 @@ class RemoteAuthRepositoryTest {
 
         sessionCheckMode = "kicked"
         val cold = repo.restoreSessionOnColdStart()
-        assertEquals(com.example.demo.common.auth.model.SessionResumeResult.KickedElsewhere, cold)
+        assertEquals(SessionResumeResult.KickedElsewhere, cold)
         assertTrue(repo.verifyBusinessAccess() is MockResult.Failure)
         assertEquals(MockError.AuthRequired, (repo.verifyBusinessAccess() as MockResult.Failure).error)
     }
@@ -300,7 +302,7 @@ class RemoteAuthRepositoryTest {
 
         sessionCheckMode = "expired"
         val cold = repo.restoreSessionOnColdStart()
-        assertEquals(com.example.demo.common.auth.model.SessionResumeResult.Expired, cold)
+        assertEquals(SessionResumeResult.Expired, cold)
     }
 
     @Test
@@ -310,7 +312,7 @@ class RemoteAuthRepositoryTest {
 
         sessionCheckMode = "active"
         val cold = repo.restoreSessionOnColdStart()
-        assertTrue(cold is com.example.demo.common.auth.model.SessionResumeResult.Active)
+        assertTrue(cold is SessionResumeResult.Active)
         assertTrue(repo.verifyBusinessAccess() is MockResult.Success)
     }
 
@@ -321,7 +323,7 @@ class RemoteAuthRepositoryTest {
 
         sessionCheckMode = "kicked"
         val resumed = repo.resumeSessionInSameProcess()
-        assertEquals(com.example.demo.common.auth.model.SessionResumeResult.KickedElsewhere, resumed)
+        assertEquals(SessionResumeResult.KickedElsewhere, resumed)
         assertTrue(repo.verifyBusinessAccess() is MockResult.Failure)
     }
 
@@ -332,7 +334,7 @@ class RemoteAuthRepositoryTest {
 
         sessionCheckMode = "active"
         val resumed = repo.resumeSessionInSameProcess()
-        assertTrue(resumed is com.example.demo.common.auth.model.SessionResumeResult.Active)
+        assertTrue(resumed is SessionResumeResult.Active)
     }
 
     @Test
@@ -356,11 +358,11 @@ class RemoteAuthRepositoryTest {
     }
 
     private class InMemoryHealthDashboardStateDataSourceStub :
-        com.example.demo.common.health.store.HealthDashboardStateDataSource {
+        HealthDashboardStateDataSource {
         private var snapshots = mutableMapOf<String, HealthDashboardSnapshot>()
         override fun load(userId: String): HealthDashboardSnapshot? = snapshots[userId]
-        override fun save(snapshot: HealthDashboardSnapshot): Boolean {
-            snapshots[snapshot.userId] = snapshot; return true
+        override fun save(snapshot: HealthDashboardSnapshot): MockResult<Unit> {
+            snapshots[snapshot.userId] = snapshot; return MockResult.Success(Unit)
         }
         override fun clear(userId: String): Boolean { snapshots.remove(userId); return true }
     }

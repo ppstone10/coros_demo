@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components.visuals
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -29,6 +29,8 @@ import com.example.demo.R
 import com.example.demo.common.health.model.HealthCardVisualData
 import com.example.demo.common.health.model.HealthRangeLevel
 import com.example.demo.core.resources.AppColors
+import com.example.demo.health.components.OverviewRow
+import com.example.demo.health.localizedHealthText
 import kotlin.math.max
 import com.example.demo.common.health.model.HealthCardType
 
@@ -66,7 +68,11 @@ fun HrvAssessmentVisual(v: HealthCardVisualData) {
 @Composable
 private fun HrvRangeOverview(v: HealthCardVisualData) {
     val range = v.range
-    val unit = v.primaryUnit?.let { localizedHealthText(it) }.orEmpty()
+    val unit = v.primaryUnit?.let {
+        localizedHealthText(
+            it
+        )
+    }.orEmpty()
     Column(
         Modifier.width(130.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -128,5 +134,9 @@ private fun HrvRangeOverview(v: HealthCardVisualData) {
 @Preview(name = "HRV assessment visual", showBackground = true, backgroundColor = 0xFF171719)
 @Composable
 private fun HrvAssessmentVisualPreview() {
-    PreviewVisualSurface { HrvAssessmentVisual(previewHealthVisual(HealthCardType.HrvAssessment)) }
+    PreviewVisualSurface {
+        HrvAssessmentVisual(
+            previewHealthVisual(HealthCardType.HrvAssessment)
+        )
+    }
 }

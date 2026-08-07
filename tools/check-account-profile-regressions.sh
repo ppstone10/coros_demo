@@ -25,6 +25,19 @@ required = {
         "@Watch('onAvatarInputChanged')",
         "data:image/jpeg;base64,",
         "'X-Device-Id'",
+        # 信息修改页"选图后未保存"的本地预览（内存态，最高优先），"我"页不传该 prop
+        "pendingAvatarBase64",
+    ],
+    # MSRV-015：信息修改页选图仅写入内存 pendingAvatarBase64 做本页预览，不写共享缓存文件；
+    # 保存时才 uploadAvatarBytesToServer 提交（未保存返回时内存态销毁，"我"页保持旧头像）
+    "harmony": [
+        "profile_email",
+        "profileEmail",
+        "getFocusController().clearFocus()",
+        "profileDefaultUsername",
+        "this.pendingAvatarBase64 = avatarBytesToBase64(bytes)",
+        "uploadAvatarBytesToServer(bytes, userId)",
+        "this.pendingAvatarBytes = new Uint8Array(0)",
     ],
 }
 for name, needles in required.items():

@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components.visuals
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

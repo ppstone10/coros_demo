@@ -341,38 +341,10 @@ struct HealthDashboardView: View {
     }
 
     private func cardRow(_ card: HealthCard) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 5) {
-                Image(card.id == "TodayActivity" ? AppImages.Health.todayHeader : card.icon).resizable().scaledToFit().frame(width: 20, height: 20)
-                Text(card.title).font(.system(size: 16, weight: .medium)).foregroundStyle(AppColors.Health.cardTitle).lineLimit(1)
-                Spacer(minLength: 0)
-                if card.id == "HealthCheck", let measuredTime = card.visual?.caption {
-                    Text(localizedHealthText(measuredTime))
-                        .font(.system(size: 10))
-                        .foregroundStyle(AppColors.Health.muted)
-                        .lineLimit(1)
-                }
-            }
-            if card.isEmpty {
-                Text(card.summary).font(.system(size: 14)).foregroundStyle(AppColors.Health.muted)
-                    .padding(.top, 12)
-            } else if let visual = card.visual {
-                HealthCardVisualContent(
-                    cardType: card.id,
-                    visual: visual,
-                    onWeightEdit: {
-                        weightPickerValue = Double(visual.primaryValue ?? "") ?? 60.0
-                        showsWeightPicker = true
-                    }
-                )
-            } else {
-                Text(card.summary).font(.system(size: 14)).foregroundStyle(card.isRisk ? AppColors.Health.risk : AppColors.Health.muted)
-            }
+        HealthDashboardCardRow(card: card) {
+            weightPickerValue = Double(card.visual?.primaryValue ?? "") ?? 60.0
+            showsWeightPicker = true
         }
-        .padding(.horizontal, 16).padding(.vertical, 14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AppColors.Health.card).clipShape(RoundedRectangle(cornerRadius: 8))
-        .clipped()
     }
 
 }
@@ -390,90 +362,6 @@ private struct RefreshIndicatorHeightPreferenceKey: PreferenceKey {
 
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = max(value, nextValue())
-    }
-}
-
-private struct HealthCardVisualContent: View {
-    let cardType: String
-    let visual: HealthCardVisualData
-    let onWeightEdit: () -> Void
-
-    private var contentMinimumHeight: CGFloat {
-        switch cardType {
-        case "TodayActivity": 58
-        case "WeeklyPlan": 110
-        case "TrainingLoad": 60
-        case "TrainingAssessment": 130
-        case "Recovery": 78
-        case "RunningAbility", "CyclingAbility": 71
-        case "HeartRate", "Stress", "RestingHeartRate", "HrvAssessment", "Sleep": 60
-        case "HealthCheck": 114
-        case "BodyManagement": 121
-        default: 0
-        }
-    }
-
-    var body: some View {
-        Group {
-            switch cardType {
-            case "TodayActivity": ActivityView(visual: visual)
-            case "WeeklyPlan": WeeklyPlanView(visual: visual)
-            case "TrainingLoad": TrainingLoadView(visual: visual)
-            case "TrainingAssessment": TrainingAssessmentView(visual: visual)
-            case "Recovery": RecoveryView(visual: visual)
-            case "RunningAbility", "CyclingAbility": AbilityView(cardType: cardType, visual: visual)
-            case "HeartRate", "Stress": TrendView(cardType: cardType, visual: visual)
-            case "RestingHeartRate": RestingHeartRateView(visual: visual)
-            case "HrvAssessment": HrvAssessmentView(visual: visual)
-            case "Sleep": SleepView(visual: visual)
-            case "HealthCheck": HealthGridView(visual: visual)
-            case "BodyManagement": BodyView(visual: visual, onWeightEdit: onWeightEdit)
-            default: EmptyView()
-            }
-        }
-        .frame(minHeight: contentMinimumHeight, alignment: .topLeading)
-    }
-}
-
-private struct HealthWeightPickerSheet: View {
-    let current: Double
-    let onConfirm: (Double) -> Void
-    @Environment(\.dismiss) private var dismiss
-    @State private var weightTenths = 600
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button(appLocalized("common_cancel")) { dismiss() }
-                Spacer()
-                Text(appLocalized("profile_weight_picker")).font(.system(size: 19, weight: .semibold))
-                Spacer()
-                Button(appLocalized("common_confirm")) {
-                    onConfirm(Double(weightTenths) / 10.0)
-                    dismiss()
-                }
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 20)
-            .frame(height: 58)
-            Picker("", selection: $weightTenths) {
-                ForEach(300...2000, id: \.self) {
-                    Text(String(format: "%.1f", Double($0) / 10.0))
-                }
-            }
-            .pickerStyle(.wheel)
-            .colorScheme(.dark)
-        }
-        .presentationDetents([.height(360)])
-        .presentationDragIndicator(.hidden)
-        .background(AppColors.Account.sheet.ignoresSafeArea())
-        .onAppear { weightTenths = Int((current * 10.0).rounded()).clamped(to: 300...2000) }
-    }
-}
-
-private extension Comparable {
-    func clamped(to range: ClosedRange<Self>) -> Self {
-        min(max(self, range.lowerBound), range.upperBound)
     }
 }
 

@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.editor
 
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -55,6 +55,8 @@ import com.example.demo.core.resources.AppImages
 import com.example.demo.core.resources.AppSpacing
 import com.example.demo.core.resources.AppTypography
 import com.example.demo.core.theme.DemoTheme
+import com.example.demo.health.components.iconOf
+import com.example.demo.health.components.titleOf
 
 private val PageBlack = AppColors.Health.Page
 private val CardBlack = AppColors.Health.Card

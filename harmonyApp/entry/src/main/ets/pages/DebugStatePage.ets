@@ -10,12 +10,12 @@ import {
   COROS_MUTED,
   COROS_LINE
 } from '../auth/components/AuthColors';
+import { AuthHeader } from '../auth/components/AuthBranding';
 import {
   CorosButton,
   UnderlineInput,
-  AuthHeader,
   ErrorText
-} from '../auth/components/AuthComponents';
+} from '../auth/components/AuthInputs';
 
 @Entry
 @Component

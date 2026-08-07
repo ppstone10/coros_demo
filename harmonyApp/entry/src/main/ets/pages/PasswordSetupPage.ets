@@ -14,14 +14,13 @@ import {
   COROS_BLACK,
   COROS_WHITE
 } from '../auth/components/AuthColors';
+import { VerifyTargetKind } from '../auth/components/AuthComponents';
+import { AuthTitle, AuthHeader } from '../auth/components/AuthBranding';
 import {
-  VerifyTargetKind,
-  AuthTitle,
   ErrorText,
   CorosButton,
-  AuthHeader,
   UnderlineInput
-} from '../auth/components/AuthComponents';
+} from '../auth/components/AuthInputs';
 import { AuthRoutes, PasswordSetupParams } from '../auth/navigation/AuthRoutes';
 import { navigate, NavOperation } from '../auth/navigation/AuthNavigator';
 import { handleAuthEffect } from '../auth/navigation/AuthEffectHandler';

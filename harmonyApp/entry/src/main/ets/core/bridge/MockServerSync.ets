@@ -294,7 +294,7 @@ export async function serverLogin(account: string, password: string, force: bool
     }
     return { kind: 'error', code: errorCodeOf(resp.body) };
   } catch (e) {
-    return { kind: 'error', code: 'NETWORK_ERROR' };
+    return { kind: 'error', code: 'NETWORK_UNAVAILABLE' };
   }
 }
 
@@ -325,7 +325,7 @@ export async function serverRegister(
     }
     return { kind: 'error', code: errorCodeOf(resp.body) };
   } catch (e) {
-    return { kind: 'error', code: 'NETWORK_ERROR' };
+    return { kind: 'error', code: 'NETWORK_UNAVAILABLE' };
   }
 }
 
@@ -369,7 +369,7 @@ export async function serverProfilePut(userId: string, profileJson: string): Pro
     }
     return errorCodeOf(resp.body);
   } catch (e) {
-    return 'NETWORK_ERROR';
+    return 'NETWORK_UNAVAILABLE';
   }
 }
 
@@ -391,7 +391,7 @@ export async function serverChangePassword(account: string, oldPassword: string,
     }
     return errorCodeOf(resp.body);
   } catch (e) {
-    return 'NETWORK_ERROR';
+    return 'NETWORK_UNAVAILABLE';
   }
 }
 
@@ -412,7 +412,7 @@ export async function serverResetPassword(account: string, newPassword: string):
     }
     return errorCodeOf(resp.body);
   } catch (e) {
-    return 'NETWORK_ERROR';
+    return 'NETWORK_UNAVAILABLE';
   }
 }
 
@@ -429,7 +429,7 @@ export async function serverDeleteAccount(userId: string): Promise<string> {
     }
     return errorCodeOf(resp.body);
   } catch (e) {
-    return 'NETWORK_ERROR';
+    return 'NETWORK_UNAVAILABLE';
   }
 }
 

@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components
 
 import com.example.demo.common.health.model.HealthCardVisualData
 import com.example.demo.common.health.model.HealthMetric

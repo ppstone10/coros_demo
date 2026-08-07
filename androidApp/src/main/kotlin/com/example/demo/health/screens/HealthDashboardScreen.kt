@@ -51,8 +51,22 @@ import com.example.demo.core.resources.AppSpacing
 import com.example.demo.core.resources.AppTypography
 import com.example.demo.core.theme.DemoTheme
 import com.example.demo.auth.screens.profile.WeightSheet
-import com.example.demo.health.pullToRefresh
-import com.example.demo.health.pullTranslation
+import com.example.demo.health.components.ArcAndMetricsSection
+import com.example.demo.health.components.DashboardCard
+import com.example.demo.health.components.HeroTopRow
+import com.example.demo.health.components.PullRefreshDefaults
+import com.example.demo.health.components.PullRefreshPhase
+import com.example.demo.health.components.PullRefreshPrompt
+import com.example.demo.health.components.ScenarioPickerDialog
+import com.example.demo.health.components.indicatorAlphaForPhase
+import com.example.demo.health.components.indicatorTopForPhase
+import com.example.demo.health.components.indicatorZIndexForPhase
+import com.example.demo.health.components.promptForPullRefreshPhase
+import com.example.demo.health.components.pullIndicatorIconRotation
+import com.example.demo.health.localizedHealthText
+import com.example.demo.health.components.pullToRefresh
+import com.example.demo.health.components.pullTranslation
+import com.example.demo.health.components.rememberPullToRefreshState
 import com.example.demo.health.viewmodel.HealthDashboardViewModel
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -85,7 +99,7 @@ fun HealthDashboardScreen(
 
     var screenState by remember { mutableStateOf(DashboardScreenState()) }
     var editingBodyWeight by remember { mutableStateOf<Double?>(null) }
-    val pullState = _root_ide_package_.com.example.demo.health.rememberPullToRefreshState()
+    val pullState = rememberPullToRefreshState()
 
     LaunchedEffect(Unit) {
         if (healthViewModel.state.isRefreshing) {
@@ -112,7 +126,7 @@ fun HealthDashboardScreen(
 
     when (val page = screenState.page) {
         DashboardPage.ScenarioPicker -> {
-            _root_ide_package_.com.example.demo.health.ScenarioPickerDialog(
+            ScenarioPickerDialog(
                 currentScenario = state.currentScenario,
                 onSelect = { scenario ->
                     healthViewModel.selectScenario(scenario)
@@ -130,31 +144,31 @@ fun HealthDashboardScreen(
             val density = LocalDensity.current
             val heroHeight = with(density) { heroHeightPx.toDp() }
             val indicatorBodyGapPx = with(density) {
-                com.example.demo.health.PullRefreshDefaults.IndicatorBodyGap.toPx()
+                PullRefreshDefaults.IndicatorBodyGap.toPx()
             }
             val indicatorAlphaProgress = when (pullState.phase) {
-                com.example.demo.health.PullRefreshPhase.Resetting -> (
+                PullRefreshPhase.Resetting -> (
                     pullState.pullOffset / pullState.refreshHoldOffsetPx
                     ).coerceIn(0f, 1f)
                 else -> pullState.pullProgress
             }
-            val indicatorAlpha = _root_ide_package_.com.example.demo.health.indicatorAlphaForPhase(
+            val indicatorAlpha = indicatorAlphaForPhase(
                 phase = pullState.phase,
                 progress = indicatorAlphaProgress
             )
-            val indicatorTopPx = _root_ide_package_.com.example.demo.health.indicatorTopForPhase(
+            val indicatorTopPx = indicatorTopForPhase(
                 phase = pullState.phase,
                 bodyTop = heroHeightPx + pullState.pullOffset,
                 indicatorHeight = refreshIndicatorHeightPx.toFloat(),
                 fixedGap = indicatorBodyGapPx
             )
-            val refreshLabel = when (_root_ide_package_.com.example.demo.health.promptForPullRefreshPhase(
+            val refreshLabel = when (promptForPullRefreshPhase(
                 pullState.phase
             )) {
-                com.example.demo.health.PullRefreshPrompt.Pull -> stringResource(R.string.health_pull_to_refresh)
-                com.example.demo.health.PullRefreshPrompt.Release -> stringResource(R.string.health_release_to_refresh)
-                com.example.demo.health.PullRefreshPrompt.Syncing -> stringResource(R.string.health_data_syncing)
-                com.example.demo.health.PullRefreshPrompt.Hidden -> ""
+                PullRefreshPrompt.Pull -> stringResource(R.string.health_pull_to_refresh)
+                PullRefreshPrompt.Release -> stringResource(R.string.health_release_to_refresh)
+                PullRefreshPrompt.Syncing -> stringResource(R.string.health_data_syncing)
+                PullRefreshPrompt.Hidden -> ""
             }
 
             Box(
@@ -197,7 +211,7 @@ fun HealthDashboardScreen(
                             state.uiState != null -> {
                                 item { Spacer(Modifier.height(8.dp)) }
                                 item {
-                                    _root_ide_package_.com.example.demo.health.ArcAndMetricsSection(
+                                    ArcAndMetricsSection(
                                         state.uiState!!
                                     )
                                 }
@@ -205,7 +219,7 @@ fun HealthDashboardScreen(
                                     items = state.uiState!!.cards,
                                     key = { _, card -> card.type.name }
                                 ) { _, card ->
-                                    _root_ide_package_.com.example.demo.health.DashboardCard(
+                                    DashboardCard(
                                         card = card,
                                         onClick = { onOpenDetail(card.type) },
                                         onBodyWeightClick = {
@@ -245,11 +259,11 @@ fun HealthDashboardScreen(
                     }
                 }
 
-                if (pullState.phase != com.example.demo.health.PullRefreshPhase.Idle) {
+                if (pullState.phase != PullRefreshPhase.Idle) {
                     Row(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .widthIn(max = com.example.demo.health.PullRefreshDefaults.IndicatorMaxWidth)
+                            .widthIn(max = PullRefreshDefaults.IndicatorMaxWidth)
                             .onGloballyPositioned {
                                 refreshIndicatorHeightPx = it.size.height
                             }
@@ -261,7 +275,7 @@ fun HealthDashboardScreen(
                                 scaleY = scale
                             }
                             .zIndex(
-                                _root_ide_package_.com.example.demo.health.indicatorZIndexForPhase(
+                                indicatorZIndexForPhase(
                                     pullState.phase
                                 )
                             ),
@@ -273,10 +287,10 @@ fun HealthDashboardScreen(
                                 .size(16.dp)
                                 .graphicsLayer {
                                     rotationZ = if (
-                                        pullState.phase == com.example.demo.health.PullRefreshPhase.Dragging ||
-                                        pullState.phase == com.example.demo.health.PullRefreshPhase.Armed
+                                        pullState.phase == PullRefreshPhase.Dragging ||
+                                        pullState.phase == PullRefreshPhase.Armed
                                     ) {
-                                        _root_ide_package_.com.example.demo.health.pullIndicatorIconRotation(
+                                        pullIndicatorIconRotation(
                                             pullState.pullProgress
                                         )
                                     } else {
@@ -302,9 +316,9 @@ fun HealthDashboardScreen(
                         .onGloballyPositioned { heroHeightPx = it.size.height }
                         .zIndex(3f)
                 ) {
-                    _root_ide_package_.com.example.demo.health.HeroTopRow(
+                    HeroTopRow(
                         dateLabel = state.uiState?.dateLabel?.let {
-                            _root_ide_package_.com.example.demo.health.localizedHealthText(it)
+                            localizedHealthText(it)
                         }.orEmpty(),
                         isSyncing = showRefreshIndicator,
                         onClickWatch = onWatchClick,
@@ -336,15 +350,15 @@ private fun HealthDashboardPreview() {
 
     DemoTheme {
         Column(Modifier.fillMaxSize().background(AppColors.Health.Page)) {
-            _root_ide_package_.com.example.demo.health.HeroTopRow(
+            HeroTopRow(
                 dateLabel = "July 21, 2026",
                 isSyncing = false,
                 onClickWatch = {},
                 onLongPressWatch = {})
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                _root_ide_package_.com.example.demo.health.ArcAndMetricsSection(dashboardState)
+                ArcAndMetricsSection(dashboardState)
                 dashboardState.cards.forEach { card ->
-                    _root_ide_package_.com.example.demo.health.DashboardCard(card) {}
+                    DashboardCard(card) {}
                 }
                 Text(
                     text = stringResource(R.string.health_edit_cards),

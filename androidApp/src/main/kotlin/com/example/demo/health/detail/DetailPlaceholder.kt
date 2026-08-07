@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.detail
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,6 +35,8 @@ import com.example.demo.core.resources.AppImage
 import com.example.demo.core.resources.AppSpacing
 import com.example.demo.core.resources.AppTypography
 import com.example.demo.core.theme.DemoTheme
+import com.example.demo.health.components.iconOf
+import com.example.demo.health.localizedHealthText
 
 private val PageBlack = AppColors.Health.Page
 

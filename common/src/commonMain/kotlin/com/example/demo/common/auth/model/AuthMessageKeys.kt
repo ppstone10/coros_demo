@@ -21,6 +21,7 @@ object AuthMessageKeys {
     const val ErrorRegionRequired = "auth_error_region_required"
     const val ErrorSessionActiveElsewhere = "auth_error_session_active_elsewhere"
     const val ErrorSessionExpiredElsewhere = "auth_error_session_expired_elsewhere"
+    const val ErrorNetworkUnavailable = "auth_error_network_unavailable"
 
     const val ValidationAccountRequired = "auth_validation_account_required"
     const val ValidationPasswordRequired = "auth_validation_password_required"

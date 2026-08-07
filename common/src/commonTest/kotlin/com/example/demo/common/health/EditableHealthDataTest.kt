@@ -3,6 +3,7 @@ package com.example.demo.common.health
 import com.example.demo.common.auth.repository.InMemoryAuthStoreDataSource
 import com.example.demo.common.auth.mock.LocalMockAuthRepository
 import com.example.demo.common.auth.mock.LocalMockAuthRepository.Companion.DefaultVerifyCode
+import com.example.demo.common.auth.model.AuthSession
 import com.example.demo.common.auth.model.LoginResult
 import com.example.demo.common.auth.model.MockResult
 import com.example.demo.common.auth.usecase.RegisterUseCase
@@ -91,7 +92,7 @@ class EditableHealthDataTest {
         val edited = DefaultEditableHealthData.value.copy(
             dailySummary = DailySummaryInput(steps = 12_345, calories = 888, activeMinutes = 77)
         )
-        val userId = assertIs<MockResult.Success<com.example.demo.common.auth.model.AuthSession>>(
+        val userId = assertIs<MockResult.Success<AuthSession>>(
             repository.verifyBusinessAccess()
         ).data.userId
         val snapshotBefore = persistence.load(userId)
@@ -166,7 +167,7 @@ class EditableHealthDataTest {
                 ?.first { it.type == HealthCardType.BodyManagement }
                 ?.visual
         )
-        val userId = assertIs<MockResult.Success<com.example.demo.common.auth.model.AuthSession>>(
+        val userId = assertIs<MockResult.Success<AuthSession>>(
             repository.verifyBusinessAccess()
         ).data.userId
         val persistedBody = requireNotNull(persistence.load(userId)?.dashboardData?.bodyManagement)
@@ -531,7 +532,7 @@ class EditableHealthDataTest {
         assertNull(store.state.error)
         store.dispatch(HealthAction.ScenarioSelected(HealthMockScenario.Normal))
         store.dispatch(HealthAction.Refresh)
-        val userId = assertIs<MockResult.Success<com.example.demo.common.auth.model.AuthSession>>(
+        val userId = assertIs<MockResult.Success<AuthSession>>(
             repository.verifyBusinessAccess()
         ).data.userId
         assertEquals(1_234, persistence.load(userId)?.dashboardData?.dailySummary?.steps)

@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components.visuals
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,6 +31,11 @@ import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.AppImage
 import com.example.demo.core.resources.AppImages
 import com.example.demo.common.health.model.HealthCardType
+import com.example.demo.health.components.MiniBars
+import com.example.demo.health.components.UnitText
+import com.example.demo.health.components.ValueText
+import com.example.demo.health.components.weeklyVisualForSelectedDay
+import com.example.demo.health.localizedHealthText
 
 @Composable
 fun WeeklyVisual(v: HealthCardVisualData) {
@@ -62,8 +67,14 @@ fun WeeklyVisual(v: HealthCardVisualData) {
                     )
                 }
                 Row(verticalAlignment = Alignment.Bottom) {
-                    ValueText(display.primaryValue, 12)
-                    UnitText(display.primaryUnit, 12)
+                    ValueText(
+                        display.primaryValue,
+                        12
+                    )
+                    UnitText(
+                        display.primaryUnit,
+                        12
+                    )
                     display.metrics.firstOrNull()?.let {
                         Text(
                             "  ${it.value} ${localizedHealthText(it.label)}",

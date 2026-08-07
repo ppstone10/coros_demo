@@ -3,57 +3,20 @@ import router from '@ohos.router';
 import { getService } from '../core/bridge/HarmonyServiceProvider';
 import { NormalDataSectionParams } from '../auth/navigation/AuthRoutes';
 import { navigate, NavOperation } from '../auth/navigation/AuthNavigator';
-import { AppColors, AppImages, AppSpacing, AppTypography } from '../core/resources/AppResources';
+import { AppColors, AppSpacing, AppTypography } from '../core/resources/AppResources';
 import { healthResource } from '../core/resources/HealthLocalization';
 import { localizedHealthText } from '../health/HealthDashboardTypes';
-
-interface NormalEditOption {
-  value: string;
-  labelKey: string;
-}
-
-interface NormalEditField {
-  id: string;
-  labelKey: string;
-  value: string;
-  type: string;
-  minimum?: number;
-  maximum?: number;
-  options: NormalEditOption[];
-  labelArguments: string[];
-  groupId?: string;
-  rowIndex?: number;
-}
-
-interface NormalEditRepeatGroup {
-  id: string;
-  addLabelKey: string;
-  itemLabelKey: string;
-  minimumItems: number;
-  maximumItems: number;
-}
-
-interface NormalEditForm {
-  section: string;
-  titleKey: string;
-  sourceKind: string;
-  sourceMessageKey: string;
-  fields: NormalEditField[];
-  repeatGroups: NormalEditRepeatGroup[];
-}
-
-interface NormalEditValidationIssue {
-  fieldId: string;
-  labelKey: string;
-  labelArguments: string[];
-  reason: string;
-  reasonArguments: string[];
-}
-
-interface NormalEditSaveResult {
-  success: boolean;
-  issue?: NormalEditValidationIssue;
-}
+import {
+  NormalEditField,
+  NormalEditOption,
+  NormalEditRepeatGroup,
+  NormalEditForm,
+  NormalEditValidationIssue,
+  NormalEditSaveResult,
+  NormalEditFieldRowComp,
+  NormalEditRepeatGroupComp,
+  NormalEditChoiceOverlayComp
+} from '../health/editor/NormalDataSectionComponents';
 
 @Preview
 @Entry
@@ -131,12 +94,29 @@ struct NormalDataSectionPage {
           }
           ForEach(this.standaloneFields(), (field: NormalEditField) => {
             ListItem() {
-              this.EditField(field)
+              NormalEditFieldRowComp({
+                field: field,
+                selectedChoiceFieldId: $selectedChoiceFieldId,
+                labelText: (item: NormalEditField) => this.fieldLabel(item),
+                selectedOptionKey: (item: NormalEditField) => this.selectedOptionKey(item),
+                valueChanged: (fieldId: string, value: string) => this.updateFieldById(fieldId, value)
+              })
             }
           }, (field: NormalEditField) => this.fieldForEachKey(field))
           ForEach(this.repeatGroups, (group: NormalEditRepeatGroup) => {
             ListItem() {
-              this.RepeatGroupEditor(group)
+              NormalEditRepeatGroupComp({
+                group: group,
+                groupRows: this.groupRows(group.id),
+                selectedChoiceFieldId: $selectedChoiceFieldId,
+                localizedText: (key: string, args: string[]) => this.localized(key, args),
+                labelText: (item: NormalEditField) => this.fieldLabel(item),
+                selectedOptionKey: (item: NormalEditField) => this.selectedOptionKey(item),
+                fieldValueChanged: (fieldId: string, value: string) => this.updateFieldById(fieldId, value),
+                rowMutated: (groupId: string, operation: string, rowIndex: number) => this.mutate(groupId, operation, rowIndex),
+                groupFields: (groupId: string, rowIndex: number) => this.groupFields(groupId, rowIndex),
+                fieldForKey: (item: NormalEditField) => this.fieldForEachKey(item)
+              })
             }
           }, (group: NormalEditRepeatGroup) => group.id)
         }
@@ -149,166 +129,13 @@ struct NormalDataSectionPage {
       .height('100%')
       .backgroundColor(AppColors.BLACK)
       if (this.selectedChoiceFieldId.length > 0) {
-        this.ChoiceSelectionOverlay(this.selectedChoiceField())
-      }
-    }
-    .width('100%')
-    .height('100%')
-  }
-
-  @Builder
-  private EditField(field: NormalEditField) {
-    if (field.type === 'Choice') {
-      Row({ space: 8 }) {
-        Text(this.fieldLabel(field))
-          .fontSize(AppTypography.EDITOR_ROW)
-          .fontColor(AppColors.MUTED)
-          .textAlign(TextAlign.Start)
-          .layoutWeight(1)
-          .maxLines(1)
-        Text(healthResource(this.selectedOptionKey(field)))
-          .fontSize(AppTypography.EDITOR_ROW)
-          .fontColor(AppColors.ACTION)
-          .maxLines(1)
-        Image(AppImages.choiceChevron())
-          .renderMode(ImageRenderMode.Template)
-          .fillColor(AppColors.ACTION)
-          .width(14)
-          .height(14)
-          .objectFit(ImageFit.Contain)
-          .rotate({ angle: 90 })
-      }
-      .width('100%')
-      .padding(16)
-      .backgroundColor(AppColors.HEALTH_CARD)
-      .borderRadius(10)
-      .onClick(() => { this.selectedChoiceFieldId = field.id; })
-    } else {
-      Column({ space: 6 }) {
-        Text(this.fieldLabel(field))
-          .fontSize(AppTypography.LABEL)
-          .fontColor(AppColors.MUTED)
-          .width('100%')
-          .textAlign(TextAlign.Start)
-        TextInput({ placeholder: '', text: field.value })
-          .fontColor(AppColors.WHITE)
-          .placeholderColor(AppColors.MUTED)
-          .backgroundColor(AppColors.TRANSPARENT)
-          .border({ width: 1, color: AppColors.MUTED })
-          .borderRadius(8)
-          .height(42)
-          .onChange((value: string) => { this.updateFieldById(field.id, value); })
-      }
-      .width('100%')
-      .padding({ left: 14, right: 14, top: 10, bottom: 10 })
-      .backgroundColor(AppColors.HEALTH_CARD)
-      .borderRadius(10)
-    }
-  }
-
-  @Builder
-  private RepeatGroupEditor(group: NormalEditRepeatGroup) {
-    Column({ space: 10 }) {
-      ForEach(this.groupRows(group.id), (rowIndex: number) => {
-        Column({ space: 10 }) {
-          Row() {
-            Text(this.localized(group.itemLabelKey, [(rowIndex + 1).toString()]))
-              .fontSize(AppTypography.LABEL)
-              .fontColor(AppColors.WHITE)
-              .layoutWeight(1)
-            if (this.groupRows(group.id).length > group.minimumItems) {
-              Text($r('app.string.health_edit_remove_item'))
-                .fontSize(AppTypography.CAPTION)
-                .fontColor(AppColors.ACTION)
-                .padding(8)
-                .onClick(() => { this.mutate(group.id, 'Remove', rowIndex); })
-            }
-          }
-          .width('100%')
-          ForEach(this.groupFields(group.id, rowIndex), (field: NormalEditField) => {
-            this.EditField(field)
-          }, (field: NormalEditField) => this.fieldForEachKey(field))
-        }
-        .width('100%')
-        .padding(12)
-        .backgroundColor(AppColors.HEALTH_CARD)
-        .borderRadius(12)
-      }, (rowIndex: number) => `${group.id}-${rowIndex}`)
-      Text(`+ ${this.localized(group.addLabelKey, [])}`)
-        .fontSize(AppTypography.LABEL)
-        .fontColor(this.groupRows(group.id).length < group.maximumItems ? AppColors.ADD_ACTION : AppColors.MUTED)
-        .textAlign(TextAlign.Center)
-        .width('100%')
-        .padding(13)
-        .backgroundColor(AppColors.HEALTH_CARD)
-        .borderRadius(10)
-        .onClick(() => {
-          if (this.groupRows(group.id).length < group.maximumItems) {
-            this.mutate(group.id, 'Add', -1);
-          }
+        NormalEditChoiceOverlayComp({
+          field: this.selectedChoiceField(),
+          selectedChoiceFieldId: $selectedChoiceFieldId,
+          labelText: (item: NormalEditField) => this.fieldLabel(item),
+          valueChanged: (fieldId: string, value: string) => this.updateFieldById(fieldId, value)
         })
-    }
-    .width('100%')
-  }
-
-  @Builder
-  private ChoiceSelectionOverlay(field: NormalEditField) {
-    Stack({ alignContent: Alignment.Center }) {
-      Column()
-        .width('100%')
-        .height('100%')
-        .backgroundColor(AppColors.OVERLAY_60)
-        .onClick(() => { this.selectedChoiceFieldId = ''; })
-      Column() {
-        Text(this.fieldLabel(field))
-          .fontSize(17)
-          .fontWeight(FontWeight.Medium)
-          .fontColor(AppColors.WHITE)
-          .width('100%')
-          .padding({ left: 20, right: 20, top: 18, bottom: 18 })
-        Scroll() {
-          Column() {
-            ForEach(field.options, (option: NormalEditOption) => {
-              Row() {
-                Text(healthResource(option.labelKey))
-                  .fontSize(16)
-                  .fontColor(AppColors.WHITE)
-                  .layoutWeight(1)
-                if (option.value === field.value) {
-                  Image(AppImages.choiceCheck())
-                    .renderMode(ImageRenderMode.Template)
-                    .fillColor(AppColors.ACTION)
-                    .width(18)
-                    .height(18)
-                    .objectFit(ImageFit.Contain)
-                }
-              }
-              .width('100%')
-              .height(52)
-              .padding({ left: 20, right: 20 })
-              .onClick(() => {
-                this.updateFieldById(field.id, option.value);
-                this.selectedChoiceFieldId = '';
-              })
-            }, (option: NormalEditOption) => option.value)
-          }
-          .width('100%')
-        }
-        .width('100%')
-        .constraintSize({ maxHeight: 420 })
-        Text($r('app.string.common_cancel'))
-          .fontSize(AppTypography.EDITOR_ROW)
-          .fontColor(AppColors.ACTION)
-          .textAlign(TextAlign.Center)
-          .width('100%')
-          .height(52)
-          .padding({ top: 16 })
-          .onClick(() => { this.selectedChoiceFieldId = ''; })
       }
-      .width('86%')
-      .constraintSize({ maxHeight: 560 })
-      .backgroundColor(AppColors.HEALTH_CARD)
-      .borderRadius(16)
     }
     .width('100%')
     .height('100%')

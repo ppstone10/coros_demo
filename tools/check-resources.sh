@@ -14,7 +14,7 @@ from pathlib import Path
 
 root = Path.cwd()
 required = {
-    "shared authentication message keys": root / "common/src/commonMain/kotlin/com/example/demo/common/auth/AuthMessageKeys.kt",
+    "shared authentication message keys": root / "common/src/commonMain/kotlin/com/example/demo/common/auth/model/AuthMessageKeys.kt",
     "Android authentication resolver": root / "androidApp/src/main/kotlin/com/example/demo/auth/components/AuthLocalization.kt",
     "Android default strings": root / "androidApp/src/main/res/values/strings.xml",
     "Android English strings": root / "androidApp/src/main/res/values-en/strings.xml",
@@ -167,10 +167,10 @@ if "this.EntranceTopBar()" not in harmony_entrance:
     errors.append("HarmonyOS Entrance must place the logo and language selector in a full-width top bar")
 
 target_files = [
-    root / "common/src/commonMain/kotlin/com/example/demo/common/auth/LoginModels.kt",
-    root / "common/src/commonMain/kotlin/com/example/demo/common/auth/LoginRules.kt",
-    root / "common/src/commonMain/kotlin/com/example/demo/common/auth/LoginUseCase.kt",
-    root / "common/src/commonMain/kotlin/com/example/demo/common/auth/LoginStore.kt",
+    root / "common/src/commonMain/kotlin/com/example/demo/common/auth/model/LoginModels.kt",
+    root / "common/src/commonMain/kotlin/com/example/demo/common/auth/rules/LoginRules.kt",
+    root / "common/src/commonMain/kotlin/com/example/demo/common/auth/usecase/LoginUseCase.kt",
+    root / "common/src/commonMain/kotlin/com/example/demo/common/auth/store/LoginStore.kt",
 ]
 for path in target_files:
     text = path.read_text(encoding="utf-8")

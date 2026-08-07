@@ -36,6 +36,11 @@ import {
   pullRefreshIndicatorTop,
   pullRefreshPhaseForOffset
 } from '../health/components/PullToRefreshState';
+import {
+  DeleteAccountDialog,
+  KickedDialog,
+  LanguageDialog
+} from './SignedInDialogs';
 
 const PAGE_MAIN: string = 'main';
 const PAGE_SCENARIO_PICKER: string = 'scenario_picker';
@@ -213,13 +218,34 @@ struct SignedInPage {
       .backgroundColor(AppColors.BLACK)
 
       if (this.showDeleteDialog) {
-        this.DeleteAccountDialog();
+        DeleteAccountDialog({
+          onCancel: () => { this.showDeleteDialog = false; },
+          onConfirm: () => { this.confirmDeleteAccount(); }
+        });
       }
       if (this.showKickedDialog) {
-        this.KickedDialog();
+        KickedDialog({
+          onConfirmed: () => {
+            this.showKickedDialog = false;
+            this.viewModel.confirmKickedDialog();
+            // 消费 SessionKicked effect 以触发跳转登录页（否则确认后停留在首页）
+            let effect: LoginEffect | null = this.viewModel.consumeEffect();
+            if (effect !== null && effect.type === LoginEffectType.SessionKicked) {
+              handleAuthEffect(effect);
+            }
+          }
+        });
       }
       if (this.showLanguageDialog) {
-        this.LanguageDialog();
+        LanguageDialog({
+          appLanguage: this.appLanguage,
+          onDismiss: () => { this.showLanguageDialog = false; },
+          onLanguageSelected: (language: string) => {
+            selectAppLanguage(language);
+            this.healthVM.load(this);
+            this.showLanguageDialog = false;
+          }
+        });
       }
       if (this.showHealthWeightPicker) {
         HealthWeightPickerSheetComp({
@@ -469,88 +495,6 @@ struct SignedInPage {
       .width('100%')
     }
     .width('100%').height(140).padding({ left: 20, right: 20 }).margin({ top: 16 })
-  }
-
-  @Builder
-  DeleteAccountDialog() {
-    Column() {
-      Blank().layoutWeight(1)
-      Column({ space: 24 }) {
-        Text($r('app.string.account_delete_confirmation')).fontSize(18).fontColor(AppColors.WHITE).textAlign(TextAlign.Center)
-        Row({ space: 14 }) {
-          Button($r('app.string.common_cancel'), { type: ButtonType.Normal }).fontSize(16).fontColor(AppColors.WHITE)
-            .layoutWeight(1).height(44).borderRadius(8).backgroundColor(AppColors.ACCOUNT_DIALOG_SECONDARY)
-            .onClick(() => { this.showDeleteDialog = false; })
-          Button($r('app.string.common_confirm'), { type: ButtonType.Normal }).fontSize(16).fontColor(AppColors.WHITE)
-            .layoutWeight(1).height(44).borderRadius(8).backgroundColor(AppColors.ACTION)
-            .onClick(() => { this.confirmDeleteAccount(); })
-        }
-      }
-      .padding({ left: 24, right: 24, top: 22, bottom: 22 })
-      .backgroundColor(AppColors.ACCOUNT_DIALOG).borderRadius(12).margin({ left: 42, right: 42 })
-      Blank().layoutWeight(1)
-    }
-    .width('100%').height('100%').backgroundColor(AppColors.OVERLAY_62)
-  }
-
-  @Builder
-  KickedDialog() {
-    Column() {
-      Column({ space: 20 }) {
-        Text($r('app.string.auth_error_session_expired_elsewhere'))
-          .fontSize(17).fontColor(AppColors.WHITE).textAlign(TextAlign.Center).width('100%')
-        Button($r('app.string.common_confirm'), { type: ButtonType.Normal })
-          .fontSize(16).fontColor(AppColors.WHITE)
-          .width('100%').height(44).borderRadius(8).backgroundColor(AppColors.ACTION)
-          .onClick(() => {
-            this.showKickedDialog = false;
-            this.viewModel.confirmKickedDialog();
-            // 消费 SessionKicked effect 以触发跳转登录页（否则确认后停留在首页）
-            let effect: LoginEffect | null = this.viewModel.consumeEffect();
-            if (effect !== null && effect.type === LoginEffectType.SessionKicked) {
-              handleAuthEffect(effect);
-            }
-          })
-      }
-      .width(300)
-      .padding({ left: 22, right: 22, top: 24, bottom: 20 })
-      .backgroundColor(AppColors.ACCOUNT_DIALOG).borderRadius(14)
-    }
-    .width('100%').height('100%')
-    .justifyContent(FlexAlign.Center)
-    .backgroundColor(AppColors.OVERLAY_62)
-  }
-
-  @Builder
-  LanguageDialog() {
-    Column() {
-      Column({ space: 4 }) {
-        Text($r('app.string.language_select_title'))
-          .fontSize(19).fontColor(AppColors.WHITE).fontWeight(FontWeight.Medium)
-          .width('100%').padding({ left: 20, right: 20, top: 16, bottom: 10 })
-        this.LanguageOption($r('app.string.language_chinese'), APP_LANGUAGE_CHINESE);
-        this.LanguageOption($r('app.string.language_english'), APP_LANGUAGE_ENGLISH);
-      }
-      .width('84%').padding({ bottom: 12 }).backgroundColor(AppColors.ACCOUNT_DIALOG).borderRadius(14)
-    }
-    .width('100%').height('100%').justifyContent(FlexAlign.Center).backgroundColor(AppColors.OVERLAY_62)
-  }
-
-  @Builder
-  LanguageOption(label: ResourceStr, language: string) {
-    Row() {
-      Text(label).fontSize(16).fontColor(AppColors.WHITE)
-      Blank().layoutWeight(1)
-      if (this.appLanguage === language) {
-        Text('✓').fontSize(18).fontColor(AppColors.COMPLETE)
-      }
-    }
-    .width('100%').height(52).padding({ left: 22, right: 22 })
-    .onClick(() => {
-      selectAppLanguage(language);
-      this.healthVM.load(this);
-      this.showLanguageDialog = false;
-    })
   }
 
   // MARK: - Data

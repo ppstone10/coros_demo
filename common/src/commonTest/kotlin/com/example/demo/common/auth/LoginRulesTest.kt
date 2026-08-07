@@ -5,6 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import com.example.demo.common.auth.model.AuthMessageKeys
+import com.example.demo.common.auth.model.MockErrorMessage
 import com.example.demo.common.auth.model.toProtoMessage
 import com.example.demo.common.auth.model.MockError
 import com.example.demo.common.auth.rules.LoginRules
@@ -18,6 +19,15 @@ class LoginRulesTest {
         val message = MockError.RegionRequired.toProtoMessage()
         assertEquals("REGION_REQUIRED", message.code)
         assertEquals(MockError.RegionRequired, message.toMockError())
+    }
+
+    @Test
+    fun networkUnavailableMapsToStableMessageKey() {
+        val error = MockError.NetworkUnavailable
+        assertEquals("AUTH_NETWORK_UNAVAILABLE", error.code)
+        assertEquals(AuthMessageKeys.ErrorNetworkUnavailable, error.message)
+        assertEquals("NETWORK_UNAVAILABLE", error.toProtoMessage().code)
+        assertEquals(MockError.NetworkUnavailable, MockErrorMessage("NETWORK_UNAVAILABLE", "").toMockError())
     }
     @Test
     fun registrationRegionAndLegacyNamesNormalizeToCountryCodes() {

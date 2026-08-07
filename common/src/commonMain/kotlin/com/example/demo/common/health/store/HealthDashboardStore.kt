@@ -23,14 +23,17 @@ import com.example.demo.common.health.model.CurrentHealthDashboardSchemaVersion
 
 interface HealthDashboardStateDataSource {
     fun load(userId: String): HealthDashboardSnapshot?
-    fun save(snapshot: HealthDashboardSnapshot): Boolean
+    fun save(snapshot: HealthDashboardSnapshot): MockResult<Unit>
     fun clear(userId: String): Boolean
 }
 
 class InMemoryHealthDashboardStateDataSource : HealthDashboardStateDataSource {
     private val snapshots = mutableMapOf<String, HealthDashboardSnapshot>()
     override fun load(userId: String): HealthDashboardSnapshot? = snapshots[userId]
-    override fun save(snapshot: HealthDashboardSnapshot): Boolean { snapshots[snapshot.userId] = snapshot; return true }
+    override fun save(snapshot: HealthDashboardSnapshot): MockResult<Unit> {
+        snapshots[snapshot.userId] = snapshot
+        return MockResult.Success(Unit)
+    }
     override fun clear(userId: String): Boolean { snapshots.remove(userId); return true }
 
     fun allSnapshots(): List<HealthDashboardSnapshot> = snapshots.values.sortedBy { it.userId }
@@ -109,12 +112,14 @@ class HealthDashboardStore(
                             editableData = null,
                             schemaVersion = CurrentHealthDashboardSchemaVersion
                         )
-                        if (!stateDataSource.save(updated)) MockResult.Failure(MockError.PersistFailed)
-                        else {
-                            pendingScenarios.remove(userId)
-                            transientDashboardDraft = null
-                            transientEditSourceKind = null
-                            updated.toPersistedDashboard()
+                        when (val saveResult = stateDataSource.save(updated)) {
+                            is MockResult.Failure -> MockResult.Failure(saveResult.error)
+                            is MockResult.Success -> {
+                                pendingScenarios.remove(userId)
+                                transientDashboardDraft = null
+                                transientEditSourceKind = null
+                                updated.toPersistedDashboard()
+                            }
                         }
                     } else {
                     when (val generated = dashboardDataSource.load(scenario)) {
@@ -142,12 +147,14 @@ class HealthDashboardStore(
                                 editableData = null,
                                 schemaVersion = CurrentHealthDashboardSchemaVersion
                             )
-                            if (!stateDataSource.save(updated)) MockResult.Failure(MockError.PersistFailed)
-                            else {
-                                pendingScenarios.remove(userId)
-                                transientDashboardDraft = null
-                                transientEditSourceKind = null
-                                updated.toPersistedDashboard()
+                            when (val saveResult = stateDataSource.save(updated)) {
+                                is MockResult.Failure -> MockResult.Failure(saveResult.error)
+                                is MockResult.Success -> {
+                                    pendingScenarios.remove(userId)
+                                    transientDashboardDraft = null
+                                    transientEditSourceKind = null
+                                    updated.toPersistedDashboard()
+                                }
                             }
                         }
                     }
@@ -239,8 +246,10 @@ class HealthDashboardStore(
                     is MockResult.Failure -> MockResult.Failure(resolved.error)
                     is MockResult.Success -> {
                         val updated = resolved.data.copy(enabledCardTypes = clean)
-                        if (!stateDataSource.save(updated)) MockResult.Failure(MockError.PersistFailed)
-                        else updated.toPersistedDashboard()
+                        when (val saveResult = stateDataSource.save(updated)) {
+                            is MockResult.Failure -> MockResult.Failure(saveResult.error)
+                            is MockResult.Success -> updated.toPersistedDashboard()
+                        }
                     }
                 }
             }
@@ -290,8 +299,10 @@ class HealthDashboardStore(
                                 schemaVersion = CurrentHealthDashboardSchemaVersion
                             )
                         }
-                        if (!stateDataSource.save(updated)) MockResult.Failure(MockError.PersistFailed)
-                        else updated.toPersistedDashboard()
+                        when (val saveResult = stateDataSource.save(updated)) {
+                            is MockResult.Failure -> MockResult.Failure(saveResult.error)
+                            is MockResult.Success -> updated.toPersistedDashboard()
+                        }
                     }
                 }
             }
@@ -309,8 +320,10 @@ class HealthDashboardStore(
                         editableData = migratedSource,
                         schemaVersion = CurrentHealthDashboardSchemaVersion
                     )
-                    return if (stateDataSource.save(migrated)) MockResult.Success(migrated)
-                    else MockResult.Failure(MockError.PersistFailed)
+                    return when (val saveResult = stateDataSource.save(migrated)) {
+                        is MockResult.Failure -> MockResult.Failure(saveResult.error)
+                        is MockResult.Success -> MockResult.Success(migrated)
+                    }
                 }
             }
             return MockResult.Success(stored)
@@ -323,8 +336,10 @@ class HealthDashboardStore(
                 editableData = DefaultEditableHealthData.value,
                 schemaVersion = CurrentHealthDashboardSchemaVersion
             )
-            return if (!stateDataSource.save(created)) MockResult.Failure(MockError.PersistFailed)
-            else MockResult.Success(created)
+            return when (val saveResult = stateDataSource.save(created)) {
+                is MockResult.Failure -> MockResult.Failure(saveResult.error)
+                is MockResult.Success -> MockResult.Success(created)
+            }
         }
         return when (val generated = dashboardDataSource.load(sourceScenario)) {
             is MockResult.Failure -> MockResult.Failure(generated.error)
@@ -335,8 +350,10 @@ class HealthDashboardStore(
                     editableData = null,
                     schemaVersion = CurrentHealthDashboardSchemaVersion
                 )
-                if (!stateDataSource.save(migrated)) MockResult.Failure(MockError.PersistFailed)
-                else MockResult.Success(migrated)
+                when (val saveResult = stateDataSource.save(migrated)) {
+                    is MockResult.Failure -> MockResult.Failure(saveResult.error)
+                    is MockResult.Success -> MockResult.Success(migrated)
+                }
             }
         }
     }

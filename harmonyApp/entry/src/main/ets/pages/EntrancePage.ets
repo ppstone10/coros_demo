@@ -2,7 +2,7 @@ import router from '@ohos.router';
 import { AuthMode, LoginState } from '../auth/logic/LoginState';
 import { getLoginViewModel } from '../auth/viewmodel/LoginViewModelProvider';
 import { COROS_RED, COROS_BLACK } from '../auth/components/AuthColors';
-import { CorosButton } from '../auth/components/AuthComponents';
+import { CorosButton } from '../auth/components/AuthInputs';
 import { AuthRoutes } from '../auth/navigation/AuthRoutes';
 import { navigate, NavOperation } from '../auth/navigation/AuthNavigator';
 import { handleAuthEffect } from '../auth/navigation/AuthEffectHandler';

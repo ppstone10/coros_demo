@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components.visuals
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,6 +23,9 @@ import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.AppImage
 import com.example.demo.core.resources.AppImages
 import com.example.demo.common.health.model.HealthCardType
+import com.example.demo.health.components.UnitText
+import com.example.demo.health.components.ValueText
+import com.example.demo.health.localizedHealthText
 
 @Composable
 fun ActivityVisual(v: HealthCardVisualData) {
@@ -36,8 +39,14 @@ fun ActivityVisual(v: HealthCardVisualData) {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
                 Row(verticalAlignment = Alignment.Bottom) {
-                    ValueText(v.primaryValue, 24)
-                    UnitText(v.primaryUnit, 16)
+                    ValueText(
+                        v.primaryValue,
+                        24
+                    )
+                    UnitText(
+                        v.primaryUnit,
+                        16
+                    )
                 }
                 Row {
                     v.detail?.let {
@@ -66,5 +75,9 @@ fun ActivityVisual(v: HealthCardVisualData) {
 @Preview(name = "Today activity visual", showBackground = true, backgroundColor = 0xFF171719)
 @Composable
 private fun ActivityVisualPreview() {
-    PreviewVisualSurface { ActivityVisual(previewHealthVisual(HealthCardType.TodayActivity)) }
+    PreviewVisualSurface {
+        ActivityVisual(
+            previewHealthVisual(HealthCardType.TodayActivity)
+        )
+    }
 }

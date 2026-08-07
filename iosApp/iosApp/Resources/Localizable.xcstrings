@@ -595,6 +595,23 @@
         }
       }
     },
+    "auth_error_network_unavailable" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server connection failed"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器连接失败"
+          }
+        }
+      }
+    },
     "auth_error_region_required" : {
       "extractionState" : "stale",
       "localizations" : {

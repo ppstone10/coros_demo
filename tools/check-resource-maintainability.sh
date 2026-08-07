@@ -133,6 +133,32 @@ debt_sources = {
 
 debt_exclusions = manifest.get("debtExclusions", {})
 
+def strip_comments(text: str) -> str:
+    """去除 /* */ 块注释与 // 行注释（保留字符串字面量内的 '//'，如 URL）。"""
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+    lines = []
+    for line in text.splitlines():
+        in_str = None
+        i = 0
+        while i < len(line) - 1:
+            c = line[i]
+            if in_str:
+                if c == "\\":
+                    i += 2
+                    continue
+                if c == in_str:
+                    in_str = None
+            else:
+                if c in ('"', "'"):
+                    in_str = c
+                elif c == "/" and line[i + 1] == "/":
+                    line = line[:i]
+                    break
+            i += 1
+        lines.append(line)
+    return "\n".join(lines)
+
+
 def count_matches(name: str, directory: Path, suffixes: set[str], pattern: re.Pattern[str]) -> int:
     total = 0
     excluded = set(debt_exclusions.get(name, []))
@@ -141,7 +167,7 @@ def count_matches(name: str, directory: Path, suffixes: set[str], pattern: re.Pa
             relative = path.relative_to(root).as_posix()
             if relative in excluded:
                 continue
-            total += len(pattern.findall(path.read_text(encoding="utf-8")))
+            total += len(pattern.findall(strip_comments(path.read_text(encoding="utf-8"))))
     return total
 
 ceilings = manifest.get("debtCeilings", {})

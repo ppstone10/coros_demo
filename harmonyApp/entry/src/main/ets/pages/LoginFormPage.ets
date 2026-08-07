@@ -18,16 +18,15 @@ import {
   COROS_OVERLAY_COLOR,
   VERSION_TEXT
 } from '../auth/components/AuthColors';
+import { TermsPromptAction } from '../auth/components/AuthComponents';
+import { AuthHeader, AuthTitle } from '../auth/components/AuthBranding';
 import {
-  TermsPromptAction,
-  AuthTitle,
   ErrorText,
   CorosButton,
-  AuthHeader,
   UnderlineInput,
   AgreementRowComp,
   ThirdPartyAreaComp
-} from '../auth/components/AuthComponents';
+} from '../auth/components/AuthInputs';
 import { AuthRoutes } from '../auth/navigation/AuthRoutes';
 import { navigate, NavOperation } from '../auth/navigation/AuthNavigator';
 import { handleAuthEffect } from '../auth/navigation/AuthEffectHandler';

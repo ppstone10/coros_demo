@@ -200,6 +200,10 @@
 | **ArkUI 弹窗全屏拉伸陷阱** | `@Builder` 弹窗若用 `Blank().layoutWeight(1)` 上下撑满 + `margin(42)` 会视觉"占满全屏"；应改 `.width(300)`（或 `ConstraintSize(maxWidth)`）+ 外层 `justifyContent(FlexAlign.Center)` + 半透明遮罩，形成居中紧凑卡片。 |
 | **ArkUI Image 按 source 字符串缓存解码结果** | `Image(file://.../avatar_current.jpg)` 路径恒定 → 文件内容更新后不会重解码（换头像不刷新）。修复：源改用**内容寻址 base64 data URI**（`data:image/jpeg;base64,...`，内容变字符串变）+ `@Prop @Watch` 监听 `avatarUri/avatarRevision` 变化重新读取本地文件。用 `.id()`/版本号对字符串源无效，必须改变 source 本身。 |
 | **鸿蒙头像上传必须携带 X-Device-Id** | `PUT /api/avatar/:userId`（MSRV-018）要求本人有效会话且设备匹配；ArkTS 头像上传（`putBinary`）与头像 GET 若不带头，服务器按 `device-default` 判定与登录签发的真实 deviceId 不匹配 → 401 `SESSION_EXPIRED_ELSEWHERE` → 上传失败且 editMode 保存流程被静默阻断（"保存按钮没作用"）。所有非 `MockServerSync.request` 的直接 http 调用都要手动补 `X-Device-Id`。 |
+| **包迁移收口需清除 `_root_ide_package_` 占位符** | Android Studio 对跨包移动后无法解析的引用会写入 `_root_ide_package_.<FQN>` 全限定名占位符（可编译，但属重构不彻底信号）。迁移收口时必须全仓 `grep -rn "_root_ide_package_"` 归零，并补正式 import；`localizedHealthText` 留在 `com.example.demo.health`，子包 visuals/components 需显式 import 它和 components 内部符号（`internal` 可见但不自动导入）。 |
+| **tools 门禁脚本断言需随文件拆分同步** | STRUCT-001/010 把 common 大文件按子包拆分（`EditableHealthData.kt`→`model/`、`HealthEditableForms.kt`→`rules/`、`HealthDashboardStore.kt`→`store/` 等）后，`check-health-navigation.sh`、`check-health-editable-normal-data.sh` 等脚本仍按旧路径断言 → 长期红灯未触发。重构轮必须同步更新 tools 脚本路径断言与 `TEST_REPORT.md`/`spec/TRACE.md` 测试计数（`check-docs.sh` 会动态核对 `@Test` 数）。 |
+| **门禁脚本依赖 rg，缺装时全假失败** | 11 个 `check-health-*.sh` 内部用 `rg -Fq`/`rg -q` 做内容断言；`rg` 未安装时每个断言都走 `if rg...` 失败分支 → 脚本"全部失败"且输出具误导性（会把通过项报成 missing）。排查门禁失败先确认 `rg` 已装（`brew install ripgrep`），再用真实 rg 重跑基线；不要用 sed 复制脚本到 /tmp 模拟（`$(dirname $0)` 计算根目录会错）。 |
+| **Han 文案扫描需排除注释行** | `check-resource-maintainability.sh` 的 `han_literal` 正则直接对整文件 `findall`，KDoc/`//` 注释里的中文（如 "被顶/二次确认"）会被误算为硬编码文案债务。扫描器应先剥离 `/* */` 与 `//` 注释（含字符串内引号状态判断）再匹配，否则注释一多就误报债务超标。 |
 
 ## Spec 文件索引
 

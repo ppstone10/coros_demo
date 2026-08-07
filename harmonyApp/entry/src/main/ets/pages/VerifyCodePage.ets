@@ -12,15 +12,13 @@ import {
   COROS_WHITE,
   COROS_MUTED
 } from '../auth/components/AuthColors';
+import { VerifyTargetKind, verifyCodeMessage } from '../auth/components/AuthComponents';
+import { AuthTitle, AuthHeader } from '../auth/components/AuthBranding';
 import {
-  VerifyTargetKind,
-  verifyCodeMessage,
-  AuthTitle,
   ErrorText,
-  AuthHeader,
-  CodeBoxesComp,
-  BlockingLoadingOverlay
-} from '../auth/components/AuthComponents';
+  CodeBoxesComp
+} from '../auth/components/AuthInputs';
+import { BlockingLoadingOverlay } from '../auth/components/AuthOverlays';
 import { AuthRoutes, VerifyCodeParams } from '../auth/navigation/AuthRoutes';
 import { navigate, navigateWithParams, NavOperation } from '../auth/navigation/AuthNavigator';
 import { AppColors } from '../core/resources/AppResources';

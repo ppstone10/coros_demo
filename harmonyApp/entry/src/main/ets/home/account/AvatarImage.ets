@@ -33,6 +33,11 @@ function bytesToBase64(bytes: Uint8Array): string {
   return helper.encodeToStringSync(bytes);
 }
 
+/** 导出供信息修改页把"选图后未保存"的本地预览字节转 base64 注入 [AvatarImage]。 */
+export function avatarBytesToBase64(bytes: Uint8Array): string {
+  return bytesToBase64(bytes);
+}
+
 function putBinary(url: string, bytes: Uint8Array): Promise<boolean> {
   return new Promise<boolean>((resolve) => {
     const httpRequest = http.createHttp();
@@ -105,6 +110,8 @@ export struct AvatarImage {
   @Prop @Watch('onAvatarInputChanged') avatarUri: string = '';
   @Prop avatarSize: number = 58;
   @Prop @Watch('onAvatarInputChanged') avatarRevision: number = 0;
+  /** 信息修改页"选图后未保存"的本地预览 base64（内存态，不写共享缓存文件），非空时最高优先展示。 */
+  @Prop @Watch('onAvatarInputChanged') pendingAvatarBase64: string = '';
   @State avatarSource: string = '';
   @State cacheLoaded: boolean = false;
 
@@ -117,6 +124,12 @@ export struct AvatarImage {
   }
 
   private resolveSource(): void {
+    // MSRV-015：未保存的本地预览优先（只在本页生效；"我"页不传该 prop，仍显示已提交头像）
+    if (this.pendingAvatarBase64.length > 0) {
+      this.avatarSource = 'data:image/jpeg;base64,' + this.pendingAvatarBase64;
+      this.cacheLoaded = true;
+      return;
+    }
     if (hasAvatarCache()) {
       const bytes: Uint8Array = readAvatarCacheBytes();
       if (bytes.length > 0) {

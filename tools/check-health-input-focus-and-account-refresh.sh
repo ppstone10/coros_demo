@@ -33,7 +33,7 @@ IOS_VIEW_MODEL="iosApp/iosApp/Health/ViewModel/HealthDashboardViewModel.swift"
 IOS_VIEW="iosApp/iosApp/Health/Views/HealthDashboardView.swift"
 
 forbid_text "$HARMONY_EDITOR" '${field.id}_${field.value}'
-require_text "$HARMONY_EDITOR" '(field: NormalEditField) => field.id)'
+require_text "$HARMONY_EDITOR" '(field: NormalEditField) => this.fieldForEachKey(field))'
 
 require_text "$IOS_VIEW_MODEL" '@Published private(set) var accountRefreshPending = false'
 require_text "$IOS_VIEW_MODEL" '@Published private(set) var accountRefreshPhase: AccountRefreshPhase = .idle'

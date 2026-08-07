@@ -318,6 +318,7 @@ class RemoteAuthRepository(
     }
 
     private fun parseError(response: MockServerHttpClient.Response): MockError {
+        if (response.status == -1) return MockError.NetworkUnavailable
         val errorJson = AuthJson.optionalObject(response.body, "error") ?: return MockError.PersistFailed
         val code = AuthJson.optionalString(errorJson, "code").orEmpty()
         val message = AuthJson.optionalString(errorJson, "message").orEmpty()

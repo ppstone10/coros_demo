@@ -26,18 +26,18 @@ struct HeroArcView: View {
             }
             .frame(width: 116, height: 116)
             HStack {
-                metric(icon: AppImages.Health.steps, value: "\(steps)", unit: appLocalized("health_unit_steps"), color: AppColors.Health.steps)
+                metric(icon: AppImages.Health.steps, value: "\(steps)", unit: appLocalized("health_unit_steps"))
                 Spacer()
-                metric(icon: AppImages.Health.calories, value: "\(calories)", unit: appLocalized("health_unit_calories"), color: AppColors.Health.calories)
+                metric(icon: AppImages.Health.calories, value: "\(calories)", unit: appLocalized("health_unit_calories"))
                 Spacer()
-                metric(icon: AppImages.Health.active, value: "\(minutes)", unit: appLocalized("health_unit_minutes"), color: AppColors.Health.active)
+                metric(icon: AppImages.Health.active, value: "\(minutes)", unit: appLocalized("health_unit_minutes"))
             }
         }
         .frame(height: 140).padding(.horizontal, 20)
     }
-    private func metric(icon: String, value: String, unit: String, color: Color) -> some View {
+    private func metric(icon: String, value: String, unit: String) -> some View {
         VStack(spacing: 3) {
-            Image(icon).resizable().renderingMode(.template).scaledToFit().foregroundStyle(color).frame(width: 22, height: 22)
+            Image(icon).resizable().scaledToFit().frame(width: 22, height: 22)
             Text(value).font(.system(size: 26)).foregroundStyle(.white)
             Text(unit).font(.system(size: AppTypography.caption)).foregroundStyle(AppColors.Health.metricUnit)
         }.frame(width: 82)

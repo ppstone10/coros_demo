@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components.visuals
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,9 +13,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.demo.common.health.model.HealthCardType
 import com.example.demo.common.health.model.HealthCardVisualData
 import com.example.demo.common.health.model.LocalizedTextSpec
 import com.example.demo.core.resources.AppColors
+import com.example.demo.health.components.MiniBars
+import com.example.demo.health.components.OverviewRow
+import com.example.demo.health.components.ValueText
+import com.example.demo.health.localizedHealthText
 
 @Composable
 fun LoadVisual(v: HealthCardVisualData) {
@@ -54,7 +59,11 @@ private fun LoadOverview(v: HealthCardVisualData) {
         ) {
             v.chartPoints.take(7).forEachIndexed { index, point ->
                 Text(
-                    localizedHealthText(LocalizedTextSpec(point.label)),
+                    localizedHealthText(
+                        LocalizedTextSpec(
+                            point.label
+                        )
+                    ),
                     color = if (index == v.highlightedIndex) AppColors.Core.White else AppColors.Health.Muted,
                     fontSize = 9.sp,
                 )
@@ -66,5 +75,11 @@ private fun LoadOverview(v: HealthCardVisualData) {
 @Preview(name = "Training load visual", showBackground = true, backgroundColor = 0xFF171719)
 @Composable
 private fun LoadVisualPreview() {
-    PreviewVisualSurface { LoadVisual(previewHealthVisual(com.example.demo.common.health.model.HealthCardType.TrainingLoad)) }
+    PreviewVisualSurface {
+        LoadVisual(
+            previewHealthVisual(
+                HealthCardType.TrainingLoad
+            )
+        )
+    }
 }

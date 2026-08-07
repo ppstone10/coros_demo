@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -29,6 +29,7 @@ import com.example.demo.common.health.model.LocalizedTextSpec
 import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.AppTypography
 import com.example.demo.core.theme.DemoTheme
+import com.example.demo.health.localizedHealthText
 
 private val CardBlack = AppColors.Health.Card
 private val Muted = AppColors.Health.Muted

@@ -167,6 +167,7 @@ enum class MockError(val code: String, val message: String) {
     RegionRequired("AUTH_REGION_REQUIRED", AuthMessageKeys.ErrorRegionRequired),
     SessionActiveElsewhere("SESSION_ACTIVE_ELSEWHERE", AuthMessageKeys.ErrorSessionActiveElsewhere),
     SessionExpiredElsewhere("SESSION_EXPIRED_ELSEWHERE", AuthMessageKeys.ErrorSessionExpiredElsewhere),
+    NetworkUnavailable("AUTH_NETWORK_UNAVAILABLE", AuthMessageKeys.ErrorNetworkUnavailable),
     MinimumCardsRequired("HEALTH_MINIMUM_CARDS", HealthMessageKeys.ErrorMinimumCardsRequired)
 }
 
@@ -189,6 +190,7 @@ fun MockError.toProtoMessage() = MockErrorMessage(
         MockError.NewPasswordSameAsOld -> "NEW_PASSWORD_SAME_AS_OLD"
         MockError.EmptyData -> "EMPTY_DATA"
         MockError.CorruptedData -> "CORRUPTED_DATA"
+        MockError.NetworkUnavailable -> "NETWORK_UNAVAILABLE"
         MockError.MinimumCardsRequired -> "HEALTH_MINIMUM_CARDS"
     },
     message = message

@@ -25,19 +25,19 @@ KMP `common` 共享业务层的认证与业务 mock 模块，以及 Android 本�
 
 | 测试类 | 文件 | 测试数 |
 | --- | --- | --- |
-| `LoginRulesTest` | `common/src/commonTest/.../LoginRulesTest.kt` | 8 |
-| `LoginUseCaseTest` | `common/src/commonTest/.../LoginUseCaseTest.kt` | 41 |
+| `LoginRulesTest` | `common/src/commonTest/.../LoginRulesTest.kt` | 9 |
+| `LoginUseCaseTest` | `common/src/commonTest/.../LoginUseCaseTest.kt` | 42 |
 | `BusinessMockDataSourceTest` | `common/src/commonTest/.../BusinessMockDataSourceTest.kt` | 4 |
 | `HealthDashboardUseCaseTest` | `common/src/commonTest/.../HealthDashboardUseCaseTest.kt` | 47 |
 | `EditableHealthDataTest` | `common/src/commonTest/.../EditableHealthDataTest.kt` | 16 |
 | `HealthPreviewFixturesTest` | `common/src/commonTest/.../HealthPreviewFixturesTest.kt` | 1 |
 | `HealthStoreTest` | `common/src/commonTest/.../HealthStoreTest.kt` | 11 |
-| **业务需求映射小计** | | **117** |
-| **common 全部合计（含 HealthStore）** | | **128** |
+| **业务需求映射小计** | | **119** |
+| **common 全部合计（含 HealthStore）** | | **130** |
 | `SessionLifecycleCoordinatorTest` | `androidApp/src/test/.../SessionLifecycleCoordinatorTest.kt` | 2 |
 | `AndroidAuthStoreDataSourceTest` | `androidApp/src/androidTest/.../AndroidAuthStoreDataSourceTest.kt` | 1 |
 
-共享业务测试合计：**117 条**；另有 `HealthStoreTest` 11 条架构测试，common 当前共 **128 条**。Android JVM 单元测试当前共 **9 条**，其中本轮会话生命周期调度测试 2 条。计数由源码中的 `@Test` 动态核对。
+共享业务测试合计：**119 条**；另有 `HealthStoreTest` 11 条架构测试，common 当前共 **130 条**。Android JVM 单元测试当前共 **9 条**，其中本轮会话生命周期调度测试 2 条。计数由源码中的 `@Test` 动态核对。
 
 ## 运行命令
 
@@ -47,7 +47,7 @@ KMP `common` 共享业务层的认证与业务 mock 模块，以及 Android 本�
 
 ## 测试详情
 
-### LoginRulesTest（8 条）
+### LoginRulesTest（9 条）
 
 | 测试 | 验证内容 |
 | --- | --- |
@@ -60,7 +60,7 @@ KMP `common` 共享业务层的认证与业务 mock 模块，以及 Android 本�
 | `loginReadinessUsesSharedRule` | 登录按钮可用判断（loading、空输入、密码长度） |
 | `validationFailuresExposeStableLocalizationKeys` | 共享认证校验失败只输出稳定的 `auth_*` 本地化语义键 |
 
-### LoginUseCaseTest（41 条）
+### LoginUseCaseTest（42 条）
 
 | 测试 | 验证内容 | 异常态 |
 | --- | --- | --- |
@@ -98,6 +98,7 @@ KMP `common` 共享业务层的认证与业务 mock 模块，以及 Android 本�
 | `emptyStoreWithInitializedFlagReturnsNullSession` | 空数据 store 返回 null session | ✅ **空数据** |
 | `corruptedSessionWithBlankUserIdReturnsNull` | 损坏 session（blank userId）返回 null | ✅ **错误数据** |
 | `persistFailedOnRegisterReturnsError` | 持久化失败返回 `PersistFailed` | ✅ **持久化失败** |
+| `successfulLoginClearsStaleKickedDialogState` | 成功登录后清除残留的"被顶"弹窗状态 | — |
 
 ### BusinessMockDataSourceTest（4 条）
 

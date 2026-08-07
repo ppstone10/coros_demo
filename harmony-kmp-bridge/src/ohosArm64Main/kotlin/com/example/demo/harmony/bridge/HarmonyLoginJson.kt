@@ -1,5 +1,6 @@
 package com.example.demo.harmony.bridge
 
+import com.example.demo.common.auth.model.ActiveDeviceInfo
 import com.example.demo.common.auth.model.AuthSession
 import com.example.demo.common.auth.model.LoginEffect
 import com.example.demo.common.auth.model.LoginState
@@ -109,7 +110,7 @@ internal object HarmonyLoginJson {
         return MockAuthStoreJson.isRoundTripStable(json)
     }
 
-    private fun activeDeviceSnapshot(device: com.example.demo.common.auth.model.ActiveDeviceInfo?): String {
+    private fun activeDeviceSnapshot(device: ActiveDeviceInfo?): String {
         if (device == null) return "null"
         return buildString {
             append('{')

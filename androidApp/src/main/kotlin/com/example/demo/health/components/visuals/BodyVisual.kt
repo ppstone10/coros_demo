@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components.visuals
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +26,10 @@ import com.example.demo.core.resources.AppImages
 import androidx.compose.ui.res.stringResource
 import com.example.demo.R
 import com.example.demo.common.health.model.HealthCardType
+import com.example.demo.health.components.OverviewRow
+import com.example.demo.health.components.UnitText
+import com.example.demo.health.components.ValueText
+import com.example.demo.health.localizedHealthText
 
 @Composable
 fun BodyVisual(v: HealthCardVisualData, onWeightClick: () -> Unit) {
@@ -45,8 +49,14 @@ fun BodyVisual(v: HealthCardVisualData, onWeightClick: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable(onClick = onWeightClick)
                 ) {
-                    ValueText(v.primaryValue, 32)
-                    UnitText(v.primaryUnit, 20)
+                    ValueText(
+                        v.primaryValue,
+                        32
+                    )
+                    UnitText(
+                        v.primaryUnit,
+                        20
+                    )
                     Spacer(Modifier.width(6.dp))
                     AppImage(
                         AppImages.Profile.Edit,
@@ -114,6 +124,8 @@ private fun BodyRegionLayer(asset: AppImageAsset) {
 @Composable
 private fun BodyVisualPreview() {
     PreviewVisualSurface {
-        BodyVisual(previewHealthVisual(HealthCardType.BodyManagement), onWeightClick = {})
+        BodyVisual(
+            previewHealthVisual(HealthCardType.BodyManagement),
+            onWeightClick = {})
     }
 }

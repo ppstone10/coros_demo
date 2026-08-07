@@ -5,14 +5,13 @@ import {
   COROS_BUTTON_RED,
   COROS_BLACK
 } from '../auth/components/AuthColors';
+import { AuthTitle, AuthHeader } from '../auth/components/AuthBranding';
 import {
-  AuthTitle,
   ErrorText,
   CorosButton,
-  AuthHeader,
   UnderlineInput,
   DisabledUnderlineValue
-} from '../auth/components/AuthComponents';
+} from '../auth/components/AuthInputs';
 import { AuthRoutes, ResetPasswordParams } from '../auth/navigation/AuthRoutes';
 import { navigate, NavOperation } from '../auth/navigation/AuthNavigator';
 import { AppColors } from '../core/resources/AppResources';

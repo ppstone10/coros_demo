@@ -67,6 +67,13 @@
 		BF5278E5301362B700D53B2B /* NormalDataEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278E5301362B700D53B2B /* NormalDataEditor.swift */; };
 		BF640001301362B700D53B2B /* AbilityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92640001301362B700D53B2B /* AbilityView.swift */; };
 		BF640002301362B700D53B2B /* HrvAssessmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92640002301362B700D53B2B /* HrvAssessmentView.swift */; };
+		BF5278F1301362B700D53B2B /* AuthBranding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278F1301362B700D53B2B /* AuthBranding.swift */; };
+		BF5278F2301362B700D53B2B /* AuthInputs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278F2301362B700D53B2B /* AuthInputs.swift */; };
+		BF5278F3301362B700D53B2B /* AuthOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278F3301362B700D53B2B /* AuthOverlays.swift */; };
+		BF5278F4301362B700D53B2B /* NormalDataEditorFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278F4301362B700D53B2B /* NormalDataEditorFields.swift */; };
+		BF5278F5301362B700D53B2B /* NormalDataEditorSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278F5301362B700D53B2B /* NormalDataEditorSections.swift */; };
+		BF5278F6301362B700D53B2B /* HealthDashboardCardRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278F6301362B700D53B2B /* HealthDashboardCardRow.swift */; };
+		BF5278F7301362B700D53B2B /* HealthDashboardSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925278F7301362B700D53B2B /* HealthDashboardSheets.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -129,6 +136,13 @@
 		925278E5301362B700D53B2B /* NormalDataEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NormalDataEditor.swift; sourceTree = "<group>"; };
 		92640001301362B700D53B2B /* AbilityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AbilityView.swift; sourceTree = "<group>"; };
 		92640002301362B700D53B2B /* HrvAssessmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HrvAssessmentView.swift; sourceTree = "<group>"; };
+		925278F1301362B700D53B2B /* AuthBranding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthBranding.swift; sourceTree = "<group>"; };
+		925278F2301362B700D53B2B /* AuthInputs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthInputs.swift; sourceTree = "<group>"; };
+		925278F3301362B700D53B2B /* AuthOverlays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthOverlays.swift; sourceTree = "<group>"; };
+		925278F4301362B700D53B2B /* NormalDataEditorFields.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NormalDataEditorFields.swift; sourceTree = "<group>"; };
+		925278F5301362B700D53B2B /* NormalDataEditorSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NormalDataEditorSections.swift; sourceTree = "<group>"; };
+		925278F6301362B700D53B2B /* HealthDashboardCardRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDashboardCardRow.swift; sourceTree = "<group>"; };
+		925278F7301362B700D53B2B /* HealthDashboardSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthDashboardSheets.swift; sourceTree = "<group>"; };
 		A20000000000000000000007 /* IOSDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = IOSDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -211,6 +225,8 @@
 			children = (
 				925278A8301362B700D53B2B /* HealthCard.swift */,
 				925278A9301362B700D53B2B /* HealthDashboardView.swift */,
+				925278F6301362B700D53B2B /* HealthDashboardCardRow.swift */,
+				925278F7301362B700D53B2B /* HealthDashboardSheets.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -280,6 +296,8 @@
 			children = (
 				925278A5301362B700D53B2B /* HealthCardEditor.swift */,
 				925278E5301362B700D53B2B /* NormalDataEditor.swift */,
+				925278F4301362B700D53B2B /* NormalDataEditorFields.swift */,
+				925278F5301362B700D53B2B /* NormalDataEditorSections.swift */,
 				925278A6301362B700D53B2B /* ScrollViewAccessor.swift */,
 			);
 			path = Editor;
@@ -322,6 +340,9 @@
 			children = (
 				925278B1301362B700D53B2B /* AuthColors.swift */,
 				925278B2301362B700D53B2B /* AuthComponents.swift */,
+				925278F1301362B700D53B2B /* AuthBranding.swift */,
+				925278F2301362B700D53B2B /* AuthInputs.swift */,
+				925278F3301362B700D53B2B /* AuthOverlays.swift */,
 				925278B3301362B700D53B2B /* LegalContent.swift */,
 				925278B4301362B700D53B2B /* SnackbarView.swift */,
 			);
@@ -495,6 +516,13 @@
 				BF527894301362B700D53B2B /* HealthGridView.swift in Sources */,
 				BF527895301362B700D53B2B /* MiniBarsView.swift in Sources */,
 				BF640002301362B700D53B2B /* HrvAssessmentView.swift in Sources */,
+				BF5278F1301362B700D53B2B /* AuthBranding.swift in Sources */,
+				BF5278F2301362B700D53B2B /* AuthInputs.swift in Sources */,
+				BF5278F3301362B700D53B2B /* AuthOverlays.swift in Sources */,
+				BF5278F4301362B700D53B2B /* NormalDataEditorFields.swift in Sources */,
+				BF5278F5301362B700D53B2B /* NormalDataEditorSections.swift in Sources */,
+				BF5278F6301362B700D53B2B /* HealthDashboardCardRow.swift in Sources */,
+				BF5278F7301362B700D53B2B /* HealthDashboardSheets.swift in Sources */,
 				BF527896301362B700D53B2B /* RestingHeartRateView.swift in Sources */,
 				BF527897301362B700D53B2B /* SleepView.swift in Sources */,
 				BF527898301362B700D53B2B /* TrainingAssessmentView.swift in Sources */,

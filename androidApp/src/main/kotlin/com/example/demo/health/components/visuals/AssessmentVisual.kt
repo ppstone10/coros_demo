@@ -1,6 +1,7 @@
-package com.example.demo.health
+package com.example.demo.health.components.visuals
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,8 +17,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.demo.common.health.model.HealthCardType
 import com.example.demo.common.health.model.HealthCardVisualData
 import com.example.demo.core.resources.AppColors
+import com.example.demo.health.components.MetricValue
+import com.example.demo.health.localizedHealthText
 
 @Composable
 fun AssessmentVisual(v: HealthCardVisualData) {
@@ -40,9 +44,12 @@ fun AssessmentVisual(v: HealthCardVisualData) {
             )
         }
         Spacer(Modifier.height(16.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             v.metrics.take(3).forEachIndexed { index, metric ->
-                MetricValue(metric, Modifier.width(82.dp))
+                MetricValue(
+                    metric,
+                    Modifier.width(82.dp)
+                )
                 if (index < 2) Box(Modifier.width(1.dp).height(42.dp).background(AppColors.Health.Divider))
             }
         }
@@ -52,5 +59,9 @@ fun AssessmentVisual(v: HealthCardVisualData) {
 @Preview(name = "Training assessment visual", showBackground = true, backgroundColor = 0xFF171719)
 @Composable
 private fun AssessmentVisualPreview() {
-    PreviewVisualSurface { AssessmentVisual(previewHealthVisual(com.example.demo.common.health.model.HealthCardType.TrainingAssessment)) }
+    PreviewVisualSurface {
+        AssessmentVisual(
+            previewHealthVisual(HealthCardType.TrainingAssessment)
+        )
+    }
 }

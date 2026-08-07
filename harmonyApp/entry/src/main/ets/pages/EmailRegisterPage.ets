@@ -15,16 +15,14 @@ import {
   REGISTER_AGREEMENT_TOP_SPACING,
   REGISTER_ACTION_TOP_SPACING
 } from '../auth/components/AuthColors';
+import { TermsPromptAction, VerifyTargetKind } from '../auth/components/AuthComponents';
+import { AuthTitle, AuthHeader } from '../auth/components/AuthBranding';
 import {
-  TermsPromptAction,
-  VerifyTargetKind,
-  AuthTitle,
   ErrorText,
   CorosButton,
-  AuthHeader,
   UnderlineInput,
   AgreementRowComp
-} from '../auth/components/AuthComponents';
+} from '../auth/components/AuthInputs';
 import { AuthRoutes } from '../auth/navigation/AuthRoutes';
 import { navigate, navigateWithParams, NavOperation } from '../auth/navigation/AuthNavigator';
 import { AppColors } from '../core/resources/AppResources';

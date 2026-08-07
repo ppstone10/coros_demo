@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components.visuals
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Column
@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -20,18 +21,33 @@ import com.example.demo.common.health.model.SleepStage
 import com.example.demo.core.resources.AppColors
 import kotlin.math.max
 import com.example.demo.common.health.model.HealthCardType
+import com.example.demo.health.components.OverviewRow
+import com.example.demo.health.components.UnitText
+import com.example.demo.health.components.ValueText
 
 @Composable
 fun SleepVisual(v: HealthCardVisualData) {
     OverviewRow(
         left = {
             Column {
-                Row(verticalAlignment = androidx.compose.ui.Alignment.Bottom) {
-                    ValueText(v.primaryValue, 32)
-                    UnitText(v.primaryUnit, 20)
+                Row(verticalAlignment = Alignment.Bottom) {
+                    ValueText(
+                        v.primaryValue,
+                        32
+                    )
+                    UnitText(
+                        v.primaryUnit,
+                        20
+                    )
                     Spacer(Modifier.width(5.dp))
-                    ValueText(v.secondaryValue, 32)
-                    UnitText(v.secondaryUnit, 20)
+                    ValueText(
+                        v.secondaryValue,
+                        32
+                    )
+                    UnitText(
+                        v.secondaryUnit,
+                        20
+                    )
                 }
                 Text(
                     "${v.startTime ?: "--"} – ${v.endTime ?: "--"}",

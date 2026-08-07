@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -17,8 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
@@ -87,24 +85,24 @@ fun ArcAndMetrics(state: DashboardUiState) {
         ) {
             Metric(
                 state.dailySummary?.steps ?: 0,
-                stringResource(R.string.health_unit_steps), AppImages.Health.Steps, AppColors.Health.Steps
+                stringResource(R.string.health_unit_steps), AppImages.Health.Steps
             )
             Metric(
                 state.dailySummary?.calories ?: 0,
-                stringResource(R.string.health_unit_calories), AppImages.Health.Calories, AppColors.Health.Calories
+                stringResource(R.string.health_unit_calories), AppImages.Health.Calories
             )
             Metric(
                 state.dailySummary?.activeMinutes ?: 0,
-                stringResource(R.string.health_unit_minutes), AppImages.Health.ActiveDuration, AppColors.Health.ActiveDuration
+                stringResource(R.string.health_unit_minutes), AppImages.Health.ActiveDuration
             )
         }
     }
 }
 
 @Composable
-fun Metric(value: Int, unit: String, icon: AppImageAsset, iconColor: Color) {
+fun Metric(value: Int, unit: String, icon: AppImageAsset) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(82.dp)) {
-        AppImage(asset = icon, contentDescription = null, colorFilter = ColorFilter.tint(iconColor), modifier = Modifier.size(22.dp))
+        AppImage(asset = icon, contentDescription = null, modifier = Modifier.size(22.dp))
         Text(text = value.toString(), color = AppColors.Core.White, fontSize = 26.sp, letterSpacing = 1.sp)
         Text(text = unit, color = AppColors.Health.MetricUnit, fontSize = AppTypography.Caption)
     }

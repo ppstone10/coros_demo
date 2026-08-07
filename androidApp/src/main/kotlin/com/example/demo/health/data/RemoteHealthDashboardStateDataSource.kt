@@ -1,6 +1,8 @@
 package com.example.demo.health.data
 
 import com.example.demo.common.auth.mock.AuthJson
+import com.example.demo.common.auth.model.MockError
+import com.example.demo.common.auth.model.MockResult
 import com.example.demo.common.health.mock.MockHealthDashboardStoreJson
 import com.example.demo.common.health.model.HealthDashboardSnapshot
 import com.example.demo.common.health.store.HealthDashboardStateDataSource
@@ -37,15 +39,19 @@ class RemoteHealthDashboardStateDataSource(
         }
     }
 
-    override fun save(snapshot: HealthDashboardSnapshot): Boolean {
+    override fun save(snapshot: HealthDashboardSnapshot): MockResult<Unit> {
         val body = runCatching { MockHealthDashboardStoreJson.encode(snapshot) }
-            .getOrNull() ?: return false
+            .getOrNull() ?: return MockResult.Failure(MockError.PersistFailed)
         val response = http.put("/api/health/${snapshot.userId}", body)
         if (response.status == 401 && response.body.contains("SESSION_EXPIRED_ELSEWHERE")) {
             onSessionKicked?.invoke()
         }
-        if (response.status !in 200..299) return false
-        return cache.save(snapshot)
+        if (response.status == -1) return MockResult.Failure(MockError.NetworkUnavailable)
+        if (response.status !in 200..299) return MockResult.Failure(MockError.PersistFailed)
+        return when (val cached = cache.save(snapshot)) {
+            is MockResult.Failure -> MockResult.Failure(cached.error)
+            is MockResult.Success -> MockResult.Success(Unit)
+        }
     }
 
     override fun clear(userId: String): Boolean {

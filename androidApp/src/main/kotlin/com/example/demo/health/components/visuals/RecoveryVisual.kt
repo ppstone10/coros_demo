@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components.visuals
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
@@ -25,6 +25,11 @@ import com.example.demo.core.resources.AppColors
 import com.example.demo.core.resources.AppImage
 import com.example.demo.core.resources.AppImages
 import com.example.demo.common.health.model.HealthCardType
+import com.example.demo.health.components.OverviewRow
+import com.example.demo.health.components.UnitText
+import com.example.demo.health.components.ValueText
+import com.example.demo.health.components.clampedVisualProgress
+import com.example.demo.health.localizedHealthText
 
 @Composable
 fun RecoveryVisual(v: HealthCardVisualData) {
@@ -32,8 +37,14 @@ fun RecoveryVisual(v: HealthCardVisualData) {
         left = {
             Column(Modifier.padding(top = 8.dp)) {
                 Row(verticalAlignment = Alignment.Bottom) {
-                    ValueText(v.primaryValue, 32)
-                    UnitText(v.primaryUnit, 20)
+                    ValueText(
+                        v.primaryValue,
+                        32
+                    )
+                    UnitText(
+                        v.primaryUnit,
+                        20
+                    )
                 }
                 v.caption?.let {
                     Text(

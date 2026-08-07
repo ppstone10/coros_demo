@@ -56,13 +56,13 @@ for file in \
 done
 
 android_dispatch="androidApp/src/main/kotlin/com/example/demo/health/components/DashboardCard.kt"
-ios_dispatch="iosApp/iosApp/Health/Views/HealthDashboardView.swift"
+ios_dispatch="iosApp/iosApp/Health/Views/HealthDashboardCardRow.swift"
 harmony_dispatch="harmonyApp/entry/src/main/ets/health/components/DashboardCardComp.ets"
 
 check_text "$android_dispatch" "HealthCardType.Recovery -> RecoveryVisual(visual)"
-check_text "$android_dispatch" "HealthCardType.RunningAbility, HealthCardType.CyclingAbility -> AbilityVisual(type, visual)"
-check_text "$android_dispatch" "HealthCardType.RestingHeartRate -> RestingHeartRateVisual(visual)"
-check_text "$android_dispatch" "HealthCardType.HrvAssessment -> HrvAssessmentVisual(visual)"
+check_text "$android_dispatch" "HealthCardType.RunningAbility, HealthCardType.CyclingAbility -> AbilityVisual("
+check_text "$android_dispatch" "HealthCardType.RestingHeartRate -> RestingHeartRateVisual("
+check_text "$android_dispatch" "HealthCardType.HrvAssessment -> HrvAssessmentVisual("
 check_absent "$android_dispatch" "GaugeVisual(type, visual)"
 check_absent "$android_dispatch" "RangeVisual(type, visual)"
 

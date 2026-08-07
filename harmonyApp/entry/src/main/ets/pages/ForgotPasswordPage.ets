@@ -6,13 +6,12 @@ import {
   COROS_BLACK,
   COROS_WHITE
 } from '../auth/components/AuthColors';
+import { AuthTitle, AuthHeader } from '../auth/components/AuthBranding';
 import {
-  AuthTitle,
   ErrorText,
   CorosButton,
-  AuthHeader,
   UnderlineInput
-} from '../auth/components/AuthComponents';
+} from '../auth/components/AuthInputs';
 import { AuthRoutes } from '../auth/navigation/AuthRoutes';
 import { navigate, navigateWithParams, NavOperation } from '../auth/navigation/AuthNavigator';
 

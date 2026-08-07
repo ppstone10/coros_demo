@@ -26,12 +26,13 @@ reject() {
   fi
 }
 
-models="common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardModels.kt"
-visuals="common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardVisuals.kt"
+models="common/src/commonMain/kotlin/com/example/demo/common/health/model/HealthDashboardModels.kt"
+visuals="common/src/commonMain/kotlin/com/example/demo/common/health/model/HealthDashboardVisuals.kt"
 android="androidApp/src/main/kotlin/com/example/demo/health/components/visuals/HrvAssessmentVisual.kt"
 ios="iosApp/iosApp/Health/Components/Visuals/HrvAssessmentView.swift"
 harmony="harmonyApp/entry/src/main/ets/health/components/visuals/HrvAssessmentVisualComp.ets"
 harmony_types="harmonyApp/entry/src/main/ets/health/HealthDashboardTypes.ets"
+bridge_json="harmony-kmp-bridge/src/ohosArm64Main/kotlin/com/example/demo/harmony/bridge/HarmonyHealthSnapshotJson.kt"
 bridge="harmony-kmp-bridge/src/ohosArm64Main/kotlin/com/example/demo/harmony/bridge/HarmonyLoginService.kt"
 provider="harmonyApp/entry/src/main/ets/knoi/provider.ets"
 editor="harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets"
@@ -47,7 +48,7 @@ check "$android" "currentRange.segments.forEach"
 check "$ios" "ForEach(Array(segments.enumerated()), id: \\.offset)"
 check "$harmony" "ForEach(this.rangeSegments()"
 check "$harmony_types" "segments?: HealthRangeSegmentData[]"
-check "$bridge" "sb.append(\",\\\"segments\\\":[\")"
+check "$bridge_json" "sb.append(\",\\\"segments\\\":[\")"
 
 reject "$android" "val segmentWidth = (size.width - gap * 3) / 4f"
 reject "$ios" "geometry.size.width * 0.18"
@@ -56,8 +57,8 @@ reject "$harmony" "Row().width(23)"
 check "$bridge" "fun saveNormalHealthEditForm(sectionName: String, valuesSpec: String): Boolean ="
 check "$provider" "saveNormalHealthEditForm(sectionName: string, valuesSpec: string): boolean;"
 check "$editor" "Button(\$r('app.string.common_save'), { type: ButtonType.Normal })"
-check "$editor" "if (!getService().saveNormalHealthEditForm(this.section, this.valuesSpec()))"
-reject "$editor" "saveNormalHealthEditForm(this.section, this.valuesSpec()) !== 'true'"
+check "$editor" "saveNormalHealthEditFormResultJson(this.section, this.valuesSpec())"
+reject "$editor" "if (!getService().saveNormalHealthEditForm(this.section, this.valuesSpec()))"
 
 if [[ "$failed" -ne 0 ]]; then
   exit 1

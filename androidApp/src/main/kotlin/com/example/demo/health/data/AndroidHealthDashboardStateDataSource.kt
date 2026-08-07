@@ -1,6 +1,7 @@
 package com.example.demo.health.data
 
 import android.content.Context
+import com.example.demo.common.auth.model.MockResult
 import com.example.demo.common.health.model.HealthDashboardSnapshot
 import com.example.demo.common.health.store.HealthDashboardStateDataSource
 import com.example.demo.common.health.repository.JsonHealthDashboardStateDataSource
@@ -18,7 +19,7 @@ class AndroidHealthDashboardStateDataSource(context: Context) : HealthDashboardS
 
     override fun load(userId: String): HealthDashboardSnapshot? = delegate.load(userId)
 
-    override fun save(snapshot: HealthDashboardSnapshot): Boolean = delegate.save(snapshot)
+    override fun save(snapshot: HealthDashboardSnapshot): MockResult<Unit> = delegate.save(snapshot)
 
     override fun clear(userId: String): Boolean = delegate.clear(userId)
 

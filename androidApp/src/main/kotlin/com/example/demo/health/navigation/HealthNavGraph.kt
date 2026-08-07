@@ -6,10 +6,10 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.example.demo.common.health.model.HealthEditableSection
-import com.example.demo.health.CardEditor
-import com.example.demo.health.DetailPlaceholder
-import com.example.demo.health.NormalDataEditorOverview
-import com.example.demo.health.NormalDataSectionEditor
+import com.example.demo.health.editor.CardEditor
+import com.example.demo.health.detail.DetailPlaceholder
+import com.example.demo.health.editor.NormalDataEditorOverview
+import com.example.demo.health.editor.NormalDataSectionEditor
 import com.example.demo.health.viewmodel.HealthDashboardViewModel
 
 /**

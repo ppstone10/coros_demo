@@ -211,6 +211,7 @@
     <string name="auth_error_empty_data">暂无本地账号数据</string>
     <string name="auth_error_corrupted_data">本地登录数据损坏</string>
     <string name="auth_error_persist_failed">本地登录状态保存失败</string>
+    <string name="auth_error_network_unavailable">服务器连接失败</string>
     <string name="auth_error_region_required">请选择注册地区</string>
     <string name="auth_error_session_active_elsewhere">该账号已在其他设备登录</string>
     <string name="auth_error_session_expired_elsewhere">该账号已在其他设备登录，请重新登录</string>

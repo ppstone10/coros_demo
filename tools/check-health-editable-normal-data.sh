@@ -50,38 +50,38 @@ require_same_file() {
   fi
 }
 
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/EditableHealthData.kt" \
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/rules/HealthEditableRules.kt" \
   "fun derive(source: EditableHealthData)"
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthEditableForms.kt" \
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/rules/HealthEditableForms.kt" \
   "fun apply("
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthEditableForms.kt" \
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/rules/HealthEditableForms.kt" \
   "fun mutate("
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthEditableForms.kt" \
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/model/HealthEditFormModels.kt" \
   "enum class BodyMuscleGroup"
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardStore.kt" \
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/store/HealthDashboardStore.kt" \
   "transientDashboardDraft"
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardStore.kt" \
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/store/HealthDashboardStore.kt" \
   "stored.editableData"
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthEditableForms.kt" \
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/rules/HealthEditableForms.kt" \
   "bodyManagement = source.bodyManagement.copy("
-require_absent "common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardStore.kt" \
+require_absent "common/src/commonMain/kotlin/com/example/demo/common/health/store/HealthDashboardStore.kt" \
   "baseSource.copy(bodyManagement = requireNotNull(previousBody))"
 require_text "common/src/commonTest/kotlin/com/example/demo/common/health/EditableHealthDataTest.kt" \
   "bodyMuscleDraftReplacesOldMusclesOnRefreshWhileWeightHistoryIsPreserved"
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardModels.kt" \
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/model/HealthDashboardModels.kt" \
   "val highlightedBodyRegions: List<String> = emptyList()"
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardModels.kt" \
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/model/HealthDashboardModels.kt" \
   "val footer: LocalizedTextSpec? = null"
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardVisuals.kt" \
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/model/HealthDashboardVisuals.kt" \
   "highlightedBodyRegions = bodyHighlightRegions"
 
-require_text "androidApp/src/main/kotlin/com/example/demo/auth/navigation/AuthRoute.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/health/navigation/HealthRoute.kt" \
   "NormalDataEditorRoute"
 require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "delay(1_500.milliseconds)"
 require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "viewModel.normalEditForm(section)"
-require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditorFields.kt" \
   "OutlinedTextFieldDefaults.colors"
 require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "RepeatGroupEditor"
@@ -95,18 +95,18 @@ require_text "androidApp/src/main/kotlin/com/example/demo/core/resources/AppImag
   "ChoiceChevron = AppImageAsset(R.drawable.right_more)"
 require_text "androidApp/src/main/kotlin/com/example/demo/core/resources/AppImages.kt" \
   "ChoiceCheck = AppImageAsset(R.drawable.ic_profile_check)"
-require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditorFields.kt" \
   "AppImages.Health.ChoiceChevron"
-require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
+require_text "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditorFields.kt" \
   "AppImages.Health.ChoiceCheck"
 require_absent "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "Text(\"⌄\""
 require_absent "androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt" \
   "Text(\"✓\""
 
-require_text "iosApp/iosApp/Auth/AuthCoordinator.swift" \
+require_text "iosApp/iosApp/Health/Navigation/HealthNavigation.swift" \
   "NormalDataEditorOverview"
-require_text "iosApp/iosApp/Health/Editor/NormalDataEditor.swift" \
+require_text "iosApp/iosApp/Health/Editor/NormalDataEditorSections.swift" \
   "1_500_000_000"
 require_text "iosApp/iosApp/Health/Editor/NormalDataEditor.swift" \
   "viewModel.normalEditFormJson(section)"
@@ -139,31 +139,37 @@ require_absent "iosApp/iosApp/Health/Components/Visuals/BodyView.swift" \
 require_absent "iosApp/iosApp/Health/Components/Visuals/BodyView.swift" \
   "muscleNames"
 
-require_text "harmonyApp/entry/src/main/ets/auth/AuthRoutes.ets" \
+require_text "harmonyApp/entry/src/main/ets/auth/navigation/AuthRoutes.ets" \
   "NORMAL_DATA_EDITOR"
 require_text "harmonyApp/entry/src/main/ets/pages/NormalDataEditorPage.ets" \
   "normalHealthEditFormJson(section)"
 require_text "harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets" \
   "duration: 1500"
-require_text "harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets" \
-  "RepeatGroupEditor"
-require_text "harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets" \
-  "ChoiceSelectionOverlay"
-require_text "harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets" \
+require_text "harmonyApp/entry/src/main/ets/health/editor/NormalDataSectionComponents.ets" \
+  "NormalEditRepeatGroupComp"
+require_text "harmonyApp/entry/src/main/ets/health/editor/NormalDataSectionComponents.ets" \
+  "NormalEditChoiceOverlayComp"
+require_text "harmonyApp/entry/src/main/ets/health/editor/NormalDataSectionComponents.ets" \
   "AppColors.ADD_ACTION"
 require_absent "harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets" \
+  "Select("
+require_absent "harmonyApp/entry/src/main/ets/health/editor/NormalDataSectionComponents.ets" \
   "Select("
 require_text "harmonyApp/entry/src/main/ets/core/resources/AppResources.ets" \
   "static choiceChevron(): Resource { return \$r('app.media.right_more'); }"
 require_text "harmonyApp/entry/src/main/ets/core/resources/AppResources.ets" \
   "static choiceCheck(): Resource { return \$r('app.media.ic_profile_check'); }"
-require_text "harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets" \
+require_text "harmonyApp/entry/src/main/ets/health/editor/NormalDataSectionComponents.ets" \
   "Image(AppImages.choiceChevron())"
-require_text "harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets" \
+require_text "harmonyApp/entry/src/main/ets/health/editor/NormalDataSectionComponents.ets" \
   "Image(AppImages.choiceCheck())"
 require_absent "harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets" \
   "Text('⌄')"
 require_absent "harmonyApp/entry/src/main/ets/pages/NormalDataSectionPage.ets" \
+  "Text('✓')"
+require_absent "harmonyApp/entry/src/main/ets/health/editor/NormalDataSectionComponents.ets" \
+  "Text('⌄')"
+require_absent "harmonyApp/entry/src/main/ets/health/editor/NormalDataSectionComponents.ets" \
   "Text('✓')"
 require_text "harmonyApp/entry/src/main/ets/health/components/visuals/BodyManagementVisualComp.ets" \
   "BodyRegionLayer"

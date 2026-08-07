@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
+import com.example.demo.core.resources.AppColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -51,7 +52,7 @@ internal fun AvatarImage(
         modifier = modifier
             .size(size)
             .clip(CircleShape)
-            .background(androidx.compose.ui.graphics.Color.Transparent),
+            .background(AppColors.Core.Transparent),
         contentAlignment = Alignment.Center
     ) {
         if (bitmap != null) {
@@ -99,7 +100,7 @@ internal fun AvatarImageWithRevision(
         modifier = modifier
             .size(size)
             .clip(CircleShape)
-            .background(androidx.compose.ui.graphics.Color.Transparent),
+            .background(AppColors.Core.Transparent),
         contentAlignment = Alignment.Center
     ) {
         if (display != null) {

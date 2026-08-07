@@ -211,6 +211,7 @@
     { "name": "auth_error_empty_data", "value": "No local account data" },
     { "name": "auth_error_corrupted_data", "value": "Local sign-in data is corrupted" },
     { "name": "auth_error_persist_failed", "value": "Failed to save the local sign-in state" },
+    { "name": "auth_error_network_unavailable", "value": "Server connection failed" },
     { "name": "auth_error_region_required", "value": "Select a registration region" },
     { "name": "auth_error_session_active_elsewhere", "value": "This account is already signed in on another device" },
     { "name": "auth_error_session_expired_elsewhere", "value": "This account is already signed in on another device. Please sign in again" },

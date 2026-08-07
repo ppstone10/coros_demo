@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween

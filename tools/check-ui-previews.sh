@@ -14,7 +14,7 @@ require_pattern() {
 }
 
 android_pages=(
-  androidApp/src/main/kotlin/com/example/demo/health/HealthDashboardScreen.kt
+  androidApp/src/main/kotlin/com/example/demo/health/screens/HealthDashboardScreen.kt
   androidApp/src/main/kotlin/com/example/demo/health/editor/CardEditor.kt
   androidApp/src/main/kotlin/com/example/demo/health/editor/NormalDataEditor.kt
   androidApp/src/main/kotlin/com/example/demo/health/detail/DetailPlaceholder.kt
@@ -36,7 +36,7 @@ android_pages=(
 )
 
 ios_pages=(
-  iosApp/iosApp/ContentView.swift
+  iosApp/iosApp/App/ContentView.swift
   iosApp/iosApp/Home/Account/AccountView.swift
   iosApp/iosApp/Home/MainTabsView.swift
   iosApp/iosApp/Home/ExplorePlaceholderView.swift
@@ -99,8 +99,8 @@ while IFS=: read -r file line _; do
   fi
 done < <(rg -n '^[[:space:]]*@Preview' harmonyApp/entry/src/main/ets -g '*.ets' | sort)
 
-require_pattern common/src/commonMain/kotlin/com/example/demo/common/health/HealthPreviewFixtures.kt 'object HealthPreviewFixtures' 'shared preview fixture missing'
-require_pattern androidApp/src/main/kotlin/com/example/demo/health/HealthDashboardScreen.kt 'HealthPreviewFixtures' 'Android preview must consume shared fixture'
+require_pattern common/src/commonMain/kotlin/com/example/demo/common/health/mock/HealthPreviewFixtures.kt 'object HealthPreviewFixtures' 'shared preview fixture missing'
+require_pattern androidApp/src/main/kotlin/com/example/demo/health/screens/HealthDashboardScreen.kt 'HealthPreviewFixtures' 'Android preview must consume shared fixture'
 require_pattern iosApp/iosApp/Health/ViewModel/HealthDashboardViewModel.swift 'previewState: HealthState' 'iOS typed preview adapter missing'
 require_pattern iosApp/iosApp/Health/Views/HealthDashboardView.swift 'HealthPreviewFixtures' 'iOS preview must consume shared fixture'
 require_pattern harmony-kmp-bridge/src/ohosArm64Main/kotlin/com/example/demo/harmony/bridge/HarmonyLoginService.kt 'previewHealthSnapshot' 'HarmonyOS preview JSON bridge missing'
@@ -146,8 +146,8 @@ if rg -q 'getService|loadPreview|aboutToAppear' harmonyApp/entry/src/main/ets/pr
   failures=$((failures + 1))
 fi
 
-require_pattern harmonyApp/entry/src/main/ets/auth/HarmonyServiceProvider.ets 'installHarmonyService' 'HarmonyOS runtime service installation boundary missing'
-if rg -q '@kuiklybase/knoi|knoi/provider' harmonyApp/entry/src/main/ets/auth/HarmonyServiceProvider.ets; then
+require_pattern harmonyApp/entry/src/main/ets/core/bridge/HarmonyServiceProvider.ets 'installHarmonyService' 'HarmonyOS runtime service installation boundary missing'
+if rg -q '@kuiklybase/knoi|knoi/provider' harmonyApp/entry/src/main/ets/core/bridge/HarmonyServiceProvider.ets; then
   echo 'FAIL: HarmonyServiceProvider must remain native-module-free for Preview'
   failures=$((failures + 1))
 fi
@@ -162,7 +162,7 @@ fi
 
 while IFS= read -r native_file; do
   case "$native_file" in
-    harmonyApp/entry/src/main/ets/entryability/EntryAbility.ets|harmonyApp/entry/src/main/ets/knoi/provider.ets|harmonyApp/entry/src/main/ets/auth/KnoiHarmonyServiceAdapter.ets) ;;
+    harmonyApp/entry/src/main/ets/entryability/EntryAbility.ets|harmonyApp/entry/src/main/ets/knoi/provider.ets|harmonyApp/entry/src/main/ets/core/bridge/KnoiHarmonyServiceAdapter.ets) ;;
     *)
       echo "FAIL: native KNOI import escaped runtime composition root ($native_file)"
       failures=$((failures + 1))

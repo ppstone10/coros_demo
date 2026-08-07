@@ -101,11 +101,12 @@ check("HARM-007d: handleSessionKicked 不持久化（防级联循环）",
 
 # ---- HARM-010：弹窗样式与导航 ----
 signed_in = text("harmonyApp/entry/src/main/ets/pages/SignedInPage.ets")
+signed_in_dialogs = text("harmonyApp/entry/src/main/ets/pages/SignedInDialogs.ets")
 login_form = text("harmonyApp/entry/src/main/ets/pages/LoginFormPage.ets")
 check("HARM-010a: 被顶弹窗确认消费 SessionKicked effect 并跳转登录页",
       "SessionKicked" in signed_in and "handleAuthEffect" in signed_in)
 check("HARM-010b: 被顶/二次确认弹窗为居中紧凑卡片（固定宽度 300）",
-      ".width(300)" in signed_in and ".width(300)" in login_form)
+      ".width(300)" in signed_in_dialogs and ".width(300)" in login_form)
 check("HARM-010c: 成功登录清除残留被顶状态（LoginStore 复位 kickedDialogShown）",
       "kickedDialogShown = false" in text("common/src/commonMain/kotlin/com/example/demo/common/auth/store/LoginStore.kt"))
 

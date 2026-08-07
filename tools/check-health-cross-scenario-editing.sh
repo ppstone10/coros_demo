@@ -16,12 +16,12 @@ require_text() {
   fi
 }
 
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/EditableHealthData.kt" "enum class HealthEditSourceKind"
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/EditableHealthData.kt" "fun project(data: HealthDashboardData"
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/EditableHealthData.kt" "fun validateSection("
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthDashboardStore.kt" "transientEditSourceKind"
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthEditableForms.kt" "fun applyDetailed("
-require_text "common/src/commonMain/kotlin/com/example/demo/common/health/HealthEditableForms.kt" "fun applyResultJson("
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/model/EditableHealthData.kt" "enum class HealthEditSourceKind"
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/rules/HealthEditableRules.kt" "fun project(data: HealthDashboardData"
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/rules/HealthEditableRules.kt" "fun validateSection("
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/store/HealthDashboardStore.kt" "transientEditSourceKind"
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/rules/HealthEditableForms.kt" "fun applyDetailed("
+require_text "common/src/commonMain/kotlin/com/example/demo/common/health/rules/HealthEditableForms.kt" "fun applyResultJson("
 require_text "common/src/commonTest/kotlin/com/example/demo/common/health/EditableHealthDataTest.kt" "abnormalScenarioProjectsCurrentMemoryAndPersistedValuesIntoEditor"
 require_text "common/src/commonTest/kotlin/com/example/demo/common/health/EditableHealthDataTest.kt" "emptyAndCorruptedScenariosShareZeroProjectionButKeepDifferentSourceMeaning"
 require_text "common/src/commonTest/kotlin/com/example/demo/common/health/EditableHealthDataTest.kt" "detailedFormAuditNamesTheFieldAndReasonInsteadOfReturningOnlyFalse"

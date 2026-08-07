@@ -1,4 +1,4 @@
-package com.example.demo.health
+package com.example.demo.health.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -49,6 +49,19 @@ import com.example.demo.core.resources.AppImage
 import com.example.demo.core.resources.AppImages
 import com.example.demo.core.resources.AppSpacing
 import com.example.demo.core.theme.DemoTheme
+import com.example.demo.health.components.visuals.AbilityVisual
+import com.example.demo.health.components.visuals.ActivityVisual
+import com.example.demo.health.components.visuals.AssessmentVisual
+import com.example.demo.health.components.visuals.BodyVisual
+import com.example.demo.health.components.visuals.HealthGridVisual
+import com.example.demo.health.components.visuals.HrvAssessmentVisual
+import com.example.demo.health.components.visuals.LoadVisual
+import com.example.demo.health.components.visuals.RecoveryVisual
+import com.example.demo.health.components.visuals.RestingHeartRateVisual
+import com.example.demo.health.components.visuals.SleepVisual
+import com.example.demo.health.components.visuals.TrendVisual
+import com.example.demo.health.components.visuals.WeeklyVisual
+import com.example.demo.health.localizedHealthText
 import kotlin.math.max
 
 internal val CorosFontFamily = FontFamily(
@@ -137,18 +150,37 @@ private fun HealthCardVisualContent(
     onBodyWeightClick: () -> Unit
 ) {
     when (type) {
-        HealthCardType.TodayActivity -> ActivityVisual(visual)
+        HealthCardType.TodayActivity -> ActivityVisual(
+            visual
+        )
         HealthCardType.WeeklyPlan -> WeeklyVisual(visual)
         HealthCardType.TrainingLoad -> LoadVisual(visual)
-        HealthCardType.TrainingAssessment -> AssessmentVisual(visual)
+        HealthCardType.TrainingAssessment -> AssessmentVisual(
+            visual
+        )
         HealthCardType.Recovery -> RecoveryVisual(visual)
-        HealthCardType.RunningAbility, HealthCardType.CyclingAbility -> AbilityVisual(type, visual)
-        HealthCardType.HeartRate, HealthCardType.Stress -> TrendVisual(type, visual)
+        HealthCardType.RunningAbility, HealthCardType.CyclingAbility -> AbilityVisual(
+            type,
+            visual
+        )
+        HealthCardType.HeartRate, HealthCardType.Stress -> TrendVisual(
+            type,
+            visual
+        )
         HealthCardType.Sleep -> SleepVisual(visual)
-        HealthCardType.HrvAssessment -> HrvAssessmentVisual(visual)
-        HealthCardType.RestingHeartRate -> RestingHeartRateVisual(visual)
-        HealthCardType.HealthCheck -> HealthGridVisual(visual)
-        HealthCardType.BodyManagement -> BodyVisual(visual, onBodyWeightClick)
+        HealthCardType.HrvAssessment -> HrvAssessmentVisual(
+            visual
+        )
+        HealthCardType.RestingHeartRate -> RestingHeartRateVisual(
+            visual
+        )
+        HealthCardType.HealthCheck -> HealthGridVisual(
+            visual
+        )
+        HealthCardType.BodyManagement -> BodyVisual(
+            visual,
+            onBodyWeightClick
+        )
     }
 }
 

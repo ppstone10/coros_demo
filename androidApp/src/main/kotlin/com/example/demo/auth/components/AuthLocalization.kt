@@ -21,6 +21,7 @@ private fun authMessageResourceId(key: String): Int? = when (key) {
     AuthMessageKeys.ErrorRegionRequired -> R.string.auth_error_region_required
     AuthMessageKeys.ErrorSessionActiveElsewhere -> R.string.auth_error_session_active_elsewhere
     AuthMessageKeys.ErrorSessionExpiredElsewhere -> R.string.auth_error_session_expired_elsewhere
+    AuthMessageKeys.ErrorNetworkUnavailable -> R.string.auth_error_network_unavailable
     AuthMessageKeys.ValidationAccountRequired -> R.string.auth_validation_account_required
     AuthMessageKeys.ValidationPasswordRequired -> R.string.auth_validation_password_required
     AuthMessageKeys.ValidationPasswordLength -> R.string.auth_validation_password_length
