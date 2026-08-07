@@ -9,6 +9,7 @@ import { getService, installHarmonyService } from '../core/bridge/HarmonyService
 import { LoginLogicProvider } from '../core/bridge/LoginLogicProvider';
 import { KnoiLoginAdapter } from '../core/bridge/KnoiLoginAdapter';
 import { KnoiHarmonyServiceAdapter } from '../core/bridge/KnoiHarmonyServiceAdapter';
+import { initAvatarCache } from '../home/account/AvatarCache';
 import { AppColors } from '../core/resources/AppResources';
 import { initializeAppLanguage } from '../core/resources/AppLanguage';
 import font from '@ohos.font';
@@ -30,6 +31,7 @@ export default class EntryAbility extends UIAbility {
   onWindowStageCreate(windowStage: window.WindowStage): void {
     hilog.info(0x0001, 'demo_persist', 'onWindowStageCreate');
     initKnoiBridge();
+    initAvatarCache(this.context.filesDir);
     initializeAppLanguage();
     font.registerFont({ familyName: 'COROSAPP', familySrc: $rawfile('coros_app_regular.ttf') });
     font.registerFont({ familyName: 'COROSAPPBold', familySrc: $rawfile('coros_app_bold.ttf') });
@@ -66,6 +68,8 @@ export default class EntryAbility extends UIAbility {
   onForeground(): void {
     hilog.info(0x0001, 'demo_persist', 'onForeground');
     getService().resumeSessionInSameProcess();
+    // HARM-004：回前台做服务器会话懒校验（被顶弹窗/失效清会话）
+    LoginLogicProvider.create().checkSessionOnForeground();
     this.persistCurrentLoginStore('foreground');
   }
 

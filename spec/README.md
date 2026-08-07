@@ -20,6 +20,8 @@ Figma 2031 健康首页的数据可视化与三端专用卡片规范见 `health-
 
 Mock HTTP 服务器接口契约与三端 HTTP 接入规范见 `mock-server-api-spec.md`。
 
+鸿蒙端认证与数据接入对齐 Android/iOS（含微信顶号 + 二次确认、会话懒校验、健康按 userId 互通）见 `harmonyos-auth-alignment.md`。
+
 `AGENTS.md` 是 AI 自动入口，`spec/sdd-workflow.md` 是完整流程规范；`SESSION_START.md` 仅是便携摘要，不单独发明规则。
 
 ## 生命周期

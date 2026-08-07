@@ -32,6 +32,11 @@ export interface HarmonyLoginServiceContract {
   cancelForceLogin(): void;
   confirmKickedDialog(): void;
   checkSessionOnForeground(): void;
+  stageServerLoginResult(json: string): boolean;
+  stageForceLogin(json: string): boolean;
+  stageServerError(code: string): void;
+  stageSessionExpired(): void;
+  clearStaged(): void;
   healthScenarioDescriptorsJson(): string;
   healthEditableSectionsJson(): string;
   normalHealthEditFormJson(sectionName: string): string;
@@ -121,6 +126,11 @@ class PreviewHarmonyService implements HarmonyLoginServiceContract {
   cancelForceLogin(): void { }
   confirmKickedDialog(): void { }
   checkSessionOnForeground(): void { }
+  stageServerLoginResult(_json: string): boolean { return false; }
+  stageForceLogin(_json: string): boolean { return false; }
+  stageServerError(_code: string): void { }
+  stageSessionExpired(): void { }
+  clearStaged(): void { }
   healthScenarioDescriptorsJson(): string {
     return '[{"scenario":"Normal","displayNameKey":"health_scenario_normal"},' +
       '{"scenario":"Abnormal","displayNameKey":"health_scenario_abnormal"}]';

@@ -21,6 +21,11 @@ export class KnoiHarmonyServiceAdapter implements HarmonyLoginServiceContract {
   cancelForceLogin(): void { this.service.cancelForceLogin(); }
   confirmKickedDialog(): void { this.service.confirmKickedDialog(); }
   checkSessionOnForeground(): void { this.service.checkSessionOnForeground(); }
+  stageServerLoginResult(json: string): boolean { return this.service.stageServerLoginResult(json); }
+  stageForceLogin(json: string): boolean { return this.service.stageForceLogin(json); }
+  stageServerError(code: string): void { this.service.stageServerError(code); }
+  stageSessionExpired(): void { this.service.stageSessionExpired(); }
+  clearStaged(): void { this.service.clearStaged(); }
   healthScenarioDescriptorsJson(): string { return this.service.healthScenarioDescriptorsJson(); }
   healthEditableSectionsJson(): string { return this.service.healthEditableSectionsJson(); }
   normalHealthEditFormJson(sectionName: string): string { return this.service.normalHealthEditFormJson(sectionName); }

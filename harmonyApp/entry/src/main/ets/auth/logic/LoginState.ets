@@ -3,6 +3,11 @@ export enum AuthMode {
   Register
 }
 
+export class ActiveDeviceInfo {
+  deviceId: string = '';
+  deviceName: string = '';
+}
+
 export class AuthSession {
   account: string = '';
   displayName: string = '';
@@ -32,6 +37,7 @@ export class LoginState {
   isLoggedIn: boolean = false;
   errorMessage: string = '';
   confirmForceLogin: boolean = false;
+  forceLoginActiveDevice: ActiveDeviceInfo | null = null;
   kickedDialogShown: boolean = false;
 }
 

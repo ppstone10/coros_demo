@@ -38,7 +38,7 @@ export struct CardEditorComp {
           .backgroundColor(AppColors.ACTION).borderRadius(6)
           .onClick(() => { this.commitEditing(); })
       }
-      .width('100%').height(64).padding({ left: 18, right: 18 }).margin({ top: 32 })
+      .width('100%').height(64).padding({ left: 18, right: 18 }).margin({ top: 2 })
       .alignItems(VerticalAlign.Center)
 
       Text($r('app.string.health_manage_cards')).fontSize(AppTypography.LABEL).fontColor(AppColors.MUTED)

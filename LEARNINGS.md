@@ -37,7 +37,7 @@
 | **mock server 会话按 userId 隔离 + 单设备顶号** | mock server 会话必须是 per-account 集合（`sessions`），不能是全局单例，否则多账号并存时后登录顶掉先登录（即使不同账号）、登出会清掉其他账号会话。单账号单设备用"微信顶号 + 二次确认"：非 `force` 登录遇有效异地会话返回 409 `SESSION_ACTIVE_ELSEWHERE`（带 `activeDevice`），确认后以 `force: true` 重发顶号，被顶设备后续请求返回 401 `SESSION_EXPIRED_ELSEWHERE`；被顶只在"下次请求"时被发现（mock 无推送）。设备身份由客户端持久化 `deviceId` 标识，未携带时服务端默认 `device-default`（向后兼容降级）。 |
 | **mock server 数据接口必须校验会话** | 健康/头像/sync 接口若不校验会话，userId 是确定性哈希可被预测 → 越权读写。`GET/PUT /api/health/:userId`、`PUT/DELETE /api/avatar/:userId`、`GET/PUT /api/sync/*` 均需本人有效会话（设备不匹配或失效返回 401）；`GET /api/avatar/:userId` 因原生图片加载器无法携带设备标识，仅校验会话有效性。 |
 | **mock server 存储拆分 + 原子落盘** | 数据按端口目录 `data/{PORT}/accounts.json`（accounts+sessions+verifyCodes）+ `data/{PORT}/health/{userId}.json`（每账号一文件，缺失=空快照）+ `data/{PORT}/avatars/`；旧单文件 `mock-server-store-{PORT}.json` 启动时一次性迁移后删除。所有写操作"临时文件 + rename"原子落盘（`atomicWrite/atomicWriteBuffer`），崩溃不产生半写文件；测试用 `setDataRoot(临时目录)+configureDataDir+setPersistEnabled(false)` 保持 hermetic。 |
-| **鸿蒙快照同步模型成因** | 鸿蒙不能像 Android/iOS 一样在平台层实现逐接口 `AuthRepository`：KNOI 桥是同步调用、`ohos_arm64` 无法编译 ktor 等网络库，HTTP 只能在 ArkTS 侧（`ohos.net.http`）发起，再用 KNOI snapshot 入口灌回 KMP。因此鸿蒙天然是"快照同步"模型，必须靠服务器端按用户合并保证多端不互相覆盖。 |
+| **鸿蒙快照同步模型成因（已被取代）** | ~~鸿蒙不能像 Android/iOS 一样在平台层实现逐接口 `AuthRepository`：KNOI 桥是同步调用、`ohos_arm64` 无法编译 ktor 等网络库，HTTP 只能在 ArkTS 侧（`ohos.net.http`）发起，再用 KNOI snapshot 入口灌回 KMP。因此鸿蒙天然是"快照同步"模型，必须靠服务器端按用户合并保证多端不互相覆盖。~~ **2026-08-07 起被"ArkTS 服务器优先 + KNOI staging 喂状态机"取代**：认证动作由 ArkTS 先发 HTTP，结果经 `HarmonyRemoteAuthRepository` staging 槽位驱动既有 `LoginStore`，与 Android/iOS 的服务器校验/顶号/会话懒校验一致（见新条目"鸿蒙认证可收敛到服务器校验模型"）。原快照同步 `/api/sync/*` 仅保留冷启动兜底与未登录账号发现。 |
 | **远端会话 TTL 需注入时钟** | Android/iOS 远端 `AuthRepository` 的本地 TTL（`pauseSession`/`restoreSessionOnColdStart`）若 `nowEpochMs` 默认 `{ 0L }` 会永不失效；构造时必须注入真实时钟（Android `System.currentTimeMillis()`、iOS 经 `syncClock()`→`setCurrentTimeEpochMs`）。Harmony 快照同步时若本地会话已被 TTL 清除，不得用服务器持久会话"复活"登录态（本地为登录态权威）。 |
 | **ArkUI ForEach key 与值刷新** | 仅把 `field.id` 作为 `ForEach` key 时，Choice 选中值变化（数组元素替换）不会触发 `@Builder` 重执行，界面显示旧值；非输入型行（Choice）可在 key 中带上选中值（`id:value`）强制重建刷新，TextInput 等输入型必须保持稳定 id 防止焦点丢失。 |
 
@@ -100,8 +100,8 @@
 | 鸿蒙登录提交前绝不能重建 LoginFacade | `restoreStoreSnapshot` 会 `facade = createFacade(...)` 重建，清空已输入的账号/密码/验证码/区域 → 提交后提示"请输入账号密码"并清空字段。登录/注册前的账号发现必须用不重建的轻量桥方法（`mergeAccounts`，仅 `dataSource.replaceStore`），`restoreStoreSnapshot` 只用于启动/换号全量恢复 |
 | SwiftUI `.task` 会捕获 `@Environment` 快照 | `.task` 闭包创建时把 `scenePhase` 等 `@Environment` 值捕获为常量，启动瞬间若非 `.active` 则循环内判断恒 false；前台监听不要依赖闭包内捕获的 scenePhase，改由 `.onChange(of: scenePhase)` 触发即时检查 |
 | 头像展示必须本地缓存优先 | 每次切页都走网络下载会占位闪烁。显示一律先读内部目录当前头像文件（组合时同步读、未命中才下载并覆盖）；上传要异步（`Dispatchers.IO`），避免阻塞主线程导致保存按钮无响应 |
-| 头像本地只存"当前账号"单文件 | 内部目录只保留一份当前账号头像（Android `AvatarStore` `files/avatar_current.jpg` / iOS `ProfileImageStore` `Documents/avatar_current.jpg`）。登录/切换账号时先清除再用服务器头像覆盖（AuthSucceeded 钩子）；信息完善页选图即上传+覆盖；信息修改页选图仅本地预览、保存时才上传+覆盖+保存资料；显示一律读该文件。切账号依赖"清除旧文件→拉新头像"，拉取期间短暂占位可接受 |
-| iOS 头像视图需版本号强制刷新 | 头像相对路径 `/api/avatar/{userId}` 恒定，SwiftUI 会因 `AccountAvatar` 结构体相等而跳过 body 重渲染，`ProfileImageStore.image(at:)` 不再被调用 → 换头像后不更新。用 `@Published avatarRevision`（保存成功后 `notifyAvatarSaved()` 递增）+ `AccountAvatar.id("avatar-\(revision)")` 强制重建并重读内部目录文件 |
+| 头像本地只存"当前账号"单文件 | 内部目录只保留一份当前账号头像（Android `AvatarStore` `files/avatar_current.jpg` / iOS `ProfileImageStore` `Documents/avatar_current.jpg` / Harmony `AvatarCache` `filesDir/avatar_current.jpg`）。登录/切换账号时先清除再用服务器头像覆盖（AuthSucceeded 钩子）；信息完善页选图即上传+覆盖；信息修改页选图仅本地预览、保存时才上传+覆盖+保存资料；显示一律读该文件。切账号依赖"清除旧文件→拉新头像"，拉取期间短暂占位可接受 |
+| iOS 头像视图需版本号强制刷新 | 头像相对路径 `/api/avatar/{userId}` 恒定，SwiftUI 会因 `AccountAvatar` 结构体相等而跳过 body 重渲染，`ProfileImageStore.image(at:)` 不再被调用 → 换头像后不更新。用 `@Published avatarRevision`（保存成功后 `notifyAvatarSaved()` 递增）+ `AccountAvatar.id("avatar-\(revision)")` 强制重建并重读内部目录文件。Harmony 同理用 `@Prop avatarRevision` + 页面 `onPageShow` 递增版本 |
 | HarmonyOS Preview 需 getService 兜底 | 带 `@Preview` 的页面若调用 `getService()`，native service 未安装（Previewer）时不能抛错，必须返回 no-op 实现契约的 `PreviewHarmonyService`（交互退化为空操作，UI-PREVIEW-010）；Preview 健康数据用 `preview/VisualPreviewData` 构造富数据快照，否则健康页只显示空壳 |
 | ArkTS 接口新增必填字段必须同步所有对象字面量 | `LoginStatePayload` 加 `confirmForceLogin`/`kickedDialogShown` 必填字段后，`parseStatePayload` catch 兜底对象字面量缺字段 → ArkTSCheck 报 "missing the following properties"；实现接口的每个对象字面量（含兜底/测试）都要补默认值 |
 | `register` 用默认 device 签发会话，客户端后续用真实 `deviceId` 登录同账号会误触 409 二次确认 | 客户端 `register` 必须携带 `deviceId`，否则新账号在真实设备首次登录就被要求"挤下线" |
@@ -188,6 +188,18 @@
 | **健康编辑审核按模块返回结构化原因** | 模块编辑保存只审核当前模块，不能让其他缺失模块造成整份草稿失败；失败结果至少包含字段 ID、本地化标签、原因和范围/数量参数。业务上的“异常”不等于结构不合法，只有数字解析、取值范围、选项、数量和字段一致性违反契约时才拒绝。 |
 | **ArkUI 输入字段 key 不得包含输入值** | `ForEach` key 决定组件身份；若使用 `${field.id}_${field.value}`，每输入一个字符都会销毁并重建 `TextInput`，导致焦点跳到其他输入框。静态和重复表单字段均使用稳定 `field.id`，只有动态增删导致 ID/行结构变化时才重建。 |
 | **SwiftUI 跨导航长任务不能由旧 View 抢先认领** | 认证 Effect 与 NavigationStack ResetTo 可能重叠：旧健康页仍观察到请求并先认领，随后 `onDisappear` 取消本地 Task，新页便无任务可执行。账号刷新等跨导航长任务由长期存活 ViewModel 持有 pending/refreshing/resetting 状态；View 只触发 pending 启动并展示状态，退出登录只失效数据而不在无账号时刷新。 |
+| **鸿蒙认证可收敛到服务器校验模型（取代快照同步）** | 鸿蒙受 KNOI 同步桥 + ohos_arm64 无 ktor 限制，HTTP 只能在 ArkTS 侧；但登录/注册/会话/资料可改为"ArkTS 先发服务器请求，把结果经 KNOI 桥新增 **staging 槽位**（`HarmonyRemoteAuthRepository` 包装 `LocalMockAuthRepository`）喂给既有 `LoginStore` 状态机"。`login/register` 消费 staged 会话/409/错误后短路，`resumeSessionInSameProcess/restoreSessionOnColdStart` 消费 staged expired。这样与 Android/iOS 一致：服务器校验密码、单设备顶号（`force`）、会话懒校验，二次确认由 KMP 状态机产出。见 `spec/harmonyos-auth-alignment.md`。 |
+| **鸿蒙设备标识不进 common，靠每请求头匹配** | 本地 `MockAuthSession` 无 deviceId，Android/iOS 也一样——设备匹配是"每请求 `X-Device-Id` vs 服务器会话 deviceId"（服务器判），客户端本地不存 deviceId。鸿蒙用 preferences 持久化 `harmony-<UUID>`（`HarmonyDeviceId.ets`），所有请求带头即可修复"被顶误判"，无需改 common 模型。 |
+| **鸿蒙被顶误判根因 = 缺设备标识 + 整文档 auth 同步** | 鸿蒙此前请求无设备头 → 服务器按 `device-default`，与 Android/iOS 会话 deviceId 必然不匹配 → `syncToServer` 每次 401 `SESSION_EXPIRED_ELSEWHERE` → 每操作一次弹一次"已在其他设备登录"（弹窗循环甚至闪退）。修复：全请求带 `X-Device-Id` + 健康改用 `GET/PUT /api/health/:userId` + `syncFromServer` 退役整文档 auth 拉取 + `request()` 失败不再自动触发被顶。 |
+| **鸿蒙健康同步端点必须带 userId** | `GET /api/sync/health` 不带 userId → 服务器 `requireSession('')` → 永远 `AUTH_REQUIRED`，健康数据从未真正拉到（互通断的根因之一）。改用 `GET/PUT /api/health/:userId`（携带设备头），登录/刷新/回前台拉取、保存推送。 |
+| **ArkTS 严格模式禁止匿名对象字面量作类型** | `interface X { error?: { code?: string } }` 报 `arkts-no-obj-literals-as-types`；`const p: Object = {...}` 报 `arkts-no-untyped-obj-literals`。必须为每类 payload 声明命名 interface（如 `LoginPayload/RegisterPayload/ProfilePayload`），对象字面量显式对应接口。 |
+| **HarmonyRemoteAuthRepository 委托 + 覆盖点** | 实现 `AuthRepository` 不必 `by` 委托：显式存 `delegate = LocalMockAuthRepository(dataSource, nowEpochMs)`，只覆盖 `login/register/resumeSessionInSameProcess/restoreSessionOnColdStart`，其余 20 个方法逐条转委托。staging 槽位用 sealed interface（Session/ForceConflict/Error/Expired），消费即 `staged = null`，`clearStaged` 供取消。 |
+| **鸿蒙被顶/过期处理三态** | `serverSessionCheck` 返回 ok/expired/kicked/offline：kicked → `onSessionKicked()` 弹窗（仅确认）；expired → `stageSessionExpired()` 后走本地 `checkSessionOnForeground()` 产出 `SessionExpired` effect；offline → 沿用本地（不误登出）。冷启动 AUTH_REQUIRED 用 `clearSessionSilently()`（无残留 effect，避免污染后续 submit 的 effect 消费）。 |
+| **provider.ets 契约扩展需同步三处** | 给 `@ServiceProvider` 加方法后，生成的 `knoi/provider.ets` 会 diff，ArkTS 侧必须同步 `HarmonyServiceProvider`（接口 + `PreviewHarmonyService` no-op）与 `KnoiHarmonyServiceAdapter` 三处，否则编译失败。 |
+| **被顶弹窗级联循环根因** | 鸿蒙被顶弹窗"不断弹出"根因：`handleSessionKicked` 内 `persistSnapshot()` → `saveStoreSnapshot` → 异步 `syncToServer` → 401 `SESSION_EXPIRED_ELSEWHERE` → `maybeNotifyKicked` → 再 `handleSessionKicked` 无限级联。修复：被顶回调**不持久化** + 模块级 `kickNotified` 幂等守卫（健康同步成功复位）。另一陷阱：`LoginStore` 成功登录分支若不复位 `kickedDialogShown`，登录前的 401 残留弹窗状态会穿透到登录成功后首页。 |
+| **ArkUI 弹窗全屏拉伸陷阱** | `@Builder` 弹窗若用 `Blank().layoutWeight(1)` 上下撑满 + `margin(42)` 会视觉"占满全屏"；应改 `.width(300)`（或 `ConstraintSize(maxWidth)`）+ 外层 `justifyContent(FlexAlign.Center)` + 半透明遮罩，形成居中紧凑卡片。 |
+| **ArkUI Image 按 source 字符串缓存解码结果** | `Image(file://.../avatar_current.jpg)` 路径恒定 → 文件内容更新后不会重解码（换头像不刷新）。修复：源改用**内容寻址 base64 data URI**（`data:image/jpeg;base64,...`，内容变字符串变）+ `@Prop @Watch` 监听 `avatarUri/avatarRevision` 变化重新读取本地文件。用 `.id()`/版本号对字符串源无效，必须改变 source 本身。 |
+| **鸿蒙头像上传必须携带 X-Device-Id** | `PUT /api/avatar/:userId`（MSRV-018）要求本人有效会话且设备匹配；ArkTS 头像上传（`putBinary`）与头像 GET 若不带头，服务器按 `device-default` 判定与登录签发的真实 deviceId 不匹配 → 401 `SESSION_EXPIRED_ELSEWHERE` → 上传失败且 editMode 保存流程被静默阻断（"保存按钮没作用"）。所有非 `MockServerSync.request` 的直接 http 调用都要手动补 `X-Device-Id`。 |
 
 ## Spec 文件索引
 
@@ -198,6 +210,7 @@
 - `spec/TRACE.md` — 规格到代码的完整追溯映射
 - `spec/sdd-workflow.md` — SDD 开发闭环、状态和完成门禁
 - `spec/documentation-governance.md` — 项目文档、辅助目录和历史归档治理规则
+- `spec/harmonyos-auth-alignment.md` — 鸿蒙认证与数据接入对齐 Android/iOS（服务器校验 + 顶号二次确认 + 会话懒校验 + 健康互通）
 - `spec/resource-localization.md` — 三端认证资源本地化基础、语义键边界和一致性门禁
 - `spec/resource-maintainability.md` — 全模块资源清单、跨端一致性和分批债务收敛规范
 - `spec/app-language-switching.md` — 应用内中英文切换、平台持久化与国家代码化规范

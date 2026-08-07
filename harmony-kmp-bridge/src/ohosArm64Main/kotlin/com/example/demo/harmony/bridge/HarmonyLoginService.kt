@@ -16,6 +16,7 @@ import platform.posix.time
 open class HarmonyLoginService {
     private val dataSource: MemoryAuthStoreDataSource = MemoryAuthStoreDataSource()
     private val healthDataSource = InMemoryHealthDashboardStateDataSource()
+    private val remoteRepository = HarmonyRemoteAuthRepository(dataSource)
     private var facade: LoginFacade = createFacade(dataSource, healthDataSource)
     private var healthFacade: HealthFacade = createHealthFacade(dataSource, healthDataSource)
     private val healthBridge = HarmonyHealthBridge(healthDataSource, healthFacade)
@@ -91,6 +92,18 @@ open class HarmonyLoginService {
         syncClock()
         facade.checkSessionOnForeground()
     }
+
+    // ---- HARM-002/003/008：服务器结果 staging（ArkTS 侧在触发 submit 前调用）----
+
+    fun stageServerLoginResult(json: String): Boolean = remoteRepository.stageServerLoginResult(json)
+
+    fun stageForceLogin(json: String): Boolean = remoteRepository.stageForceLogin(json)
+
+    fun stageServerError(code: String) = remoteRepository.stageServerError(code)
+
+    fun stageSessionExpired() = remoteRepository.stageSessionExpired()
+
+    fun clearStaged() = remoteRepository.clearStaged()
 
     fun logout() {
         facade.logout()
@@ -337,7 +350,7 @@ open class HarmonyLoginService {
     ): LoginFacade {
         return LoginFacade(
             LoginStore.create(
-                authRepository = LocalMockAuthRepository(dataSource),
+                authRepository = remoteRepository,
                 onDeleteUserData = healthDataSource::clear
             )
         )
@@ -348,7 +361,7 @@ open class HarmonyLoginService {
         healthDataSource: InMemoryHealthDashboardStateDataSource
     ): HealthFacade {
         return HealthFacadeFactory().createPersistent(
-            authRepository = LocalMockAuthRepository(dataSource),
+            authRepository = remoteRepository,
             stateDataSource = healthDataSource
         )
     }

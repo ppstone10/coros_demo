@@ -94,6 +94,15 @@ export class PreviewLoginAdapter implements LoginLogicAdapter {
   currentUserId(): string { return 'preview-user'; }
   deleteCurrentAccount(): string { this.logout(); return ''; }
   clearSessionSilently(): void { this.state.currentSession = null; this.state.isLoggedIn = false; }
+  confirmForceLogin(): Promise<void> {
+    this.state.confirmForceLogin = false;
+    this.state.forceLoginActiveDevice = null;
+    return Promise.resolve();
+  }
+  cancelForceLogin(): void {
+    this.state.confirmForceLogin = false;
+    this.state.forceLoginActiveDevice = null;
+  }
   confirmKickedDialog(): void { }
   checkSessionOnForeground(): void { }
   consumeEffect(): LoginEffect | null { const current = this.effect; this.effect = null; return current; }

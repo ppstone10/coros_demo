@@ -25,6 +25,16 @@ export interface HarmonyLoginService {
 
    checkSessionOnForeground(): void;
 
+   stageServerLoginResult(json: string): boolean;
+
+   stageForceLogin(json: string): boolean;
+
+   stageServerError(code: string): void;
+
+   stageSessionExpired(): void;
+
+   clearStaged(): void;
+
    logout(): void;
 
    clearSessionSilently(): void;

@@ -1,7 +1,8 @@
 import hilog from '@ohos.hilog';
 import preferences from '@ohos.data.preferences';
 import { getService, HarmonyLoginServiceContract } from './HarmonyServiceProvider';
-import { syncFromServer, syncToServer } from './MockServerSync';
+import { syncFromServer, syncToServer, performColdStartSessionCheck } from './MockServerSync';
+import { initDeviceId } from './HarmonyDeviceId';
 
 const PREFERENCES_NAME = 'mock_auth_store';
 const KEY_STORE_JSON = 'store_json';
@@ -12,6 +13,8 @@ let initialized: boolean = false;
 export async function initPersistence(context: Context): Promise<void> {
   hilog.info(0x0001, 'demo_persist', 'initPersistence called');
   try {
+    // HARM-001：先初始化设备标识（后续所有请求携带 X-Device-Id）。
+    await initDeviceId(context);
     prefsInstance = await preferences.getPreferences(context, PREFERENCES_NAME);
     initialized = true;
     hilog.info(0x0001, 'demo_persist', 'preferences opened');
@@ -27,6 +30,8 @@ export async function initPersistence(context: Context): Promise<void> {
     }
     // MSRV-008：启动时从 mock 服务器拉取权威快照（失败沿用本地缓存）
     await syncFromServer(getService());
+    // HARM-004：冷启动会话懒校验（服务器三态）
+    await performColdStartSessionCheck();
     hilog.info(0x0001, 'demo_persist', 'initPersistence completed');
   } catch (error) {
     prefsInstance = null;

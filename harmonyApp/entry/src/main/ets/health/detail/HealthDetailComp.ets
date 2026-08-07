@@ -16,7 +16,7 @@ export struct HealthDetailComp {
           .layoutWeight(1).textAlign(TextAlign.Center)
         Blank().width(48)
       }
-      .height(64).width('100%').padding({ left: 18, right: 18 }).margin({ top: 32 })
+      .height(64).width('100%').padding({ left: 18, right: 18 }).margin({ top: 2 })
       .alignItems(VerticalAlign.Center)
       Column({ space: 20 }) {
         Image(AppImages.healthCardIcon(this.card().id)).width(56).height(56).objectFit(ImageFit.Contain)

@@ -646,6 +646,40 @@ test('MSRV-015: 头像 GET 忽略设备匹配，仅要求会话有效', async ()
 
 // ---- MSRV-016: 单账号单设备登录（微信模式顶号 + 二次确认） ----
 
+test('HARM-003: 注册携带 deviceId 后，异设备登录触发 409 二次确认（LEARNINGS #107）', async () => {
+  resetStore();
+  await post('/api/auth/verify-code', { account: 'harmony-reg@example.com' });
+  const registered = await post('/api/auth/register', {
+    account: 'harmony-reg@example.com',
+    password: 'abcdef',
+    verifyCode: '1234',
+    region: 'CN',
+    displayName: 'Harmony Reg',
+    deviceId: 'harmony-device-1',
+  });
+  assert.strictEqual(registered.status, 200);
+  assert.strictEqual(registered.body.session.deviceId, 'harmony-device-1');
+
+  // 异设备（如 Android）登录同一账号：注册签发的会话仍有效 -> 409 需二次确认
+  const conflict = await post('/api/auth/login', {
+    account: 'harmony-reg@example.com',
+    password: 'abcdef',
+    deviceId: 'android-device-2',
+  });
+  assert.strictEqual(conflict.status, 409);
+  assert.strictEqual(conflict.body.error.code, 'SESSION_ACTIVE_ELSEWHERE');
+  assert.strictEqual(conflict.body.error.activeDevice.deviceId, 'harmony-device-1');
+
+  // 鸿蒙同设备重复登录不冲突，直接刷新会话
+  const sameDevice = await post('/api/auth/login', {
+    account: 'harmony-reg@example.com',
+    password: 'abcdef',
+    deviceId: 'harmony-device-1',
+  });
+  assert.strictEqual(sameDevice.status, 200);
+  assert.strictEqual(sameDevice.body.session.deviceId, 'harmony-device-1');
+});
+
 test('MSRV-016: 同 deviceId 重复登录不触发冲突，直接刷新会话', async () => {
   resetStore();
   const first = await post('/api/auth/login', {

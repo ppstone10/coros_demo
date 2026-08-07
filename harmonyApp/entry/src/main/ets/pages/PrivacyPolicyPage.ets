@@ -34,7 +34,7 @@ struct PrivacyPolicyPage {
           Text($r('app.string.common_back'))
             .fontSize(44)
             .fontColor(COROS_WHITE)
-            .textAlign(TextAlign.Center)
+            .textAlign(TextAlign.Start)
             .width(48)
             .height(52)
             .onClick(() => { navigate(NavOperation.Pop, ''); })
@@ -65,7 +65,7 @@ struct PrivacyPolicyPage {
           }, (paragraph: LegalParagraph) => paragraph.text)
         }
         .width('100%')
-        .padding({ top: 58, left: 20, right: 32, bottom: 32 })
+        .padding({ top: 8, left: 20, right: 32, bottom: 32 })
       }
       .layoutWeight(1)
     }

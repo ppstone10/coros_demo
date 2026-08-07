@@ -1,5 +1,6 @@
 import hilog from '@ohos.hilog';
 import {
+  ActiveDeviceInfo,
   AuthMode,
   AuthSession,
   LoginEffect,
@@ -8,7 +9,20 @@ import {
 } from '../../auth/logic/LoginState';
 import { LoginLogicAdapter } from '../../auth/logic/LoginLogicAdapter';
 import { saveStoreSnapshot } from './StorePersister';
-import { syncFromServer, syncHealthFromServer, setSessionKickedHandler } from './MockServerSync';
+import {
+  syncFromServer,
+  syncHealthFromServer,
+  setSessionKickedHandler,
+  serverLogin,
+  serverRegister,
+  serverVerifyCode,
+  serverLogout,
+  serverProfilePut,
+  serverSessionCheck,
+  serverChangePassword,
+  serverResetPassword,
+  serverDeleteAccount
+} from './MockServerSync';
 import { getService, HarmonyLoginServiceContract } from './HarmonyServiceProvider';
 
 interface AuthSessionPayload {
@@ -36,6 +50,24 @@ interface CurrentUserPayload {
   currentSession?: CurrentUserSessionPayload;
 }
 
+interface ActiveDeviceInfoPayload {
+  deviceId?: string;
+  deviceName?: string;
+}
+
+interface ProfilePayload {
+  avatarUri: string | null;
+  username: string;
+  birthDate: string;
+  heightCm: number | null;
+  weightKg: number | null;
+  measurementSystem: string;
+  phone: string;
+  email: string;
+  countryRegion: string;
+  gender: string | null;
+}
+
 interface LoginStatePayload {
   mode: string;
   username: string;
@@ -48,6 +80,7 @@ interface LoginStatePayload {
   isLoggedIn: boolean;
   errorMessage: string;
   confirmForceLogin: boolean;
+  forceLoginActiveDevice: ActiveDeviceInfoPayload | null;
   kickedDialogShown: boolean;
 }
 
@@ -69,11 +102,10 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     setSessionKickedHandler(() => this.handleSessionKicked());
   }
 
-  /** MSRV-019：服务器返回 SESSION_EXPIRED_ELSEWHERE 时清会话，effect 交由 UI 消费跳登录页。 */
+  /** MSRV-019/HARM-007：服务器健康同步 401 被顶时弹确认窗（不持久化，避免级联 syncToServer 再触发 401）。 */
   private handleSessionKicked(): void {
     this.harmonyLoginService.onSessionKicked();
     this.refreshState();
-    this.persistSnapshot();
   }
 
   loadHealthDashboard(): Record<string, Object> | null {
@@ -161,8 +193,8 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
   async submit(): Promise<void> {
     hilog.info(0x0001, 'demo_persist', 'KnoiLoginAdapter.submit() called');
     try {
-      // MSRV-016/018：登录/注册前先做账号发现同步，避免本地 store 缺账号导致"账号不存在"。
-      // 捕获当前输入并回写：mergeAccounts 不重建 facade，但兜底防止未来重建清空字段。
+      // HARM-002/003：登录/注册前先做账号发现同步（本地 store 具备服务器账号，MSRV-018 例外），
+      // 然后走服务器校验（服务器为权威），staging 服务器结果后驱动 KMP 状态机。
       const typedMode: AuthMode = this.state.mode;
       const typedAccount: string = this.state.username;
       const typedPassword: string = this.state.password;
@@ -180,12 +212,32 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
       this.harmonyLoginService.setVerifyCode(typedVerifyCode);
       this.harmonyLoginService.setDisplayName(typedDisplayName);
       this.harmonyLoginService.setRegion(typedRegion);
-      this.harmonyLoginService.submit();
+
+      if (typedMode === AuthMode.Register) {
+        const outcome = await serverRegister(
+          typedAccount, typedPassword, typedVerifyCode, typedRegion, typedDisplayName);
+        if (outcome.kind === 'ok' && outcome.session !== undefined) {
+          this.stageSession(outcome.session);
+        } else if (outcome.kind === 'error') {
+          this.stageError(outcome.code ?? 'NETWORK_ERROR');
+        }
+        this.harmonyLoginService.submit();
+      } else {
+        const outcome = await serverLogin(typedAccount, typedPassword, false);
+        if (outcome.kind === 'ok' && outcome.session !== undefined) {
+          this.stageSession(outcome.session);
+        } else if (outcome.kind === 'conflict') {
+          this.stageForceLogin(outcome.activeDevice);
+        } else {
+          this.stageError(outcome.code ?? 'NETWORK_ERROR');
+        }
+        this.harmonyLoginService.submit();
+      }
       const storeAfter: string = this.harmonyLoginService.exportStoreSnapshot();
       hilog.info(0x0001, 'demo_persist', 'store after submit: ' + storeAfter);
       this.refreshState();
       this.persistSnapshot();
-      // 登录成功后拉取服务器健康数据，使鸿蒙与 Android/iOS 互通（MSRV-008-SYNC）。
+      // HARM-006：登录成功后拉取服务器健康数据，使鸿蒙与 Android/iOS 互通。
       // 注意：只同步健康，不同步 auth——auth 拉取会重建 facade 丢失 AuthSucceeded effect。
       if (this.state.currentSession !== null && this.state.currentSession.isValid) {
         await syncHealthFromServer(this.harmonyLoginService);
@@ -197,19 +249,59 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     }
   }
 
+  /** HARM-002：二次确认通过——先服务器 force 顶号，再驱动 KMP 状态机。 */
+  async confirmForceLogin(): Promise<void> {
+    hilog.info(0x0001, 'demo_persist', 'KnoiLoginAdapter.confirmForceLogin() called');
+    try {
+      const account: string = this.state.username;
+      const password: string = this.state.password;
+      const outcome = await serverLogin(account, password, true);
+      if (outcome.kind === 'ok' && outcome.session !== undefined) {
+        this.stageSession(outcome.session);
+      } else {
+        this.stageError(outcome.code ?? 'NETWORK_ERROR');
+      }
+      this.harmonyLoginService.confirmForceLogin();
+      this.refreshState();
+      this.persistSnapshot();
+    } catch (error) {
+      this.state.errorMessage = 'auth_submit_failed';
+      hilog.error(0x0001, 'demo_persist', 'confirmForceLogin failed');
+    }
+  }
+
+  /** HARM-002：取消二次确认——清 staging 并复位状态机。 */
+  cancelForceLogin(): void {
+    this.harmonyLoginService.clearStaged();
+    this.harmonyLoginService.cancelForceLogin();
+    this.refreshState();
+  }
+
   logout(): void {
+    const userId: string = this.currentUserId();
+    if (userId.length > 0) {
+      serverLogout(userId).catch(() => {
+        hilog.warn(0x0001, 'demo_persist', 'serverLogout failed');
+      });
+    }
     this.harmonyLoginService.logout();
     this.refreshState();
     this.persistSnapshot();
   }
 
   requestVerifyCode(account: string): string {
+    serverVerifyCode(account).catch(() => {
+      hilog.warn(0x0001, 'demo_persist', 'serverVerifyCode failed');
+    });
     let message: string = this.harmonyLoginService.requestVerifyCode(account);
     this.saveSnapshotIfSucceeded(message);
     return message;
   }
 
   requestResentVerifyCode(account: string): string {
+    serverVerifyCode(account).catch(() => {
+      hilog.warn(0x0001, 'demo_persist', 'serverVerifyCode failed');
+    });
     let message: string = this.harmonyLoginService.requestResentVerifyCode(account);
     this.saveSnapshotIfSucceeded(message);
     return message;
@@ -291,6 +383,9 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
   }
 
   resetPassword(account: string, newPassword: string): string {
+    serverResetPassword(account, newPassword).catch(() => {
+      hilog.warn(0x0001, 'demo_persist', 'serverResetPassword skipped');
+    });
     let message: string = this.harmonyLoginService.resetPassword(account, newPassword);
     this.refreshState();
     this.persistSnapshot();
@@ -298,6 +393,9 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
   }
 
   changePassword(account: string, oldPassword: string, newPassword: string): string {
+    serverChangePassword(account, oldPassword, newPassword).catch(() => {
+      hilog.warn(0x0001, 'demo_persist', 'serverChangePassword skipped');
+    });
     let message: string = this.harmonyLoginService.changePassword(account, oldPassword, newPassword);
     this.saveSnapshotIfSucceeded(message);
     return message;
@@ -308,6 +406,22 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     heightCm: number, weightKg: number, measurementSystem: string,
     phone: string, email: string, countryRegion: string, gender: string
   ): void {
+    // HARM-005：尽力同步资料到服务器（服务器为权威），本地提交保证 UI 即时更新。
+    const userId: string = this.currentUserId();
+    if (userId.length > 0) {
+      const profileJson: string = this.buildProfileJson(
+        avatarUri, username, birthDate, heightCm, weightKg,
+        measurementSystem, phone, email, countryRegion, gender);
+      serverProfilePut(userId, profileJson).then((code: string) => {
+        if (code.length === 0) {
+          hilog.info(0x0001, 'demo_persist', 'serverProfilePut completed');
+        } else {
+          hilog.warn(0x0001, 'demo_persist', 'serverProfilePut failed: ' + code);
+        }
+      }).catch(() => {
+        hilog.warn(0x0001, 'demo_persist', 'serverProfilePut skipped');
+      });
+    }
     this.harmonyLoginService.submitProfile(
       avatarUri, username, birthDate, heightCm, weightKg,
       measurementSystem, phone, email, countryRegion, gender
@@ -331,6 +445,12 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
   }
 
   deleteCurrentAccount(): string {
+    const userId: string = this.currentUserId();
+    if (userId.length > 0) {
+      serverDeleteAccount(userId).catch(() => {
+        hilog.warn(0x0001, 'demo_persist', 'serverDeleteAccount skipped');
+      });
+    }
     let message: string = this.harmonyLoginService.deleteCurrentAccount();
     this.refreshState();
     this.persistSnapshot();
@@ -350,10 +470,34 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     this.persistSnapshot();
   }
 
-  /** MSRV-019：前台周期性会话校验，被顶即弹窗。 */
+  /** HARM-004：前台周期性会话校验（服务器懒校验三态，MSRV-019）。 */
   checkSessionOnForeground(): void {
-    this.harmonyLoginService.checkSessionOnForeground();
-    this.refreshState();
+    this.performSessionCheck().catch(() => {
+      hilog.warn(0x0001, 'demo_persist', 'session check failed');
+    });
+  }
+
+  private async performSessionCheck(): Promise<void> {
+    if (!this.state.isLoggedIn) {
+      return;
+    }
+    const userId: string = this.currentUserId();
+    if (userId.length === 0) {
+      return;
+    }
+    const outcome: string = await serverSessionCheck(userId);
+    if (outcome === 'kicked') {
+      this.harmonyLoginService.onSessionKicked();
+      this.refreshState();
+      this.persistSnapshot();
+    } else if (outcome === 'expired') {
+      this.harmonyLoginService.stageSessionExpired();
+      this.harmonyLoginService.checkSessionOnForeground();
+      this.refreshState();
+    } else {
+      this.harmonyLoginService.checkSessionOnForeground();
+      this.refreshState();
+    }
   }
 
   consumeEffect(): LoginEffect | null {
@@ -428,6 +572,7 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
         isLoggedIn: false,
         errorMessage: 'auth_submit_failed',
         confirmForceLogin: false,
+        forceLoginActiveDevice: null,
         kickedDialogShown: false
       };
       return fallback;
@@ -473,8 +618,19 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     state.isLoggedIn = payload.isLoggedIn;
     state.errorMessage = payload.errorMessage;
     state.confirmForceLogin = payload.confirmForceLogin === undefined ? false : payload.confirmForceLogin;
+    state.forceLoginActiveDevice = this.mapActiveDevice(payload.forceLoginActiveDevice);
     state.kickedDialogShown = payload.kickedDialogShown === undefined ? false : payload.kickedDialogShown;
     return state;
+  }
+
+  private mapActiveDevice(payload: ActiveDeviceInfoPayload | null | undefined): ActiveDeviceInfo | null {
+    if (payload === null || payload === undefined) {
+      return null;
+    }
+    const device: ActiveDeviceInfo = new ActiveDeviceInfo();
+    device.deviceId = payload.deviceId === undefined ? '' : payload.deviceId;
+    device.deviceName = payload.deviceName === undefined ? '' : payload.deviceName;
+    return device;
   }
 
   private mapSession(payload: AuthSessionPayload): AuthSession {
@@ -514,8 +670,16 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     snapshot.isLoggedIn = source.isLoggedIn;
     snapshot.errorMessage = source.errorMessage;
     snapshot.confirmForceLogin = source.confirmForceLogin;
+    snapshot.forceLoginActiveDevice = source.forceLoginActiveDevice === null ? null : this.cloneActiveDevice(source.forceLoginActiveDevice);
     snapshot.kickedDialogShown = source.kickedDialogShown;
     return snapshot;
+  }
+
+  private cloneActiveDevice(source: ActiveDeviceInfo): ActiveDeviceInfo {
+    const clone: ActiveDeviceInfo = new ActiveDeviceInfo();
+    clone.deviceId = source.deviceId;
+    clone.deviceName = source.deviceName;
+    return clone;
   }
 
   private cloneSession(source: AuthSession): AuthSession {
@@ -535,5 +699,47 @@ export class KnoiLoginAdapter implements LoginLogicAdapter {
     snapshot.countryRegion = source.countryRegion;
     snapshot.gender = source.gender;
     return snapshot;
+  }
+
+  /** HARM-002/003：把服务器会话装入 staging（mini store 形态，桥复用 MockAuthStoreJson）。 */
+  private stageSession(session: Object): void {
+    const payload = `{"accounts":[],"currentSession":${JSON.stringify(session)},"verifyCodes":[],"defaultAccountsInitialized":true}`;
+    const staged: boolean = this.harmonyLoginService.stageServerLoginResult(payload);
+    hilog.info(0x0001, 'demo_persist', 'stageServerLoginResult=' + JSON.stringify(staged));
+  }
+
+  /** HARM-002：把服务器 409 activeDevice 装入 staging。 */
+  private stageForceLogin(activeDevice: Object | undefined): void {
+    if (activeDevice === undefined) {
+      this.harmonyLoginService.stageForceLogin('{}');
+    } else {
+      this.harmonyLoginService.stageForceLogin(JSON.stringify(activeDevice));
+    }
+  }
+
+  /** HARM-002/003：把服务器业务错误码装入 staging（桥映射到既有 MockError 语义）。 */
+  private stageError(code: string): void {
+    this.harmonyLoginService.stageServerError(code);
+  }
+
+  /** HARM-005：构造服务器 /api/auth/profile 需要的 profile JSON。 */
+  private buildProfileJson(
+    avatarUri: string, username: string, birthDate: string,
+    heightCm: number, weightKg: number, measurementSystem: string,
+    phone: string, email: string, countryRegion: string, gender: string
+  ): string {
+    const profile: ProfilePayload = {
+      avatarUri: avatarUri.length > 0 ? avatarUri : null,
+      username: username,
+      birthDate: birthDate,
+      heightCm: heightCm > 0 ? heightCm : null,
+      weightKg: weightKg > 0 ? weightKg : null,
+      measurementSystem: measurementSystem === 'Imperial' ? 'IMPERIAL' : 'METRIC',
+      phone: phone,
+      email: email,
+      countryRegion: countryRegion,
+      gender: gender === 'Female' ? 'FEMALE' : (gender === 'Male' ? 'MALE' : null)
+    };
+    return JSON.stringify(profile);
   }
 }

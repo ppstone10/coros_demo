@@ -183,9 +183,9 @@ export struct AuthHeader {
         Text($r('app.string.common_back'))
           .fontSize(44)
           .fontColor(COROS_WHITE)
-          .textAlign(TextAlign.Center)
           .width(48)
           .height(52)
+          .textAlign(TextAlign.Start)
           .onClick(() => {
             this.getUIContext().getFocusController().clearFocus();
             this.backRequested();
@@ -403,7 +403,7 @@ export struct CodeBoxesComp {
 
   build() {
     Stack() {
-      Row({ space: 28 }) {
+      Row() {
         ForEach([0, 1, 2, 3], (index: number) => {
           Text(this.codeValue.length > index ? this.codeValue.charAt(index) : (index === this.codeValue.length ? '|' : ''))
             .fontSize(30)
@@ -416,6 +416,7 @@ export struct CodeBoxesComp {
         }, (index: number) => index.toString())
       }
       .width('100%')
+      .justifyContent(FlexAlign.SpaceBetween)
 
       TextInput({ text: this.codeValue })
         .type(InputType.Number)

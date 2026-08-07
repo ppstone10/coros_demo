@@ -820,6 +820,21 @@ class LoginUseCaseTest {
         assertIs<LoginEffect.SessionKicked>(store.consumeEffect())
     }
 
+    @Test
+    fun successfulLoginClearsStaleKickedDialogState() {
+        val store = LoginStore(repository())
+        store.dispatch(LoginAction.UsernameChanged("13107012029"))
+        store.dispatch(LoginAction.PasswordChanged("123456"))
+        // 被顶弹窗状态残留（如登录前一次失效健康同步触发的 kickedDialogShown）
+        store.onSessionKicked()
+        assertTrue(store.state.kickedDialogShown)
+
+        store.dispatch(LoginAction.SubmitClicked)
+        assertTrue(store.state.isLoggedIn)
+        // 新的成功登录必须清除残留的被顶弹窗状态，否则登录成功后首页仍弹"已在其他设备登录"
+        assertFalse(store.state.kickedDialogShown)
+    }
+
     /** 普通登录返回异地会话冲突，force 登录成功（MSRV-016）。 */
     private open class FakeConflictRepository : AuthRepository {
         override fun login(request: LoginRequestDto): LoginResult {

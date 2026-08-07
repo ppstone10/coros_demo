@@ -2,11 +2,14 @@ import { LoginEffect, LoginEffectType, AuthMode } from '../logic/LoginState';
 import { AuthRoutes } from './AuthRoutes';
 import { navigate, NavOperation, showToast } from './AuthNavigator';
 import { markPendingStaleRefresh } from '../../health/HealthDashboardViewModel';
+import { refreshAvatarFromServer } from '../../home/account/AvatarCache';
 
 export function handleAuthEffect(effect: LoginEffect): void {
   switch (effect.type) {
     case LoginEffectType.AuthSucceeded: {
       markPendingStaleRefresh();
+      // MSRV-015：登录/切换账号后用服务器头像覆盖内部目录当前头像
+      refreshAvatarFromServer(effect.session.avatarUri);
       const target = effect.nextRoute === 'SignedIn'
         ? AuthRoutes.home.SIGNED_IN : AuthRoutes.auth.PROFILE_COMPLETION;
       navigate(NavOperation.ResetTo, target);

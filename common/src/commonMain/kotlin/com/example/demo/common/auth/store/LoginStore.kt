@@ -248,6 +248,7 @@ class LoginStore(
                     errorMessage = null,
                     confirmForceLogin = false,
                     forceLoginActiveDevice = null,
+                    kickedDialogShown = false,
                     password = "",
                     verifyCode = ""
                 )

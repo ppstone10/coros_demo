@@ -47,6 +47,8 @@ struct LoginFormPage {
   @State loginPasswordVisible: boolean = false;
   @State loginActionEnabled: boolean = false;
   @State termsPromptShown: boolean = false;
+  @State showForceLoginDialog: boolean = false;
+  @State forceLoginDeviceName: string = '';
 
   @State fromRegistration: boolean = false;
 
@@ -138,6 +140,9 @@ struct LoginFormPage {
       if (this.termsPromptShown) {
         this.TermsConsentSheet();
       }
+      if (this.showForceLoginDialog) {
+        this.ForceLoginDialog();
+      }
     }
     .width('100%')
     .height('100%')
@@ -190,6 +195,49 @@ struct LoginFormPage {
 
   private openLegal(url: string): void {
     navigate(NavOperation.Push, url);
+  }
+
+  @Builder
+  ForceLoginDialog() {
+    Column() {
+      Column({ space: 20 }) {
+        Text($r('app.string.auth_force_login_confirm_body'))
+          .fontSize(17).fontColor(COROS_WHITE).textAlign(TextAlign.Center).width('100%')
+        if (this.forceLoginDeviceName.length > 0) {
+          Text(this.forceLoginDeviceName)
+            .fontSize(14).fontColor(COROS_MUTED).textAlign(TextAlign.Center).width('100%')
+        }
+        Row({ space: 14 }) {
+          Button($r('app.string.common_cancel'), { type: ButtonType.Normal })
+            .fontSize(16).fontColor(COROS_WHITE)
+            .layoutWeight(1).height(44).borderRadius(8).backgroundColor(COROS_OVERLAY_COLOR)
+            .onClick(() => { this.onForceLoginCancel(); })
+          Button($r('app.string.common_confirm'), { type: ButtonType.Normal })
+            .fontSize(16).fontColor(COROS_WHITE)
+            .layoutWeight(1).height(44).borderRadius(8).backgroundColor(COROS_RED)
+            .onClick(() => { this.onForceLoginConfirm(); })
+        }
+      }
+      .width(300)
+      .padding({ left: 22, right: 22, top: 24, bottom: 20 })
+      .backgroundColor(AppColors.AUTH_SHEET).borderRadius(14)
+    }
+    .width('100%').height('100%')
+    .justifyContent(FlexAlign.Center)
+    .backgroundColor(COROS_OVERLAY_COLOR)
+  }
+
+  private async onForceLoginConfirm(): Promise<void> {
+    this.showForceLoginDialog = false;
+    await this.viewModel.confirmForceLogin();
+    this.syncState();
+    this.handleLoginEffect();
+  }
+
+  private onForceLoginCancel(): void {
+    this.showForceLoginDialog = false;
+    this.viewModel.cancelForceLogin();
+    this.syncState();
   }
 
   private showUnavailableFeature(): void {
@@ -253,6 +301,8 @@ struct LoginFormPage {
     this.password = state.password;
     this.isLoading = state.isLoading;
     this.errorMessage = state.errorMessage;
+    this.showForceLoginDialog = state.confirmForceLogin;
+    this.forceLoginDeviceName = state.forceLoginActiveDevice === null ? '' : state.forceLoginActiveDevice.deviceName;
     this.refreshActionStates();
   }
 

@@ -1542,3 +1542,128 @@
 
 ## 下轮交接
 - 无阻塞；若个别 IDE 版本仍报错，改 Project SDK 为 JDK 21 后再看。
+
+# 2026-08-07 10:55 — 鸿蒙端头像与安卓/iOS 对齐（本地单文件缓存/刷新/保存行为）
+
+## 采纳内容
+- [MSRV-015] 新增 `home/account/AvatarCache.ets`：当前账号头像本地单文件 `filesDir/avatar_current.jpg`（`initAvatarCache` 由 EntryAbility 注入 filesDir，Preview 未初始化时安全降级服务器 URL）。
+- [MSRV-015] `AvatarImage.ets` 改为缓存优先：本地文件存在即显示（即时无闪烁），未命中异步下载并写缓存；`@Prop avatarRevision` 变化强制重建读取（对齐 iOS 版本号刷新）；上传函数统一 `uploadAvatarBytesToServer`（PUT 成功后写缓存）/`uploadAvatarToServer`（读取相册字节再上传）。
+- [MSRV-015] 登录/切换账号：`AuthEffectHandler.handleAuthEffect` AuthSucceeded 调 `refreshAvatarFromServer(session.avatarUri)`（清除旧头像→服务器拉取覆盖）。
+- [MSRV-015] `ProfileCompletionPage`：信息完善（editMode=false）选图即上传并写缓存；信息修改（editMode=true）选图仅写本地缓存作为预览（`avatarChanged=true`）、保存时先 `uploadAvatarBytesToServer(缓存字节)` 再保存资料；`hasProfileChanges` 计入 `avatarChanged`。
+- [MSRV-015] 主「我」页 `SignedInPage`：`onPageShow` 递增 `accountAvatarVersion`，传入 `AccountOverviewComp`→`AvatarImage.avatarRevision`，编辑/保存返回后即时刷新。
+
+## 人工审查点
+- [MSRV-015] 单文件切账号依赖 AuthSucceeded 先清除再拉新头像；Preview 下 filesDir 未注入，缓存函数安全返回 false/空，回退服务器 URL。
+- [MSRV-015] 修改页选图预览复用本地缓存文件（写缓存即预览），保存时再上传，与 Android/iOS 语义一致。
+- 本环境无 DevEco/hvigor，ArkTS 改动需 DevEco 全量构建验证（括号/结构已静态审阅平衡）。
+
+## 验证结果
+- `./gradlew :common:check` 全绿；`cd mock-server && npm test` 45/45（本轮未改 common/Android/iOS/mock-server 逻辑）。
+
+## 人工修正点
+- [MSRV-015] ProfileCompletionPage 移除未用的 `MOCK_SERVER_BASE_URL` import；`ProfileAvatarComponent` 改用 `AvatarImage` 组件。
+
+## 下轮交接
+- **已完成**：鸿蒙头像本地单文件缓存 + 登录刷新 + 完善即存/修改保存才存 + 主「我」页返回刷新。
+- **未完成 / 阻塞项**：需 DevEco 全量构建验证（AvatarCache/ AvatarImage/ ProfileCompletionPage/ SignedInPage 改动、provider.ets 契约）；三端头像全链路联调。
+
+# 2026-08-07 11:46 — 鸿蒙认证与数据接入对齐 Android/iOS（服务器校验 + 顶号二次确认 + 会话懒校验 + 健康互通）
+
+## 采纳内容
+- [HARM-001] 新增 `HarmonyDeviceId.ets`：preferences 持久化 `harmony-<UUID>`；`MockServerSync.request` 统一携带 `X-Device-Id` 头，`serverLogin/serverRegister` body 带 `deviceId`。根因：鸿蒙此前请求无设备标识，服务器按 `device-default` 处理，与 Android/iOS 会话 deviceId 必然不匹配 → 每次 `syncToServer` 401 `SESSION_EXPIRED_ELSEWHERE` → 反复弹"已在其他设备登录"。
+- [HARM-002] 桥新增 `HarmonyRemoteAuthRepository`（ohosArm64Main Kotlin，委托 `LocalMockAuthRepository`，对 login/register/resumeSessionInSameProcess/restoreSessionOnColdStart 消费 ArkTS staging 槽位后短路）；`HarmonyLoginService` 改用该仓库并新增 `stageServerLoginResult/stageForceLogin/stageServerError/stageSessionExpired/clearStaged`；provider.ets diff 仅 5 个新增方法。
+- [HARM-002] `KnoiLoginAdapter.submit` 改为服务器优先：登录先 `POST /api/auth/login`（200→stage 会话再 submit；409→stageForceLogin 触发 `SessionActiveElsewhere` 状态机二次确认；错误→stageServerError 映射既有 `MockError`）；注册先 `serverRegister` 再 submit；新增 `confirmForceLogin/cancelForceLogin`（先 `force:true` 顶号再驱动状态机）。
+- [HARM-002] `LoginFormPage` 新增 `ForceLoginDialog`（`state.confirmForceLogin`/`forceLoginActiveDevice` 驱动，确认/取消接线）；`LoginState`/`KnoiLoginAdapter` 增加 `forceLoginActiveDevice` 映射。
+- [HARM-004] `serverSessionCheck`（GET /api/auth/session 三态）+ `performColdStartSessionCheck`；`KnoiLoginAdapter.checkSessionOnForeground` 服务器懒校验（kicked→onSessionKicked，expired→stageSessionExpired，offline→本地）；`EntryAbility.onForeground` 与 `SignedInPage` 3s timer 接入。
+- [HARM-005] 登出走 `serverLogout` 再本地；资料保存本地提交后尽力异步 `serverProfilePut`；改密/重置/注销尽力异步 `serverChangePassword/serverResetPassword/serverDeleteAccount`（与 Android/iOS 服务器语义对齐）。
+- [HARM-006] 健康读写改 `GET/PUT /api/health/:userId`（修复原 `GET /api/sync/health` 无参必 401 的 bug）；`syncFromServer` 退役整文档 auth 拉取，仅保留未登录账号发现（MSRV-018 例外）。
+- [HARM-007] `request()` 不再自动触发被顶回调；被顶仅由健康读写 401（`maybeNotifyKicked`）与显式会话校验触发，消除弹窗循环/闪退。
+- [HARM-008/009] staging 槽位只消费一次并清空；本地为登录态权威，不复活服务器会话。
+- 新增 `spec/harmonyos-auth-alignment.md`（HARM-001..009）、`tools/check-harmony-auth-alignment.sh`（结构门禁 21 项）、mock-server 契约用例 `HARM-003: 注册携带 deviceId 后异设备登录触发 409`。
+
+## 人工审查点
+- [HARM-002] 顶号/二次确认/被顶弹窗的设备交互（登录被顶、force 顶号、对方被顶提示）需真机或模拟器人工验收（本环境无在线鸿蒙设备）。
+- [HARM-005] 资料保存为"本地优先 + 尽力异步 PUT"，严格"服务器优先"需改接口签名与页面调用点；当前为兼容既有同步 UI 的折中。
+- [HARM-004] 冷启动 AUTH_REQUIRED 采用 `clearSessionSilently`（无"登录已过期"toast），与 Android 的 SessionExpired toast 略有差异。
+- [HARM-007] `maybeNotifyKicked` 幂等依赖 `LoginStore.kickedDialogShown`；设备端需回归确认无循环。
+- 既有工作区 WIP（头像单文件缓存等未提交改动）与本次改动无冲突，但提交时需区分。
+
+## 验证结果
+- `harmony-kmp-bridge ./gradlew ohosArm64Binaries`：BUILD SUCCESSFUL；`provider.ets` diff 仅 5 个新增 staging 方法（HARM-008）。
+- `harmonyApp hvigorw assembleApp --no-daemon`：BUILD SUCCESSFUL（ArkTS 严格模式修复对象字面量类型后通过）。
+- `./gradlew :common:check`：BUILD SUCCESSFUL（全绿）。
+- `./gradlew :androidApp:assembleDebug`：BUILD SUCCESSFUL（Android 端零改动防御验证）。
+- `cd mock-server && node --test test/contract.test.js`：41/41 通过（含新增 HARM-003 用例）。
+- `./tools/check-harmony-auth-alignment.sh`：PASS（21 项；实现前 18 项红灯）。
+- `./tools/check-sdd.sh`：PASS。
+- `./tools/check-docs.sh`：1 项既有失败 `docs/reference/注册登陆模块介绍.md` 哈希与可信来源不一致（未改该归档文件，属会话前既有问题）。
+
+## 人工修正点
+- [HARM-005] 如需严格"服务器优先"保存资料，将 `submitProfile` 改为异步并在服务器成功后再本地提交。
+- [HARM-004] 冷启动 AUTH_REQUIRED 若需与 Android 一致的 SessionExpired toast，补一个不产生残留 effect 的过期提示路径。
+- 归档文档 `docs/reference/注册登陆模块介绍.md` 哈希漂移需人工确认是否重算基线（AGENTS.md 禁止直接改归档）。
+
+## 下轮交接
+- **已完成**：鸿蒙登录/注册/会话校验/登出/资料/健康全部对齐服务器模型；顶号二次确认 + 被顶弹窗；消除弹窗循环；`provider.ets` 契约扩展已同步三处 ArkTS 契约文件。
+- **未完成 / 阻塞项**：真机设备交互验收（顶号/被顶/二次确认/三端健康互通）；若需同步既有头像 WIP 一起提交需人工合并。
+
+# 2026-08-07 13:34 — 鸿蒙被顶/二次确认弹窗缺陷修复（全屏样式、弹窗循环、确认不跳转、登录后残留弹窗）
+
+## 采纳内容
+- [HARM-010] 根因一（不跳转）：`SignedInPage.KickedDialog` 确认只调 `confirmKickedDialog()`，从不 `consumeEffect()` → `LoginStore` 产出的 `SessionKicked` effect 无人消费 → 不跳登录页。修复：确认后消费 effect 并 `handleAuthEffect(SessionKicked)`。
+- [HARM-010] 根因二（不断弹出/潜在闪退）：`KnoiLoginAdapter.handleSessionKicked` 内调用 `persistSnapshot()` → `saveStoreSnapshot` → `syncToServer` → 401 `SESSION_EXPIRED_ELSEWHERE` → `maybeNotifyKicked` → 再 `handleSessionKicked` → 级联循环。修复：`handleSessionKicked` 不再持久化；`MockServerSync` 增加 `kickNotified` 幂等守卫（同一被顶事件只通知一次），健康同步成功（2xx）`resetKickNotified()` 复位。
+- [HARM-010] 根因三（登录成功后被顶弹窗残留）：`LoginStore` 成功分支不复位 `kickedDialogShown`，登录前一次失效健康同步 401 置位的弹窗状态会穿透到登录成功后首页。修复：`LoginStore` 登录/注册成功分支 `kickedDialogShown = false`（新增 `LoginUseCaseTest.successfulLoginClearsStaleKickedDialogState`，先红后绿）。
+- [HARM-010] 样式：`SignedInPage.KickedDialog` 与 `LoginFormPage.ForceLoginDialog` 从"全屏拉伸（layoutWeight 撑满 + margin 42）"改为**居中紧凑卡片**（`.width(300)` + 居中遮罩），文字 17、按钮全宽、圆角 14。
+- [HARM-007] Spec/TRACE 补 `HARM-010`；门禁新增 HARM-007c/d 与 HARM-010a/b/c（26 项）。
+
+## 人工审查点
+- [HARM-010] `LoginStore` 成功分支复位 `kickedDialogShown` 属 common 行为微调（strict 改进：新成功登录清除残留被顶状态），Android/iOS 共享此修复，需确认两端无依赖"成功后残留弹窗"的用例（commonTest 全量通过）。
+- 弹窗固定 300vp 宽度为设计值，若设计规范要求其他宽度/最大宽度约束需人工复核。
+- 设备交互（弹窗居中展示、确认跳转、顶号后不再循环）仍需真机验收。
+
+## 验证结果
+- `./gradlew :common:check`：BUILD SUCCESSFUL（含新增 `successfulLoginClearsStaleKickedDialogState`，先红：42 完成 1 失败，后绿）。
+- `./gradlew :androidApp:assembleDebug`：BUILD SUCCESSFUL（common 改动对 Android 无回归）。
+- `hvigorw assembleApp --no-daemon`：BUILD SUCCESSFUL。
+- `cd mock-server && node --test test/contract.test.js`：41/41 通过。
+- `./tools/check-harmony-auth-alignment.sh`：PASS（26 项，新增 007c/d 与 010a/b/c）。
+- `./tools/check-sdd.sh`：PASS。
+
+## 人工修正点
+- 被顶确认跳转依赖 `handleAuthEffect(SessionKicked)` 的 `ResetKeepingEntranceAndPush` 语义；真机需确认从首页被顶确认后落在登录页而非入口页。
+- 若弹窗在窄屏/横屏下 300vp 过宽，需改为 `ConstraintSize(maxWidth)` 而非固定值。
+- `check-docs.sh` 仍为既有 1 项失败（`docs/reference/注册登陆模块介绍.md` 哈希漂移，未改归档）。
+
+## 下轮交接
+- **已完成**：被顶/二次确认弹窗居中紧凑样式；确认后消费 effect 跳登录页；`kickNotified` 幂等守卫消除弹窗循环与级联；登录成功清除残留被顶状态。
+- **未完成 / 阻塞项**：真机交互验收（弹窗样式、确认跳转、顶号闭环）；既有头像 WIP 合并。
+
+# 2026-08-07 13:48 — 鸿蒙头像缺陷修复（换头像不即时刷新、保存无作用、远端不更新）
+
+## 采纳内容
+- [MSRV-015] 根因一（换头像不即时刷新 + "我"页需切页才刷新）：`AvatarImage` 完全没用到 `@Prop avatarRevision`，且 `Image(file://.../avatar_current.jpg)` 路径恒定 → ArkUI 按 source 字符串缓存解码结果，文件内容变了也不重解码。修复：源改为**内容寻址 base64 data URI**（内容变则字符串变 → 强制重解码）；`@Prop @Watch('onAvatarInputChanged') avatarUri/avatarRevision` 变化时重新读本地文件（`util.Base64Helper.encodeToStringSync`）。信息修改页选图 `writeAvatarCache` + `avatarCacheVersion++` 后即时刷新预览；`SignedInPage.onPageShow` 递增版本号后"我"页即时刷新。
+- [MSRV-015] 根因二（保存无作用 + 远端不更新）：头像 `PUT /api/avatar/:userId`（`AvatarImage.putBinary`）未携带 `X-Device-Id` 头 → 服务器 `requireSession` 设备不匹配 → 401 `SESSION_EXPIRED_ELSEWHERE` → 上传失败 → editMode 保存流程在上传失败处 `return` 静默返回。修复：`putBinary` 与 `AvatarCache` GET 均加 `X-Device-Id: deviceId()` 头（对齐 MSRV-018 设备校验）。
+- [MSRV-015] `tools/check-account-profile-regressions.sh` 增加 Harmony 头像断言（`@Watch`、base64 源、`X-Device-Id`）。
+
+## 人工审查点
+- [MSRV-015] 头像文件路径恒定导致的 ArkUI Image 缓存是根因；base64 内容寻址是确定可用的方案（无需真机）。真机需验收：选图即时预览、保存后"我"页即时刷新、服务器头像文件更新（`data/{PORT}/avatars/{userId}.jpg`）。
+- [MSRV-015] 信息完善页选图即上传、信息修改页选图仅本地预览、保存才上传的语义保持不变；上传失败时 editMode 保存被阻断并提示（`profile_avatar_selection_failed`），避免资料与头像不一致。
+- Harmony 头像未做缩放/JPEG 重编码（LEARNINGS #32 允许原始字节直传）。
+
+## 验证结果
+- `hvigorw assembleApp --no-daemon`：BUILD SUCCESSFUL（修复前 AvatarImage 编译错误，修复后通过）。
+- `./tools/check-account-profile-regressions.sh`：PASS（新增头像断言）。
+- `./tools/check-harmony-auth-alignment.sh`：PASS（26 项）；`./tools/check-sdd.sh`：PASS。
+- `cd mock-server && node --test test/contract.test.js`：41/41 通过。
+- 本轮未改 common/Android/iOS/mock-server 逻辑。
+
+## 人工修正点
+- 真机验收头像全链路：选图预览、保存、切回"我"页、跨端拉取（Android/iOS 看鸿蒙上传的头像）。
+- 若 `util.Base64Helper` 在目标设备版本不可用，回退到逐字节 base64 编码实现。
+- 既有工作区头像 WIP（AvatarCache/AvatarImage/ProfileCompletionPage/SignedInPage 等）与本次修复属同一功能，建议一并人工审阅后提交。
+
+## 下轮交接
+- **已完成**：头像即时刷新（预览 + "我"页）与服务器上传（补设备头）修复。
+- **未完成 / 阻塞项**：真机头像全链路验收；既有 WIP 整体合并。
+
+

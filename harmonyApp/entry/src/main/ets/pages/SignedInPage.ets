@@ -64,6 +64,7 @@ struct SignedInPage {
   @State sessionAccount: string = '';
   @State displayName: string = '';
   @State profileAvatarUri: string = '';
+  @State accountAvatarVersion: number = 0;
   @State birthDate: string = '';
   @State heightText: string = '';
   @State weightText: string = '';
@@ -134,6 +135,8 @@ struct SignedInPage {
     }
     this.syncState();
     this.syncKickedDialogState();
+    // MSRV-015：返回本页时强制重建头像组件，读取内部目录当前头像（编辑/保存后即时刷新）
+    this.accountAvatarVersion++;
   }
 
   private syncKickedDialogState(): void {
@@ -176,6 +179,7 @@ struct SignedInPage {
               displayName: this.displayName,
               sessionAccount: this.sessionAccount,
               profileAvatarUri: this.profileAvatarUri,
+              avatarRevision: this.accountAvatarVersion,
               profileComplete: this.profileComplete,
               birthDate: this.birthDate,
               heightText: this.heightText,
@@ -492,23 +496,29 @@ struct SignedInPage {
   @Builder
   KickedDialog() {
     Column() {
-      Blank().layoutWeight(1)
-      Column({ space: 24 }) {
+      Column({ space: 20 }) {
         Text($r('app.string.auth_error_session_expired_elsewhere'))
-          .fontSize(18).fontColor(AppColors.WHITE).textAlign(TextAlign.Center)
+          .fontSize(17).fontColor(AppColors.WHITE).textAlign(TextAlign.Center).width('100%')
         Button($r('app.string.common_confirm'), { type: ButtonType.Normal })
           .fontSize(16).fontColor(AppColors.WHITE)
-          .layoutWeight(1).height(44).borderRadius(8).backgroundColor(AppColors.ACTION)
+          .width('100%').height(44).borderRadius(8).backgroundColor(AppColors.ACTION)
           .onClick(() => {
             this.showKickedDialog = false;
             this.viewModel.confirmKickedDialog();
+            // 消费 SessionKicked effect 以触发跳转登录页（否则确认后停留在首页）
+            let effect: LoginEffect | null = this.viewModel.consumeEffect();
+            if (effect !== null && effect.type === LoginEffectType.SessionKicked) {
+              handleAuthEffect(effect);
+            }
           })
       }
-      .padding({ left: 24, right: 24, top: 22, bottom: 22 })
-      .backgroundColor(AppColors.ACCOUNT_DIALOG).borderRadius(12).margin({ left: 42, right: 42 })
-      Blank().layoutWeight(1)
+      .width(300)
+      .padding({ left: 22, right: 22, top: 24, bottom: 20 })
+      .backgroundColor(AppColors.ACCOUNT_DIALOG).borderRadius(14)
     }
-    .width('100%').height('100%').backgroundColor(AppColors.OVERLAY_62)
+    .width('100%').height('100%')
+    .justifyContent(FlexAlign.Center)
+    .backgroundColor(AppColors.OVERLAY_62)
   }
 
   @Builder

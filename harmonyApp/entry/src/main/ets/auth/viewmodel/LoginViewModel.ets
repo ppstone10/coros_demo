@@ -123,6 +123,16 @@ export class LoginViewModel {
     this.adapter.confirmKickedDialog();
   }
 
+  /** MSRV-016/HARM-002：二次确认通过，服务器顶号后完成登录。 */
+  confirmForceLogin(): Promise<void> {
+    return this.adapter.confirmForceLogin();
+  }
+
+  /** MSRV-016/HARM-002：取消二次确认。 */
+  cancelForceLogin(): void {
+    this.adapter.cancelForceLogin();
+  }
+
   /** MSRV-019：前台周期性会话校验，被顶即弹窗。 */
   checkSessionOnForeground(): void {
     this.adapter.checkSessionOnForeground();

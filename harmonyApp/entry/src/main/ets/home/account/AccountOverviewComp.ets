@@ -8,6 +8,7 @@ export struct AccountOverviewComp {
   @Prop displayName: string = '';
   @Prop sessionAccount: string = '';
   @Prop profileAvatarUri: string = '';
+  @Prop avatarRevision: number = 0;
   @Prop profileComplete: boolean = false;
   @Prop birthDate: string = '';
   @Prop heightText: string = '';
@@ -34,7 +35,7 @@ export struct AccountOverviewComp {
 
         Row() {
           if (this.profileAvatarUri.length > 0) {
-            AvatarImage({ avatarUri: this.profileAvatarUri, avatarSize: 58 })
+            AvatarImage({ avatarUri: this.profileAvatarUri, avatarSize: 58, avatarRevision: this.avatarRevision })
           } else {
             Stack({ alignContent: Alignment.Center }) {
               Text(this.displayName.substring(0, Math.min(1, this.displayName.length)).toUpperCase())

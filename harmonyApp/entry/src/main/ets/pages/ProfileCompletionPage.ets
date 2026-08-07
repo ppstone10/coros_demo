@@ -1,8 +1,9 @@
 import promptAction from '@ohos.promptAction';
 import photoAccessHelper from '@ohos.file.photoAccessHelper';
+import fs from '@ohos.file.fs';
 import router from '@ohos.router';
-import { uploadAvatarToServer } from '../home/account/AvatarImage';
-import { MOCK_SERVER_BASE_URL } from '../core/bridge/MockServerSync';
+import { uploadAvatarToServer, uploadAvatarBytesToServer, AvatarImage } from '../home/account/AvatarImage';
+import { readAvatarCacheBytes, writeAvatarCache } from '../home/account/AvatarCache';
 import {
   LoginEffect,
   LoginEffectType,
@@ -544,26 +545,16 @@ struct ProfileTextRowComponent {
 @Component
 struct ProfileAvatarComponent {
   @Prop avatarUri: string = '';
+  @Prop avatarRevision: number = 0;
   tapRequested: () => void = () => {};
 
   build() {
     Stack({ alignContent: Alignment.Center }) {
-      if (this.avatarUri.length > 0 && this.avatarUri.startsWith('/api/avatar/')) {
-        Image(MOCK_SERVER_BASE_URL + this.avatarUri)
-          .width('100%')
-          .height('100%')
-          .objectFit(ImageFit.Cover)
-      } else {
-        Image($r('app.media.icon_camera'))
-          .width(76)
-          .height(76)
-          .objectFit(ImageFit.Contain)
-      }
+      AvatarImage({ avatarUri: this.avatarUri, avatarSize: 76, avatarRevision: this.avatarRevision })
     }
     .width(76)
     .height(76)
     .borderRadius(38)
-    .backgroundColor(AppColors.PROFILE_AVATAR)
     .clip(true)
     .alignSelf(ItemAlign.Center)
     .onClick(() => { this.tapRequested(); })
@@ -1157,6 +1148,8 @@ struct ProfileCompletionPage {
   @State avatarSheetVisible: boolean = false;
   @State activePicker: string = '';
   @State editMode: boolean = false;
+  @State avatarChanged: boolean = false;
+  @State avatarCacheVersion: number = 0;
   @State originalAvatarUri: string = '';
   @State originalUsername: string = '';
   @State originalBirthDate: string = '';
@@ -1245,6 +1238,7 @@ struct ProfileCompletionPage {
 
             ProfileAvatarComponent({
               avatarUri: this.profileAvatarUri,
+              avatarRevision: this.avatarCacheVersion,
               tapRequested: () => {
                 this.dismissInput();
                 this.avatarSheetVisible = true;
@@ -1422,6 +1416,28 @@ struct ProfileCompletionPage {
   private submitProfile(): void {
     let heightCm: number = this.profileHeightCm.length > 0 ? parseInt(this.profileHeightCm) : 0;
     let weightKg: number = this.profileWeightKg.length > 0 ? parseFloat(this.profileWeightKg) : 0;
+    // MSRV-015：信息修改页若换了头像，保存时先上传缓存头像再保存资料
+    if (this.editMode && this.avatarChanged) {
+      const userId: string = this.viewModel.currentUserId();
+      const bytes: Uint8Array = readAvatarCacheBytes();
+      if (bytes.length > 0) {
+        uploadAvatarBytesToServer(bytes, userId).then((path: string) => {
+          if (path.length > 0) {
+            this.profileAvatarUri = path;
+            this.avatarChanged = false;
+            this.avatarCacheVersion++;
+            this.doSaveProfile(heightCm, weightKg);
+          } else {
+            this.localError = 'profile_avatar_selection_failed';
+          }
+        });
+        return;
+      }
+    }
+    this.doSaveProfile(heightCm, weightKg);
+  }
+
+  private doSaveProfile(heightCm: number, weightKg: number): void {
     this.viewModel.submitProfile(
       this.profileAvatarUri, this.profileUsername, this.profileBirthDate,
       heightCm, weightKg, this.profileMeasurementSystem,
@@ -1451,6 +1467,19 @@ struct ProfileCompletionPage {
     return weight.toFixed(1);
   }
 
+  private readFileBytesOfPhoto(uri: string): Uint8Array {
+    try {
+      const file = fs.openSync(uri, fs.OpenMode.READ_ONLY);
+      const stat = fs.statSync(file.fd);
+      const buffer = new ArrayBuffer(stat.size);
+      fs.readSync(file.fd, buffer);
+      fs.closeSync(file);
+      return new Uint8Array(buffer);
+    } catch (e) {
+      return new Uint8Array(0);
+    }
+  }
+
   private pickAvatarFromAlbum(): void {
     try {
       let photoSelectOptions = new photoAccessHelper.PhotoSelectOptions();
@@ -1462,13 +1491,27 @@ struct ProfileCompletionPage {
         if (result.photoUris.length > 0) {
           const uri: string = result.photoUris[0];
           const userId: string = this.viewModel.currentUserId();
-          uploadAvatarToServer(uri, userId).then((path: string) => {
-            if (path.length > 0) {
-              this.profileAvatarUri = path;
-            } else {
+          if (this.editMode) {
+            // MSRV-015：信息修改页选图仅写入本地缓存作为预览，保存时才上传服务器
+            const bytes: Uint8Array = this.readFileBytesOfPhoto(uri);
+            if (bytes.length === 0) {
               this.showMessage('profile_avatar_selection_failed');
+              return;
             }
-          });
+            writeAvatarCache(bytes);
+            this.avatarChanged = true;
+            this.avatarCacheVersion++;
+          } else {
+            // MSRV-015：信息完善页选图即上传并覆盖本地缓存
+            uploadAvatarToServer(uri, userId).then((path: string) => {
+              if (path.length > 0) {
+                this.profileAvatarUri = path;
+                this.avatarCacheVersion++;
+              } else {
+                this.showMessage('profile_avatar_selection_failed');
+              }
+            });
+          }
         }
       }).catch((error: Error) => {
         console.error(`pickAvatarFromAlbum failed: ${JSON.stringify(error)}`);
@@ -1538,7 +1581,8 @@ struct ProfileCompletionPage {
   }
 
   private hasProfileChanges(): boolean {
-    return this.profileAvatarUri !== this.originalAvatarUri ||
+    return this.avatarChanged ||
+      this.profileAvatarUri !== this.originalAvatarUri ||
       this.profileUsername !== this.originalUsername ||
       this.profileBirthDate !== this.originalBirthDate ||
       this.profileHeightCm !== this.originalHeightCm ||
